@@ -770,6 +770,20 @@ def apply(ent, proposal, require_closed=True):
 
     by_seq = {i.get("seq"): i for i in batch.get("items", [])}
 
+    # 单页去页码：同 target 基名在本次批次内只出现一次且 page==0 → 视为单页，去掉 _P0
+    _single_base_counts = defaultdict(int)
+    for _item in proposal.get("items", []):
+        if _item.get("decision", "archive") in ("skip", "delete"):
+            continue
+        try:
+            _f = nm.build_name(
+                _item.get("category"), _item.get("subtype") or nm.DEFAULT_SUBTYPE.get(_item.get("category")),
+                keywords=_item.get("keywords"), dates=_item.get("dates"), page=None,
+            )
+        except (nm.NamingError, Exception):
+            continue
+        _single_base_counts[(_item.get("category"), _f)] += 1
+
     for item in proposal.get("items", []):
         seq = item.get("seq")
         it = by_seq.get(seq)
@@ -798,6 +812,18 @@ def apply(ent, proposal, require_closed=True):
                 "error": "关键字同名素材：请先确认处理方式（keep_both / skip / trash_old）后再 apply",
             })
             continue
+
+        # 单页去页码：page==0 且该 target 基名在批次内唯一 → 视为单页（page=None，不生成 _P0）
+        if item.get("page") == 0:
+            try:
+                _f = nm.build_name(
+                    item.get("category"), item.get("subtype") or nm.DEFAULT_SUBTYPE.get(item.get("category")),
+                    keywords=item.get("keywords"), dates=item.get("dates"), page=None,
+                )
+            except (nm.NamingError, Exception):
+                _f = None
+            if _f and _single_base_counts.get((item.get("category"), _f)) == 1:
+                item["page"] = None
 
         try:
             rel = _target_rel(ent, item)

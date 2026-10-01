@@ -94,6 +94,27 @@ class TestBuildName(unittest.TestCase):
             nm.build_name("业绩", "业绩文件", keywords=["监理合同"], page=0),
             "监理合同_P0")
 
+    def test_retirement_cert_dedups_fixed_const(self):
+        # 退休证 C("退休证") 固定段 + keywords=['退休证'] → 只保留一个，不再重复
+        self.assertEqual(
+            nm.build_name("人员", "退休证", keywords=["退休证"], dates=["长期"]),
+            "退休证_长期")
+
+    def test_retirement_cert_with_keyword(self):
+        self.assertEqual(
+            nm.build_name("人员", "退休证", keywords=["军转干"], dates=["长期"]),
+            "退休证_军转干_长期")
+
+    def test_rehire_agreement_dedups_fixed_const(self):
+        self.assertEqual(
+            nm.build_name("人员", "返聘协议", keywords=["返聘协议"], dates=["20271231"]),
+            "返聘协议_20271231")
+
+    def test_rehire_agreement_with_keyword(self):
+        self.assertEqual(
+            nm.build_name("人员", "返聘协议", keywords=["退休返聘"], dates=["20271231"]),
+            "返聘协议_退休返聘_20271231")
+
     def test_keyword_sanitized(self):
         self.assertEqual(
             nm.build_name("资质", "资质证书", keywords=["ISO9001/质量"], dates=["20280101"]),
