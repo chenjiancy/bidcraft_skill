@@ -1,8 +1,8 @@
 ---
 name: bidcraft
-version: 0.3.0
+version: 0.4.0
 display_name: 标书匠
-description: 标书制作工作台（agent 驱动，项目级 skill，平台无关）。统一编排标书全流程：招标文件解析、商务标制作、技术标制作、标书检查（商务标/技术标）、AI模拟评标。当用户表达"做标书""生成商务标/技术标""解析招标文件""检查标书""模拟评标""整理投标素材/模板/知识库""投标辅助""归档投标素材""企业素材库"等意图时触发。M1 素材库已交付（脚本位于 scripts/，用法见 references/M1-素材库-操作手册.md）；素材库、模板库为**企业级**数据（按企业隔离、主要支撑商务标），知识库为**共享级**数据（所有企业共用、与企业无关、主要支撑技术标）；其余模块按 references/module-contracts.md 路线图逐步完善。越界请求应说明范围并引导至对应专项技能（招标文件解读优先用 bid-doc-interpreter，合规审查用 bid-compliance-checker，排版去AI味用 bid-service-plan-markup-docx / tencent-docx）。
+description: 标书制作工作台（agent 驱动，项目级 skill，平台无关）。统一编排标书全流程：招标文件解析、商务标制作、技术标制作、标书检查（商务标/技术标）、AI模拟评标。当用户表达"做标书""生成商务标/技术标""解析招标文件""检查标书""模拟评标""整理投标素材/模板/知识库""投标辅助""归档投标素材""企业素材库"等意图时触发。M1 素材库已交付（脚本位于 scripts/，用法见 references/M1-素材库-操作手册.md）；素材库、模板库为**企业级**数据（按企业隔离、主要支撑商务标），知识库为**共享级**数据（所有企业共用、与企业无关、主要支撑技术标）；脚本按「模块分包 + 共享层」组织；其余模块按 references/module-contracts.md 路线图逐步完善。越界请求应说明范围并引导至对应专项技能（招标文件解读优先用 bid-doc-interpreter，合规审查用 bid-compliance-checker，排版去AI味用 bid-service-plan-markup-docx / tencent-docx）。
 agent_created: true
 ---
 
@@ -12,7 +12,7 @@ agent_created: true
 你是一站式标书制作工作台的总编排 agent。你不直接替代所有专项能力，而是**统一调度**以下资源与流程，把零散的投标工作串成一条可复用、可追溯、可复盘的流水线：
 
 - **能力脚本**：`scripts/` 下各模块的可复用 Python 脚本（当前 M1 已交付）
-- **规范与契约**：`references/` 下的需求对齐、操作手册、模块契约
+- **规范与契约**：`references/` 下的需求对齐、操作手册、模块契约、开发规范
 - **六类核心工作流**：招标文件解析 → 商务标制作 → 技术标制作 → 标书检查（商务/技术）→ AI模拟评标
 
 设计目标：让 WorkBuddy、豆包、hermes、trae work 等任意支持 skill 的 agent 平台，都能通过本 skill 驱动一套结构化、可复用的标书制作流程。**本 skill 是项目级的、平台无关的**——整个仓库即一个可分发、可被任意 agent 加载的 skill。
@@ -31,10 +31,23 @@ agent_created: true
 
 | 路径 | 用途 |
 |------|------|
-| `SKILL.md` | 本 skill 入口（角色、范围、模块总览、编排流程） |
+| `SKILL.md` | 本 skill 入口（角色、范围、模块总览、编排流程、文档/脚本索引） |
 | `references/` | 规范与契约文档：需求对齐、操作手册、模块契约、开发规范 |
-| `scripts/` | 各模块可复用脚本。**M1 已交付**：`bidcraft.py`（CLI）、`bidcraft_core.py`（存储/台账/回收站/巡检）、`bidcraft_naming.py`（命名规范引擎） |
+| `scripts/` | 各模块可复用脚本（**按「模块分包 + 共享层」组织**，详见下） |
 | `dev/notes/development-log.md` | 开发日志：决策、踩坑、验证数据、耗时（供论文总结经验） |
+
+**scripts/ 结构约定（重要）**：脚本按**模块分包 + 共享层**组织，防止单文件过大、目录扁平化：
+
+```
+scripts/
+├── bidcraft.py            # 统一入口（薄壳）：只做 argparse 组装 + 调度，不写逻辑
+├── _shared/               # 跨模块共享层：core.py（存储）/ naming.py（命名）/ util.py（公共）
+└── m<n>_<name>/           # 每个模块一个子包，包内暴露 register_parser(subparsers) 挂载子命令
+```
+
+- **当前状态**：M1 脚本仍平铺在 `scripts/` 根（`bidcraft.py`/`bidcraft_core.py`/`bidcraft_naming.py`，保持可用不迁移）；开发 M2 时按上述分包结构落位，并顺手把 M1 迁入 `m1_assets/`。
+- **约束**：单文件控制在 ~500 行内，超标即再拆；新增模块只加子包 + 入口注册一行，不动既有代码。
+- 完整约定见 `references/模块开发规范.md`。
 
 **数据目录约定（重要）**：
 - **素材库、模板库**数据属于**企业级**，**不在本仓库内**：按企业隔离、主要支撑商务标。素材库（M1）用 `--root` 或环境变量 `BIDCRAFT_LIB_ROOT` 指向企业级目录，由脚本在企业环境下按需创建企业结构；模板库（M2）同为企业级，落地后按企业隔离规划。仓库不保留 `素材库/`、`模板库/` 占位。
@@ -52,58 +65,14 @@ agent_created: true
 | M7 | 标书检查 | 商务标+技术标符合性/完整性/废标项检查 | ⏳ 待实现 |
 | M8 | AI模拟评标 | 基于评分标准模拟打分、找出失分点 | ⏳ 待实现 |
 
+**模块入口**（详细用法各归各文档，不内嵌于本文件，避免 SKILL.md 膨胀）：
+
+| 模块 | 用法入口 | 数据定位 |
+|------|----------|----------|
+| M1 素材库 | `references/M1-素材库-操作手册.md`（标准五阶段 + 对话检查点 + 字段/命令速查） | 企业级（`--root`/`BIDCRAFT_LIB_ROOT`） |
+| M2 模板库 / M3 知识库 | 待实现，按 `module-contracts.md` 落地后补入口 | 企业级 / 共享级 |
+
 各模块的**输入/输出契约**与**下一步实现清单**见 `references/module-contracts.md`。
-
-## 四之二、M1 素材库（已交付）用法
-
-**一句话**：脚本做确定性操作（建库/台账/改名/移动/回收站/巡检/检索），你（agent）做语义判断（看懂证书、判归类、抽关键字与日期、识别企业名、判多页），用户做决策确认。
-
-**数据根**：企业级。运行前设定
-```bash
-export BIDCRAFT_LIB_ROOT=/path/to/enterprise_assets   # 或用 --root
-# 优先级：--root > BIDCRAFT_LIB_ROOT > ./素材库（兜底）
-```
-
-标准五阶段（**每次调用都按此编排**）：
-
-```
-① 进入企业 → ② 合规巡检 → ③ 用户确认 → ④ 收件箱逐张上传 → ⑤ 归档
-```
-
-```bash
-SCRIPT=scripts/bidcraft.py
-
-# ① 进入企业（无企业先问用户企业全名）
-python $SCRIPT list-enterprises
-python $SCRIPT init-enterprise --name "企业全名" [--credit-code 123456]
-
-# ② 合规巡检（非常规上传 + 命名规范 + 归属 + 台账悬空）
-python $SCRIPT inspect --json
-
-# ③ 用户逐条确认（删除重传 → trash；保留归档 → 走 ④⑤）
-
-# ④ 收件箱：打开 → 逐张上传/或直接拷进文件夹后 sync → 关闭
-python $SCRIPT open-inbox --note "批次说明"
-python $SCRIPT upload --file "<单个文件>"       # 单次仅一个文件，机制上不允许批量
-python $SCRIPT sync-inbox                       # 备选：补登记直接拷进收件箱的文件
-python $SCRIPT close-inbox
-
-# ⑤ 归档：生成建议 → 核对/修正 → 执行
-python $SCRIPT propose --out 归档提案.json
-python $SCRIPT apply --proposal 归档提案.json
-```
-
-**你必须遵守的对话检查点（不得静默跳过）**：
-1. 无企业时，先问企业全名再建库。
-2. `inspect` 结果**原样呈现**给用户，逐条问「删除重传 / 保留归档」。
-3. `propose` 后把建议表给用户核对；`needs_input` 非空的条目（缺人员姓名 / 缺项目文件夹 / 缺日期 / 无法归类）**必须补齐后才可 apply**。
-4. 多页归组**必须由用户圈选**并确认先后（脚本的 `group_hint` 只是提示）。同一组设相同 `group_id`，按顺序设 `page=0/1/2…`（P0 为首页）。
-5. 同名冲突（`on_conflict`）与归属冲突（`ownership=conflict`）交由用户决定。
-6. 严禁编造：`inspect`/`propose`/`query` 的输出必须来自脚本真实返回；未跑脚本不得宣称已归档。
-
-**关键约束（与需求一致）**：有效期一律填**到期日**（8 位 `YYYYMMDD`），无到期日填 `长期`，日期不可考填 `日期不详`；归档**保持原格式不转换**；删除/被覆盖文件进 `回收站/`，30 天自动清理；企业间完全隔离。
-
-完整字段定义、命名规范速查表、扩展方式见 `references/M1-素材库-操作手册.md`。
 
 ## 五、总工作流程（编排顺序）
 1. 接收任务 → 识别是"全包做标"还是"单模块"。
@@ -123,13 +92,13 @@ python $SCRIPT apply --proposal 归档提案.json
 ## 七、后续路线图
 见 `references/module-contracts.md`。按用户"一步一步来"的节奏，每轮按需求实现一个模块并回填状态。**素材库/模板库为企业级数据（按企业隔离）、知识库为共享数据（所有企业共用、与企业无关）**；M2 模板库、M3 知识库按后续需求创建。
 
-**开发下一个模块（M2–M8）时，先读 `references/模块开发规范.md`** —— 它固化了 M1 已验证的七步开发套路、硬性约定（agent/脚本/用户三分工、真实执行、对话检查点、幂等可回滚、退出码语义等）、通用 CLI 骨架，以及 M1 可复用的资产清单。
+**开发下一个模块（M2–M8）时，先读 `references/模块开发规范.md`** —— 它固化了 M1 已验证的七步开发套路、硬性约定（agent/脚本/用户三分工、真实执行、对话检查点、幂等可回滚、退出码语义等）、scripts/ 分包结构约定、通用 CLI 骨架，以及 M1 可复用的资产清单。
 
 ## 八、文档索引
 | 文件 | 用途 |
 |------|------|
 | `references/module-contracts.md` | 八大模块的输入/输出契约与实现状态 |
-| `references/模块开发规范.md` | 模块开发套路与硬性约定（新模块必读） |
+| `references/模块开发规范.md` | 模块开发套路 + scripts/ 分包结构约定（新模块必读） |
 | `references/M1-素材库-需求对齐.md` | M1 需求定稿 v1.0（决策 Q1–Q16） |
 | `references/M1-素材库-操作手册.md` | M1 用法：流程、字段、命令速查、对话检查点 |
 | `dev/notes/development-log.md` | 开发日志（决策、踩坑、验证数据、耗时） |
