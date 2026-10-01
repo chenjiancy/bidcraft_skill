@@ -1,0 +1,29 @@
+name: CD · 发布 skill 包
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 读取版本号
+        id: ver
+        run: echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+
+      # 打包 skill 本体（项目级 = 仓库根即 skill）；显式排除素材库/测试缓存，素材库永不入库
+      - name: 打包（排除素材库、.git、缓存）
+        run: |
+          tar \
+            --exclude='.git' \
+            --exclude='素材库' \
+            --exclude='__pycache__' \
+            --exclude='*.py[cod]' \
+            -czf "bidcraft_skill-${{ steps.ver.outputs.tag }}.tar.gz" .
+
+      - name: 发布 GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: "bidcraft_skill-*.tar.gz"

@@ -378,7 +378,8 @@ def parse_name(category, subtype, filename):
             if kind == CONST:
                 idx += 1  # 常量段占位
             elif kind == KW_OPT:
-                if idx < len(parts):
+                # 可选关键字段：若该位置是日期 token（说明未填关键字），则留给 DATE 段消费
+                if idx < len(parts) and not DATE_TOKEN_RE.match(parts[idx]):
                     keywords.append(parts[idx])
                     idx += 1
             elif kind in (KW, ENUM):
