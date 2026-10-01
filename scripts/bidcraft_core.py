@@ -10,6 +10,7 @@ bidcraft · M1 素材库 —— 存储层（企业目录 / 台账 / 收件箱批
 """
 
 import csv
+from collections import defaultdict
 import hashlib
 import json
 import os
@@ -588,6 +589,15 @@ def propose(ent, require_closed=True):
     meta = read_json(ent / META_JSON, {}) or {}
     owner = meta.get("owner") or meta.get("name") or ent.name
 
+    # 已有台账：同类别 → 关键字集合索引（用于归档时同名判定）
+    cat_index = defaultdict(list)
+    for r in load_ledger(ent):
+        c = r.get("category") or ""
+        s = r.get("subtype") or ""
+        kws = {k.strip() for k in str(r.get("keywords") or "").split("、") if k.strip()}
+        if kws:
+            cat_index[(c, s)].append({"rel_path": r.get("rel_path"), "kw": kws})
+
     items_out = []
     for it in inbox.items(order="seq"):
         orig = it.get("original_name", "")
@@ -618,7 +628,30 @@ def propose(ent, require_closed=True):
             "ownership_detail": ownership,
             "needs_input": [],
             "note": "",
+            "is_name_conflict": False,
+            "conflict_with": [],
+            "conflict_in_batch": False,
         }
+        # 关键字同名检测：同大类 + 同子类 + 关键字有交集 → 判定同名素材，交由用户确认处理
+        if cat and sub:
+            my_kw = {k.strip() for k in (item.get("keywords") or []) if str(k).strip()}
+            conflict_existing = [
+                e["rel_path"] for e in cat_index.get((cat, sub), []) if my_kw & e["kw"]
+            ]
+            conflict_in_batch = False
+            if my_kw:
+                for other in items_out:
+                    if other.get("seq") == item["seq"]:
+                        continue
+                    okw = {k.strip() for k in (other.get("keywords") or []) if str(k).strip()}
+                    if (other.get("category"), other.get("subtype")) == (cat, sub) and (my_kw & okw):
+                        conflict_in_batch = True
+                        break
+            if conflict_existing or conflict_in_batch:
+                item["is_name_conflict"] = True
+                item["on_conflict"] = ""  # 同名必须由用户确认处理方式（keep_both / skip / trash_old）
+                item["conflict_with"] = conflict_existing
+                item["conflict_in_batch"] = conflict_in_batch
         if not cat:
             item["needs_input"].append("请指定大类/子类（无法自动识别）")
         if cat == "人员" and sub != "简历":
@@ -727,6 +760,13 @@ def apply(ent, proposal, require_closed=True):
                 handled_files.append(it["file"])
             except LibraryError as e:
                 results["failed"].append({"seq": seq, "error": str(e)})
+            continue
+
+        if item.get("is_name_conflict") and not item.get("on_conflict"):
+            results["failed"].append({
+                "seq": seq, "file": it["file"],
+                "error": "关键字同名素材：请先确认处理方式（keep_both / skip / trash_old）后再 apply",
+            })
             continue
 
         try:
