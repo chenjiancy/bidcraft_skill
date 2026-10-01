@@ -143,6 +143,11 @@ class TestClassifyAndGuess(unittest.TestCase):
         self.assertEqual(nm.classify("示范工程_20250101.png")[:2], ("荣誉", "荣誉证书"))
         self.assertEqual(nm.classify("标准化工地_20250101.png")[:2], ("荣誉", "荣誉证书"))
 
+    def test_org_chart(self):
+        # 组织架构图归企业介绍/组织架构，命名 组织机构图_上传日期
+        self.assertEqual(nm.classify("组织机构图_20261001.png")[:2], ("企业介绍", "组织架构"))
+        self.assertIn("组织机构图_20261001", nm.build_name("企业介绍", "组织架构", dates=["20261001"]))
+
     def test_unknown(self):
         self.assertEqual(nm.classify("随便一个名字"), (None, None, None))
 
