@@ -148,6 +148,13 @@ class TestClassifyAndGuess(unittest.TestCase):
         self.assertEqual(nm.classify("组织机构图_20261001.png")[:2], ("企业介绍", "组织架构"))
         self.assertIn("组织机构图_20261001", nm.build_name("企业介绍", "组织架构", dates=["20261001"]))
 
+    def test_company_history(self):
+        # 企业历史归企业介绍/企业历史，命名 企业历史_上传日期
+        self.assertEqual(nm.classify("企业历史_20261001.png")[:2], ("企业介绍", "企业历史"))
+        self.assertEqual(nm.build_name("企业介绍", "企业历史", dates=["20261001"]), "企业历史_20261001")
+        ok, issues = nm.validate("企业介绍", "企业历史", "企业历史_20261001.png")
+        self.assertTrue(ok, issues)
+
     def test_sme_declaration(self):
         # 中小企业声明函归财务子目录，命名取年度（4位年份）
         self.assertEqual(nm.classify("中小企业声明函_2026.png")[:2], ("财务", "中小企业声明函"))
