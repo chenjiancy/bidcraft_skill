@@ -155,6 +155,11 @@ class TestClassifyAndGuess(unittest.TestCase):
         ok, issues = nm.validate("财务", "中小企业声明函", "中小企业声明函_2026.png")
         self.assertTrue(ok, issues)
 
+    def test_acceptance_docs_to_project(self):
+        # 验收类资料（概况表/竣工验收记录/竣工验收报告）统一归业绩文件（项目归组）
+        for f in ["工程概况一览表_P0.png", "单位工程质量竣工验收记录_P1.png", "工程竣工验收报告_P0.png", "监理合同_P0.png"]:
+            self.assertEqual(nm.classify(f)[:2], ("业绩", "业绩文件"), f)
+
     def test_unknown(self):
         self.assertEqual(nm.classify("随便一个名字"), (None, None, None))
 
