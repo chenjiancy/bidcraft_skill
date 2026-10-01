@@ -133,6 +133,16 @@ class TestClassifyAndGuess(unittest.TestCase):
     def test_register_cert(self):
         self.assertEqual(nm.classify("监理工程师_20270101_20280101.pdf")[:2], ("人员", "注册证书"))
 
+    def test_personal_honor_to_person(self):
+        # 个人荣誉归人员/个人荣誉（荣誉大类仅用于企业荣誉）
+        self.assertEqual(nm.classify("优秀总监理工程师陈友龙_20250101.png")[:2], ("人员", "个人荣誉"))
+        self.assertEqual(nm.classify("先进工作者_20250101.png")[:2], ("人员", "个人荣誉"))
+
+    def test_enterprise_honor_to_honor(self):
+        # 企业荣誉归荣誉/荣誉证书
+        self.assertEqual(nm.classify("示范工程_20250101.png")[:2], ("荣誉", "荣誉证书"))
+        self.assertEqual(nm.classify("标准化工地_20250101.png")[:2], ("荣誉", "荣誉证书"))
+
     def test_unknown(self):
         self.assertEqual(nm.classify("随便一个名字"), (None, None, None))
 
