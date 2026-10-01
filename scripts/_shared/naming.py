@@ -281,7 +281,8 @@ def _fill(segs, keywords, dates):
         elif kind == KW_OPT:
             if kws:
                 kw = sanitize_keyword(kws.pop(0))
-                if kw:
+                # 与固定段(CONST)或已消费关键字去重：如 退休证 + keywords=['退休证'] → 只保留一个"退休证"
+                if kw and kw not in parts:
                     parts.append(kw)
         elif kind == DATE:
             if not dts:
