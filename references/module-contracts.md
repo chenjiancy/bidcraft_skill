@@ -9,12 +9,13 @@
 - **目标**：企业投标素材（业绩库/资质/人员等）的采集、结构化归类、检索。**企业级**：落位于 `<软件根>/<企业>/企业级/`，按企业隔离。
 - **输入**：用户提供的资质/业绩/人员/图片等文件（经收件箱进入 `<软件根>/<企业>/企业级/业绩库/收件箱`）。
 - **输出**：结构化素材目录 + 素材台账（JSON/CSV，可按大类/子类/关键字/到期日/归属检索）+ 巡检问题清单。
-- **依赖**：无（命名规范内置于 `scripts/bidcraft_naming.py`；M3 知识库落地后可回填分类标准）。
-- **状态**：✅ 已交付（2026-10-01，v0.2）
+- **依赖**：无（命名规范内置于 `scripts/_shared/naming.py`；M3 知识库落地后可回填分类标准）。
+- **状态**：✅ 已交付（2026-10-01，v0.2；v0.6 起分包结构化 + 三层目录适配）
 - **实现说明**：
-  - `scripts/bidcraft_naming.py` —— 命名规范引擎（规则表 / 关键字清洗 / 日期归一 / 生成 / 校验 / 智能分类），纯逻辑无 I/O。
-  - `scripts/bidcraft_core.py` —— 存储层（企业初始化、台账、收件箱批次、回收站、巡检、检索）。
-  - `scripts/bidcraft.py` —— CLI（`init-enterprise` / `open-inbox` / `upload` / `sync-inbox` / `close-inbox` / `propose` / `apply` / `inspect` / `query` / `trash` / `cleanup-trash` / `rules` / `validate` / `classify` / `build-name` / `build-project-folder` / `ownership-check`）。
+  - `scripts/_shared/naming.py` —— 命名规范引擎（规则表 / 关键字清洗 / 日期归一 / 生成 / 校验 / 智能分类），纯逻辑无 I/O。
+  - `scripts/_shared/core.py` —— 存储层（企业初始化三层结构、台账、收件箱批次、回收站、巡检、检索）。
+  - `scripts/m1_assets/` —— M1 模块子包：全部 `cmd_*` 命令 + `register_parser(subparsers)`（CLI）。
+  - `scripts/bidcraft.py` —— 统一入口薄壳：argparse 组装 + 调度（`init-enterprise` / `open-inbox` / `upload` / `sync-inbox` / `close-inbox` / `propose` / `apply` / `inspect` / `query` / `trash` / `cleanup-trash` / `rules` / `validate` / `classify` / `build-name` / `build-project-folder` / `ownership-check`）。
   - 需求依据：`references/M1-素材库-需求对齐.md`（v1.0 定稿，决策 Q1–Q16）。
   - 用法与字段：`references/M1-素材库-操作手册.md`。
 - **下一步（增强项）**：企业画像沉淀（**企业级**，供 M6 技术标/M8 评标调用）、素材完整性体检（缺哪类资质）、面向 M5/M6 的「按条件调取素材」接口。
