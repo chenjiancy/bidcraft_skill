@@ -18,6 +18,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import m1_assets                    # noqa: E402
+import m4_tender                    # noqa: E402
 from _shared import core            # noqa: E402
 from _shared import naming as nm    # noqa: E402
 
@@ -41,6 +42,7 @@ def build_parser():
 
     sub = p.add_subparsers(dest="cmd", required=True)
     m1_assets.register_parser(sub)          # 挂载 M1 素材库全部子命令
+    m4_tender.register_parser(sub)          # 挂载 M4 招标解析子命令
     return p
 
 

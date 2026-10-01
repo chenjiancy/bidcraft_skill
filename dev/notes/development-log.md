@@ -149,3 +149,15 @@
 - **文档**：操作手册「三、多页归组」补两条约定——单页不加页码（apply 内置去页码）、固定词子类关键字不重复固定词。
 - **版本**：SKILL.md → v0.7.7。
 - **耗时**：约 25 分钟。
+
+### M4 招标文件解析交付（v0.8.0，agent 解析 + tender-* 脚本）
+- **背景**：用户提出 M4 构思——skill 驱动 agent，**解析能力由 agent 完成**（非脚本规则抽取），产出**两个文本**：①投标要点（含评标办法，防废标 + 评分要点，逐条带原文锚点）；②素材清单（从素材库提取 + 提示补充 + 商务标制作基础）。
+- **需求对齐**：v1.0（默认方案）→ **v1.1（用户构思定稿）**。联网查证（发改法规〔2026〕195号鼓励 AI 招标解析；应标云/喜鹊标书等产品均"解析前置 + 清单化输出 + 原文可追溯"；agentmelt RFP 流程的 gap analysis 与素材清单同构）。关键决策：**生成素材清单前先询问用户是否有特定清单**；有则优先按用户清单核对素材库，无特定要求的素材从素材库匹配最适合；缺料标红（🔴必缺=废标风险 / ⚠️加分缺）。
+- **实现**（scripts/m4_tender/，薄壳挂载一行）：
+  - `rules.py` 纯逻辑（无 I/O）：产物 JSON 最小结构校验（投标要点 modules / 素材清单 items+category+required+purpose+source）、项目名校验、规范命名、对照三态（classify_status）、对照表/汇总/渲染。
+  - `tender.py` 存储层：项目级目录 `<软件根>/<企业>/项目级/<项目名>/招标解析/`、DOCX 提取（标准库 zipfile+xml）、UTF-8 系列→GB18030 兜底解码、双份产物落盘（md+json，校验后写入）、素材对照（逐项 `core.query` 按 category/subtype/keyword 命中）。
+  - `__init__.py` CLI：`tender-init / tender-extract / tender-parse / tender-check / tender-show`。
+- **踩坑 1（BOM）**：PowerShell `Set-Content -Encoding UTF8` 写出的 JSON 带 BOM，`json.loads` 直接失败（冒烟暴露）。修复：`load_doc()` 用 utf-8-sig 优先解码剥 BOM；md 落盘同样剥 BOM（避免 tender-show 开头出现 BOM 字符）。教训：Windows 生态下读 JSON/md 一律做 BOM 容错，不能裸用 `json.loads`/`read_text(utf-8)`。
+- **验证**：L1 71 / L2 30 / L3 9 三塔层全绿（新增 M4：26/12/4 例，含 BOM 容错、对照三态、CLI 全流程、M1 回归）；手工冒烟全链路（init → extract(txt) → parse(带 BOM JSON) → check(缺料标红) → show 三视图 → 非法项目名 exit 1）通过，临时目录已清理。
+- **文档**：需求对齐 v1.1、操作手册（工作流 + 产物模板 + 命令速查）、module-contracts M4 状态 ✅、SKILL.md/README 回填。
+- **耗时**：约 90 分钟。
