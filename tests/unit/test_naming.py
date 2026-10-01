@@ -71,8 +71,17 @@ class TestBuildName(unittest.TestCase):
 
     def test_id_card(self):
         self.assertEqual(
-            nm.build_name("人员", "身份证", keywords=["人像面"], dates=["20350101"]),
-            "身份证_人像面_20350101")
+            nm.build_name("人员", "身份证", dates=["20350101"]),
+            "身份证_20350101")
+        self.assertEqual(
+            nm.build_name("人员", "身份证", dates=["20350101"], page=0),
+            "身份证_20350101_P0")
+        self.assertEqual(
+            nm.build_name("人员", "身份证", dates=["20350101"], page=1),
+            "身份证_20350101_P1")
+        self.assertEqual(
+            nm.build_name("人员", "身份证", dates=["长期"]),
+            "身份证_长期")
 
     def test_register_cert_two_dates(self):
         self.assertEqual(
@@ -94,9 +103,9 @@ class TestBuildName(unittest.TestCase):
         with self.assertRaises(nm.NamingError):
             nm.build_name("资质", "资质证书", dates=["20280101"])
 
-    def test_bad_enum_raises(self):
+    def test_id_card_requires_date(self):
         with self.assertRaises(nm.NamingError):
-            nm.build_name("人员", "身份证", keywords=["正面"], dates=["20350101"])
+            nm.build_name("人员", "身份证")
 
     def test_unknown_subtype_raises(self):
         with self.assertRaises(nm.NamingError):
@@ -171,7 +180,9 @@ class TestClassifyAndGuess(unittest.TestCase):
         self.assertEqual(nm.classify("随便一个名字"), (None, None, None))
 
     def test_guess_subtype(self):
-        self.assertEqual(nm.guess_subtype("人员", "身份证_人像面_20350101.jpg"), "身份证")
+        # 身份证新格式（身份证_日期）与岗位证书（关键字_日期）同构，guess_subtype 无法仅凭文件名区分
+        # 注册证书（关键字_两日期）格式独特，可唯一判定
+        self.assertEqual(nm.guess_subtype("人员", "监理工程师_20270101_20280101.jpg"), "注册证书")
 
 
 class TestProjectFolder(unittest.TestCase):
