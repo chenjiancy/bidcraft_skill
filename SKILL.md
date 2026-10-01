@@ -45,7 +45,7 @@ scripts/
 └── m<n>_<name>/           # 每个模块一个子包，包内暴露 register_parser(subparsers) 挂载子命令
 ```
 
-- **当前状态**：M1 脚本仍平铺在 `scripts/` 根（`bidcraft.py`/`bidcraft_core.py`/`bidcraft_naming.py`，保持可用不迁移）；开发 M2 时按上述分包结构落位，并顺手把 M1 迁入 `m1_assets/`。
+- **当前状态**：✅ M1 已按分包结构迁移（`scripts/m1_assets/` 子包 + `scripts/_shared/` 共享层：`core.py`/`naming.py`）；后续模块（M2–M8）按同结构落位。
 - **约束**：单文件控制在 ~500 行内，超标即再拆；新增模块只加子包 + 入口注册一行，不动既有代码。
 - 完整约定见 `references/模块开发规范.md`。
 

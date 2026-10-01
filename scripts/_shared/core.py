@@ -20,7 +20,7 @@ import uuid
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
-import bidcraft_naming as nm
+from . import naming as nm
 
 # --------------------------------------------------------------------------
 # 常量
@@ -31,6 +31,8 @@ META_JSON = "_素材库信息.json"
 BATCH_JSON = "_batch.json"
 TRASH_JSON = "_回收站清单.json"
 
+# 软件目录结构（三层）：软件根/<企业>/企业级/业绩库(素材库) · 企业级/模板库 · 项目级
+LIB_SUBPATH = ("企业级", "业绩库")      # 企业目录下素材库（业绩库）的相对路径
 ENTERPRISE_SUBDIRS = ["资质", "人员", "业绩", "荣誉", "财务", "收件箱", "回收站"]
 CLASSIFY_DIRS = ["资质", "人员", "业绩", "荣誉", "财务"]
 PERSON_SUBDIRS = [
@@ -82,6 +84,14 @@ def rel_to_path(base, rel):
     return Path(base, *norm_rel(rel).split("/"))
 
 
+def lib_root(ent):
+    """企业素材库根：<企业目录>/企业级/业绩库（素材/台账/收件箱/回收站均落于此）。"""
+    p = Path(ent)
+    for seg in LIB_SUBPATH:
+        p = p / seg
+    return p
+
+
 def write_json(path, obj):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -125,8 +135,9 @@ class Library:
         for d in sorted(self.root.iterdir()):
             if not d.is_dir() or d.name.startswith("."):
                 continue
-            if (d / LEDGER_JSON).exists() or (d / LEDGER_CSV).exists() or \
-               any((d / s).is_dir() for s in CLASSIFY_DIRS):
+            lib = lib_root(d)
+            if (lib / LEDGER_JSON).exists() or (lib / LEDGER_CSV).exists() or \
+               any((lib / s).is_dir() for s in CLASSIFY_DIRS):
                 out.append(d.name)
         return out
 
@@ -146,14 +157,26 @@ class Library:
         raise LibraryError("存在多个企业，请用 --enterprise 指定：%s" % "、".join(ents))
 
     def init_enterprise(self, name, credit_code=None, owner=None):
+        """
+        初始化企业（三层结构）：
+          软件根/<企业>/
+            ├── 企业级/
+            │   ├── 业绩库/        ← 素材库：资质/人员/业绩/荣誉/财务/收件箱/回收站 + 台账
+            │   └── 模板库/
+            └── 项目级/
+        """
         self.ensure_root()
         dirname = ("%s_%s" % (name, credit_code)) if credit_code else name
         ent = self.root / dirname
         existed = ent.is_dir()
         ent.mkdir(parents=True, exist_ok=True)
+        (ent / "项目级").mkdir(exist_ok=True)
+        (ent / "企业级" / "模板库").mkdir(parents=True, exist_ok=True)
+        lib = lib_root(ent)                      # 企业级/业绩库（素材库）
+        lib.mkdir(parents=True, exist_ok=True)
         for sub in ENTERPRISE_SUBDIRS:
-            (ent / sub).mkdir(exist_ok=True)
-        meta_path = ent / META_JSON
+            (lib / sub).mkdir(exist_ok=True)
+        meta_path = lib / META_JSON
         if not meta_path.exists():
             write_json(meta_path, {
                 "name": name,
@@ -163,7 +186,7 @@ class Library:
                 "schema": 1,
                 "created_at": now_iso(),
             })
-        if not (ent / LEDGER_JSON).exists() and not (ent / LEDGER_CSV).exists():
+        if not (lib / LEDGER_JSON).exists() and not (lib / LEDGER_CSV).exists():
             save_ledger(ent, [])
         return ent, existed
 
@@ -177,12 +200,13 @@ class Library:
 # --------------------------------------------------------------------------
 def load_ledger(ent):
     ent = Path(ent)
-    p = ent / LEDGER_JSON
+    lib = lib_root(ent)
+    p = lib / LEDGER_JSON
     if p.exists():
         data = read_json(p, None)
         if isinstance(data, list):
             return data
-    csvp = ent / LEDGER_CSV
+    csvp = lib / LEDGER_CSV
     if csvp.exists():
         with open(csvp, encoding="utf-8-sig", newline="") as f:
             return [dict(r) for r in csv.DictReader(f)]
@@ -191,11 +215,12 @@ def load_ledger(ent):
 
 def save_ledger(ent, rows):
     ent = Path(ent)
+    lib = lib_root(ent)
     rows = list(rows)
-    (ent / LEDGER_JSON).write_text(
+    (lib / LEDGER_JSON).write_text(
         json.dumps(rows, ensure_ascii=False, indent=2), encoding="utf-8"
     )
-    with open(ent / LEDGER_CSV, "w", encoding="utf-8-sig", newline="") as f:
+    with open(lib / LEDGER_CSV, "w", encoding="utf-8-sig", newline="") as f:
         w = csv.DictWriter(f, fieldnames=LEDGER_COLUMNS, extrasaction="ignore")
         w.writeheader()
         for r in rows:
@@ -222,7 +247,7 @@ def new_ledger_row(**kw):
 class Inbox:
     def __init__(self, ent):
         self.ent = Path(ent)
-        self.dir = self.ent / "收件箱"
+        self.dir = lib_root(self.ent) / "收件箱"
         self.batch_path = self.dir / BATCH_JSON
 
     # -- 批次 -------------------------------------------------------------
@@ -389,7 +414,7 @@ class Inbox:
 # 回收站
 # --------------------------------------------------------------------------
 def trash_dir(ent):
-    d = Path(ent) / "回收站"
+    d = lib_root(ent) / "回收站"
     d.mkdir(parents=True, exist_ok=True)
     return d
 
@@ -405,7 +430,7 @@ def save_trash_manifest(ent, rows):
 def move_to_trash(ent, rel_path, reason=""):
     """把企业内某文件移入回收站并登记删除时间/到期时间。"""
     ent = Path(ent)
-    src = rel_to_path(ent, rel_path)
+    src = rel_to_path(lib_root(ent), rel_path)
     if not src.exists():
         raise LibraryError("待删除文件不存在：%s" % rel_path)
 
@@ -471,7 +496,7 @@ def ownership_check(ent, filename, extra_text=None):
     返回 {"status": match|conflict|unknown, ...}
     """
     ent = Path(ent)
-    meta = read_json(ent / META_JSON, {}) or {}
+    meta = read_json(lib_root(ent) / META_JSON, {}) or {}
     my_name = meta.get("name") or ent.name
     my_tokens = _name_tokens(my_name)
 
@@ -480,7 +505,7 @@ def ownership_check(ent, filename, extra_text=None):
     for other in lib.enterprises():
         if other == ent.name:
             continue
-        other_meta = read_json(ent.parent / other / META_JSON, {}) or {}
+        other_meta = read_json(lib_root(ent.parent / other) / META_JSON, {}) or {}
         for t in _name_tokens(other_meta.get("name") or other):
             if t and t in text and t not in my_tokens:
                 return {"status": "conflict", "other": other, "token": t}
@@ -586,7 +611,7 @@ def propose(ent, require_closed=True):
     if require_closed and not batch.get("closed_at"):
         raise LibraryError("收件箱尚未关闭（请先执行 close-inbox，再生成归档建议）")
 
-    meta = read_json(ent / META_JSON, {}) or {}
+    meta = read_json(lib_root(ent) / META_JSON, {}) or {}
     owner = meta.get("owner") or meta.get("name") or ent.name
 
     # 已有台账：同类别 → 关键字集合索引（用于归档时同名判定）
@@ -729,7 +754,7 @@ def apply(ent, proposal, require_closed=True):
     if require_closed and not batch.get("closed_at"):
         raise LibraryError("收件箱尚未关闭（请先执行 close-inbox）")
 
-    meta = read_json(ent / META_JSON, {}) or {}
+    meta = read_json(lib_root(ent) / META_JSON, {}) or {}
     owner = meta.get("owner") or meta.get("name") or ent.name
 
     rows = load_ledger(ent)
@@ -775,7 +800,7 @@ def apply(ent, proposal, require_closed=True):
             results["failed"].append({"seq": seq, "file": it["file"], "error": str(e)})
             continue
 
-        dest = rel_to_path(ent, rel)
+        dest = rel_to_path(lib_root(ent), rel)
         dest.parent.mkdir(parents=True, exist_ok=True)
 
         if dest.exists():
@@ -794,7 +819,7 @@ def apply(ent, proposal, require_closed=True):
                         dest = cand
                         break
                     n += 1
-                rel = norm_rel(dest.relative_to(ent).as_posix())
+                rel = norm_rel(dest.relative_to(lib_root(ent)).as_posix())
 
         shutil.move(str(src), str(dest))
 
@@ -844,13 +869,13 @@ def inspect(ent):
     issues = []
 
     for cat in CLASSIFY_DIRS:
-        d = ent / cat
+        d = lib_root(ent) / cat
         if not d.is_dir():
             continue
         for p in sorted(d.rglob("*")):
             if not p.is_file() or p.name.startswith("."):
                 continue
-            rel = norm_rel(p.relative_to(ent).as_posix())
+            rel = norm_rel(p.relative_to(lib_root(ent)).as_posix())
             row = index.get(rel)
 
             if row:
@@ -884,7 +909,7 @@ def inspect(ent):
 
     # 台账有记录、磁盘上却已缺失
     for rel, row in index.items():
-        if not rel_to_path(ent, rel).exists():
+        if not rel_to_path(lib_root(ent), rel).exists():
             issues.append({
                 "type": "台账悬空",
                 "rel_path": rel,
@@ -948,14 +973,14 @@ def enterprise_overview(ent):
 
     disk = {}
     for cat in CLASSIFY_DIRS:
-        d = ent / cat
+        d = lib_root(ent) / cat
         disk[cat] = sum(1 for p in d.rglob("*") if p.is_file()) if d.is_dir() else 0
 
     inbox = Inbox(ent)
     b = inbox.load()
     return {
         "enterprise": ent.name,
-        "path": str(ent),
+        "path": str(lib_root(ent)),
         "ledger_total": len(rows),
         "by_category": by_cat,
         "disk_files": disk,
