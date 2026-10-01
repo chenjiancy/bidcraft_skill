@@ -57,7 +57,7 @@ PAGE_SUFFIX_RE = re.compile(r"_P(\d+)$")
 EXT_RE = re.compile(r"^[A-Za-z0-9]{1,5}$")
 
 # 段类型
-CONST, KW, KW_OPT, DATE, ENUM = "const", "kw", "kw_opt", "date", "enum"
+CONST, KW, KW_OPT, DATE, ENUM, YEAR = "const", "kw", "kw_opt", "date", "enum", "year"
 
 
 def _c(literal):
@@ -122,6 +122,7 @@ RULES = {
 
     # ---- 财务 ----
     ("财务", "财务证照"): {"segs": [(KW,), (DATE,)], "hint": "证书名关键字_到期日"},
+    ("财务", "中小企业声明函"): {"segs": [C("中小企业声明函"), (YEAR,)], "hint": "中小企业声明函_年度"},
 
     # ---- 企业介绍（组织架构、企业简介等商务标企业介绍素材）----
     ("企业介绍", "组织架构"): {"segs": [C("组织机构图"), (DATE,)], "hint": "组织机构图_上传日期"},
@@ -244,6 +245,8 @@ def _seg_atom(seg, leading=True):
         return r"(?:_[^_]+)?"
     if kind == DATE:
         return prefix + DATE_TOKEN_RE_STR
+    if kind == YEAR:
+        return prefix + r"\d{4}"
     if kind == ENUM:
         return prefix + "(?:" + "|".join(re.escape(o) for o in seg[1]) + ")"
     raise NamingError("未知段类型：%r" % (seg,))
@@ -283,6 +286,10 @@ def _fill(segs, keywords, dates):
             if not dts:
                 raise NamingError("缺少日期字段（该位置需要一个日期）")
             parts.append(normalize_date(dts.pop(0)))
+        elif kind == YEAR:
+            if not dts:
+                raise NamingError("缺少日期字段（该位置需要年度）")
+            parts.append(str(dts.pop(0))[:4])
         elif kind == ENUM:
             if not kws:
                 raise NamingError("缺少取值字段（可选：%s）" % "、".join(seg[1]))
@@ -396,6 +403,10 @@ def parse_name(category, subtype, filename):
                 if idx < len(parts):
                     dates.append(parts[idx])
                     idx += 1
+            elif kind == YEAR:
+                if idx < len(parts):
+                    dates.append(parts[idx])
+                    idx += 1
     else:
         # 宽松兜底：把 8 位数字段当日期，其余当关键字
         for p in parts:
@@ -477,6 +488,7 @@ _HEURISTICS = [
     (("竣工", "验收", "备案", "中标通知书", "结算"), ("业绩", "业绩文件")),
     (("示范工程", "标准化工地", "文明工地", "先进单位", "重合同守信用", "诚信", "AAA", "奖状", "获奖", "荣誉", "牌匾"), ("荣誉", "荣誉证书")),
     (("组织机构图", "组织架构", "机构设置", "企业简介", "管理体系图"), ("企业介绍", "组织架构")),
+    (("中小企业声明函",), ("财务", "中小企业声明函")),
     (("资质", "等级证书", "甲级", "乙级", "丙级"), ("资质", "资质证书")),
 ]
 

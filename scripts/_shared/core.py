@@ -741,6 +741,11 @@ def _target_rel(ent, item):
             raise LibraryError("业绩素材必须提供 project_folder（%s）" % item.get("inbox_file"))
         return norm_rel("/".join([cat, pf, fname]))
 
+    if cat == "财务":
+        # 财务大类按子类建子目录（如 财务/中小企业声明函/…）
+        sub_dir = sub or "财务证照"
+        return norm_rel("/".join([cat, sub_dir, fname]))
+
     return norm_rel("/".join([cat, fname]))
 
 
