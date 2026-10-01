@@ -29,3 +29,13 @@
 - **改动**：SKILL.md 重写（v0.3.0→0.4.0，新增 scripts/ 结构约定小节 + 模块入口表）；模块开发规范.md 新增「三之二、scripts/ 分包结构约定」。
 - **验证**：`python scripts/bidcraft.py --help` 正常（脚本未动）；SKILL.md 全部 4 个 references 引用路径存在（含中文文件名）。
 - **耗时**：约 20 分钟。
+
+### M1 规则增强：归档关键字同名判定（用户确认制）
+- **背景**：原有 `on_conflict` 仅在 `apply` 时按「目标文件路径已存在」判定，默认 `keep_both` 自动加 `_2` 后缀，**不主动让用户确认**。用户新增规则：收件箱归档重命名时，**关键字相同即判定为同名素材，交由用户确认如何处理**。
+- **实现**（bidcraft_core.py）：
+  - `propose`：构建「同类别 → 关键字集合」台账索引，对每项按**同大类 + 同子类 + 关键字有交集**判定同名 → 置 `is_name_conflict=true`、`on_conflict=""`（未确认）、`conflict_with`（冲突对象 rel_path 列表）、`conflict_in_batch`（批次内同名标记）。
+  - `apply`：`is_name_conflict` 且 `on_conflict` 为空 → **拒绝归档**，提示先确认处理方式（keep_both / skip / trash_old），退出码 2。
+  - 顶部新增 `from collections import defaultdict`。
+- **文档**：M1-素材库-操作手册.md 提案字段表补 `is_name_conflict/conflict_with/conflict_in_batch`，`on_conflict` 说明改为"同名时必须用户确认"；对话检查点第 5 条明确判定标准与"确认前不得 apply"。
+- **验证**（冒烟全绿，临时脚本已删）：①首归档无冲突；②同关键字→标同名、列冲突对象、`on_conflict` 为空；③未确认 `apply` 被拒(exit 2)且提示正确；④确认 `keep_both` 后归档成功；⑤不同关键字不误判；⑥`py_compile` 三脚本通过。
+- **耗时**：约 30 分钟。
