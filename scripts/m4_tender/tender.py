@@ -12,6 +12,7 @@ agent 产物的校验落盘（文本 + JSON 双份）、素材库对照与对照
 import csv
 import json
 import os
+import shutil
 import zipfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -24,6 +25,7 @@ W_NS = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 SUPPORTED_EXTS = (".docx", ".txt", ".md", ".text")
 PROJECT_SUBDIR = "项目级"
 TENDER_SUBDIR = "招标解析"
+SOURCE_SUBDIR = "源文件"
 
 CHECK_CSV_COLUMNS = ["大类", "子类", "关键字", "用途", "必须", "来源条款",
                      "状态", "命中数", "素材路径", "建议"]
@@ -104,6 +106,29 @@ def write_original(tdir, src_stem, text):
     name = rules.original_name(src_stem)
     (Path(tdir) / name).write_text(text, encoding="utf-8")
     return name
+
+
+def archive_source(tdir, project, src_path):
+    """
+    归档招标文件原件：<招标解析>/源文件/源文件_<项目名>.<ext>。
+
+    幂等约定：目标已存在且内容相同（sha256）→ 跳过返回 (dst, False)；
+    目标已存在但内容不同 → 报错（避免静默覆盖丢失旧原件）。
+    """
+    src = Path(src_path)
+    if not src.exists():
+        raise core.LibraryError("源文件不存在：%s" % src)
+    sub = Path(tdir) / SOURCE_SUBDIR
+    sub.mkdir(parents=True, exist_ok=True)
+    ext = src.suffix.lower() or ".bin"
+    dst = sub / ("源文件_%s%s" % (project, ext))
+    if dst.exists():
+        if core.sha256_of(dst) == core.sha256_of(src):
+            return dst, False
+        raise core.LibraryError(
+            "源文件已存在且内容不同：%s（为避免覆盖丢失旧原件，请人工处理）" % dst)
+    shutil.copy2(src, dst)
+    return dst, True
 
 
 # --------------------------------------------------------------------------

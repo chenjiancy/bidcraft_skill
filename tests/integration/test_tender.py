@@ -117,6 +117,34 @@ class TestExtract(TenderBase):
         self.assertTrue((self.tdir / rel).exists())
 
 
+class TestArchiveSource(TenderBase):
+    def test_archive_docx(self):
+        p = self._make_docx(["第一章 招标公告"])
+        dst, created = tender.archive_source(self.tdir, self.PROJECT, p)
+        self.assertTrue(created)
+        self.assertEqual(dst.name, "源文件_%s.docx" % self.PROJECT)
+        self.assertTrue(dst.exists())
+
+    def test_archive_idempotent_same_content(self):
+        p = self._make_docx(["第一章 招标公告"])
+        _, created1 = tender.archive_source(self.tdir, self.PROJECT, p)
+        _, created2 = tender.archive_source(self.tdir, self.PROJECT, p)
+        self.assertTrue(created1)
+        self.assertFalse(created2, "同内容重复归档应幂等跳过")
+
+    def test_archive_conflict_different_content(self):
+        p1 = self._make_docx(["第一章 招标公告"])
+        tender.archive_source(self.tdir, self.PROJECT, p1)
+        p2 = Path(self.tmp) / "other.docx"
+        p2.write_bytes(b"different content")
+        with self.assertRaises(core.LibraryError):
+            tender.archive_source(self.tdir, self.PROJECT, p2)
+
+    def test_archive_missing_source(self):
+        with self.assertRaises(core.LibraryError):
+            tender.archive_source(self.tdir, self.PROJECT, Path(self.tmp) / "nope.pdf")
+
+
 class TestSaveProducts(TenderBase):
     def test_save_points_list_ok(self):
         md_p, json_p = self._make_points()

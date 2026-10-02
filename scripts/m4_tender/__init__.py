@@ -96,23 +96,37 @@ def cmd_tender_init(args):
 def cmd_tender_extract(args):
     ent = get_ent(args)
     tdir = tender.ensure_project_dir(ent, args.project)
-    if args.text_file:
+    archived = None
+    if args.file:
+        # 1) 归档原件（任意格式：PDF/DOCX/图片等）→ 源文件/
+        dst, created = tender.archive_source(tdir, args.project, args.file)
+        archived = {"path": str(dst), "created": created, "name": dst.name}
+        stem = Path(args.file).stem
+        # 2) 提取正文：DOCX/TXT/MD 内置；PDF/图片需 agent 以 --text-file 提供
+        try:
+            text = tender.extract_text_file(args.file)
+            kind = "auto"
+        except core.LibraryError as e:
+            if args.text_file:
+                text = tender.read_text(args.text_file)
+                kind = "text(agent 提取)"
+            else:
+                raise core.LibraryError(
+                    "%s；原件已归档至 源文件/，请 agent 提取正文后补传 --text-file" % e)
+    elif args.text_file:
         text = tender.read_text(args.text_file)
-        src = Path(args.text_file).name
+        stem = Path(args.text_file).stem
         kind = "text(agent 提取)"
-    elif args.file:
-        text = tender.extract_text_file(args.file)
-        src = Path(args.file).name
-        kind = "auto"
     else:
-        raise core.LibraryError("请提供 --file（DOCX/TXT/MD）或 --text-file（已提取文本，PDF/图片场景）")
-    rel = tender.write_original(tdir, Path(src).stem, text)
+        raise core.LibraryError("请提供 --file（招标文件原件，自动归档）或 --text-file（已提取文本）")
+    rel = tender.write_original(tdir, stem, text)
     obj = {"ok": True, "project": args.project, "original": rel, "kind": kind,
-           "chars": len(text), "lines": len(text.splitlines())}
+           "chars": len(text), "lines": len(text.splitlines()), "archived": archived}
     dump(obj, args, human=(
-        "原文已提取并保存（%s）：%s（%d 字符 / %d 行）\n"
+        "原文已提取并保存（%s）：%s（%d 字符 / %d 行）%s\n"
         "下一步：agent 通读原文 → 按操作手册生成投标要点/素材清单（文本+JSON）→ tender-parse 落盘"
-        % (kind, tdir / rel, len(text), len(text.splitlines()))
+        % (kind, tdir / rel, len(text), len(text.splitlines()),
+           "\n原件已归档：%s" % (tdir / "源文件" / archived["name"]) if archived else "")
     ))
 
 
@@ -184,9 +198,9 @@ def register_parser(sub):
     sp.add_argument("--project", required=True, help="投标项目名（禁路径分隔符）")
     sp.set_defaults(func=cmd_tender_init)
 
-    sp = sub.add_parser("tender-extract", help="M4：提取招标文件原文（DOCX/TXT/MD 内置；PDF/图片用 --text-file）")
+    sp = sub.add_parser("tender-extract", help="M4：归档招标文件原件（源文件/）并提取原文（DOCX/TXT/MD 内置；PDF/图片配 --text-file）")
     sp.add_argument("--project", required=True)
-    sp.add_argument("--file", help="招标文件路径（DOCX/TXT/MD）")
+    sp.add_argument("--file", help="招标文件原件路径（任意格式，自动归档到 源文件/）")
     sp.add_argument("--text-file", help="已提取文本路径（PDF/图片场景，agent 提取后传入）")
     sp.set_defaults(func=cmd_tender_extract)
 
