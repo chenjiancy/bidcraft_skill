@@ -659,29 +659,38 @@ def propose(ent, require_closed=True):
             "conflict_with": [],
             "conflict_in_batch": False,
         }
-        # 同名检测：同大类 + 同子类；关键字有交集 → 同名；
-        # 关键字为空（固定词子类，如简历/退休证/返聘协议等）→ 同主体（人员类按姓名）→ 同名（删除/更新语义）
+        # 同名检测：同大类 + 同子类；人员类须同人（person 未定时 apply 兜底重算），
+        # 关键字排除等级/类型固定词后交集；固定词子类（简历/退休证等）同人即同名；
+        # 同一素材的多页分页（同基名仅页码不同）不算冲突。
         if cat and sub:
-            my_kw = {k.strip() for k in (item.get("keywords") or []) if str(k).strip()}
             my_person = (item.get("person") or "").strip()
             conflict_existing = []
             for e in cat_index.get((cat, sub), []):
-                if my_kw:
-                    if my_kw & e["kw"]:
-                        conflict_existing.append(e["rel_path"])
-                else:
-                    e_person = e.get("person") or ""
-                    if my_person and e_person and my_person == e_person:
-                        conflict_existing.append(e["rel_path"])
+                e_item = {"category": cat, "subtype": sub, "person": my_person,
+                          "keywords": item.get("keywords"),
+                          "rel_path": e["rel_path"]}
+                if _name_conflict_hit(e_item, {"category": cat, "subtype": sub,
+                                               "keywords": "、".join(sorted(e["kw"])),
+                                               "rel_path": e["rel_path"]}):
+                    conflict_existing.append(e["rel_path"])
             conflict_in_batch = False
-            if my_kw:
-                for other in items_out:
-                    if other.get("seq") == item["seq"]:
-                        continue
-                    okw = {k.strip() for k in (other.get("keywords") or []) if str(k).strip()}
-                    if (other.get("category"), other.get("subtype")) == (cat, sub) and (my_kw & okw):
-                        conflict_in_batch = True
-                        break
+            for other in items_out:
+                if other.get("seq") == item["seq"]:
+                    continue
+                if (other.get("category"), other.get("subtype")) != (cat, sub):
+                    continue
+                try:
+                    my_base = nm.build_name(cat, sub, keywords=item.get("keywords"),
+                                            dates=item.get("dates"), page=None)
+                    o_base = nm.build_name(cat, sub, keywords=other.get("keywords"),
+                                           dates=other.get("dates"), page=None)
+                except Exception:
+                    my_base = o_base = None
+                if my_base and o_base and my_base == o_base:
+                    continue   # 同基名不同页码（多页分页）
+                if _name_conflict_hit(item, other):
+                    conflict_in_batch = True
+                    break
             if conflict_existing or conflict_in_batch:
                 item["is_name_conflict"] = True
                 item["on_conflict"] = ""  # 同名必须由用户确认处理方式（keep_both / skip / trash_old）
@@ -765,6 +774,54 @@ def _target_rel(ent, item):
     return norm_rel("/".join([cat, fname]))
 
 
+# 人员类子类的固定词（等级/类型词）：同名判定时忽略，不作为区分主体的关键字
+# （职称证书按专业区分；注册证书/岗位证书等类型词固定，同人同子类即视为同名更新）
+PERSON_FIXED_WORDS = {
+    "职称证书": {"工程师", "高级工程师", "助理工程师", "技术员", "教授级高级工程师"},
+    "注册证书": {"监理工程师", "一级建造师", "二级建造师", "一级造价工程师", "二级造价工程师",
+                 "注册安全工程师", "注册监理工程师"},
+    "岗位证书": {"监理员", "专业监理工程师", "见证员", "资料员", "安全员"},
+}
+
+
+def _ledger_person(rel_path):
+    """从台账 rel_path 提取人员类主体姓名（rel_path 形如 人员/<姓名>/…）。"""
+    parts = (rel_path or "").split("/")
+    return parts[1] if len(parts) > 1 and parts[0] == "人员" else ""
+
+
+def _name_conflict_hit(item, r):
+    """判断提案条目与台账记录是否构成同名。
+
+    同大类 + 同子类；人员类必须同人，且关键字（排除等级/类型固定词后）有交集；
+    无实质关键字的固定词子类（如简历/退休证）同人即同名。非人员类按关键字交集。
+    同一素材的多页分页（基名相同仅页码不同）不构成同名。
+    """
+    try:
+        base_f = nm.build_name(
+            item.get("category"), item.get("subtype") or nm.DEFAULT_SUBTYPE.get(item.get("category")),
+            keywords=item.get("keywords"), dates=item.get("dates"), page=None)
+    except Exception:
+        base_f = None
+    r_base = (r.get("rel_path") or "").rsplit("/", 1)[-1]
+    if base_f and r_base.startswith(base_f + "_P"):
+        return False
+    my_kw = {k.strip() for k in (item.get("keywords") or []) if str(k).strip()}
+    r_kw = {k.strip() for k in str(r.get("keywords") or "").split("、") if k.strip()}
+    if (item.get("category") or "") == "人员":
+        my_person = (item.get("person") or "").strip()
+        r_person = _ledger_person(r.get("rel_path", ""))
+        if not (my_person and r_person and my_person == r_person):
+            return False
+        ignore = PERSON_FIXED_WORDS.get(item.get("subtype") or "", set())
+        my_real = my_kw - ignore
+        r_real = r_kw - ignore
+        if my_real:
+            return bool(my_real & r_real)
+        return True   # 无实质关键字（固定词/类型词子类）→ 同人即同名
+    return bool(my_kw & r_kw)
+
+
 def _recalc_conflict(ent, item, rows):
     """以最终提案字段实时重算同名冲突。
 
@@ -778,32 +835,12 @@ def _recalc_conflict(ent, item, rows):
     sub = item.get("subtype") or ""
     if not cat or not sub:
         return
-    my_kw = {k.strip() for k in (item.get("keywords") or []) if str(k).strip()}
-    my_person = (item.get("person") or "").strip()
-    try:
-        base_f = nm.build_name(cat, sub, keywords=item.get("keywords"),
-                               dates=item.get("dates"), page=None)
-    except Exception:
-        base_f = None
     hits = []
     for r in rows:
         if (r.get("category") or "", r.get("subtype") or "") != (cat, sub):
             continue
-        rel = norm_rel(r.get("rel_path", ""))
-        rk = {k.strip() for k in str(r.get("keywords") or "").split("、") if k.strip()}
-        parts = rel.split("/")
-        rp = parts[1] if len(parts) > 1 and parts[0] == "人员" else ""
-        if my_kw:
-            if my_kw & rk:
-                hits.append(rel)
-        else:
-            if my_person and rp and my_person == rp:
-                # 排除同一素材的多页分页（基名相同仅页码不同，如 身份证_20260101_P0/P1）
-                if base_f:
-                    r_base = rel.rsplit("/", 1)[-1]
-                    if r_base.startswith(base_f + "_P"):
-                        continue
-                hits.append(rel)
+        if _name_conflict_hit(item, r):
+            hits.append(norm_rel(r.get("rel_path", "")))
     if hits:
         item["is_name_conflict"] = True
         item["conflict_with"] = hits

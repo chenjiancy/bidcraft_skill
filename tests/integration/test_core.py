@@ -295,6 +295,95 @@ class TestArchiveFlow(CoreBase):
         row = core.load_ledger(self.ent)[0]
         self.assertEqual(row["ext"], ".png")
 
+    # ---- 同名判定语义：人员类同人 + 排除等级/类型固定词 ----
+
+    def _archive_credential(self, person, sub, keywords, dates, fname):
+        inbox = core.Inbox(self.ent)
+        inbox.open()
+        inbox.add(self._make_file("PixPin_2026-10-02_09-10-26.png"))
+        inbox.close()
+        prop = core.propose(self.ent, require_closed=True)
+        it = prop["items"][0]
+        it["category"], it["subtype"] = "人员", sub
+        it["person"] = person
+        it["keywords"] = keywords
+        it["dates"] = dates
+        it["date_type"] = "到期日"
+        it["final_name"] = fname
+        res = core.apply(self.ent, prop)
+        self.assertEqual(res["summary"]["archived"], 1, res["failed"])
+
+    def test_title_same_person_different_specialty_no_conflict(self):
+        """职称证书：同人不同专业（工程师_市政工程 vs 工程师_建筑工程）→ 不判同名，并存。"""
+        self._archive_credential("陈友龙", "职称证书", ["工程师", "建筑工程"], [], "工程师_建筑工程.png")
+        inbox = core.Inbox(self.ent)
+        inbox.open()
+        inbox.add(self._make_file("PixPin_2026-10-02_09-20-30.png"))
+        inbox.close()
+        prop = core.propose(self.ent, require_closed=True)
+        it = prop["items"][0]
+        it["category"], it["subtype"] = "人员", "职称证书"
+        it["person"] = "陈友龙"
+        it["keywords"] = ["工程师", "市政工程"]
+        it["dates"] = []
+        res = core.apply(self.ent, prop)
+        self.assertEqual(res["summary"]["archived"], 1, res["failed"])
+        self.assertTrue((self.libroot / "人员" / "陈友龙" / "职称证书" / "工程师_市政工程.png").exists())
+
+    def test_title_same_person_same_specialty_conflicts(self):
+        """职称证书：同人同专业再传 → 判同名（更新语义）。"""
+        self._archive_credential("陈友龙", "职称证书", ["工程师", "市政工程"], [], "工程师_市政工程.png")
+        inbox = core.Inbox(self.ent)
+        inbox.open()
+        inbox.add(self._make_file("PixPin_2026-10-02_09-20-30.png"))
+        inbox.close()
+        prop = core.propose(self.ent, require_closed=True)
+        it = prop["items"][0]
+        it["category"], it["subtype"] = "人员", "职称证书"
+        it["person"] = "陈友龙"
+        it["keywords"] = ["工程师", "市政工程"]
+        it["dates"] = []
+        res = core.apply(self.ent, prop)
+        self.assertEqual(res["failed"], [{"seq": 1,
+                                          "file": "PixPin_2026-10-02_09-20-30.png",
+                                          "error": "关键字同名素材：请先确认处理方式（keep_both / skip / trash_old）后再 apply"}],
+                         "同人同专业应判同名并拒绝未确认的 apply")
+
+    def test_registration_diff_person_no_conflict(self):
+        """注册证书：类型词固定，不同人 → 不判同名。"""
+        self._archive_credential("李林", "注册证书", ["监理工程师"], ["20290322", "20291102"],
+                                 "监理工程师_20290322_20291102.png")
+        inbox = core.Inbox(self.ent)
+        inbox.open()
+        inbox.add(self._make_file("PixPin_2026-10-02_09-20-30.png"))
+        inbox.close()
+        prop = core.propose(self.ent, require_closed=True)
+        it = prop["items"][0]
+        it["category"], it["subtype"] = "人员", "注册证书"
+        it["person"] = "陈云"
+        it["keywords"] = ["监理工程师"]
+        it["dates"] = ["20280123", "20270220"]
+        res = core.apply(self.ent, prop)
+        self.assertEqual(res["summary"]["archived"], 1, res["failed"])
+        self.assertTrue((self.libroot / "人员" / "陈云" / "注册证书" / "监理工程师_20280123_20270220.png").exists())
+
+    def test_registration_same_person_new_cert_conflicts(self):
+        """注册证书：同人再传新证书（新使用有效期）→ 判同名（更新语义）。"""
+        self._archive_credential("陈云", "注册证书", ["监理工程师"], ["20280123", "20270220"],
+                                 "监理工程师_20280123_20270220.png")
+        inbox = core.Inbox(self.ent)
+        inbox.open()
+        inbox.add(self._make_file("PixPin_2026-10-02_09-20-30.png"))
+        inbox.close()
+        prop = core.propose(self.ent, require_closed=True)
+        it = prop["items"][0]
+        it["category"], it["subtype"] = "人员", "注册证书"
+        it["person"] = "陈云"
+        it["keywords"] = ["监理工程师"]
+        it["dates"] = ["20280123", "20280220"]
+        res = core.apply(self.ent, prop)
+        self.assertEqual(len(res["failed"]), 1, "同人新注册证书应判同名并拒绝未确认的 apply")
+
 
 class TestQueryInspectOverview(CoreBase):
     def test_query_and_overview(self):
