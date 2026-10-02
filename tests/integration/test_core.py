@@ -181,6 +181,79 @@ class TestArchiveFlow(CoreBase):
         self.assertTrue((self.libroot / "人员" / "张三" / "身份证" / "身份证_20260101_P0.png").exists())
         self.assertTrue((self.libroot / "人员" / "张三" / "身份证" / "身份证_20260101_P1.png").exists())
 
+    def _archive_person_resume(self, fname, person, upload_date):
+        """上传并归档一份人员简历（固定词子类：关键字为空，person 必填）。"""
+        inbox = core.Inbox(self.ent)
+        inbox.open()
+        inbox.add(self._make_file(fname))
+        inbox.close()
+        prop = core.propose(self.ent, require_closed=True)
+        it = prop["items"][0]
+        it["category"], it["subtype"] = "人员", "简历"
+        it["person"] = person
+        it["keywords"] = []
+        it["dates"], it["date_type"] = [upload_date], "上传日期"
+        core.apply(self.ent, prop)
+
+    def _upload_resume_propose(self, fname):
+        """仅上传不归档，返回 propose（person 由调用方补齐）。"""
+        inbox = core.Inbox(self.ent)
+        inbox.open()
+        inbox.add(self._make_file(fname))
+        inbox.close()
+        return core.propose(self.ent, require_closed=True)
+
+    def test_fixed_word_conflict_same_person(self):
+        """固定词子类（简历，关键字为空）：同人 → 判定同名（删除/更新语义）。"""
+        self._archive_person_resume("简历_20261001.png", "陈阳", "20261001")
+        prop2 = self._upload_resume_propose("简历_20261002.png")
+        it2 = prop2["items"][0]
+        it2["category"], it2["subtype"] = "人员", "简历"
+        it2["person"] = "陈阳"
+        it2["keywords"] = []
+        it2["dates"], it2["date_type"] = ["20261002"], "上传日期"
+        # propose 时 person 为空 → 不判；apply 前以最终字段重算 → 判同名
+        res = core.apply(self.ent, prop2)
+        self.assertEqual(res["summary"]["failed"], 1, "同名未确认处理方式应被 apply 拒绝")
+        self.assertIn("同名", res["failed"][0]["error"])
+        # 旧文件仍在（未被误删）
+        self.assertTrue((self.libroot / "人员" / "陈阳" / "简历" / "简历_20261001.png").exists())
+
+    def test_trash_old_removes_old_file_and_row(self):
+        """同名确认 trash_old：旧文件入回收站、旧台账行清理、新文件归档（删除更新）。"""
+        self._archive_person_resume("简历_20261001.png", "陈阳", "20261001")
+        prop2 = self._upload_resume_propose("简历_20261002.png")
+        it2 = prop2["items"][0]
+        it2["category"], it2["subtype"] = "人员", "简历"
+        it2["person"] = "陈阳"
+        it2["keywords"] = []
+        it2["dates"], it2["date_type"] = ["20261002"], "上传日期"
+        it2["on_conflict"] = "trash_old"
+        res = core.apply(self.ent, prop2)
+        self.assertEqual(res["summary"]["archived"], 1, res["failed"])
+        # 旧文件入回收站、原位置消失
+        self.assertFalse((self.libroot / "人员" / "陈阳" / "简历" / "简历_20261001.png").exists())
+        self.assertTrue((self.libroot / "回收站" / "简历_20261001.png").exists())
+        # 台账：旧行清理，仅 1 条新行（无同 rel_path 重复）
+        rows = core.load_ledger(self.ent)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["rel_path"], "人员/陈阳/简历/简历_20261002.png")
+
+    def test_empty_keyword_different_person_no_conflict(self):
+        """固定词子类：不同人 → 不判定同名。"""
+        self._archive_person_resume("简历_20261001.png", "陈阳", "20261001")
+        prop2 = self._upload_resume_propose("简历_20261002.png")
+        it2 = prop2["items"][0]
+        it2["category"], it2["subtype"] = "人员", "简历"
+        it2["person"] = "张三"
+        it2["keywords"] = []
+        it2["dates"], it2["date_type"] = ["20261002"], "上传日期"
+        core.apply(self.ent, prop2)
+        rows = core.load_ledger(self.ent)
+        self.assertEqual(len(rows), 2, "不同人不应判同名，两份并存")
+        self.assertEqual({r["rel_path"] for r in rows},
+                         {"人员/陈阳/简历/简历_20261001.png", "人员/张三/简历/简历_20261002.png"})
+
 
 class TestQueryInspectOverview(CoreBase):
     def test_query_and_overview(self):

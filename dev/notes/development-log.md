@@ -184,3 +184,13 @@
 - **文档**：需求对齐 v1.2→v1.3（变更记录/数据落位/Q7）；操作手册（阶段①/命令速查/产物落位）；module-contracts M4 输出与状态；SKILL.md → v0.8.1。
 - **验证**：三塔层回归 L1/L2/L3 全绿后推送。
 - **耗时**：约 20 分钟。
+### M1 修复：同名「删除更新」功能完整化（v0.8.2）
+- **背景**：用户上传陈阳新简历测试「同名（关键字相同）→ 删除更新素材库」功能，测试准备中发现 3 个缺陷：①自动同名判定只对关键字非空的条目生效（固定词子类如简历关键字为空 → 不判）；②trash_old 仅在目标路径相同时触发（日期不同名不同 → 不删旧）；③trash_old 后旧台账行不清理（同 rel_path 两行重复）。用户选 A：先修复再测。
+- **实现（scripts/_shared/core.py）**：
+  1. propose 的 cat_index 索引全部台账记录并提取 person（人员类从 rel_path 第二段）；同名判定：关键字交集 或（空关键字固定词子类）同 person。
+  2. 提案 on_conflict 默认值改为 ""（原来 keep_both）——同名项必须显式确认；非同名项不受影响（809 校验只看 is_name_conflict）。
+  3. apply 新增 `_recalc_conflict()`：以最终提案字段重算同名（propose 时 person 为空、agent 补齐后重算才权威）；判中且未确认 → 拒绝；判中且 trash_old → 删除更新。排除同一素材多页（基名相同仅页码不同，如 身份证_…_P0/P1）误判。
+  4. apply 同名删除/更新：on_conflict=trash_old 时对 conflict_with 逐项 move_to_trash + 清理旧台账行（rows[:] 过滤 + index.pop）；dest 分支 trash_old 同样清理旧行。
+- **测试**：L2 +3 用例（test_fixed_word_conflict_same_person 未确认拒绝 / test_trash_old_removes_old_file_and_row 旧文件入回收站+台账清理+新文件归档 / test_empty_keyword_different_person_no_conflict 不同人并存）；踩坑：中文字符串 sorted 按码点排序（断言改用集合）、on_conflict 默认值导致"未确认"与"显式并存"不可区分（改默认 ""）、批次内多页被误判同名（排除同基名 _P 前缀）。
+- **验证**：三塔层全绿 L1 71 / L2 37（core 20 + tender 17）/ L3 10；py_compile 通过；SKILL.md → v0.8.2。
+- **耗时**：约 50 分钟（含调试 2 轮）。
