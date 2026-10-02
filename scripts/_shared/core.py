@@ -723,6 +723,12 @@ def _target_rel(ent, item):
 
     if item.get("final_name"):
         fname = item["final_name"]
+        # final_name 不带扩展名时自动补源文件扩展名（避免归档后丢后缀）
+        _, cur_ext = nm.split_ext(fname)
+        if not cur_ext:
+            ext = item.get("ext") or nm.split_ext(item.get("original_name", ""))[1]
+            if ext:
+                fname += ext
     else:
         fname = nm.build_name(
             cat, sub,
