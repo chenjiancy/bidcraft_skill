@@ -614,14 +614,16 @@ def propose(ent, require_closed=True):
     meta = read_json(lib_root(ent) / META_JSON, {}) or {}
     owner = meta.get("owner") or meta.get("name") or ent.name
 
-    # 已有台账：同类别 → 关键字集合索引（用于归档时同名判定）
+    # 已有台账：同类别 → 关键字集合 + 主体（人员类按 rel_path 提取姓名）索引，用于归档时同名判定
     cat_index = defaultdict(list)
     for r in load_ledger(ent):
         c = r.get("category") or ""
         s = r.get("subtype") or ""
         kws = {k.strip() for k in str(r.get("keywords") or "").split("、") if k.strip()}
-        if kws:
-            cat_index[(c, s)].append({"rel_path": r.get("rel_path"), "kw": kws})
+        rel = r.get("rel_path") or ""
+        parts = rel.split("/")
+        person = parts[1] if len(parts) > 1 and parts[0] == "人员" else ""
+        cat_index[(c, s)].append({"rel_path": rel, "kw": kws, "person": person})
 
     items_out = []
     for it in inbox.items(order="seq"):
@@ -648,7 +650,7 @@ def propose(ent, require_closed=True):
             "page": sug["page"],
             "group_id": "",
             "final_name": "",
-            "on_conflict": "keep_both",
+            "on_conflict": "",
             "ownership": ownership.get("status", "unknown"),
             "ownership_detail": ownership,
             "needs_input": [],
@@ -657,12 +659,20 @@ def propose(ent, require_closed=True):
             "conflict_with": [],
             "conflict_in_batch": False,
         }
-        # 关键字同名检测：同大类 + 同子类 + 关键字有交集 → 判定同名素材，交由用户确认处理
+        # 同名检测：同大类 + 同子类；关键字有交集 → 同名；
+        # 关键字为空（固定词子类，如简历/退休证/返聘协议等）→ 同主体（人员类按姓名）→ 同名（删除/更新语义）
         if cat and sub:
             my_kw = {k.strip() for k in (item.get("keywords") or []) if str(k).strip()}
-            conflict_existing = [
-                e["rel_path"] for e in cat_index.get((cat, sub), []) if my_kw & e["kw"]
-            ]
+            my_person = (item.get("person") or "").strip()
+            conflict_existing = []
+            for e in cat_index.get((cat, sub), []):
+                if my_kw:
+                    if my_kw & e["kw"]:
+                        conflict_existing.append(e["rel_path"])
+                else:
+                    e_person = e.get("person") or ""
+                    if my_person and e_person and my_person == e_person:
+                        conflict_existing.append(e["rel_path"])
             conflict_in_batch = False
             if my_kw:
                 for other in items_out:
@@ -749,6 +759,55 @@ def _target_rel(ent, item):
     return norm_rel("/".join([cat, fname]))
 
 
+def _recalc_conflict(ent, item, rows):
+    """以最终提案字段实时重算同名冲突。
+
+    propose 生成提案时 person/keywords 可能为空（脚本无法从文件名语义认出主体），
+    而 agent 会在提案中补齐（如固定词子类简历的 person）。apply 前以最终字段重算：
+    同大类+同子类 → 关键字有交集 → 同名；关键字为空（固定词子类）→ 同主体
+    （人员类按 rel_path 中的姓名）→ 同名（删除/更新语义）。
+    命中且未确认 on_conflict 时置空（apply 将拒绝）；未命中则取消同名标记。
+    """
+    cat = item.get("category") or ""
+    sub = item.get("subtype") or ""
+    if not cat or not sub:
+        return
+    my_kw = {k.strip() for k in (item.get("keywords") or []) if str(k).strip()}
+    my_person = (item.get("person") or "").strip()
+    try:
+        base_f = nm.build_name(cat, sub, keywords=item.get("keywords"),
+                               dates=item.get("dates"), page=None)
+    except Exception:
+        base_f = None
+    hits = []
+    for r in rows:
+        if (r.get("category") or "", r.get("subtype") or "") != (cat, sub):
+            continue
+        rel = norm_rel(r.get("rel_path", ""))
+        rk = {k.strip() for k in str(r.get("keywords") or "").split("、") if k.strip()}
+        parts = rel.split("/")
+        rp = parts[1] if len(parts) > 1 and parts[0] == "人员" else ""
+        if my_kw:
+            if my_kw & rk:
+                hits.append(rel)
+        else:
+            if my_person and rp and my_person == rp:
+                # 排除同一素材的多页分页（基名相同仅页码不同，如 身份证_20260101_P0/P1）
+                if base_f:
+                    r_base = rel.rsplit("/", 1)[-1]
+                    if r_base.startswith(base_f + "_P"):
+                        continue
+                hits.append(rel)
+    if hits:
+        item["is_name_conflict"] = True
+        item["conflict_with"] = hits
+        # on_conflict 保持提案状态：默认 ""（未确认 → apply 拒绝）或用户显式确认值
+        # （keep_both 并存 / trash_old 删除更新 / skip 跳过）
+    else:
+        item["is_name_conflict"] = False
+        item["conflict_with"] = []
+
+
 def apply(ent, proposal, require_closed=True):
     """按提案执行归档：改名 → 移动 → 写台账 → 清理收件箱。"""
     ent = Path(ent)
@@ -806,12 +865,31 @@ def apply(ent, proposal, require_closed=True):
                 results["failed"].append({"seq": seq, "error": str(e)})
             continue
 
+        # 以最终提案字段实时重算同名（person/keywords 常由 agent 在 propose 后补齐）
+        _recalc_conflict(ent, item, rows)
+
         if item.get("is_name_conflict") and not item.get("on_conflict"):
             results["failed"].append({
                 "seq": seq, "file": it["file"],
                 "error": "关键字同名素材：请先确认处理方式（keep_both / skip / trash_old）后再 apply",
             })
             continue
+
+        # 同名删除/更新：on_conflict=trash_old 时，conflict_with 中的旧素材入回收站并清理旧台账行
+        if item.get("is_name_conflict") and item.get("on_conflict") == "trash_old":
+            conflict_failed = None
+            for old_rel in item.get("conflict_with") or []:
+                try:
+                    old_rel = norm_rel(str(old_rel))
+                    move_to_trash(ent, old_rel, reason="被新素材更新替代")
+                    rows[:] = [r for r in rows if norm_rel(r.get("rel_path", "")) != old_rel]
+                    index.pop(old_rel, None)
+                except LibraryError as e:
+                    conflict_failed = "删除旧素材失败：%s" % str(e)
+                    break
+            if conflict_failed:
+                results["failed"].append({"seq": seq, "file": it["file"], "error": conflict_failed})
+                continue
 
         # 单页去页码：page==0 且该 target 基名在批次内唯一 → 视为单页（page=None，不生成 _P0）
         if item.get("page") == 0:
@@ -841,6 +919,8 @@ def apply(ent, proposal, require_closed=True):
                 continue
             if mode == "trash_old":
                 move_to_trash(ent, rel, reason="被新素材覆盖")
+                rows[:] = [r for r in rows if norm_rel(r.get("rel_path", "")) != rel]
+                index.pop(rel, None)
             else:  # keep_both
                 stem, ext = nm.split_ext(dest.name)
                 n = 2
