@@ -55,10 +55,12 @@ class TenderCliBase(unittest.TestCase):
 
 class TestTenderCliFlow(TenderCliBase):
     def test_full_flow(self):
-        # 1) tender-init 幂等
+        # 1) tender-init 幂等（项目级目录结构：招标解析 + 项目资料）
         r = run(str(self.root), "tender-init", "--project", PROJECT)
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertTrue(self.tdir.is_dir())
+        self.assertTrue((self.ent_dir / "项目级" / PROJECT / "项目资料").is_dir(),
+                        "tender-init 应创建项目资料目录（项目独享资料）")
         r = run(str(self.root), "tender-init", "--project", PROJECT)
         self.assertEqual(r.returncode, 0)
 

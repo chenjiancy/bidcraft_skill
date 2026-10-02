@@ -75,8 +75,12 @@ class TestProjectDir(TenderBase):
         p = tender.project_tender_dir(self.ent, self.PROJECT)
         self.assertTrue(p.is_dir())
         self.assertEqual(str(p).replace("\\", "/").endswith("项目级/%s/招标解析" % self.PROJECT), True)
+        # 项目级目录结构：招标解析 + 项目资料（项目独享资料）
+        data_dir = Path(self.ent) / "项目级" / self.PROJECT / "项目资料"
+        self.assertTrue(data_dir.is_dir(), "tender-init 应同时创建项目资料目录")
         p2 = tender.ensure_project_dir(self.ent, self.PROJECT)
         self.assertEqual(p2, p)
+        self.assertTrue(data_dir.is_dir(), "重复调用应幂等且不删除项目资料目录")
 
     def test_illegal_project_name(self):
         with self.assertRaises(core.LibraryError):
