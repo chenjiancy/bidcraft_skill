@@ -26,6 +26,7 @@ SUPPORTED_EXTS = (".docx", ".txt", ".md", ".text")
 PROJECT_SUBDIR = "项目级"
 TENDER_SUBDIR = "招标解析"
 SOURCE_SUBDIR = "源文件"
+PROJECT_DATA_SUBDIR = "项目资料"   # 项目级目录结构：项目独享资料存放处（与招标解析同级）
 
 CHECK_CSV_COLUMNS = ["大类", "子类", "关键字", "用途", "必须", "来源条款",
                      "状态", "命中数", "素材路径", "建议"]
@@ -40,12 +41,20 @@ def project_tender_dir(ent, project):
 
 
 def ensure_project_dir(ent, project):
-    """校验项目名并创建/复用项目级招标解析目录（幂等）。"""
+    """
+    校验项目名并创建/复用项目级目录结构（幂等）：
+      <企业>/项目级/<项目名>/招标解析/   （M4 解析产物）
+      <企业>/项目级/<项目名>/项目资料/   （项目独享资料，与招标解析同级）
+    返回招标解析目录（供其余 tender-* 命令使用）。
+    """
     ok, issue = rules.validate_project_name(project)
     if not ok:
         raise core.LibraryError("项目名不合法：%s" % issue)
-    tdir = project_tender_dir(ent, project)
+    base = Path(ent) / PROJECT_SUBDIR / project
+    base.mkdir(parents=True, exist_ok=True)
+    tdir = base / TENDER_SUBDIR
     tdir.mkdir(parents=True, exist_ok=True)
+    (base / PROJECT_DATA_SUBDIR).mkdir(parents=True, exist_ok=True)
     return tdir
 
 
