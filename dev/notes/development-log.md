@@ -194,3 +194,10 @@
 - **测试**：L2 +3 用例（test_fixed_word_conflict_same_person 未确认拒绝 / test_trash_old_removes_old_file_and_row 旧文件入回收站+台账清理+新文件归档 / test_empty_keyword_different_person_no_conflict 不同人并存）；踩坑：中文字符串 sorted 按码点排序（断言改用集合）、on_conflict 默认值导致"未确认"与"显式并存"不可区分（改默认 ""）、批次内多页被误判同名（排除同基名 _P 前缀）。
 - **验证**：三塔层全绿 L1 71 / L2 37（core 20 + tender 17）/ L3 10；py_compile 通过；SKILL.md → v0.8.2。
 - **耗时**：约 50 分钟（含调试 2 轮）。
+### M1 修复：final_name 自动补扩展名（v0.8.3）
+- **背景**：删除更新测试后用户反馈"简历删除更新后后缀名丢失"——`apply` 落盘为 `简历_20261002`（无 .png）。根因：`_target_rel` 的 `final_name` 分支直接用该名字、不追加扩展名（build_name 分支会自动补 ext）。
+- **实现**：`core._target_rel` final_name 分支：`nm.split_ext(fname)` 无后缀时补源文件扩展名（item.ext 或 original_name 推导）；已有后缀则原样使用不重复追加。
+- **测试**：L2 +2（final_name 无后缀自动补 .png + 已有后缀原样）；三塔层全绿 L1 71 / L2 22 / L3 10。
+- **真实数据修正**：用户明确指令修正——磁盘重命名 `人员/陈阳/简历/简历_20261002` → `简历_20261002.png`，台账 json/csv 同步更新 rel_path/ext（走用户明确指令例外，留痕披露）。
+- **已知边界（记录，待用户指示是否增强）**：`trash` 命令只移文件入回收站、不清台账行（删除素材后台账悬空，靠 inspect 发现）；M1 无"重命名/改台账"命令（本次脏数据修正为直接操作+留痕）。
+- **耗时**：约 20 分钟。

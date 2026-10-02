@@ -254,6 +254,47 @@ class TestArchiveFlow(CoreBase):
         self.assertEqual({r["rel_path"] for r in rows},
                          {"人员/陈阳/简历/简历_20261001.png", "人员/张三/简历/简历_20261002.png"})
 
+    def test_final_name_without_ext_auto_appends(self):
+        """final_name 不带扩展名 → 自动补源文件扩展名（防归档后丢后缀）。"""
+        inbox = core.Inbox(self.ent)
+        inbox.open()
+        inbox.add(self._make_file("PixPin_2026-10-02_09-10-26.png"))
+        inbox.close()
+        prop = core.propose(self.ent, require_closed=True)
+        it = prop["items"][0]
+        it["category"], it["subtype"] = "人员", "简历"
+        it["person"] = "陈阳"
+        it["keywords"] = []
+        it["dates"], it["date_type"] = ["20261002"], "上传日期"
+        it["final_name"] = "简历_20261002"   # 无后缀
+        res = core.apply(self.ent, prop)
+        self.assertEqual(res["summary"]["archived"], 1, res["failed"])
+        self.assertTrue((self.libroot / "人员" / "陈阳" / "简历" / "简历_20261002.png").exists(),
+                        "final_name 无后缀时应自动补 .png")
+        self.assertFalse((self.libroot / "人员" / "陈阳" / "简历" / "简历_20261002").exists())
+        row = core.load_ledger(self.ent)[0]
+        self.assertEqual(row["rel_path"], "人员/陈阳/简历/简历_20261002.png")
+        self.assertEqual(row["ext"], ".png")
+
+    def test_final_name_with_ext_keeps_as_is(self):
+        """final_name 已带扩展名 → 原样使用，不重复追加。"""
+        inbox = core.Inbox(self.ent)
+        inbox.open()
+        inbox.add(self._make_file("PixPin_2026-10-02_09-10-26.png"))
+        inbox.close()
+        prop = core.propose(self.ent, require_closed=True)
+        it = prop["items"][0]
+        it["category"], it["subtype"] = "人员", "简历"
+        it["person"] = "陈阳"
+        it["keywords"] = []
+        it["dates"], it["date_type"] = ["20261002"], "上传日期"
+        it["final_name"] = "简历_20261002.png"
+        res = core.apply(self.ent, prop)
+        self.assertEqual(res["summary"]["archived"], 1, res["failed"])
+        self.assertTrue((self.libroot / "人员" / "陈阳" / "简历" / "简历_20261002.png").exists())
+        row = core.load_ledger(self.ent)[0]
+        self.assertEqual(row["ext"], ".png")
+
 
 class TestQueryInspectOverview(CoreBase):
     def test_query_and_overview(self):
