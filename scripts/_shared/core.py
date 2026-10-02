@@ -774,14 +774,18 @@ def _target_rel(ent, item):
     return norm_rel("/".join([cat, fname]))
 
 
-# 人员类子类的固定词（等级/类型词）：同名判定时忽略，不作为区分主体的关键字
-# （职称证书按专业区分；注册证书/岗位证书等类型词固定，同人同子类即视为同名更新）
-PERSON_FIXED_WORDS = {
-    "职称证书": {"工程师", "高级工程师", "助理工程师", "技术员", "教授级高级工程师"},
-    "注册证书": {"监理工程师", "一级建造师", "二级建造师", "一级造价工程师", "二级造价工程师",
-                 "注册安全工程师", "注册监理工程师"},
-    "岗位证书": {"监理员", "专业监理工程师", "见证员", "资料员", "安全员"},
-}
+# 人员类同名判定语义（见 _name_conflict_hit）：
+# · 职称证书：实质标识 = 完整职称名（等级+专业，如 高级工程师_建筑电气）→ 基名相同才同名
+# · 其余人员类子类（注册证书/岗位证书/身份证/简历/退休证/返聘协议/个人荣誉等）：
+#   无独立身份标识 → 同人同子类即同名（新素材更新旧素材）
+# · 同一素材多页分页（同基名不同页码 _P0/_P1）不构成同名
+
+
+def _strip_page_suffix(fname):
+    """去除文件名扩展名与多页分页后缀（_P0/_P1/…），得到素材基名。"""
+    import re
+    noext = str(fname).rsplit(".", 1)[0] if "." in str(fname) else str(fname)
+    return re.sub(r"_P\d*$", "", noext)
 
 
 def _ledger_person(rel_path):
@@ -813,12 +817,20 @@ def _name_conflict_hit(item, r):
         r_person = _ledger_person(r.get("rel_path", ""))
         if not (my_person and r_person and my_person == r_person):
             return False
-        ignore = PERSON_FIXED_WORDS.get(item.get("subtype") or "", set())
-        my_real = my_kw - ignore
-        r_real = r_kw - ignore
-        if my_real:
-            return bool(my_real & r_real)
-        return True   # 无实质关键字（固定词/类型词子类）→ 同人即同名
+        sub = item.get("subtype") or ""
+        if sub == "职称证书":
+            # 职称证书的实质标识 = 完整职称名（等级+专业，如 高级工程师_建筑电气）
+            try:
+                my_base = nm.build_name("人员", sub, keywords=item.get("keywords"),
+                                        dates=item.get("dates"), page=None)
+            except Exception:
+                my_base = None
+            r_base = (r.get("rel_path") or "").rsplit("/", 1)[-1]
+            r_clean = _strip_page_suffix(r_base)
+            return bool(my_base and r_clean == my_base)
+        # 其余人员类子类（注册证书/岗位证书/身份证/简历/退休证/返聘协议/个人荣誉等）：
+        # 无独立身份标识，同人同子类即视为同名（新素材更新旧素材）
+        return True
     return bool(my_kw & r_kw)
 
 
