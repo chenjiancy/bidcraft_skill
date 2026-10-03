@@ -130,6 +130,19 @@ class TestBuildName(unittest.TestCase):
         ok2, _ = nm.validate("人员", "职称证书", "高级工程师_建筑工程.png")
         self.assertTrue(ok2)
 
+    def test_org_structure_name_variants(self):
+        # 企业介绍/组织架构：组织机构图|组织机构（日期可选）均合规
+        self.assertEqual(
+            nm.build_name("企业介绍", "组织架构", keywords=["组织机构"]),
+            "组织机构")
+        self.assertEqual(
+            nm.build_name("企业介绍", "组织架构", keywords=["组织机构图"], dates=["20261001"]),
+            "组织机构图_20261001")
+        ok, issues = nm.validate("企业介绍", "组织架构", "组织机构.png")
+        self.assertTrue(ok, issues)
+        ok2, _ = nm.validate("企业介绍", "组织架构", "组织机构图_20261001.png")
+        self.assertTrue(ok2)
+
     def test_keyword_sanitized(self):
         self.assertEqual(
             nm.build_name("资质", "资质证书", keywords=["ISO9001/质量"], dates=["20280101"]),
