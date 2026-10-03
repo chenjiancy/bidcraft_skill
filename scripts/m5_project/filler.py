@@ -406,6 +406,8 @@ def _insert_image(p, img_path, w_cm, h_cm):
 # 每项：(路径, IMG_SPEC键, 是否分页)。多页素材按文件名 P0/P1 顺序逐页插入。
 # ---------------------------------------------------------------------------
 _CERT_DIRS = ("注册证书", "岗位证书")
+# 用户 2026-10-04 确认：赵六/赵七无职称证书素材，省略（不报缺图）
+_OMIT_ZC = {"赵六", "赵七"}
 
 
 def _find_person_images(lib_root, name, *kinds):
@@ -471,7 +473,7 @@ def _build_combo(key, lib_root, proj_dir, persons):
                 skey = "岗位证书" if c.parent.name == "岗位证书" else "注册监理工程师证书"
                 items.append((str(c), skey, True))
             zc = _find_person_images(base, name, "职称证书")
-            if not zc:
+            if not zc and name not in _OMIT_ZC:
                 missing.append("拟派人员[%s]职称证书" % name)
             items.extend(_build_zc_items(zc))
             idc = _find_person_images(base, name, "身份证")
@@ -501,7 +503,8 @@ def _build_combo(key, lib_root, proj_dir, persons):
             name = p.get("name", "")
             files = _find_person_images(base, name, "职称证书")
             if not files:
-                missing.append("其他监理人员[%s]职称证书" % name)
+                if name not in _OMIT_ZC:
+                    missing.append("其他监理人员[%s]职称证书" % name)
                 continue
             items.extend(_build_zc_items(files))
     elif "先进（优秀）监理企业证书" in key:
