@@ -87,22 +87,19 @@ class TestFillProject(unittest.TestCase):
         self.assertTrue(found, "未找到附表2 已完成工程汇总表")
 
     def test_missing_image_report(self):
-        # 组合占位 v1.1 后仅剩真实缺素材：社保（项目资料待上传）+ 阮旭/黄诚职称证
-        self.assertGreaterEqual(len(self.stats["缺图"]), 4)
-        phs = [x[0] for x in self.stats["缺图"]]
-        self.assertIn("【图片：拟投入监理人员社保证明】", phs)
-        self.assertIn("【图片：其他监理人员职称证书】", phs)
+        # 社保已上传、阮旭/黄诚职称用户确认省略 → 缺图归零
+        self.assertEqual(len(self.stats["缺图"]), 0, "缺图应为 0，实际 %s" % self.stats["缺图"])
         self.assertTrue(os.path.exists(os.path.join(self.out, "缺图清单.md")))
         self.assertTrue(os.path.exists(os.path.join(self.out, "待补字段清单.md")))
         self.assertTrue(os.path.exists(os.path.join(self.out, "生成记录.json")))
 
     def test_combo_images_inserted(self):
-        # 组合图片插入：资质/三体系/职称/荣誉/身份证正反（多页 P0/P1 逐页）
+        # 组合图片插入：资质/三体系/职称/荣誉/身份证正反/社保（多页 P0/P1 逐页）
         from docx import Document
         from docx.oxml.ns import qn
         d = Document(os.path.join(self.out, "资格证明及辅助资料表.docx"))
         n = len(d.element.body.findall(".//" + qn("w:drawing")))
-        self.assertGreater(n, 50, "资格证明应插入 6 人证书组合等 64 图，实际 %d" % n)
+        self.assertGreater(n, 60, "资格证明应插入组合+社保 66 图，实际 %d" % n)
         for fn, min_n in (("法定代表人身份证明.docx", 2), ("授权委托书.docx", 2)):
             dd = Document(os.path.join(self.out, fn))
             nn = len(dd.element.body.findall(".//" + qn("w:drawing")))
