@@ -401,13 +401,169 @@ def _insert_image(p, img_path, w_cm, h_cm):
     run.add_picture(str(img_path), width=Cm(w_cm), height=Cm(h_cm))
 
 
-def _fill_image_placeholders(doc, lib_root, missing):
+# ---------------------------------------------------------------------------
+# 组合图片构建 v1.1（FILL_IMG_MAP 中 path=None 的组合占位）
+# 每项：(路径, IMG_SPEC键, 是否分页)。多页素材按文件名 P0/P1 顺序逐页插入。
+# ---------------------------------------------------------------------------
+_CERT_DIRS = ("注册证书", "岗位证书")
+
+
+def _find_person_images(lib_root, name, *kinds):
+    """人员子目录按类型收集图片；多页（_P0/_P1...）按页码有序、单页在后。"""
+    base = Path(lib_root) / "人员" / name
+    files = []
+    for kind in kinds:
+        d = base / kind
+        if d.is_dir():
+            files += list(d.glob("*.png")) + list(d.glob("*.jpg")) + list(d.glob("*.jpeg"))
+    def _key(f):
+        m = re.search(r"_P(\d+)\.[^.]+$", f.name)
+        return (0, int(m.group(1))) if m else (1, 0, f.name)
+    files.sort(key=_key)
+    return files
+
+
+def _is_multi_page(path):
+    return bool(re.search(r"_P\d+\.[^.]+$", Path(path).name))
+
+
+def _group_by_cert(files):
+    """同一证书多页（_P0/_P1...）按文件名前缀分组。"""
+    groups = []
+    for f in files:
+        base = re.sub(r"_P\d+\.[^.]+$", "", f.name)
+        if groups and groups[-1][0] == base:
+            groups[-1][1].append(f)
+        else:
+            groups.append((base, [f]))
+    return [g[1] for g in groups]
+
+
+def _build_zc_items(files):
+    """职称证书：多页 11×16 每页两张；单页 23×16 占一页。"""
+    items = []
+    for g in _group_by_cert(files):
+        multi = any(_is_multi_page(f) for f in g)
+        for i, f in enumerate(g):
+            items.append((str(f), "职称证", (i % 2 == 0) if multi else True))
+    return items
+
+
+def _build_combo(key, lib_root, proj_dir, persons):
+    """组合图片占位 → (items, missing明细)。"""
+    items, missing = [], []
+    base = Path(lib_root)
+    if "企业资质证书扫描件" in key:
+        for pat, skey in (("房屋建筑工程监理甲级*.png", "资质证书_房屋建筑工程甲级"),
+                          ("市政公用工程监理乙级*.png", "资质证书_市政公用工程乙级")):
+            fs = sorted((base / "资质").glob(pat))
+            for f in fs:
+                items.append((str(f), skey, True))
+        if not items:
+            missing.append("企业资质证书素材缺失")
+    elif "拟派监理人员注册证书" in key:
+        for p in persons:
+            name = p.get("name", "")
+            certs = _find_person_images(base, name, "注册证书", "岗位证书")
+            if not certs:
+                missing.append("拟派人员[%s]注册/岗位证书" % name)
+            for c in certs:
+                skey = "岗位证书" if c.parent.name == "岗位证书" else "注册监理工程师证书"
+                items.append((str(c), skey, True))
+            zc = _find_person_images(base, name, "职称证书")
+            if not zc:
+                missing.append("拟派人员[%s]职称证书" % name)
+            items.extend(_build_zc_items(zc))
+            idc = _find_person_images(base, name, "身份证")
+            if not idc:
+                missing.append("拟派人员[%s]身份证" % name)
+            for i, f in enumerate(idc):
+                items.append((str(f), "身份证", i == 0))
+    elif "社保证明" in key:
+        d = Path(proj_dir) / "项目资料"
+        fs = [f for f in d.glob("社保*")] if d.is_dir() else []
+        for f in sorted(fs):
+            items.append((str(f), "社保证明", True))
+        if not items:
+            missing.append("6人社保证明待出具（项目资料/社保* 待上传）")
+    elif "三体系认证证书" in key:
+        for f in sorted((base / "资质").glob("ISO*.png")):
+            items.append((str(f), "三体系认证证书", True))
+        if not items:
+            missing.append("三体系证书素材缺失")
+    elif "总监高级工程师职称证书" in key:
+        files = _find_person_images(base, "陈云", "职称证书")
+        items.extend(_build_zc_items(files))
+        if not items:
+            missing.append("陈云职称证书素材缺失")
+    elif "其他监理人员职称证书" in key:
+        for p in persons[1:]:
+            name = p.get("name", "")
+            files = _find_person_images(base, name, "职称证书")
+            if not files:
+                missing.append("其他监理人员[%s]职称证书" % name)
+                continue
+            items.extend(_build_zc_items(files))
+    elif "先进（优秀）监理企业证书" in key:
+        for pat in ("先进监理企业*.png", "优秀监理企业_20250101.png"):
+            fs = sorted((base / "荣誉").glob(pat))
+            for f in fs:
+                items.append((str(f), "先进优秀监理企业证书", True))
+        if not items:
+            missing.append("先进/优秀监理企业证书素材缺失")
+    elif "监理示范（优质）工程" in key:
+        fs = sorted((base / "荣誉").glob("监理示范工程*.png"))
+        for f in fs:
+            items.append((str(f), "监理示范优质工程", True))
+        if not items:
+            missing.append("监理示范工程证书素材缺失")
+    elif "法定代表人身份证正、反面" in key:
+        idc = _find_person_images(base, "邵章华", "身份证")
+        for i, f in enumerate(idc):
+            items.append((str(f), "身份证", i == 0))
+        if not items:
+            missing.append("邵章华身份证素材缺失")
+    elif "委托代理人身份证正、反面" in key:
+        idc = _find_person_images(base, "孙婧", "身份证")
+        for i, f in enumerate(idc):
+            items.append((str(f), "身份证", i == 0))
+        if not items:
+            missing.append("孙婧身份证素材缺失")
+    else:
+        missing.append("未实现组合规则")
+    return items, missing
+
+
+def _insert_images_before(doc, para, items):
+    """在占位段前插入（分页段+居中图片段）；返回插入图片数。"""
+    from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_BREAK
+    from docx.shared import Cm
+    tmp = []
+    for path, skey, pb in items:
+        size = imgsp.fit_size(path, skey)
+        if not size:
+            continue
+        w, h = size
+        if pb:
+            p = doc.add_paragraph()
+            p.add_run().add_break(WD_BREAK.PAGE)
+            tmp.append(p)
+        p = doc.add_paragraph()
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p.add_run().add_picture(path, width=Cm(w), height=Cm(h))
+        tmp.append(p)
+    for p in reversed(tmp):
+        para._p.addprevious(p._p)
+    return len(items)
+
+
+def _fill_image_placeholders(doc, lib_root, proj_dir, material, missing):
     """段落级【图片：xxx】：取图插入（按口径），删除占位段；缺图删除占位 + missing。"""
+    persons = material.get("personnel", []) or []
     for p in list(doc.paragraphs):
         t = _para_full_text(p).strip()
         if not (t.startswith("【图片：") and t.endswith("】")):
             continue
-        spec_key = imgsp.spec_for(t)
         mapped = FILL_IMG_MAP.get(t)
         if not mapped:
             missing.append((t, "无填充规则"))
@@ -415,7 +571,12 @@ def _fill_image_placeholders(doc, lib_root, missing):
             continue
         path, rule_key, note = mapped
         if path is None:
-            missing.append((t, note))
+            # 组合占位 v1.1：按素材清单从素材库构建（多页素材带 P0/P1 逐页插入）
+            items, mis = _build_combo(t, lib_root, proj_dir, persons)
+            if items:
+                _insert_images_before(doc, p, items)
+            for m in mis:
+                missing.append((t, "缺：%s" % m))
             p._p.getparent().remove(p._p)
             continue
         full = Path(lib_root) / path
@@ -654,7 +815,7 @@ def fill_project(ent, proj_dir, out_dir=None, lib_root=None, register=True):
         doc = Document(str(f))
         missing, pending = [], []
         filled = _fill_text_placeholders(doc, material, biz, deadline, pending)
-        _fill_image_placeholders(doc, lib_root, missing)
+        _fill_image_placeholders(doc, lib_root, proj_dir, material, missing)
         _fill_personnel_tables(doc, material, pending)
         _fill_resume_tables(doc, lib_root, material, pending)
         _fill_performance_tables(doc, material, pending)
