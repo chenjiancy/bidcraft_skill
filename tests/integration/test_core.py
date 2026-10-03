@@ -420,6 +420,40 @@ class TestArchiveFlow(CoreBase):
         self.assertEqual(res["summary"]["archived"], 1, res["failed"])
         self.assertTrue((self.libroot / "人员" / "裘义文" / "职称证书" / "工程师_市政道桥_2009.png").exists())
 
+    def test_retirement_base_name_distinguishes_form(self):
+        """退休证：退休证_长期 与 final_name 指定的 退休证_登记表 → 基名不同，不判同名并存。"""
+        self._archive_credential("陈美生", "退休证", [], ["长期"], "退休证_长期.png")
+        inbox = core.Inbox(self.ent)
+        inbox.open()
+        inbox.add(self._make_file("PixPin_2026-10-03_13-31-05.png"))
+        inbox.close()
+        prop = core.propose(self.ent, require_closed=True)
+        it = prop["items"][0]
+        it["category"], it["subtype"] = "人员", "退休证"
+        it["person"] = "陈美生"
+        it["keywords"] = []
+        it["dates"] = []
+        it["final_name"] = "退休证_登记表"
+        res = core.apply(self.ent, prop)
+        self.assertEqual(res["summary"]["archived"], 1, res["failed"])
+        self.assertTrue((self.libroot / "人员" / "陈美生" / "退休证" / "退休证_登记表.png").exists())
+
+    def test_retirement_same_person_same_cert_conflicts(self):
+        """退休证：同人再传同基名退休证 → 判同名（更新语义）。"""
+        self._archive_credential("陈美生", "退休证", [], ["长期"], "退休证_长期.png")
+        inbox = core.Inbox(self.ent)
+        inbox.open()
+        inbox.add(self._make_file("PixPin_2026-10-03_13-31-05.png"))
+        inbox.close()
+        prop = core.propose(self.ent, require_closed=True)
+        it = prop["items"][0]
+        it["category"], it["subtype"] = "人员", "退休证"
+        it["person"] = "陈美生"
+        it["keywords"] = []
+        it["dates"] = ["长期"]
+        res = core.apply(self.ent, prop)
+        self.assertEqual(len(res["failed"]), 1, "同人同基名退休证应判同名并拒绝未确认的 apply")
+
 
 class TestQueryInspectOverview(CoreBase):
     def test_query_and_overview(self):
