@@ -72,6 +72,22 @@ FILE_MAP = [
     {"id": "F15", "file": "", "kind": "skip", "skip_reason": "残疾人福利性单位声明函——本项目素材清单未标记残疾人福利性单位，按需启用"},
 ]
 
+# 生成文件 → 字体映射（与模板库基础模板保持一致，2026-10-03 实测模板库 10 文件字体分布）
+# 仿宋类：公文/声明/承诺（封面、投标函、附录、授权、法代、承诺函）；宋体类：表格为主（资格证明、开标一览表、声明函）
+FILE_FONT = {
+    "封面.docx": "仿宋",
+    "开标一览表.docx": "宋体",
+    "投标函.docx": "仿宋",
+    "投标函附录.docx": "仿宋",
+    "法定代表人身份证明.docx": "仿宋",
+    "授权委托书.docx": "仿宋",
+    "资格证明及辅助资料表.docx": "宋体",
+    "承诺函_项目总监到岗.docx": "仿宋",
+    "投标保证金材料.docx": "仿宋",
+    "基本账户开户许可证承诺函.docx": "仿宋",
+    "中小企业声明函.docx": "宋体",
+}
+
 # 段落级全局占位替换（安全集合：仅确认为填空提示的原文模式；固定条款一字不改）
 GLOBAL_PH = [
     ("（项目名称）", "【项目名称】"),        # 封面/投标函 提示占位（中小企业声明函已是具体项目名，不匹配）
@@ -179,6 +195,50 @@ def _apply_global_ph(doc):
                     if old in t:
                         set_cell_text(cell, t.replace(old, new))
                         n += 1
+    return n
+
+
+def _strip_shading_and_highlight(doc):
+    """去除文字底纹：段落级（pPr/w:shd）与 run 级（rPr/w:shd + rPr/w:highlight）。
+    表格/单元格底纹（tcPr/tblPr）属表格样式，保留。
+    注意：iter() 遍历中直接删除会跳过未访问节点 → 先收集、后删除。"""
+    targets = []
+    for node in doc.element.body.iter():
+        if node.tag in (qn("w:pPr"), qn("w:rPr")):
+            for child in list(node):
+                if child.tag in (qn("w:shd"), qn("w:highlight")):
+                    targets.append(child)
+    for child in targets:
+        child.getparent().remove(child)
+    return len(targets)
+
+
+def _apply_file_font(doc, font):
+    """统一文件字体（与模板库基础模板一致）：遍历 run 与段落标记（pPr/rPr）
+    设置 rFonts ascii/hAnsi/eastAsia。先收集、后修改（避免 iter 修改问题）。"""
+    n = 0
+    targets = []
+
+    def collect(rpr):
+        rf = rpr.find(qn("w:rFonts"))
+        if rf is None:
+            rf = rpr.makeelement(qn("w:rFonts"), {})
+            rpr.insert(0, rf)
+        rf.set(qn("w:ascii"), font)
+        rf.set(qn("w:hAnsi"), font)
+        rf.set(qn("w:eastAsia"), font)
+        return 1
+
+    for r in doc.element.body.iter(qn("w:r")):
+        rPr = r.find(qn("w:rPr"))
+        if rPr is None:
+            rPr = r.makeelement(qn("w:rPr"), {})
+            r.insert(0, rPr)
+        n += collect(rPr)
+    for ppr in doc.element.body.iter(qn("w:pPr")):
+        rpr = ppr.find(qn("w:rPr"))
+        if rpr is not None:
+            n += collect(rpr)
     return n
 
 
@@ -391,12 +451,13 @@ def _extract_blocks(src_path):
     return blocks, doc
 
 
-def build_docx(blocks, span, items, out_path, material):
+def build_docx(blocks, span, items, out_path, material, font=None):
     """
     从招标文件原文块 [s,e] 深拷贝构建项目模板 docx：
       1) 段落/表格逐块深拷贝（文字 100% 契约）；
       2) 契约项驱动的份数复制（附表3/附表8 动态语义②）；
-      3) 段落级全局占位替换 + 行路由占位 + 列表/标签值型占位。
+      3) 段落级全局占位替换 + 行路由占位 + 列表/标签值型占位；
+      4) 后处理：去除文字底纹/高亮 + 统一文件字体（与模板库基础模板一致）。
     返回 {"占位符数", "段落占位", "表格占位"}。
     """
     if not HAVE_DOCX:
@@ -422,9 +483,16 @@ def build_docx(blocks, span, items, out_path, material):
     ph_para = _apply_global_ph(doc)
     ph_row = _apply_row_rules(doc, ctx_map)
     tbl_stats = _post_process_tables(doc, material, ctx_map)
+    n_shade = _strip_shading_and_highlight(doc)
+    n_font = _apply_file_font(doc, font) if font else 0
     doc.save(out_path)
     total = ph_para + ph_row + sum(tbl_stats.values())
-    return {"占位符数": total, "段落占位": ph_para, "表格占位": ph_row + sum(tbl_stats.values())}
+    info = {"占位符数": total, "段落占位": ph_para, "表格占位": ph_row + sum(tbl_stats.values())}
+    if n_shade:
+        info["去底纹"] = n_shade
+    if n_font:
+        info["统一字体"] = font
+    return info
 
 
 def _resolve_project_dir(ent, project):
@@ -510,7 +578,8 @@ def generate(ent, project, contract_path=None, material_path=None, source_path=N
         lo = min(it.get("块范围", [0])[0] for it in items if it.get("块范围"))
         hi = max(it.get("块范围", [0])[-1] for it in items if it.get("块范围"))
         out_file = out / fname
-        info = build_docx(blocks, (lo, hi), items, out_file, material)
+        info = build_docx(blocks, (lo, hi), items, out_file, material,
+                          font=FILE_FONT.get(fname))
         rel = "项目级/%s/项目模板/%s" % (project, fname)
         if register_baseline:
             try:
@@ -522,6 +591,8 @@ def generate(ent, project, contract_path=None, material_path=None, source_path=N
         results.append({
             "文件": fname, "契约项": ids, "块范围": [lo, hi],
             "占位符数": info.get("占位符数", 0),
+            "字体": info.get("统一字体", FILE_FONT.get(fname, "")),
+            "去底纹": info.get("去底纹", 0),
         })
 
     record = {

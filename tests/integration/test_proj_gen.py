@@ -112,6 +112,26 @@ class TestProjGenReal(unittest.TestCase):
         self.assertIn("开标一览表", md)
         self.assertIn("【项目名称】", md)
 
+    def test_no_shading_and_font_aligned(self):
+        """后处理：pPr/rPr 无文字底纹/高亮；run 字体 = FILE_FONT 映射（与模板库一致）。"""
+        import re as _re
+        for f in self.res["文件"]:
+            p = Path(self.res["目录"]) / f["文件"]
+            with zipfile.ZipFile(p) as z:
+                xml = z.read("word/document.xml").decode("utf-8", errors="replace")
+            # 段落/run 级无 shd/highlight（表格 tcPr 底纹允许保留）
+            pr_blocks = _re.findall(r"<w:pPr>.*?</w:pPr>|<w:rPr>.*?</w:rPr>", xml, flags=_re.S)
+            bad = [b for b in pr_blocks if "<w:shd" in b or "<w:highlight" in b]
+            self.assertEqual(bad, [], "%s 含文字底纹/高亮" % f["文件"])
+            # run 字体统一为 FILE_FONT 映射
+            font = gen.FILE_FONT.get(f["文件"])
+            if not font:
+                continue
+            for rf in _re.findall(r"<w:rFonts[^/]*/>", xml):
+                ea = _re.search(r'w:eastAsia="([^"]*)"', rf)
+                self.assertEqual(ea.group(1) if ea else None, font,
+                                 "%s 字体未对齐 %s" % (f["文件"], font))
+
     def test_gen_record_schema(self):
         rec = json.loads((Path(self.res["目录"]) / "生成记录.json").read_text(encoding="utf-8"))
         self.assertEqual(rec["项目"], REAL_PROJECT)
