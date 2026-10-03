@@ -94,6 +94,8 @@ GLOBAL_PH = [
     ("（投标人名称）", "【投标人名称】"),      # F04a 法定代表人身份证明
     ("（招标人名称）", "【招标人名称】"),      # F04b 授权委托书
     ("（姓名）", "【法定代表人姓名】"),        # F04b 授权委托书
+    ("（姓 名）", "【授权代理人姓名】"),       # F04b 授权委托书（空格变体）
+    ("（单位名称）", "【招标人】"),            # F03a 投标函「致招标人：（单位名称）」
 ]
 
 # 行路由占位规则：{表格前文标题特征: {行首标签: [(正则, 替换串), ...]}}
@@ -104,22 +106,142 @@ ROW_RULES = {
         "项目总监理工程师": [(r"姓名\s+", "姓名【总监姓名】"), (r"专业\s+", "专业【总监专业】")],
     },
     "投标文件附录": {
-        "预付款": [(r"合同价款的\s*/\s*", "合同价款的【预付款比例】/")],
+        "预付款": [(r"合同价款的\s*/\s*", "合同价款的【预付款比例（%）】/")],
     },
 }
 
 # 标签值型表格的列（行首标签）清洗：噪声词 → 移除后作占位键
 TAG_NOISE = ["（", "）", "(", ")", "：", ":", "　", " ", "\u3000", "\n", "\t"]
 
-# 简历表等表格：清洗后标签 → 语义化占位键（未映射的用清洗键）
-TAG_MAP = {
-    "姓名": "人员姓名", "性别": "人员性别", "出生年月": "人员出生年月",
-    "最终学历": "人员学历", "政治面貌": "人员政治面貌", "现任职务": "项目职务",
-    "技术职称": "人员职称", "聘任时间": "职称聘任时间",
-    "居民身份证号码": "人员身份证号码", "证书名称及证书编号": "人员证书及编号",
-    "相关专业经历": "人员专业经历", "施工监理主要经历": "人员监理经历",
-    "从事施工工作年限": "从事施工工作年限", "从事监理工作年限": "从事监理工作年限",
+# 占位键名映射（清洗键 → 模板库登记清单键；参照模板库基础模板，未列出的用清洗键）
+# 值以「图片：」开头 → 填【图片：xxx】（表格值格图片占位，模板库同款语义）
+TPL_KEY_MAP = {
+    # 附表1 企业组织机构（模板库：企业名称→【投标人名称】、注册地址→【企业地址】、
+    #                       法人营业执照→【统一社会信用代码】）
+    "企业名称": "投标人名称", "注册地址": "企业地址", "法人营业执照": "统一社会信用代码",
+    "企业资质": "企业资质等级", "法定代表人": "法定代表人姓名", "电话": "联系电话",
+    # 附表2/3/4/5 业绩/在监表
+    "项目名称、所在地及类别": "业绩项目名称/所在地",
+    "施工合同金额": "施工合同金额（万元）", "施工合同金额万元": "施工合同金额（万元）",
+    "合同履行起止时间": "起止日期", "人员数量": "人员数量（人）",
+    "工程概况": "工程概况（工程范围、工程地质条件、施工方法等）",
+    "总监理工程师姓名": "总监姓名",
+    # 附表8 监理人员简历表
+    "姓名": "人员姓名", "性别": "性别", "出生年月": "出生年月", "最终学历": "学历",
+    "政治面貌": "政治面貌", "现任职务": "现任职务", "技术职称": "技术职称",
+    "聘任时间": "聘任时间", "居民身份证号码": "身份证号",
+    "相关专业经历": "相关专业经历", "施工监理主要经历": "主要经历",
+    "从事施工工作年限": "从事施工工作年限",
+    "从事监理工作年限": "从事监理工作年限（年）",
     "从事设计工作年限": "从事设计工作年限",
+    "证书名称及证书编号": "证书名称",       # 双键特殊：填【证书名称】【证书编号】
+}
+
+# 标签值型表格整行值替换（参照模板库：填空格式行 → 整行占位符）
+# {行首标签: (原值正则, 占位文本)}；命中后替换该行首个匹配的值格
+TABLE_ROW_VALUE_PH = {
+    "监理经历": (r"（国内）.*", "【监理经历：（国内）X年（国际）X年】"),
+    "职工人数": (r"总人数.*", "【职工总人数X人 / 技术人员X人 / 管理人员X人】"),
+    "组织机构框图": (r"^组织机构框图.*", "【图片：组织机构框图（含结构、领导成员、主要技术人员、管理人员及数量）】"),
+}
+
+# 段落标签填充规则（参照模板库：标签后空格区填【键】；正则锚定标签文字，保留尾随固定文本）
+PARA_LABEL_RULES = {
+    "封面.docx": [
+        (r"投标人：\s*（盖单位公章）", "投标人：【投标人名称】（盖单位公章）"),
+        (r"法定代表人或其委托代理人：\s*（签字或盖章）", "法定代表人或其委托代理人：【签字或盖章】（签字或盖章）"),
+    ],
+    "开标一览表.docx": [
+        (r"法定代表人或其委托代理人：\s*（签字或盖章）", "法定代表人或其委托代理人：【签字或盖章】（签字或盖章）"),
+    ],
+    "投标函.docx": [
+        (r"致招标人：\s*", "致招标人：【招标人】"),
+        (r"投标人：\s*（盖单位公章）", "投标人：【投标人名称】（盖单位公章）"),
+        (r"法定代表人或授权代理人：\s*（签字或盖章）", "法定代表人或授权代理人：【签字或盖章】（签字或盖章）"),
+        (r"地址：\s*", "地址：【企业地址】"),
+        (r"邮编：\s*", "邮编：【邮编】"),
+        (r"电话：\s*", "电话：【联系电话】"),
+        (r"传真：\s*", "传真：【传真】"),
+        (r"开户银行名称：\s*", "开户银行名称：【开户银行】"),
+        (r"账号：\s*", "账号：【开户账号】"),
+        (r"金额为人民币\s*壹万\s*元", "金额为人民币【投标保证金金额（大写）】元"),
+    ],
+    "法定代表人身份证明.docx": [
+        (r"单位名称：\s*", "单位名称：【投标人名称】"),
+        (r"单位性质：\s*", "单位性质：【单位性质】"),
+        (r"地\s*址\s*：\s*", "地    址：【企业地址】"),
+        (r"成立时间：\s*", "成立时间：【成立时间】"),
+        (r"经营期限：\s*", "经营期限：【经营期限】"),
+        (r"姓\s*名：\s*", "姓    名：【法定代表人姓名】"),
+        (r"性\s*别：\s*", "性 别：【性别】"),
+        (r"年\s*龄：\s*", "年 龄：【年龄】"),
+        (r"职务：\s*", "职务：【职务】"),
+        (r"2、\s*法定代表人联系方式（手机）：\s*", "2、 法定代表人联系方式（手机）：【法定代表人联系电话】"),
+    ],
+    "授权委托书.docx": [
+        (r"授权代理人：\s*", "授权代理人：【授权代理人姓名】"),
+        (r"性别：\s*", "性别：【性别】"),
+        (r"年龄：\s*", "年龄：【年龄】"),
+        (r"职务：\s*", "职务：【职务】"),
+        (r"居民身份证号码：\s*", "居民身份证号码：【身份证号】"),
+        (r"以本公司的名义参加\s*", "以本公司的名义参加【项目名称】"),
+        (r"2、\s*委托代理人联系方式（手机）：\s*", "2、委托代理人联系方式（手机）：【联系电话】"),
+    ],
+    "承诺函_项目总监到岗.docx": [
+        (r"投标单位（盖章）：\s*", "投标单位：【投标人名称】（盖单位公章）"),
+    ],
+    "基本账户开户许可证承诺函.docx": [
+        (r"投标人：\s*（盖单位公章）", "投标人：【投标人名称】（盖单位公章）"),
+    ],
+}
+
+# 落款日期行 → 【日期】（参照模板库：独立「年 月 日」段整段替换为【日期】）
+DATE_PH_FILES = {
+    "封面.docx", "投标函.docx", "法定代表人身份证明.docx", "授权委托书.docx",
+    "承诺函_项目总监到岗.docx", "基本账户开户许可证承诺函.docx", "中小企业声明函.docx",
+}
+
+# 图片占位：指定表格（按表前文关键词，去空格匹配）之后插入【图片：xxx】带边框占位段
+# 注：附表1 组织机构框图行为整行合并文本（无空值格）→ 图片占位放表后第一张
+IMAGE_PH_AFTER_TABLE = {
+    "资格证明及辅助资料表.docx": [
+        ("组织机构", [
+            "【图片：企业资质证书扫描件】",
+            "【图片：企业法人营业执照（副本）扫描件】",
+            "【图片：企业基本账户开户许可证扫描件】",
+        ]),
+        ("监理人员资质", [
+            "【图片：总监理工程师注册执业证书扫描件】",
+            "【图片：拟派总监（【总监姓名】）高级工程师职称证书】",
+        ]),
+        ("监理人员配备", [
+            "【图片：其他监理人员的中级职称】",
+            "【图片：拟派监理人员身份证、社保证明、职称等证明材料】",
+        ]),
+        ("其他资料", [
+            "【图片：三体系认证证书】",
+            "【图片：人员职称证书】",
+            "【图片：先进（优秀）监理企业证书】",
+            "【图片：监理示范（优质）工程】",
+            "【图片：项目总监到岗承诺相关材料】",
+        ]),
+    ],
+}
+
+# 图片占位：锚点段落（含关键词）之后插入
+IMAGE_PH_AFTER_PARA = {
+    "授权委托书.docx": [
+        ("委托代理人有效期内居民身份证", ["【图片：委托代理人身份证正、反面扫描件】"]),
+    ],
+    "法定代表人身份证明.docx": [
+        ("法定代表人有效期内居民身份证", ["【图片：法定代表人身份证正、反面扫描件】"]),
+    ],
+    "承诺函_项目总监到岗.docx": [
+        ("若投标人在响应文件中承诺项目总监能够从其他项目变更", ["【图片：项目总监到岗承诺相关材料】"]),
+    ],
+    "基本账户开户许可证承诺函.docx": [
+        ("附：账户开户许可证", ["【图片：基本账户开户许可证（或基本账户存款信息）扫描件】"]),
+    ],
 }
 
 
@@ -276,6 +398,116 @@ def _apply_row_rules(doc, ctx_map):
     return n
 
 
+def _set_para_text(p, text):
+    """段落整段写文本（保留首 run rPr 与段落 pPr）。"""
+    runs = p.runs
+    if runs:
+        runs[0].text = text
+        for r in runs[1:]:
+            r._element.getparent().remove(r._element)
+    else:
+        p.add_run(text)
+
+
+def _apply_para_label_rules(doc, rules):
+    """段落标签填充（参照模板库）：『标签：空格』行在空格区填【键】。"""
+    n = 0
+    for p in doc.paragraphs:
+        full = "".join(r.text for r in p.runs)
+        newtext = full
+        for pattern, repl in rules:
+            if re.search(pattern, newtext):
+                newtext = re.sub(pattern, repl, newtext)
+        if newtext != full:
+            _set_para_text(p, newtext)
+            n += 1
+    return n
+
+
+def _apply_date_ph(doc, enabled):
+    """落款日期行『年 月 日』→ 整段替换【日期】（参照模板库）。"""
+    if not enabled:
+        return 0
+    pat = re.compile(r"^\s*(?:20\d{2}\s*)?年\s+月\s+日\s*$")
+    n = 0
+    for p in doc.paragraphs:
+        full = "".join(r.text for r in p.runs)
+        if pat.match(full):
+            _set_para_text(p, "【日期】")
+            n += 1
+    return n
+
+
+def _make_image_ph_para(text, font):
+    """构造【图片：xxx】占位段（模板库同款样式：左/下/右边框 + F2F2F2 底纹 + 加粗 28号）。"""
+    from docx.oxml import OxmlElement
+    p = OxmlElement("w:p")
+    pPr = OxmlElement("w:pPr")
+    pBdr = OxmlElement("w:pBdr")
+    for edge in ("w:left", "w:bottom", "w:right"):
+        el = OxmlElement(edge)
+        el.set(qn("w:val"), "single")
+        el.set(qn("w:sz"), "6")
+        el.set(qn("w:space"), "4")
+        el.set(qn("w:color"), "808080")
+        pBdr.append(el)
+    pPr.append(pBdr)
+    shd = OxmlElement("w:shd")
+    shd.set(qn("w:val"), "clear")
+    shd.set(qn("w:fill"), "F2F2F2")
+    pPr.append(shd)
+    p.append(pPr)
+    r = OxmlElement("w:r")
+    rPr = OxmlElement("w:rPr")
+    rf = OxmlElement("w:rFonts")
+    rf.set(qn("w:ascii"), font)
+    rf.set(qn("w:hAnsi"), font)
+    rf.set(qn("w:eastAsia"), font)
+    rPr.append(rf)
+    for tag in ("w:b", "w:bCs"):
+        rPr.append(OxmlElement(tag))
+    col = OxmlElement("w:color")
+    col.set(qn("w:val"), "000000")
+    rPr.append(col)
+    for tag, val in (("w:sz", "28"), ("w:szCs", "28")):
+        el = OxmlElement(tag)
+        el.set(qn("w:val"), val)
+        rPr.append(el)
+    r.append(rPr)
+    t = OxmlElement("w:t")
+    t.text = text
+    t.set(qn("xml:space"), "preserve")
+    r.append(t)
+    p.append(r)
+    return p
+
+
+def _insert_image_ph_after_table(doc, ctx_map, rules, font):
+    """在指定表格（按表前文关键词，去空格匹配）之后插入图片占位段。"""
+    n = 0
+    for table in doc.tables:
+        ctx = ctx_map.get(table._tbl, "").replace(" ", "").replace("\u3000", "")
+        for kw, phs in rules:
+            if kw in ctx:
+                for text in phs:
+                    table._tbl.addnext(_make_image_ph_para(text, font))
+                    n += 1
+    return n
+
+
+def _insert_image_ph_after_para(doc, rules, font):
+    """在锚点段落（含关键词）之后插入图片占位段。"""
+    n = 0
+    for p in doc.paragraphs:
+        full = p.text
+        for kw, phs in rules:
+            if kw in full:
+                for text in phs:
+                    p._p.addnext(_make_image_ph_para(text, font))
+                    n += 1
+    return n
+
+
 def _fill_list_table(table, rows_target=None, tag_map=None):
     """列表型：表头保留；数据行空值格填【列头键】；序号列自动编号；行数按 rows_target 增删。"""
     header = _header_cells(table)
@@ -343,19 +575,37 @@ def _dedup_cells(row):
 def _fill_label_table(table, tag_map=None):
     """标签值型：行内『标签→空值格』配对（非空格=标签，空格=该标签的值），
     空值格填【标签键】。规则：
-      - 注/附开头 → 不参与；
+      - 注：/附： 开头 → 不参与（注意仅带冒号，避免误伤『注册地址』等）；
       - 纯数字（序号）不更新标签；
-      - 证书类行（首格含『证书』）的第 2 列（序号列）空值不填，留人工补序号。"""
+      - 证书类行（首格含『证书』）的第 2 列（序号列）空值不填，留人工补序号；
+      - 证书名称及证书编号（简历表）→ 填【证书名称】【证书编号】双占位（模板库同款键）；
+      - 键映射值以「图片：」开头 → 填【图片：xxx】（图片占位值格）；
+      - TABLE_ROW_VALUE_PH 命中 → 整行值格替换为占位（模板库整行占位方式）。"""
     filled = 0
     for row in table.rows:
         cells = _dedup_cells(row)
         if not cells:
             continue
+        first = (cells[0].text or "").strip()
+        row_rule = None
+        for tag, rr in TABLE_ROW_VALUE_PH.items():
+            if first.startswith(tag):
+                row_rule = rr
+                break
+        if row_rule:
+            pat, repl = row_rule
+            targets = cells[1:] if len(cells) > 1 else [cells[0]]
+            for c in targets:
+                if re.search(pat, c.text or ""):
+                    set_cell_text(c, repl)
+                    filled += 1
+                    break
+            continue
         current_tag = None
         for ci, c in enumerate(cells):
             t = (c.text or "").strip()
             if t:
-                if t.startswith("注") or t.startswith("附"):
+                if t.startswith("注：") or t.startswith("注:") or t.startswith("附：") or t.startswith("附:"):
                     current_tag = None
                 elif not t.isdigit():
                     current_tag = t
@@ -369,13 +619,16 @@ def _fill_label_table(table, tag_map=None):
                 continue
             if tag_map:
                 key = tag_map.get(key, key)
-            set_cell_text(c, "【%s】" % key)
+            if key == "证书名称" and "证书编号" in current_tag:
+                set_cell_text(c, "【证书名称】【证书编号】")
+            else:
+                set_cell_text(c, "【%s】" % key)
             filled += 1
     return filled
 
 
 def _post_process_tables(doc, material, ctx_map):
-    """占位填充：行路由 → 列表型/标签值型（附表8 简历表走 TAG_MAP 语义键）。
+    """占位填充：行路由 → 列表型/标签值型（占位键名统一走 TPL_KEY_MAP，参照模板库）。
     表格语义按「前文标题上下文」路由（表标题在表外段落，不在表首行）。"""
     stats = {}
     personnel = material.get("personnel", [])
@@ -390,10 +643,10 @@ def _post_process_tables(doc, material, ctx_map):
                 rows_target = max(len(performance), 1)
             elif "正在监理工程" in ctx and "情况表" not in ctx:
                 rows_target = 1
-            stats[ti] = _fill_list_table(table, rows_target=rows_target)
+            stats[ti] = _fill_list_table(table, rows_target=rows_target, tag_map=TPL_KEY_MAP)
         else:
-            tag_map = TAG_MAP if ("简历表" in ctx or "出生年月" in
-                                   "".join(c.text for c in table.rows[0].cells)) else None
+            tag_map = TPL_KEY_MAP if ("简历表" in ctx or "出生年月" in
+                                       "".join(c.text for c in table.rows[0].cells)) else TPL_KEY_MAP
             stats[ti] = _fill_label_table(table, tag_map=tag_map)
     return stats
 
@@ -451,19 +704,22 @@ def _extract_blocks(src_path):
     return blocks, doc
 
 
-def build_docx(blocks, span, items, out_path, material, font=None):
+def build_docx(blocks, span, items, out_path, material, font=None, rules=None):
     """
     从招标文件原文块 [s,e] 深拷贝构建项目模板 docx：
       1) 段落/表格逐块深拷贝（文字 100% 契约）；
       2) 契约项驱动的份数复制（附表3/附表8 动态语义②）；
-      3) 段落级全局占位替换 + 行路由占位 + 列表/标签值型占位；
-      4) 后处理：去除文字底纹/高亮 + 统一文件字体（与模板库基础模板一致）。
-    返回 {"占位符数", "段落占位", "表格占位"}。
+      3) 段落级全局占位 + 段落标签填充 + 落款日期 + 行路由 + 列表/标签值型占位
+         （占位键名参照模板库登记清单）；
+      4) 图片占位【图片：xxx】（表格后/锚点段后，模板库同款带边框样式）；
+      5) 后处理：去除文字底纹/高亮 + 统一文件字体（与模板库基础模板一致）。
+    返回 {"占位符数", "段落占位", "表格占位", "图片占位", "去底纹", "统一字体"}。
     """
     if not HAVE_DOCX:
         raise GenError("生成器依赖 python-docx，当前环境未安装")
     doc = Document()
     s, e = span
+    rules = rules or {}
     ctx_map = {}                       # 表格节点 → 表格前最近非空段落文本
     tbl_meta = []                      # [(表格节点, 契约项id)] 用于份数复制
     last_para = ""
@@ -481,13 +737,18 @@ def build_docx(blocks, span, items, out_path, material, font=None):
             doc.element.body.append(new_node)
     _duplicate_tables_by_contract(doc, tbl_meta, material, ctx_map)
     ph_para = _apply_global_ph(doc)
+    ph_para += _apply_para_label_rules(doc, rules.get("para_label", []))
+    ph_para += _apply_date_ph(doc, rules.get("date_ph", False))
     ph_row = _apply_row_rules(doc, ctx_map)
     tbl_stats = _post_process_tables(doc, material, ctx_map)
     n_shade = _strip_shading_and_highlight(doc)
     n_font = _apply_file_font(doc, font) if font else 0
+    n_img = _insert_image_ph_after_table(doc, ctx_map, rules.get("img_after_table", []), font or "宋体")
+    n_img += _insert_image_ph_after_para(doc, rules.get("img_after_para", []), font or "宋体")
     doc.save(out_path)
-    total = ph_para + ph_row + sum(tbl_stats.values())
-    info = {"占位符数": total, "段落占位": ph_para, "表格占位": ph_row + sum(tbl_stats.values())}
+    total = ph_para + ph_row + sum(tbl_stats.values()) + n_img
+    info = {"占位符数": total, "段落占位": ph_para, "表格占位": ph_row + sum(tbl_stats.values()),
+            "图片占位": n_img}
     if n_shade:
         info["去底纹"] = n_shade
     if n_font:
@@ -578,8 +839,14 @@ def generate(ent, project, contract_path=None, material_path=None, source_path=N
         lo = min(it.get("块范围", [0])[0] for it in items if it.get("块范围"))
         hi = max(it.get("块范围", [0])[-1] for it in items if it.get("块范围"))
         out_file = out / fname
+        rules = {
+            "para_label": PARA_LABEL_RULES.get(fname, []),
+            "date_ph": fname in DATE_PH_FILES,
+            "img_after_table": IMAGE_PH_AFTER_TABLE.get(fname, []),
+            "img_after_para": IMAGE_PH_AFTER_PARA.get(fname, []),
+        }
         info = build_docx(blocks, (lo, hi), items, out_file, material,
-                          font=FILE_FONT.get(fname))
+                          font=FILE_FONT.get(fname), rules=rules)
         rel = "项目级/%s/项目模板/%s" % (project, fname)
         if register_baseline:
             try:
@@ -591,6 +858,7 @@ def generate(ent, project, contract_path=None, material_path=None, source_path=N
         results.append({
             "文件": fname, "契约项": ids, "块范围": [lo, hi],
             "占位符数": info.get("占位符数", 0),
+            "图片占位": info.get("图片占位", 0),
             "字体": info.get("统一字体", FILE_FONT.get(fname, "")),
             "去底纹": info.get("去底纹", 0),
         })
