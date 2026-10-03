@@ -89,13 +89,57 @@ class TestProjGenReal(unittest.TestCase):
         p3 = Path(self.res["目录"]) / "投标函附录.docx"
         doc3 = Document(str(p3))
         t3 = [c.text for t in doc3.tables for r in t.rows for c in r.cells]
-        self.assertTrue(any("合同价款的【预付款比例】" in x for x in t3),
-                        "投标文件附录预付款行未占位")
+        self.assertTrue(any("合同价款的【预付款比例（%）】" in x for x in t3),
+                        "投标文件附录预付款行未按模板库键【预付款比例（%）】占位")
         # 投标函含项目名称占位
         p2 = Path(self.res["目录"]) / "投标函.docx"
         doc2 = Document(str(p2))
         full = "\n".join(p.text for p in doc2.paragraphs)
         self.assertIn("【项目名称】", full)
+
+    def test_placeholder_keys_aligned_with_tpl_lib(self):
+        """占位键名/日期/图片占位参照模板库登记清单。"""
+        from docx import Document
+        d = Path(self.res["目录"])
+        # 投标函：招标人/保证金大写/落款地址邮编等（模板库同款键）
+        doc = Document(str(d / "投标函.docx"))
+        full = "\n".join(p.text for p in doc.paragraphs)
+        for want in ["【招标人】", "【投标保证金金额（大写）】", "【投标人名称】",
+                     "【签字或盖章】", "【企业地址】", "【邮编】", "【联系电话】",
+                     "【传真】", "【开户银行】", "【开户账号】", "【日期】"]:
+            self.assertIn(want, full, "投标函缺模板库键 %s" % want)
+        # 封面：投标人名称/签字或盖章/日期
+        doc = Document(str(d / "封面.docx"))
+        full = "\n".join(p.text for p in doc.paragraphs)
+        for want in ["【投标人名称】", "【签字或盖章】", "【日期】"]:
+            self.assertIn(want, full, "封面缺模板库键 %s" % want)
+        # 法代：法定代表人姓名/单位性质/成立时间（模板库把 年 月 日 替换为键）
+        doc = Document(str(d / "法定代表人身份证明.docx"))
+        full = "\n".join(p.text for p in doc.paragraphs)
+        self.assertIn("【法定代表人姓名】", full)
+        self.assertIn("【单位性质】", full)
+        self.assertIn("【成立时间】", full)
+        # 授权委托书：授权代理人姓名/身份证号/图片占位
+        doc = Document(str(d / "授权委托书.docx"))
+        full = "\n".join(p.text for p in doc.paragraphs)
+        self.assertIn("【授权代理人姓名】", full)
+        self.assertIn("【图片：委托代理人身份证正、反面扫描件】", full)
+        # 图片占位：资格证明含【图片：xxx】（模板库同款键）
+        doc = Document(str(d / "资格证明及辅助资料表.docx"))
+        full = "\n".join(p.text for p in doc.paragraphs) + "\n" + \
+            "\n".join(c.text for t in doc.tables for r in t.rows for c in r.cells)
+        for want in ["【图片：组织机构框图（含结构、领导成员、主要技术人员、管理人员及数量）】",
+                     "【图片：总监理工程师注册执业证书扫描件】",
+                     "【图片：三体系认证证书】",
+                     "【图片：先进（优秀）监理企业证书】"]:
+            self.assertIn(want, full, "资格证明缺图片占位 %s" % want)
+        # 承诺函/开户承诺函图片占位
+        doc = Document(str(d / "承诺函_项目总监到岗.docx"))
+        full = "\n".join(p.text for p in doc.paragraphs)
+        self.assertIn("【图片：项目总监到岗承诺相关材料】", full)
+        doc = Document(str(d / "基本账户开户许可证承诺函.docx"))
+        full = "\n".join(p.text for p in doc.paragraphs)
+        self.assertIn("【图片：基本账户开户许可证（或基本账户存款信息）扫描件】", full)
 
     def test_dynamic_form_count(self):
         """动态语义②：附表8 简历表 6 份（素材 6 人）→ 识别：首行含『出生年月』的 11 列表。"""
@@ -113,16 +157,22 @@ class TestProjGenReal(unittest.TestCase):
         self.assertIn("【项目名称】", md)
 
     def test_no_shading_and_font_aligned(self):
-        """后处理：pPr/rPr 无文字底纹/高亮；run 字体 = FILE_FONT 映射（与模板库一致）。"""
+        """后处理：pPr/rPr 无文字底纹/高亮（图片占位框 pPr 的 F2F2F2 底纹除外）；
+        run 字体 = FILE_FONT 映射（与模板库一致）。"""
         import re as _re
         for f in self.res["文件"]:
             p = Path(self.res["目录"]) / f["文件"]
             with zipfile.ZipFile(p) as z:
                 xml = z.read("word/document.xml").decode("utf-8", errors="replace")
-            # 段落/run 级无 shd/highlight（表格 tcPr 底纹允许保留）
+            # 段落/run 级无 shd/highlight；仅允许图片占位框样式 shd fill=F2F2F2
             pr_blocks = _re.findall(r"<w:pPr>.*?</w:pPr>|<w:rPr>.*?</w:rPr>", xml, flags=_re.S)
-            bad = [b for b in pr_blocks if "<w:shd" in b or "<w:highlight" in b]
-            self.assertEqual(bad, [], "%s 含文字底纹/高亮" % f["文件"])
+            for b in pr_blocks:
+                if "<w:highlight" in b:
+                    self.fail("%s 含文字高亮" % f["文件"])
+                for m in _re.finditer(r"<w:shd[^/]*/>", b):
+                    fill = _re.search(r'w:fill="([^"]*)"', m.group(0))
+                    if not fill or fill.group(1).upper() != "F2F2F2":
+                        self.fail("%s 含非图片占位框底纹：%s" % (f["文件"], m.group(0)))
             # run 字体统一为 FILE_FONT 映射
             font = gen.FILE_FONT.get(f["文件"])
             if not font:
