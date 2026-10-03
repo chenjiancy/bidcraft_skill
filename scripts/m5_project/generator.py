@@ -742,18 +742,34 @@ def _fill_label_table(table, tag_map=None):
     return filled
 
 
+def _personnel_count(material):
+    """实际需要的监理人员数（简历表份数/配备表行数口径）。
+    范本 v1.2：优先读素材清单「监理人员配置口径.简历表份数/合计」；
+    无口径字段时回退 personnel 数组长度（向下兼容）。"""
+    cfg = material.get("监理人员配置口径") or {}
+    if isinstance(cfg, dict):
+        for k in ("简历表份数", "合计"):
+            if cfg.get(k):
+                try:
+                    return max(int(cfg[k]), 1)
+                except (TypeError, ValueError):
+                    pass
+    return max(len(material.get("personnel", [])), 1)
+
+
 def _post_process_tables(doc, material, ctx_map):
     """占位填充：行路由 → 列表型/标签值型（占位键名统一走 TPL_KEY_MAP，参照模板库）。
     表格语义按「前文标题上下文」路由（表标题在表外段落，不在表首行）。"""
     stats = {}
     personnel = material.get("personnel", [])
     performance = material.get("performance", [])
+    n_personnel = _personnel_count(material)
     for ti, table in enumerate(doc.tables):
         ctx = ctx_map.get(table._tbl, "")
         if _is_list_table(table):
             rows_target = None
             if "监理人员配备" in ctx:
-                rows_target = max(len(personnel), 1)
+                rows_target = n_personnel
             elif "已完成工程" in ctx and "情况表" not in ctx:
                 rows_target = max(len(performance), 1)
             elif "正在监理工程" in ctx and "情况表" not in ctx:
@@ -770,11 +786,53 @@ def _para_text(node):
     return "".join(t.text or "" for t in node.iter(qn("w:t")))
 
 
+def _extract_tpl_equip_rows(tpl_path):
+    """从模板库资格证明及辅助资料表.docx 提取附表9 仪器设备表数据行（tr 元素列表）。
+    企业固定设备数据（范本 v1.2：用户确认直接写入模板，无需改动）。"""
+    if not HAVE_DOCX:
+        return []
+    try:
+        tdoc = Document(str(tpl_path))
+    except Exception:
+        return []
+    for t in tdoc.tables:
+        first = "".join(c.text for c in t.rows[0].cells)
+        if "仪器名称" in first:
+            return [r._tr for r in t.rows[1:]
+                    if any((c.text or "").strip() for c in r.cells)]
+    return []
+
+
+def _fill_equip_from_tpl(doc, ctx_map, tpl_rows):
+    """附表9 仪器设备表：表头保留契约原文，数据行整体替换为模板库范本数据行。
+    在 _post_process_tables 之后调用（先按契约空行处理，再整体替换为企业固定设备）。"""
+    if not tpl_rows:
+        return 0
+    n = 0
+    for table in doc.tables:
+        ctx = ctx_map.get(table._tbl, "")
+        first = "".join(c.text for c in table.rows[0].cells)
+        if "仪器" not in ctx and "仪器名称" not in first:
+            continue
+        rows = list(table.rows)
+        header_tr = rows[0]._tr
+        for r in rows[1:]:
+            table._tbl.remove(r._tr)
+        anchor = header_tr
+        for tr in tpl_rows:
+            new_tr = copy.deepcopy(tr)
+            anchor.addnext(new_tr)
+            anchor = new_tr
+            n += 1
+    return n
+
+
 def _duplicate_tables_by_contract(doc, tbl_meta, material, ctx_map):
     """
     动态语义②——份数复制（按契约项块范围路由，不依赖表内标题文字）：
       - F06d 附表3 已完成工程情况表：每个业绩一张（复制 len(performance) 份）；
-      - F06i 附表8 监理人员简历表：每名人员一张（复制 len(personnel) 份）。
+      - F06i 附表8 监理人员简历表：每名人员一张（复制份数 = 实际需要的监理人员数，
+        口径 = 素材清单「监理人员配置口径.简历表份数」，无则回退 personnel 长度）。
     复制到目标 doc 中对应表格之后；复制表同步登记上下文（ctx_map），
     保证后续占位路由正确。
     """
@@ -784,7 +842,7 @@ def _duplicate_tables_by_contract(doc, tbl_meta, material, ctx_map):
         if item_id == "F06d":
             n = max(len(performance), 1)
         elif item_id == "F06i":
-            n = max(len(personnel), 1)
+            n = _personnel_count(material)
         else:
             continue
         ctx = ctx_map.get(node, "")
@@ -819,15 +877,16 @@ def _extract_blocks(src_path):
     return blocks, doc
 
 
-def build_docx(blocks, span, items, out_path, material, font=None, rules=None):
+def build_docx(blocks, span, items, out_path, material, font=None, rules=None, equip_rows=None):
     """
     从招标文件原文块 [s,e] 深拷贝构建项目模板 docx：
       1) 段落/表格逐块深拷贝（文字 100% 契约）；
-      2) 契约项驱动的份数复制（附表3/附表8 动态语义②）；
+      2) 契约项驱动的份数复制（附表3/附表8 动态语义②，简历表份数按监理人员配置口径）；
       3) 段落级全局占位 + 范本专属处理（封面标题/授权拆行/中小企业声明函示例值）
          + 段落标签填充 + 落款日期 + 行路由 + 列表/标签值型占位（占位键名参照模板库登记清单）；
       4) 图片占位【图片：xxx】（表格后/锚点段后，模板库同款带边框样式）；
-      5) 后处理：去除文字底纹/高亮 + 统一文件字体（与模板库基础模板一致）。
+      5) 附表9 仪器设备表：数据行替换为模板库范本数据行（企业固定设备，equip_rows）；
+      6) 后处理：去除文字底纹/高亮 + 统一文件字体（与模板库基础模板一致）。
     返回 {"占位符数", "段落占位", "表格占位", "图片占位", "去底纹", "统一字体"}。
     """
     if not HAVE_DOCX:
@@ -862,6 +921,7 @@ def build_docx(blocks, span, items, out_path, material, font=None, rules=None):
         ph_para += _apply_f13_sme(doc, str(material.get("project", "") or ""))
     ph_row = _apply_row_rules(doc, ctx_map)
     tbl_stats = _post_process_tables(doc, material, ctx_map)
+    n_equip = _fill_equip_from_tpl(doc, ctx_map, equip_rows or []) if rules.get("equip_tpl") else 0
     n_star = _remove_stray_star(doc)
     n_shade = _strip_shading_and_highlight(doc)
     n_font = _apply_file_font(doc, font) if font else 0
@@ -871,6 +931,8 @@ def build_docx(blocks, span, items, out_path, material, font=None, rules=None):
     total = ph_para + ph_row + sum(tbl_stats.values()) + n_img
     info = {"占位符数": total, "段落占位": ph_para, "表格占位": ph_row + sum(tbl_stats.values()),
             "图片占位": n_img}
+    if n_equip:
+        info["附表9设备数据行"] = n_equip
     if n_shade:
         info["去底纹"] = n_shade
     if n_font:
@@ -940,6 +1002,15 @@ def generate(ent, project, contract_path=None, material_path=None, source_path=N
     out = Path(out_dir) if out_dir else proj_dir / "项目模板"
     out.mkdir(parents=True, exist_ok=True)
 
+    # 范本 v1.2：从模板库提取附表9 仪器设备数据行（企业固定设备，直接写入项目模板）
+    tpl_equip_rows = []
+    agency = material.get("招标代理机构", "")
+    mode = material.get("采购方式", "投标") or "投标"
+    if agency:
+        tpl_q = Path(ent) / "企业级" / "模板库" / agency / mode / "资格证明及辅助资料表.docx"
+        if tpl_q.is_file():
+            tpl_equip_rows = _extract_tpl_equip_rows(tpl_q)
+
     blocks, _ = _extract_blocks(source_path)
     by_id = {it.get("id"): it for it in contract["格式文件"]}
 
@@ -970,9 +1041,12 @@ def generate(ent, project, contract_path=None, material_path=None, source_path=N
             "cover_title": fname == "封面.docx",
             "split_authorize": fname == "授权委托书.docx",
             "sme_project": fname == "中小企业声明函.docx",
+            # 范本 v1.2：附表9 仪器设备数据行从模板库带入
+            "equip_tpl": fname == "资格证明及辅助资料表.docx",
         }
         info = build_docx(blocks, (lo, hi), items, out_file, material,
-                          font=FILE_FONT.get(fname), rules=rules)
+                          font=FILE_FONT.get(fname), rules=rules,
+                          equip_rows=tpl_equip_rows)
         rel = "项目级/%s/项目模板/%s" % (project, fname)
         if register_baseline:
             try:

@@ -176,6 +176,25 @@ class TestProjGenReal(unittest.TestCase):
                        and len(t.rows) >= 11)
         self.assertGreaterEqual(n_resume, 6, "简历表份数应≥素材人数6，实际 %d" % n_resume)
 
+    def test_equip_table_from_tpl_lib(self):
+        """范本 v1.2：附表9 仪器设备数据行从模板库带入（企业固定设备，直接写入模板）。"""
+        from docx import Document
+        p = Path(self.res["目录"]) / "资格证明及辅助资料表.docx"
+        doc = Document(str(p))
+        for t in doc.tables:
+            first = "".join(c.text for c in t.rows[0].cells)
+            if "仪器名称" in first:
+                cells = [c.text for r in t.rows for c in r.cells]
+                self.assertTrue(any("砼回弹仪" in x for x in cells),
+                                "附表9 应含模板库设备数据（砼回弹仪）")
+                self.assertTrue(any("水" in x and "准" in x for x in cells),
+                                "附表9 应含水准仪")
+                self.assertGreaterEqual(len(t.rows), 20,
+                                        "附表9 应有 ≥20 行设备数据，实际 %d" % len(t.rows))
+                break
+        else:
+            self.fail("未找到附表9 仪器设备表")
+
     def test_placeholder_manifest_nonempty(self):
         md = (Path(self.res["目录"]) / "项目占位符清单.md").read_text(encoding="utf-8")
         self.assertIn("开标一览表", md)
