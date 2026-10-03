@@ -579,6 +579,14 @@ def _scan_remaining_placeholders(doc, fname, pending):
 def _fill_text_placeholders(doc, material, biz, deadline, pending):
     """段落级文字占位：映射有值则替换；无映射/值空 → pending 保留占位。"""
     filled = 0
+    # 正文括注占位（非【】格式）：中小企业声明函「承接企业为（企业名称）」
+    biz_name = biz.get("投标人名称", "") or ""
+    if biz_name:
+        for p in _iter_doc_paragraphs(doc):
+            t = _para_full_text(p)
+            if "（企业名称）" in t:
+                _set_para_text(p, t.replace("（企业名称）", biz_name))
+                filled += 1
     for p in _iter_doc_paragraphs(doc):
         t = _para_full_text(p)
         if "【" not in t:
