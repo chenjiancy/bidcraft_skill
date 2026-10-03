@@ -401,6 +401,25 @@ class TestArchiveFlow(CoreBase):
         self.assertEqual(res["summary"]["archived"], 1, res["failed"])
         self.assertTrue((self.libroot / "人员" / "方业华" / "职称证书" / "高级工程师_建筑电气.png").exists())
 
+    def test_title_same_person_final_name_with_year_no_conflict(self):
+        """职称证书：同人同等级同专业但评审年份不同（final_name 带年份区分）→ 不判同名，并存。"""
+        self._archive_credential("裘义文", "职称证书", ["工程师", "市政道桥"], [],
+                                 "工程师_市政道桥.png")
+        inbox = core.Inbox(self.ent)
+        inbox.open()
+        inbox.add(self._make_file("PixPin_2026-10-03_12-58-41.png"))
+        inbox.close()
+        prop = core.propose(self.ent, require_closed=True)
+        it = prop["items"][0]
+        it["category"], it["subtype"] = "人员", "职称证书"
+        it["person"] = "裘义文"
+        it["keywords"] = ["工程师", "市政道桥"]
+        it["dates"] = []
+        it["final_name"] = "工程师_市政道桥_2009"
+        res = core.apply(self.ent, prop)
+        self.assertEqual(res["summary"]["archived"], 1, res["failed"])
+        self.assertTrue((self.libroot / "人员" / "裘义文" / "职称证书" / "工程师_市政道桥_2009.png").exists())
+
 
 class TestQueryInspectOverview(CoreBase):
     def test_query_and_overview(self):
