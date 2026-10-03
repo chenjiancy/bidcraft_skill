@@ -56,9 +56,9 @@ class TestProjGenReal(unittest.TestCase):
         for want in ["封面.docx", "开标一览表.docx", "投标函.docx", "投标函附录.docx",
                      "法定代表人身份证明.docx", "授权委托书.docx",
                      "资格证明及辅助资料表.docx", "承诺函_项目总监到岗.docx",
-                     "投标保证金材料.docx", "基本账户开户许可证承诺函.docx",
-                     "中小企业声明函.docx"]:
+                     "基本账户开户许可证承诺函.docx", "中小企业声明函.docx"]:
             self.assertIn(want, names, "缺少生成文件：%s" % want)
+        self.assertNotIn("投标保证金材料.docx", names, "范本 v1.1：投标保证金材料不再生成")
 
     def test_skipped_technical_bid(self):
         reasons = {s["契约项"]: s["原因"] for s in self.res["未生成"]}
@@ -85,12 +85,14 @@ class TestProjGenReal(unittest.TestCase):
         # 总监行姓名/专业占位
         self.assertTrue(any("姓名【总监姓名】" in t and "专业【总监专业】" in t for t in texts),
                         "开标一览表总监行未正确占位")
-        # 投标文件附录 预付款行（列表型表：序号|项目|内容）
+        # 投标文件附录 预付款行（范本 v1.1：不再占位，恢复原文「合同价款的  /   %」）
         p3 = Path(self.res["目录"]) / "投标函附录.docx"
         doc3 = Document(str(p3))
         t3 = [c.text for t in doc3.tables for r in t.rows for c in r.cells]
-        self.assertTrue(any("合同价款的【预付款比例（%）】" in x for x in t3),
-                        "投标文件附录预付款行未按模板库键【预付款比例（%）】占位")
+        self.assertTrue(any("合同价款的" in x and "/" in x for x in t3),
+                        "投标文件附录预付款行应保留原文「合同价款的  /   %」")
+        self.assertFalse(any("【预付款比例（%）】" in x for x in t3),
+                         "范本 v1.1：投标函附录预付款行不占位")
         # 投标函含项目名称占位
         p2 = Path(self.res["目录"]) / "投标函.docx"
         doc2 = Document(str(p2))
@@ -108,38 +110,61 @@ class TestProjGenReal(unittest.TestCase):
                      "【签字或盖章】", "【企业地址】", "【邮编】", "【联系电话】",
                      "【传真】", "【开户银行】", "【开户账号】", "【日期】"]:
             self.assertIn(want, full, "投标函缺模板库键 %s" % want)
-        # 封面：投标人名称/签字或盖章/日期
+        # 封面（范本 v1.1：标题两行【项目名称】+【项目编号】；落款不填投标人名称/签字或盖章）
         doc = Document(str(d / "封面.docx"))
         full = "\n".join(p.text for p in doc.paragraphs)
-        for want in ["【投标人名称】", "【签字或盖章】", "【日期】"]:
+        for want in ["【项目名称】", "【项目编号】", "【日期】"]:
             self.assertIn(want, full, "封面缺模板库键 %s" % want)
-        # 法代：法定代表人姓名/单位性质/成立时间（模板库把 年 月 日 替换为键）
+        self.assertNotIn("【投标人名称】", full, "范本 v1.1：封面落款不填【投标人名称】")
+        self.assertNotIn("【签字或盖章】", full, "范本 v1.1：封面落款不填【签字或盖章】")
+        # 法代：法定代表人姓名/单位性质/成立时间（范本 v1.1：成立时间行只留【成立时间】，无「年 月 日」）
         doc = Document(str(d / "法定代表人身份证明.docx"))
         full = "\n".join(p.text for p in doc.paragraphs)
         self.assertIn("【法定代表人姓名】", full)
         self.assertIn("【单位性质】", full)
-        self.assertIn("【成立时间】", full)
-        # 授权委托书：授权代理人姓名/身份证号/图片占位
+        self.assertIn("成立时间：【成立时间】", full)
+        # 授权委托书（范本 v1.1：授权代理人信息拆 4 行；落款【授权代理人姓名】不填）
         doc = Document(str(d / "授权委托书.docx"))
         full = "\n".join(p.text for p in doc.paragraphs)
-        self.assertIn("【授权代理人姓名】", full)
+        self.assertIn("授权代理人：【授权代理人姓名】", full)
+        self.assertIn("性别：【性别】", full)
+        self.assertIn("年龄：【年龄】", full)
+        self.assertIn("职务：【职务】", full)
         self.assertIn("【图片：委托代理人身份证正、反面扫描件】", full)
-        # 图片占位：资格证明含【图片：xxx】（模板库同款键）
+        self.assertNotIn("【授权代理人姓名】（签字或盖章）", full,
+                         "范本 v1.1：授权委托书落款不填授权代理人姓名")
+        # 图片占位：资格证明（范本 v1.1：附表10 后 5 张；附表8 后 1 张；不再含总监注册证/中级职称等）
         doc = Document(str(d / "资格证明及辅助资料表.docx"))
         full = "\n".join(p.text for p in doc.paragraphs) + "\n" + \
             "\n".join(c.text for t in doc.tables for r in t.rows for c in r.cells)
         for want in ["【图片：组织机构框图（含结构、领导成员、主要技术人员、管理人员及数量）】",
-                     "【图片：总监理工程师注册执业证书扫描件】",
                      "【图片：三体系认证证书】",
-                     "【图片：先进（优秀）监理企业证书】"]:
+                     "【图片：总监高级工程师职称证书】",
+                     "【图片：其他监理人员职称证书】",
+                     "【图片：先进（优秀）监理企业证书】",
+                     "【图片：监理示范（优质）工程】",
+                     "【图片：拟派监理人员注册证书、岗位证书、职称、身份证等证明材料】"]:
             self.assertIn(want, full, "资格证明缺图片占位 %s" % want)
-        # 承诺函/开户承诺函图片占位
+        self.assertNotIn("【图片：总监理工程师注册执业证书扫描件】", full,
+                         "范本 v1.1：资格证明不再含总监注册证图片占位")
+        self.assertNotIn("【图片：项目总监到岗承诺相关材料】", full,
+                         "范本 v1.1：资格证明不再含到岗承诺图片占位")
+        # 承诺函/开户承诺函图片占位（范本 v1.1：承诺函不再含到岗材料图片占位）
         doc = Document(str(d / "承诺函_项目总监到岗.docx"))
         full = "\n".join(p.text for p in doc.paragraphs)
-        self.assertIn("【图片：项目总监到岗承诺相关材料】", full)
+        self.assertNotIn("【图片：项目总监到岗承诺相关材料】", full,
+                         "范本 v1.1：承诺函不再生成到岗材料图片占位")
+        self.assertIn("3、若投标人在响应文件中承诺项目总监能够从其他项目变更", full,
+                      "范本 v1.1：承诺函序号 2→3（纠正招标文件重复序号）")
         doc = Document(str(d / "基本账户开户许可证承诺函.docx"))
         full = "\n".join(p.text for p in doc.paragraphs)
         self.assertIn("【图片：基本账户开户许可证（或基本账户存款信息）扫描件】", full)
+        # 中小企业声明函（范本 v1.1：项目名称/项目编号占位 + 默认示例值）
+        doc = Document(str(d / "中小企业声明函.docx"))
+        full = "\n".join(p.text for p in doc.paragraphs)
+        for want in ["【项目名称】", "【项目编号】", "从业人员 62 人",
+                     "营业收入为 493.43 万元", "资产总额为 134.59 万元", "属于小型企业"]:
+            self.assertIn(want, full, "中小企业声明函缺范本内容 %s" % want)
 
     def test_dynamic_form_count(self):
         """动态语义②：附表8 简历表 6 份（素材 6 人）→ 识别：首行含『出生年月』的 11 列表。"""
