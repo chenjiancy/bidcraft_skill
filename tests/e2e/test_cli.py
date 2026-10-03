@@ -38,7 +38,7 @@ class CliBase(unittest.TestCase):
     def _init(self):
         r = run(str(self.root), "init-enterprise", "--name", ENT)
         self.assertEqual(r.returncode, 0, r.stderr)
-        self.lib = self.ent_dir / "企业级" / "业绩库"
+        self.lib = self.ent_dir / "企业级" / "素材库"
 
     def _seed(self, fname, cat="资质", sub="体系认证", kw=None):
         r = run(str(self.root), "open-inbox", "--note", "b")

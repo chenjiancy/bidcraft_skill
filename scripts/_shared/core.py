@@ -31,8 +31,8 @@ META_JSON = "_素材库信息.json"
 BATCH_JSON = "_batch.json"
 TRASH_JSON = "_回收站清单.json"
 
-# 软件目录结构（三层）：软件根/<企业>/企业级/业绩库(素材库) · 企业级/模板库 · 项目级
-LIB_SUBPATH = ("企业级", "业绩库")      # 企业目录下素材库（业绩库）的相对路径
+# 软件目录结构（三层）：软件根/<企业>/企业级/素材库 · 企业级/模板库 · 项目级
+LIB_SUBPATH = ("企业级", "素材库")      # 企业目录下素材库的相对路径
 ENTERPRISE_SUBDIRS = ["资质", "人员", "业绩", "荣誉", "财务", "企业介绍", "收件箱", "回收站"]
 CLASSIFY_DIRS = ["资质", "人员", "业绩", "荣誉", "财务", "企业介绍"]
 PERSON_SUBDIRS = [
@@ -85,7 +85,7 @@ def rel_to_path(base, rel):
 
 
 def lib_root(ent):
-    """企业素材库根：<企业目录>/企业级/业绩库（素材/台账/收件箱/回收站均落于此）。"""
+    """企业素材库根：<企业目录>/企业级/素材库（素材/台账/收件箱/回收站均落于此）。"""
     p = Path(ent)
     for seg in LIB_SUBPATH:
         p = p / seg
@@ -161,7 +161,7 @@ class Library:
         初始化企业（三层结构）：
           软件根/<企业>/
             ├── 企业级/
-            │   ├── 业绩库/        ← 素材库：资质/人员/业绩/荣誉/财务/收件箱/回收站 + 台账
+            │   ├── 素材库/        ← 素材库：资质/人员/业绩/荣誉/财务/收件箱/回收站 + 台账
             │   └── 模板库/
             └── 项目级/
         """
@@ -172,7 +172,7 @@ class Library:
         ent.mkdir(parents=True, exist_ok=True)
         (ent / "项目级").mkdir(exist_ok=True)
         (ent / "企业级" / "模板库").mkdir(parents=True, exist_ok=True)
-        lib = lib_root(ent)                      # 企业级/业绩库（素材库）
+        lib = lib_root(ent)                      # 企业级/素材库
         lib.mkdir(parents=True, exist_ok=True)
         for sub in ENTERPRISE_SUBDIRS:
             (lib / sub).mkdir(exist_ok=True)

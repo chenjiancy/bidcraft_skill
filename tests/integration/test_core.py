@@ -23,7 +23,7 @@ class CoreBase(unittest.TestCase):
         self.lib = core.Library(self.root)
         self.ent, self.existed = self.lib.init_enterprise(self.ENT)
         self.ent_dir = Path(self.ent)
-        self.libroot = core.lib_root(self.ent)  # 企业级/业绩库
+        self.libroot = core.lib_root(self.ent)  # 企业级/素材库
 
     def tearDown(self):
         shutil.rmtree(self.tmp, ignore_errors=True)
@@ -44,7 +44,7 @@ class TestInitStructure(CoreBase):
         self.assertTrue((self.libroot / core.META_JSON).exists())
 
     def test_lib_root_path(self):
-        self.assertEqual(core.lib_root(self.ent), self.ent_dir / "企业级" / "业绩库")
+        self.assertEqual(core.lib_root(self.ent), self.ent_dir / "企业级" / "素材库")
 
     def test_enterprises_and_resolve(self):
         self.assertIn(self.ENT, self.lib.enterprises())
