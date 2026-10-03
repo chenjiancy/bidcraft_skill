@@ -801,12 +801,15 @@ def _name_conflict_hit(item, r):
     无实质关键字的固定词子类（如简历/退休证）同人即同名。非人员类按关键字交集。
     同一素材的多页分页（基名相同仅页码不同）不构成同名。
     """
-    try:
-        base_f = nm.build_name(
-            item.get("category"), item.get("subtype") or nm.DEFAULT_SUBTYPE.get(item.get("category")),
-            keywords=item.get("keywords"), dates=item.get("dates"), page=None)
-    except Exception:
-        base_f = None
+    if item.get("final_name"):
+        base_f = _strip_page_suffix(str(item["final_name"]))
+    else:
+        try:
+            base_f = nm.build_name(
+                item.get("category"), item.get("subtype") or nm.DEFAULT_SUBTYPE.get(item.get("category")),
+                keywords=item.get("keywords"), dates=item.get("dates"), page=None)
+        except Exception:
+            base_f = None
     r_base = (r.get("rel_path") or "").rsplit("/", 1)[-1]
     if base_f and r_base.startswith(base_f + "_P"):
         return False
@@ -820,11 +823,15 @@ def _name_conflict_hit(item, r):
         sub = item.get("subtype") or ""
         if sub == "职称证书":
             # 职称证书的实质标识 = 完整职称名（等级+专业，如 高级工程师_建筑电气）
-            try:
-                my_base = nm.build_name("人员", sub, keywords=item.get("keywords"),
-                                        dates=item.get("dates"), page=None)
-            except Exception:
-                my_base = None
+            # final_name 显式指定时优先以其为基名（可含年份等区分，如 工程师_市政道桥_2009）
+            if item.get("final_name"):
+                my_base = _strip_page_suffix(str(item["final_name"]))
+            else:
+                try:
+                    my_base = nm.build_name("人员", sub, keywords=item.get("keywords"),
+                                            dates=item.get("dates"), page=None)
+                except Exception:
+                    my_base = None
             r_base = (r.get("rel_path") or "").rsplit("/", 1)[-1]
             r_clean = _strip_page_suffix(r_base)
             return bool(my_base and r_clean == my_base)

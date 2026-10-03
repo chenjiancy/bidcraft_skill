@@ -1,6 +1,6 @@
 ---
 name: bidcraft
-version: 0.8.5
+version: 0.8.6
 display_name: 标书匠
 description: 标书制作工作台（agent 驱动，项目级 skill，平台无关）。统一编排标书全流程：招标文件解析、商务标制作、技术标制作、标书检查（商务标/技术标）、AI模拟评标。当用户表达"做标书""生成商务标/技术标""解析招标文件""检查标书""模拟评标""整理投标素材/模板/知识库""投标辅助""归档投标素材""企业素材库"等意图时触发。M1 素材库已交付（脚本位于 scripts/，用法见 references/M1-素材库-操作手册.md）；M4 招标解析已交付（v0.8.1：解析由 agent 完成，脚本 tender-* 做编排与素材对照，tender-init 自动创建项目级「招标解析 + 项目资料」目录，用法见 references/M4-招标文件解析-操作手册.md）；素材库、模板库为**企业级**数据（按企业隔离、主要支撑商务标），知识库为**共享级**数据（所有企业共用、与企业无关、主要支撑技术标）；软件数据目录分**企业级/项目级/共享资源**三层，企业间、项目间完全隔离，初始化时先确认软件应用项目目录的创建位置；脚本按「模块分包 + 共享层」组织；其余模块按 references/module-contracts.md 路线图逐步完善。越界请求应说明范围并引导至对应专项技能（招标文件解读优先用 bid-doc-interpreter，合规审查用 bid-compliance-checker，排版去AI味用 bid-service-plan-markup-docx / tencent-docx）。
 agent_created: true
