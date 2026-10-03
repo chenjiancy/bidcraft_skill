@@ -821,9 +821,9 @@ def _name_conflict_hit(item, r):
         if not (my_person and r_person and my_person == r_person):
             return False
         sub = item.get("subtype") or ""
-        if sub == "职称证书":
-            # 职称证书的实质标识 = 完整职称名（等级+专业，如 高级工程师_建筑电气）
-            # final_name 显式指定时优先以其为基名（可含年份等区分，如 工程师_市政道桥_2009）
+        if sub in ("职称证书", "退休证"):
+            # 职称证书/退休证：实质标识在基名中（职称=等级+专业；退休证=退休证_长期 等固定名），
+            # 基名相同才判同名；final_name 显式指定时优先以其为基名（可含类型区分，如 退休证_登记表）
             if item.get("final_name"):
                 my_base = _strip_page_suffix(str(item["final_name"]))
             else:
