@@ -436,7 +436,7 @@ def register_parser(sub):
     sp.set_defaults(func=cmd_query)
 
     sp = sub.add_parser("trash", help="把素材移入回收站")
-    sp.add_argument("--path", required=True, help="相对素材库（业绩库）的路径，如 资质/旧证书_20200101.jpg")
+    sp.add_argument("--path", required=True, help="相对素材库的路径，如 资质/旧证书_20200101.jpg")
     sp.add_argument("--reason", help="删除原因")
     sp.set_defaults(func=cmd_trash)
 
