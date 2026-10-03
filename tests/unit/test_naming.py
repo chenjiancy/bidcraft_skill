@@ -131,17 +131,20 @@ class TestBuildName(unittest.TestCase):
         self.assertTrue(ok2)
 
     def test_org_structure_name_variants(self):
-        # 企业介绍/组织架构：组织机构图|组织机构（日期可选）均合规
+        # 企业介绍/组织架构：组织机构|组织机构图，统一必带上传日期
         self.assertEqual(
-            nm.build_name("企业介绍", "组织架构", keywords=["组织机构"]),
-            "组织机构")
+            nm.build_name("企业介绍", "组织架构", keywords=["组织机构"], dates=["20261004"]),
+            "组织机构_20261004")
         self.assertEqual(
             nm.build_name("企业介绍", "组织架构", keywords=["组织机构图"], dates=["20261001"]),
             "组织机构图_20261001")
-        ok, issues = nm.validate("企业介绍", "组织架构", "组织机构.png")
+        ok, issues = nm.validate("企业介绍", "组织架构", "组织机构_20261004.png")
         self.assertTrue(ok, issues)
         ok2, _ = nm.validate("企业介绍", "组织架构", "组织机构图_20261001.png")
         self.assertTrue(ok2)
+        # 无日期不合法（统一规则必带上传日期）
+        ok3, _ = nm.validate("企业介绍", "组织架构", "组织机构.png")
+        self.assertFalse(ok3)
 
     def test_keyword_sanitized(self):
         self.assertEqual(
