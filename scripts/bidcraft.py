@@ -18,6 +18,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import m1_assets                    # noqa: E402
+import m2_template                  # noqa: E402
 import m4_tender                    # noqa: E402
 from _shared import core            # noqa: E402
 from _shared import naming as nm    # noqa: E402
@@ -42,7 +43,14 @@ def build_parser():
 
     sub = p.add_subparsers(dest="cmd", required=True)
     m1_assets.register_parser(sub)          # 挂载 M1 素材库全部子命令
+    m2_template.register_parser(sub)        # 挂载 M2 模板库全部子命令
     m4_tender.register_parser(sub)          # 挂载 M4 招标解析子命令
+    # 让全局 --json 在子命令之后也可用（如：tpl-query --keyword x --json）。
+    # 必须用 default=argparse.SUPPRESS：子 parser 未出现该参数时不写 namespace，
+    # 否则子 parser 的默认 False 会覆盖主 parser 已解析的 True（--json 在子命令前时）。
+    for _name, sp in sub.choices.items():
+        sp.add_argument("--json", action="store_true", default=argparse.SUPPRESS,
+                        help="以 JSON 输出（机读）")
     return p
 
 
