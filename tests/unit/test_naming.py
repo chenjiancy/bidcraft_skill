@@ -115,6 +115,21 @@ class TestBuildName(unittest.TestCase):
             nm.build_name("人员", "返聘协议", keywords=["退休返聘"], dates=["20271231"]),
             "返聘协议_退休返聘_20271231")
 
+    def test_rank_cert_with_year_suffix(self):
+        # 职称证书支持可选年份段：同一人同等级不同评审年份的多本证书并存
+        self.assertEqual(
+            nm.build_name("人员", "职称证书", keywords=["工程师", "市政道桥", "2009"]),
+            "工程师_市政道桥_2009")
+        self.assertEqual(
+            nm.build_name("人员", "职称证书", keywords=["工程师", "市政道桥"]),
+            "工程师_市政道桥")
+
+    def test_rank_cert_year_suffix_validates(self):
+        ok, issues = nm.validate("人员", "职称证书", "工程师_市政道桥_2009.png")
+        self.assertTrue(ok, issues)
+        ok2, _ = nm.validate("人员", "职称证书", "高级工程师_建筑工程.png")
+        self.assertTrue(ok2)
+
     def test_keyword_sanitized(self):
         self.assertEqual(
             nm.build_name("资质", "资质证书", keywords=["ISO9001/质量"], dates=["20280101"]),
