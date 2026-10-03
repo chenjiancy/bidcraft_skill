@@ -57,7 +57,7 @@ PAGE_SUFFIX_RE = re.compile(r"_P(\d+)$")
 EXT_RE = re.compile(r"^[A-Za-z0-9]{1,5}$")
 
 # 段类型
-CONST, KW, KW_OPT, DATE, DATE_OPT, ENUM, YEAR = "const", "kw", "kw_opt", "date", "date_opt", "enum", "year"
+CONST, KW, KW_OPT, DATE, ENUM, YEAR = "const", "kw", "kw_opt", "date", "enum", "year"
 
 
 def _c(literal):
@@ -125,7 +125,7 @@ RULES = {
     ("财务", "中小企业声明函"): {"segs": [C("中小企业声明函"), (YEAR,)], "hint": "中小企业声明函_年度"},
 
     # ---- 企业介绍（组织架构、企业简介等商务标企业介绍素材）----
-    ("企业介绍", "组织架构"): {"segs": [(ENUM, ["组织机构图", "组织机构"]), (DATE_OPT,)], "hint": "组织机构图|组织机构[_上传日期]"},
+    ("企业介绍", "组织架构"): {"segs": [(ENUM, ["组织机构图", "组织机构"]), (DATE,)], "hint": "组织机构图|组织机构_上传日期"},
     ("企业介绍", "企业历史"): {"segs": [C("企业历史"), (DATE,)], "hint": "企业历史_上传日期"},
     ("企业介绍", "其他"): {"segs": [(KW,), (DATE,)], "hint": "关键字_上传日期"},
 }
@@ -246,8 +246,6 @@ def _seg_atom(seg, leading=True):
         return r"(?:_[^_]+)?"
     if kind == DATE:
         return prefix + DATE_TOKEN_RE_STR
-    if kind == DATE_OPT:
-        return r"(?:_" + DATE_TOKEN_RE_STR + r")?"
     if kind == YEAR:
         return prefix + r"\d{4}"
     if kind == ENUM:
@@ -290,9 +288,6 @@ def _fill(segs, keywords, dates):
             if not dts:
                 raise NamingError("缺少日期字段（该位置需要一个日期）")
             parts.append(normalize_date(dts.pop(0)))
-        elif kind == DATE_OPT:
-            if dts:
-                parts.append(normalize_date(dts.pop(0)))
         elif kind == YEAR:
             if not dts:
                 raise NamingError("缺少日期字段（该位置需要年度）")
