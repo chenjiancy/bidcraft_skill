@@ -36,7 +36,7 @@ except Exception:                                    # pragma: no cover - 环境
     HAVE_DOCX = False
 
 GEN_ID = "m5-project-gen"
-GEN_VERSION = "v1.0"
+GEN_VERSION = "v1.1"
 
 # ---------------------------------------------------------------------------
 # RULES 表（agent 维护，可增行）——契约项 → 项目模板文件 映射
@@ -62,7 +62,8 @@ FILE_MAP = [
     {"id": "F06j", "file": "资格证明及辅助资料表.docx", "kind": "build", "note": "附表9 拟投入仪器设备表（无素材→保留契约空行）"},
     {"id": "F06k", "file": "资格证明及辅助资料表.docx", "kind": "build", "note": "附表10 奖惩情况"},
     {"id": "F07", "file": "承诺函_项目总监到岗.docx", "kind": "build"},
-    {"id": "F08", "file": "投标保证金材料.docx", "kind": "build", "note": "保证金递交说明（附件形式）"},
+    {"id": "F08", "file": "", "kind": "skip",
+     "skip_reason": "投标保证金材料——按项目范本（2026-10-03 回写）不再生成，保证金材料按招标文件及投标文件格式要求随标书提供"},
     {"id": "F09", "file": "基本账户开户许可证承诺函.docx", "kind": "build"},
     {"id": "F10", "file": "", "kind": "skip", "skip_reason": "参考格式（投标保函示范文本），本项目保证金待办理，按需启用"},
     {"id": "F11", "file": "", "kind": "skip", "skip_reason": "参考格式（履约保函），按需启用"},
@@ -83,7 +84,6 @@ FILE_FONT = {
     "授权委托书.docx": "仿宋",
     "资格证明及辅助资料表.docx": "宋体",
     "承诺函_项目总监到岗.docx": "仿宋",
-    "投标保证金材料.docx": "仿宋",
     "基本账户开户许可证承诺函.docx": "仿宋",
     "中小企业声明函.docx": "宋体",
 }
@@ -100,13 +100,11 @@ GLOBAL_PH = [
 
 # 行路由占位规则：{表格前文标题特征: {行首标签: [(正则, 替换串), ...]}}
 # 匹配：表格前文含表特征 → 按行首标签路由 → 值格做正则替换（其余格走通用规则）
+# 范本 v1.1：投标函附录预付款行不再占位（用户范本恢复原文「合同价款的  /   %」）
 ROW_RULES = {
     "开标一览表": {
         "投标总价（人民币）": [(r"报价为\s+", "报价为【投标总价（元）】")],
         "项目总监理工程师": [(r"姓名\s+", "姓名【总监姓名】"), (r"专业\s+", "专业【总监专业】")],
-    },
-    "投标文件附录": {
-        "预付款": [(r"合同价款的\s*/\s*", "合同价款的【预付款比例（%）】/")],
     },
 }
 
@@ -146,13 +144,12 @@ TABLE_ROW_VALUE_PH = {
 }
 
 # 段落标签填充规则（参照模板库：标签后空格区填【键】；正则锚定标签文字，保留尾随固定文本）
+# 范本 v1.1（2026-10-03 按项目范本回写）：封面/开标一览表落款不自动填【投标人名称】【签字或盖章】
+# （留手签/盖章，与范本一致）；投标函落款仍填占位（模板库投标函同款键）。
 PARA_LABEL_RULES = {
     "封面.docx": [
-        (r"投标人：\s*（盖单位公章）", "投标人：【投标人名称】（盖单位公章）"),
-        (r"法定代表人或其委托代理人：\s*（签字或盖章）", "法定代表人或其委托代理人：【签字或盖章】（签字或盖章）"),
     ],
     "开标一览表.docx": [
-        (r"法定代表人或其委托代理人：\s*（签字或盖章）", "法定代表人或其委托代理人：【签字或盖章】（签字或盖章）"),
     ],
     "投标函.docx": [
         (r"致招标人：\s*", "致招标人：【招标人】"),
@@ -170,7 +167,8 @@ PARA_LABEL_RULES = {
         (r"单位名称：\s*", "单位名称：【投标人名称】"),
         (r"单位性质：\s*", "单位性质：【单位性质】"),
         (r"地\s*址\s*：\s*", "地    址：【企业地址】"),
-        (r"成立时间：\s*", "成立时间：【成立时间】"),
+        # 范本 v1.1：成立时间行不再保留「年 月 日」（用户范本删去，只留【成立时间】）
+        (r"成立时间：\s*(?:年\s*月\s*日)?", "成立时间：【成立时间】"),
         (r"经营期限：\s*", "经营期限：【经营期限】"),
         (r"姓\s*名：\s*", "姓    名：【法定代表人姓名】"),
         (r"性\s*别：\s*", "性 别：【性别】"),
@@ -179,19 +177,26 @@ PARA_LABEL_RULES = {
         (r"2、\s*法定代表人联系方式（手机）：\s*", "2、 法定代表人联系方式（手机）：【法定代表人联系电话】"),
     ],
     "授权委托书.docx": [
-        (r"授权代理人：\s*", "授权代理人：【授权代理人姓名】"),
-        (r"性别：\s*", "性别：【性别】"),
-        (r"年龄：\s*", "年龄：【年龄】"),
-        (r"职务：\s*", "职务：【职务】"),
+        # 范本 v1.1：标题删「（若无授权代理人，则不需提供）」
+        (r"（二）授权委托书（若无授权代理人，则不需提供）", "（二）授权委托书"),
+        # 授权代理人/性别/年龄/职务 4 行由 _split_authorize_info 拆行处理（不再逐行规则）
         (r"居民身份证号码：\s*", "居民身份证号码：【身份证号】"),
         (r"以本公司的名义参加\s*", "以本公司的名义参加【项目名称】"),
         (r"2、\s*委托代理人联系方式（手机）：\s*", "2、委托代理人联系方式（手机）：【联系电话】"),
     ],
     "承诺函_项目总监到岗.docx": [
         (r"投标单位（盖章）：\s*", "投标单位：【投标人名称】（盖单位公章）"),
+        # 范本 v1.1：招标文件原文「2、若投标人在响应文件中承诺…」与上条序号重复，
+        # 按模板库范本纠正为「3、」
+        (r"^2、若投标人在响应文件中承诺项目总监能够从其他项目变更", "3、若投标人在响应文件中承诺项目总监能够从其他项目变更"),
     ],
     "基本账户开户许可证承诺函.docx": [
         (r"投标人：\s*（盖单位公章）", "投标人：【投标人名称】（盖单位公章）"),
+    ],
+    "中小企业声明函.docx": [
+        # 范本 v1.1：日期行整段替换为【日期】（删「日期：」前缀，与范本一致）；「注：」删冒号
+        (r"日期：\s*20\d{2}年\*\*月\*\*日", "【日期】"),
+        (r"^注：\s*$", "注"),
     ],
 }
 
@@ -202,7 +207,11 @@ DATE_PH_FILES = {
 }
 
 # 图片占位：指定表格（按表前文关键词，去空格匹配）之后插入【图片：xxx】带边框占位段
-# 注：附表1 组织机构框图行为整行合并文本（无空值格）→ 图片占位放表后第一张
+# 范本 v1.1（2026-10-03 按项目范本回写）：
+#   - 附表1 后 3 张（企业资质/法人营业执照/基本账户开户许可证）；
+#   - 附表6/附表7 后不再插图片（范本删除总监注册证/总监高工/中级职称/身份证社保证明占位）；
+#   - 附表10 后 5 张：三体系/总监高工/其他监理人员职称/先进/示范（列表为逆序，addnext 会反转）。
+# 注：附表8 简历表后的图片占位在 IMAGE_PH_AFTER_PARA（锚点唯一段，避免 6 份简历表各插一张）。
 IMAGE_PH_AFTER_TABLE = {
     "资格证明及辅助资料表.docx": [
         ("组织机构", [
@@ -210,20 +219,12 @@ IMAGE_PH_AFTER_TABLE = {
             "【图片：企业法人营业执照（副本）扫描件】",
             "【图片：企业基本账户开户许可证扫描件】",
         ]),
-        ("监理人员资质", [
-            "【图片：总监理工程师注册执业证书扫描件】",
-            "【图片：拟派总监（【总监姓名】）高级工程师职称证书】",
-        ]),
-        ("监理人员配备", [
-            "【图片：其他监理人员的中级职称】",
-            "【图片：拟派监理人员身份证、社保证明、职称等证明材料】",
-        ]),
         ("其他资料", [
-            "【图片：三体系认证证书】",
-            "【图片：人员职称证书】",
-            "【图片：先进（优秀）监理企业证书】",
             "【图片：监理示范（优质）工程】",
-            "【图片：项目总监到岗承诺相关材料】",
+            "【图片：先进（优秀）监理企业证书】",
+            "【图片：其他监理人员职称证书】",
+            "【图片：总监高级工程师职称证书】",
+            "【图片：三体系认证证书】",
         ]),
     ],
 }
@@ -236,11 +237,13 @@ IMAGE_PH_AFTER_PARA = {
     "法定代表人身份证明.docx": [
         ("法定代表人有效期内居民身份证", ["【图片：法定代表人身份证正、反面扫描件】"]),
     ],
-    "承诺函_项目总监到岗.docx": [
-        ("若投标人在响应文件中承诺项目总监能够从其他项目变更", ["【图片：项目总监到岗承诺相关材料】"]),
-    ],
     "基本账户开户许可证承诺函.docx": [
         ("附：账户开户许可证", ["【图片：基本账户开户许可证（或基本账户存款信息）扫描件】"]),
+    ],
+    # 范本 v1.1：附表8 简历表备注段后插 1 张（锚点段唯一，不受简历表份数影响）
+    "资格证明及辅助资料表.docx": [
+        ("具体按招标公告和评标办法要求附相应资料",
+         ["【图片：拟派监理人员注册证书、岗位证书、职称、身份证等证明材料】"]),
     ],
 }
 
@@ -333,6 +336,16 @@ def _strip_shading_and_highlight(doc):
     for child in targets:
         child.getparent().remove(child)
     return len(targets)
+
+
+def _remove_stray_star(doc):
+    """范本 v1.1：删除孤立「*」段落（招标文件格式残留，用户范本已删；如承诺函末尾）。"""
+    n = 0
+    for p in doc.paragraphs:
+        if "".join(r.text for r in p.runs).strip() == "*":
+            p._p.getparent().remove(p._p)
+            n += 1
+    return n
 
 
 def _apply_file_font(doc, font):
@@ -434,6 +447,108 @@ def _apply_date_ph(doc, enabled):
         full = "".join(r.text for r in p.runs)
         if pat.match(full):
             _set_para_text(p, "【日期】")
+            n += 1
+    return n
+
+
+# 范本 v1.1（2026-10-03 按项目范本回写）：中小企业声明函默认示例值（模板库范本保留值，填充时可改）
+SME_SAMPLE = {
+    "从业人员": "62",
+    "营业收入": "493.43",
+    "资产总额": "134.59",
+    "企业类型": "小型企业",
+}
+
+
+def _fix_cover_title(doc):
+    """封面标题（范本 v1.1）：招标文件首行「监理（项目名称）」→ 两行【项目名称】+【项目编号】。
+    调用时机在 _apply_global_ph 之后（此时首行已是「监理【项目名称】」）。"""
+    n = 0
+    paras = doc.paragraphs
+    for i, p in enumerate(paras):
+        full = "".join(r.text for r in p.runs).strip()
+        if "监理" in full and "【项目名称】" in full:
+            _set_para_text(p, "【项目名称】")
+            new_p = copy.deepcopy(p._p)
+            p._p.addnext(new_p)
+            # 新增段紧跟原段之后（原段在 body 中位置不变）→ 重新取列表，i+1 即新段
+            _set_para_text(doc.paragraphs[i + 1], "【项目编号】")
+            n += 1
+            break
+    return n
+
+
+def _split_authorize_info(doc):
+    """授权委托书（范本 v1.1）：正文「授权代理人：___性别：___」「年龄：___职务：___」两行
+    各自拆为独立行并填占位（授权代理人：【授权代理人姓名】/性别：【性别】/年龄：【年龄】/职务：【职务】）。
+    落款「授权代理人：（签字或盖章）」仅含单个标签，不受影响。"""
+    n = 0
+    labels = [("授权代理人：", "【授权代理人姓名】"),
+              ("性别：", "【性别】"),
+              ("年龄：", "【年龄】"),
+              ("职务：", "【职务】")]
+    paras = doc.paragraphs
+    for p in paras:
+        full = "".join(r.text for r in p.runs)
+        present = [lab for lab, _ in labels if lab in full]
+        if len(present) < 2:
+            continue
+        # 行内存在 ≥2 个标签 → 按标签顺序拆为独立行（取标签后到下一标签前的片段）
+        segs = []
+        for j, (lab, ph) in enumerate(labels):
+            if lab not in full:
+                continue
+            start = full.find(lab) + len(lab)
+            end = len(full)
+            for lab2, _ in labels[j + 1:]:
+                pos = full.find(lab2, start)
+                if pos >= 0:
+                    end = min(end, pos)
+            segs.append((lab, ph))
+        # 首段复用原段，其余 addnext（复制 pPr 保持格式）；addnext 会改变后续段位置，
+        # 且 body 可能含 bookmark 等非段落元素，故用 w:p 元素计数实时定位新段
+        anchor = p._p
+        for i, (lab, ph) in enumerate(segs):
+            if i == 0:
+                _set_para_text(p, "%s%s" % (lab, ph))
+            else:
+                new_p = copy.deepcopy(anchor)
+                anchor.addnext(new_p)
+                anchor = new_p
+                i0 = 0
+                for el in doc.element.body.iterchildren():
+                    if el is p._p:
+                        break
+                    if el.tag == qn("w:p"):
+                        i0 += 1
+                _set_para_text(doc.paragraphs[i0 + i], "%s%s" % (lab, ph))
+        n += 1
+    return n
+
+
+def _apply_f13_sme(doc, project_name):
+    """中小企业声明函（范本 v1.1）：原文具体项目名 → 【项目名称】；【项目编号】；
+    从业人员/营业收入/资产总额/企业类型 → SME_SAMPLE 默认示例值（模板库范本保留值）。
+    原文为固定招标条款，其余一字不改。"""
+    if not project_name:
+        return 0
+    n = 0
+    for p in doc.paragraphs:
+        full = "".join(r.text for r in p.runs)
+        newtext = full
+        if project_name in newtext:
+            newtext = newtext.replace(project_name, "【项目名称】")
+        for old, new in (
+            (r"（项目编号：\s*）", "（项目编号：【项目编号】）"),
+            (r"从业人员\s*人", "从业人员 %s 人" % SME_SAMPLE["从业人员"]),
+            (r"营业收入为\s*万元", "营业收入为 %s 万元" % SME_SAMPLE["营业收入"]),
+            (r"资产总额为\s*万元", "资产总额为 %s 万元" % SME_SAMPLE["资产总额"]),
+            (r"属于（中型企业、小型企业、微型企业）", "属于%s" % SME_SAMPLE["企业类型"]),
+        ):
+            if re.search(old, newtext):
+                newtext = re.sub(old, new, newtext)
+        if newtext != full:
+            _set_para_text(p, newtext)
             n += 1
     return n
 
@@ -709,8 +824,8 @@ def build_docx(blocks, span, items, out_path, material, font=None, rules=None):
     从招标文件原文块 [s,e] 深拷贝构建项目模板 docx：
       1) 段落/表格逐块深拷贝（文字 100% 契约）；
       2) 契约项驱动的份数复制（附表3/附表8 动态语义②）；
-      3) 段落级全局占位 + 段落标签填充 + 落款日期 + 行路由 + 列表/标签值型占位
-         （占位键名参照模板库登记清单）；
+      3) 段落级全局占位 + 范本专属处理（封面标题/授权拆行/中小企业声明函示例值）
+         + 段落标签填充 + 落款日期 + 行路由 + 列表/标签值型占位（占位键名参照模板库登记清单）；
       4) 图片占位【图片：xxx】（表格后/锚点段后，模板库同款带边框样式）；
       5) 后处理：去除文字底纹/高亮 + 统一文件字体（与模板库基础模板一致）。
     返回 {"占位符数", "段落占位", "表格占位", "图片占位", "去底纹", "统一字体"}。
@@ -737,10 +852,17 @@ def build_docx(blocks, span, items, out_path, material, font=None, rules=None):
             doc.element.body.append(new_node)
     _duplicate_tables_by_contract(doc, tbl_meta, material, ctx_map)
     ph_para = _apply_global_ph(doc)
+    if rules.get("cover_title"):
+        ph_para += _fix_cover_title(doc)
+    if rules.get("split_authorize"):
+        ph_para += _split_authorize_info(doc)
     ph_para += _apply_para_label_rules(doc, rules.get("para_label", []))
     ph_para += _apply_date_ph(doc, rules.get("date_ph", False))
+    if rules.get("sme_project"):
+        ph_para += _apply_f13_sme(doc, str(material.get("project", "") or ""))
     ph_row = _apply_row_rules(doc, ctx_map)
     tbl_stats = _post_process_tables(doc, material, ctx_map)
+    n_star = _remove_stray_star(doc)
     n_shade = _strip_shading_and_highlight(doc)
     n_font = _apply_file_font(doc, font) if font else 0
     n_img = _insert_image_ph_after_table(doc, ctx_map, rules.get("img_after_table", []), font or "宋体")
@@ -844,6 +966,10 @@ def generate(ent, project, contract_path=None, material_path=None, source_path=N
             "date_ph": fname in DATE_PH_FILES,
             "img_after_table": IMAGE_PH_AFTER_TABLE.get(fname, []),
             "img_after_para": IMAGE_PH_AFTER_PARA.get(fname, []),
+            # 范本 v1.1 专属处理开关
+            "cover_title": fname == "封面.docx",
+            "split_authorize": fname == "授权委托书.docx",
+            "sme_project": fname == "中小企业声明函.docx",
         }
         info = build_docx(blocks, (lo, hi), items, out_file, material,
                           font=FILE_FONT.get(fname), rules=rules)
