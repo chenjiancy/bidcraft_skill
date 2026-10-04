@@ -66,10 +66,11 @@ def _set_picture_marker(run, marker):
     return False
 
 
-def _make_ph_preview_para(doc, ph_text):
-    """构造图片占位预览框段：灰底占位图（尺寸=image_spec 目标口径），docPr 打标 IMG_PH:xxx。"""
+def _make_ph_preview_para(doc, ph_text, assets=None):
+    """构造图片占位预览框段：灰底占位图（尺寸=image_spec 目标口径），docPr 打标 IMG_PH:xxx。
+    assets=[(素材绝对路径, 口径key, 是否换页), ...] → 框内直接画真实素材缩略图。"""
     from docx.shared import Cm
-    png = phprev.make_placeholder_png(ph_text)
+    png = phprev.make_placeholder_png(ph_text, assets=assets)
     w_cm, h_cm = phprev.box_size_for(ph_text)
     p = doc.add_paragraph()
     p.alignment = 1                                     # CENTER
@@ -79,20 +80,21 @@ def _make_ph_preview_para(doc, ph_text):
     return p
 
 
-def _insert_ph_preview_after(doc, anchor_el, ph_text):
+def _insert_ph_preview_after(doc, anchor_el, ph_text, assets=None):
     """把预览框段移动到锚点元素（占位文字段）之后；返回是否成功。"""
     try:
-        p = _make_ph_preview_para(doc, ph_text)
+        p = _make_ph_preview_para(doc, ph_text, assets=assets)
         anchor_el.addnext(p._p)
         return True
     except Exception:
         return False
 
 
-def _insert_image_ph_after_table(doc, ctx_map, rules, font):
+def _insert_image_ph_after_table(doc, ctx_map, rules, font, assets_map=None):
     """在指定表格（按表前文关键词，去空格匹配）之后插入图片占位段 + 预览框。
     返回 (占位段数, 预览框数)。"""
     n = n_prev = 0
+    assets_map = assets_map or {}
     for table in doc.tables:
         ctx = ctx_map.get(table._tbl, "").replace(" ", "").replace("\u3000", "")
         for kw, phs in rules:
@@ -101,15 +103,16 @@ def _insert_image_ph_after_table(doc, ctx_map, rules, font):
                     el = _make_image_ph_para(text, font)
                     table._tbl.addnext(el)
                     n += 1
-                    if _insert_ph_preview_after(doc, el, text):
+                    if _insert_ph_preview_after(doc, el, text, assets_map.get(text)):
                         n_prev += 1
     return n, n_prev
 
 
-def _insert_image_ph_after_para(doc, rules, font):
+def _insert_image_ph_after_para(doc, rules, font, assets_map=None):
     """在锚点段落（含关键词）之后插入图片占位段 + 预览框。
     返回 (占位段数, 预览框数)。"""
     n = n_prev = 0
+    assets_map = assets_map or {}
     for p in doc.paragraphs:
         full = p.text
         for kw, phs in rules:
@@ -118,6 +121,6 @@ def _insert_image_ph_after_para(doc, rules, font):
                     el = _make_image_ph_para(text, font)
                     p._p.addnext(el)
                     n += 1
-                    if _insert_ph_preview_after(doc, el, text):
+                    if _insert_ph_preview_after(doc, el, text, assets_map.get(text)):
                         n_prev += 1
     return n, n_prev

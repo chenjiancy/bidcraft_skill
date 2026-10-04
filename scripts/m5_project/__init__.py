@@ -55,7 +55,10 @@ def cmd_proj_gen(args):
               % (f["文件"], ",".join(f["契约项"]), f["占位符数"]))
     for s in res["未生成"]:
         print("  — 未生成 %-10s %s" % (s["契约项"], s["原因"]))
-    print("已登记产物基线（fb）")
+    if args.no_baseline:
+        print("已跳过产物基线登记（--no-baseline）")
+    else:
+        print("已登记产物基线（fb）")
 
 
 def cmd_proj_freeze(args):
