@@ -6,6 +6,7 @@ import shutil
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "scripts"))
 from m5_project import filler as F                       # noqa: E402
@@ -93,6 +94,10 @@ class TestFillProject(unittest.TestCase):
         self.assertTrue(os.path.exists(os.path.join(self.out, "待补字段清单.md")))
         self.assertTrue(os.path.exists(os.path.join(self.out, "生成记录.json")))
 
+    def test_stats_schema(self):
+        """方案A：统计含「占位框移除」（旧模板无预览框时为 0，键必须存在）。"""
+        self.assertIn("占位框移除", self.stats)
+
     def test_combo_images_inserted(self):
         # 组合图片插入：资质/三体系/职称/荣誉/身份证正反/社保（多页 P0/P1 逐页）
         from docx import Document
@@ -104,6 +109,53 @@ class TestFillProject(unittest.TestCase):
             dd = Document(os.path.join(self.out, fn))
             nn = len(dd.element.body.findall(".//" + qn("w:drawing")))
             self.assertGreaterEqual(nn, min_n, "%s 应插入身份证正反面" % fn)
+
+
+class TestFillPreviewPipeline(unittest.TestCase):
+    """方案A 全链路：新生成模板（含预览框）→ 填充 → 预览框清零、真图插入。"""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.tmp = os.path.join(tempfile.gettempdir(), "bid_m5_ph")
+        if os.path.isdir(cls.tmp):
+            shutil.rmtree(cls.tmp)
+        os.makedirs(cls.tmp)
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "scripts"))
+        from m5_project import generator as G
+        from m5_project import ph_preview as P
+        cls.P = P
+        cls.res = G.generate(Path(ENT), Path(PROJ).name, out_dir=Path(cls.tmp) / "项目模板",
+                             register_baseline=False)
+
+    def _marker_count(self, doc_path):
+        from docx import Document
+        d = Document(doc_path)
+        return sum(1 for p in d.paragraphs for el in p._p.iter()
+                   if el.tag.endswith("}docPr")
+                   and (el.get("descr") or "").startswith(self.P.PH_PREVIEW_PREFIX))
+
+    def test_template_has_preview_boxes(self):
+        n = self._marker_count(Path(self.res["目录"]) / "资格证明及辅助资料表.docx")
+        self.assertGreaterEqual(n, 6, "新生成模板应含≥6 个预览框，实际 %d" % n)
+
+    def test_fill_removes_preview_and_inserts_images(self):
+        import json
+        from docx import Document
+        from docx.oxml.ns import qn
+        doc_path = Path(self.res["目录"]) / "资格证明及辅助资料表.docx"
+        mat = json.loads((Path(PROJ) / "招标解析" / "素材清单.json").read_text(encoding="utf-8"))
+        doc = Document(str(doc_path))
+        missing = []
+        removed = F._fill_image_placeholders(doc, LIB, PROJ, mat, missing)
+        self.assertGreater(removed, 0, "应移除预览框")
+        # 剩余预览框应为 0
+        left = sum(1 for p in doc.paragraphs for el in p._p.iter()
+                   if el.tag.endswith("}docPr")
+                   and (el.get("descr") or "").startswith(self.P.PH_PREVIEW_PREFIX))
+        self.assertEqual(left, 0)
+        # 真图已插入（drawing 数应远大于预览框数）
+        nd = len(doc.element.body.findall(".//" + qn("w:drawing")))
+        self.assertGreater(nd, 60, "填充后应插入组合+社保 66 图，实际 %d" % nd)
 
 
 if __name__ == "__main__":

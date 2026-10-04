@@ -74,6 +74,52 @@ class TestProjGenReal(unittest.TestCase):
                 self.assertIn("word/document.xml", z.namelist())
             Document(str(p))                      # python-docx 可打开
 
+    def test_body_sectpr_last(self):
+        """规范化：w:sectPr 必须是 body 最后一个子元素（否则 Word 报「文件可能已经损坏」）。"""
+        from docx import Document
+        from docx.oxml.ns import qn
+        for f in self.res["文件"]:
+            p = Path(self.res["目录"]) / f["文件"]
+            doc = Document(str(p))
+            kids = list(doc.element.body)
+            self.assertEqual(kids[-1].tag, qn("w:sectPr"),
+                             "%s body 末尾应为 sectPr（实际 %s）" % (f["文件"], kids[-1].tag))
+
+    def test_no_dangling_rel_refs(self):
+        """清理跨包引用：模板内所有 r:embed/r:id/r:link 必须能在 rels 中解析，
+        且不得残留 footerReference/headerReference（悬空引用 → Word 报文件损坏）。
+        原文示例图（w:drawing/w:object/w:pict）已被移除，预览框图（docPr@descr=IMG_PH:*）合法保留。"""
+        import re as _re
+        from docx import Document
+        RNS = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"
+        for f in self.res["文件"]:
+            p = Path(self.res["目录"]) / f["文件"]
+            with zipfile.ZipFile(p) as z:
+                rels_xml = z.read("word/_rels/document.xml.rels").decode("utf-8")
+                xml = z.read("word/document.xml").decode("utf-8")
+            valid = set(_re.findall(r'Id="(rId\d+)"', rels_xml))
+            # 文档内引用的所有关系 id
+            used = set(_re.findall(r'r:(?:embed|id|link)="(rId\d+)"', xml))
+            self.assertLessEqual(used, valid, "%s 存在悬空关系引用 %s" % (f["文件"], used - valid))
+            self.assertNotIn("footerReference", xml, "%s 残留页脚引用" % f["文件"])
+            self.assertNotIn("headerReference", xml, "%s 残留页眉引用" % f["文件"])
+            # 深拷贝的原文示例图应被移除；带 IMG_PH 标记的预览框图合法保留
+            doc = Document(str(p))
+            for el in doc.element.body.iter():
+                tag = el.tag.split("}")[-1]
+                if tag in ("drawing", "object", "pict"):
+                    is_preview = any(
+                        d.get("descr", "").startswith("IMG_PH:")
+                        for d in el.iter()
+                        if d.tag.split("}")[-1] == "docPr")
+                    self.assertTrue(is_preview,
+                                    "%s 残留非预览原文示例图 %s" % (f["文件"], tag))
+            for el in doc.element.body.iter():
+                for attr in (RNS + "embed", RNS + "id", RNS + "link"):
+                    rid = el.attrib.get(attr)
+                    if rid:
+                        self.assertIn(rid, valid, "%s 悬空 %s=%s" % (f["文件"], attr, rid))
+
     def test_contract_text_faithful(self):
         """文字以契约为准：开标一览表报价行被占位（原文其余部分保留）。"""
         from docx import Document
@@ -166,6 +212,49 @@ class TestProjGenReal(unittest.TestCase):
         for want in ["【项目名称】", "【项目编号】", "从业人员 62 人",
                      "营业收入为 493.43 万元", "资产总额为 134.59 万元", "属于小型企业"]:
             self.assertIn(want, full, "中小企业声明函缺范本内容 %s" % want)
+
+    def test_image_placeholder_preview_boxes(self):
+        """方案A v1.0：图片占位段后附灰底预览框（IMG_PH 标记，尺寸=image_spec 口径）。"""
+        from docx import Document
+        from docx.oxml.ns import qn
+        from m5_project import ph_preview as phprev
+        d = Path(self.res["目录"]) / "资格证明及辅助资料表.docx"
+        doc = Document(str(d))
+
+        def _markers(doc):
+            m = {}
+            for p in doc.paragraphs:
+                for el in p._p.iter():
+                    if el.tag.endswith("}docPr"):
+                        descr = el.get("descr") or ""
+                        if descr.startswith(phprev.PH_PREVIEW_PREFIX):
+                            ext = el.getparent().find(qn("wp:extent"))
+                            m[descr] = (int(ext.get("cx")) / 360000.0,
+                                        int(ext.get("cy")) / 360000.0)
+            return m
+
+        markers = _markers(doc)
+        self.assertGreaterEqual(len(markers), 6,
+                                "资格证明应含≥6 个预览框，实际 %d" % len(markers))
+        # 单图占位：三体系 16 宽 × 23 高 cm（与 image_spec 口径一致）
+        key = phprev.PH_PREVIEW_PREFIX + "【图片：三体系认证证书】"
+        self.assertIn(key, markers, "资格证明缺三体系预览框")
+        w, h = markers[key]
+        self.assertAlmostEqual(w, 16.0, delta=0.1)
+        self.assertAlmostEqual(h, 23.0, delta=0.1)
+        # 组合占位代表框：资质证书组 16 宽 × 12 高 cm
+        key2 = phprev.PH_PREVIEW_PREFIX + "【图片：企业资质证书扫描件】"
+        if key2 in markers:
+            self.assertAlmostEqual(markers[key2][1], 12.0, delta=0.1)
+        # 授权委托书：身份证预览框 8 宽 × 5 高 cm
+        doc2 = Document(str(Path(self.res["目录"]) / "授权委托书.docx"))
+        m2 = _markers(doc2)
+        self.assertTrue(any("委托代理人身份证" in k for k in m2),
+                        "授权委托书应含委托代理人身份证预览框")
+        for k, (w2, h2) in m2.items():
+            if "委托代理人身份证" in k:
+                self.assertAlmostEqual(w2, 8.0, delta=0.1)
+                self.assertAlmostEqual(h2, 5.0, delta=0.1)
 
     def test_dynamic_form_count(self):
         """动态语义②：附表8 简历表 6 份（素材 6 人）→ 识别：首行含『出生年月』的 11 列表。"""

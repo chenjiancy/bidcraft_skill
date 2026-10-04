@@ -472,3 +472,43 @@
 **验证**：193 测试全绿；缺图归零；资格证明 66 图（组合 64+社保 2）；文字占位 64、待补 61（企业信息剩余+投标总价+简历表少量字段）；中小企业声明函日期 2026年10月9日。
 **耗时**：约 30 分钟。
 **下一步**：①投标总价报价后生成开标一览表；②企业信息剩余字段（法代性别/年龄/职务/身份证号）待企业提供；③模板冻结（只读+版本号）后商务标定稿。
+
+## 2026-10-04 项目全览与技术评审（用户指令：查看项目、说明工作流与实现原理、给出建议）
+
+**需求**：通读项目，详细说明系统工作流与每一步实现原理/逻辑，并给出改进建议。
+**探查**：全量读代码——bidcraft.py（薄壳）+ _shared/core.py+naming.py + m1_assets + m2_template/template_lib + m4_tender/rules+tender + m5_project/generator+filler+image_spec + m_feedback/feedback；参考 module-contracts/SKILL/README。
+**验证**：真实跑三塔层全绿——unit 107 + integration 68 + e2e 19 = 194 项。
+**行业查证**（建议依据）：RAG 六大组件与文档解析管线（微软/Google Cloud/Databricks/arXiv 2601.05264）、docxtpl/Jinja2 模板引擎与「占位符跨 run 拆分」第一坑（benchflow skill 实测）、喜鹊标书AI/标捷智写/云境标书AI/中国移动九天智能标书平台（200+ 质检维度、按评分项对齐目录、素材库深度融合）。
+**输出**：系统架构图（html_svg）+ 分步原理说明 + 分级建议：
+- P0：①占位符跨 run 替换固化为公共工具+单测；②M7 检查三道（格式 diff/占位符清零/敏感词）落地为可增行检查项表；③filler 组合构建改按素材清单白名单（回应「清单外素材」遗留问题）。
+- P1：④PDF 结构化解析通道（多栏/表格感知，对标 RAG 文档解析）；⑤素材检索升级混合检索+重排（当前 in 子串匹配）；⑥proj-freeze 冻结命令自动化（hash+只读+版本号）；⑦generator 1006 行/filler 786 行/core 1022 行超 500 行约定需拆分；⑧硬编码（陈云/邵章华/孙婧/市政公用工程/TESS 路径）改由素材清单/配置驱动。
+- P2：⑨评估 docxtpl 替代自研 XML 操作；⑩台账 JSON/CSV 双写改单源；⑪CI 增加 Windows runner（编码/路径问题）。
+**耗时**：约 40 分钟。
+**下一步**：待用户选定采纳哪些建议后再动工。
+
+## 2026-10-04 M5 图片占位可视化（方案A：模板内占位图形框）+ Word 损坏根因修复
+
+**需求**（用户原话）：「企业级模板库和项目级模板图片占位都不是很直观……可不可以在模板中直接就能看出来图片的位置及大小以及要将来要填充的图片内容。」三方案（A 模板内占位图形框 / B 预览对照清单 / C A+B）中用户选定 **A**；并明确差距问题（位置/尺寸/缺失/排版/文字）后续逐一对齐，本轮只做占位可视化。
+
+**实现**：
+- 新增 `scripts/m5_project/ph_preview.py`（~120 行）：`PH_PREVIEW_PREFIX="IMG_PH:"`；`box_size_for(ph_text)` 从 image_spec.IMG_SPEC 取目标口径（单图按口径，自适应 15×8，组合默认 16×12）；`make_placeholder_png` 用 PIL 画 #f2f2f2 灰底 + #808080 边框 + 楷体标签（「此处将插入：<占位文案> 尺寸：高Xcm × 宽Xcm（框内等比插入真实图）」），150dpi。
+- `generator.py`：`_make_ph_preview_para` 建预览框段（doc.add_paragraph 居中 + run.add_picture + docPr@descr 打标 IMG_PH:xxx）；`_insert_ph_preview_after` 用 anchor.addnext 插到占位文字段后；`_insert_image_ph_after_table/_after_para` 返回（占位段数, 预览框数）；build_docx 统计加「图片占位框」。
+- `filler.py`：`_remove_ph_preview_by_marker` 按 docPr@descr==IMG_PH:<文案> 删除预览框段；`_fill_image_placeholders` 填图前先删对应灰框；fill_project 统计加「占位框移除」。
+- 演示产物 `dev/preview_demo/项目模板/`（10 docx，预览框 13 个，隔离输出未污染真实商务标）。
+
+**踩坑（Word「文件可能已经损坏」com_error -2147352567 根因定位，四步）**：
+1. **sectPr 前置**：python-docx 1.2.0 空 `Document()` 的 body 仅含 `w:sectPr`，build_docx 用 `body.append()` 追加内容使 sectPr 跑到 body 第 0 位（不合法）→ 修复：保存前把 sectPr 移回 body 末尾（`test_body_sectpr_last` 覆盖）。旧模板合法是因为人工 Word/WPS 修订保存时被自动修复。
+2. **假信号排除**：python-docx 往返保存（RT）与 Word 原版 document.xml 逐字节相同、zip 结构/顺序/元数据一致，但 Word 一度拒绝 → 干净重测（每文件全新 Word 实例）后 RT 通过，判定为 Word COM 进程状态假阳性。
+3. **真根因——悬空 footerReference**：招标原文章节段落在 `w:pPr/w:sectPr` 内带 `<w:footerReference r:id="rId12..rId19">` 指向源文档 footer part；深拷贝进新文档后 rId 在新 rels 中不存在 → Word 判损坏。8 个块（878/886/892/900/906/913/926/932）分布在整个资格证明区间，所以四分之一分段全部失败、单块全部通过。
+4. **原文示例图**：源块 796（法定代表人身份证样例）/839（授权委托书样例）带 `a:blip r:embed=...` 指向源媒体，同样悬空。
+- 修复：`_sanitize_copy`（深拷贝后统一清理）——移除 headerReference/footerReference；移除 w:drawing/w:object/w:pict 示例图（商务标图片一律来自素材库占位）；其余元素剥离 r:embed/r:id/r:link（超链接退化为纯文本）。
+- 测试：`test_no_dangling_rel_refs`（所有 r:embed/r:id/r:link 必须在 rels 中可解析 + 无页眉页脚引用 + 除 IMG_PH 预览框外无 drawing）。
+
+**验证**：
+- 三塔层全绿：unit 112 + integration 74 + e2e 19 = **205 项**（改动前 203，新增 test_body_sectpr_last / test_no_dangling_rel_refs 2 项，无回归）。
+- Word COM 导出全部 10 份演示模板 PDF 成功（OK=10 FAIL=0，资格证明 27 页）；真实商务标 10 份干净重测全部 Word 可打开（含 79MB 资格证明）。
+- 视觉抽查：资格证明 p3（开户许可证 12×16 灰框+标注）、p18（人员证书组 16×12 + 社保占位）、p21（三体系 23×16）——灰底框、占位文案、目标尺寸标注清晰，渲染像素与 image_spec 口径一致。
+- 填充闭环：TestFillPreviewPipeline 断言填充后预览框清零、drawing>60。
+
+**耗时**：约 3.5 小时（含 Word 损坏根因定位四轮诊断）。
+**下一步**：①向用户展示演示模板/渲染效果并确认验收；②用户逐项对齐差距问题（位置/尺寸/缺失/排版/文字）；③确认后提交推送 git。

@@ -560,13 +560,38 @@ def _insert_images_before(doc, para, items):
     return len(items)
 
 
+def _docpr_descrs(p_el):
+    """段落内所有图片的 wp:docPr@descr（用于定位预览框标记 IMG_PH:xxx）。"""
+    out = []
+    for el in p_el.iter():
+        if el.tag.endswith("}docPr"):
+            out.append(el.get("descr") or "")
+    return out
+
+
+def _remove_ph_preview_by_marker(doc, ph_text):
+    """删除图片占位段对应的预览框段（docPr@descr == IMG_PH:<占位文案>）；返回删除数。"""
+    from .ph_preview import PH_PREVIEW_PREFIX
+    marker = PH_PREVIEW_PREFIX + ph_text
+    n = 0
+    for p in list(doc.paragraphs):
+        if marker in _docpr_descrs(p._p):
+            p._p.getparent().remove(p._p)
+            n += 1
+    return n
+
+
 def _fill_image_placeholders(doc, lib_root, proj_dir, material, missing):
-    """段落级【图片：xxx】：取图插入（按口径），删除占位段；缺图删除占位 + missing。"""
+    """段落级【图片：xxx】：取图插入（按口径），删除占位段；缺图删除占位 + missing。
+    返回移除的预览框数（方案A：模板中的灰底占位框在插入真图前先删除）。"""
+    from .ph_preview import PH_PREVIEW_PREFIX
     persons = material.get("personnel", []) or []
+    n_prev = 0
     for p in list(doc.paragraphs):
         t = _para_full_text(p).strip()
         if not (t.startswith("【图片：") and t.endswith("】")):
             continue
+        n_prev += _remove_ph_preview_by_marker(doc, t)
         mapped = FILL_IMG_MAP.get(t)
         if not mapped:
             missing.append((t, "无填充规则"))
@@ -593,6 +618,7 @@ def _fill_image_placeholders(doc, lib_root, proj_dir, material, missing):
             p._p.getparent().remove(p._p)
             continue
         _insert_image(p, str(full), size[0], size[1])
+    return n_prev
 
 
 def _fill_cell_image(cell, img_path, w_cm, h_cm):
@@ -813,12 +839,12 @@ def fill_project(ent, proj_dir, out_dir=None, lib_root=None, register=True):
     biz = material.get("企业基础信息", {}) or {}
     deadline = material.get("投标截止日期", "") or _load_deadline(proj_dir)
 
-    stats = {"文件": [], "缺图": [], "待补": [], "文字占位填充": 0}
+    stats = {"文件": [], "缺图": [], "待补": [], "文字占位填充": 0, "占位框移除": 0}
     for f in sorted(tpl_dir.glob("*.docx")):
         doc = Document(str(f))
         missing, pending = [], []
         filled = _fill_text_placeholders(doc, material, biz, deadline, pending)
-        _fill_image_placeholders(doc, lib_root, proj_dir, material, missing)
+        stats["占位框移除"] += _fill_image_placeholders(doc, lib_root, proj_dir, material, missing)
         _fill_personnel_tables(doc, material, pending)
         _fill_resume_tables(doc, lib_root, material, pending)
         _fill_performance_tables(doc, material, pending)
