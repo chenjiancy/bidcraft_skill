@@ -115,8 +115,12 @@ class TestProjGenCli(unittest.TestCase):
         shutil.rmtree(cls.tmp, ignore_errors=True)
 
     def test_proj_gen_cli_json(self):
-        if not Path(REAL_ENT).is_dir():
-            self.skipTest("真实企业目录不存在")
+        # ⑫ 数据前置细化：proj-gen 需要招标解析的格式契约作为输入，
+        # 数据被清除/未生成时应跳过而非在 CLI 里报错。
+        proj = Path(REAL_ENT) / "项目级" / REAL_PROJECT
+        contract = proj / "招标解析" / "格式契约" / "格式契约_第五章_投标文件格式.json"
+        if not (contract.is_file() and (proj / "招标解析" / "素材清单.json").is_file()):
+            self.skipTest("真实项目数据不存在（格式契约/素材清单缺失），跳过")
         out = Path(self.tmp) / "项目模板"
         r = run("proj-gen", "--project", REAL_PROJECT, "--out", str(out),
                 "--no-baseline", "--json",

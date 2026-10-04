@@ -754,3 +754,28 @@ _P0/_P1 命名，同语义未合并）；②附表7 简历表文字数据疑似�
 _insert_images_before 顺序/分页断言、_to_floating_anchor 工具测试）。
 **三塔层全绿**：unit 191 + integration 76 + e2e 22 = **289 项**（较 287 +2）。
 **下一步（待用户确认）**：第二项「图前自动插小标题」。
+
+### 代码检查 + 数据前置跳过修复（2026-10-04）
+**背景**（用户指令）：对项目做代码检查。
+**检查结果**：
+- git 干净（HEAD 1b6bb34）；py_compile 全量语法通过；SKILL.md/references 引用文件
+  全部存在；CI 双平台（ubuntu+windows）× Python 3.10-3.12 矩阵已配置。
+- 结构：scripts 七模块分包（_shared/m1_assets/m2_template/m4_tender/m5_project/
+  m7_check/m_feedback）；行数约定 ~500 行仅 2 文件轻微越界（naming.py 512、
+  core/inbox.py 557）。
+- 静态扫描：无 TODO/FIXME 待办残留；硬编码收敛良好（tesseract 路径已参数化：
+  TESSERACT_CMD 环境变量 → PATH → 本机兜底，兜底路径仅作最后 fallback）。
+**发现的问题（真实数据依赖测试的跳过条件缺陷）**：清除招标解析/项目模板/商务标后，
+integration/e2e 共 8 个真实数据用例启动后报错而非跳过——skip 条件只检查企业根目录
+存在（test_m5_filler._REAL_OK = ENT 目录、test_proj_gen.TestProjGenReal 只查
+python-docx、test_proj_cli 只查 ENT），未检查实际数据前置（格式契约/素材清单/
+项目模板），数据缺失时用例启动 → 报错。
+**修复（数据前置细化）**：
+- tests/integration/test_m5_filler.py：_REAL_OK 增加 素材清单.json + 项目模板 目录检查；
+- tests/integration/test_proj_gen.py：TestProjGenReal setUpClass 增加 格式契约 json
+  + 素材清单.json 检查，缺失 → SkipTest；
+- tests/e2e/test_proj_cli.py：test_proj_gen_cli_json 同样检查格式契约 + 素材清单。
+修复后数据缺失 → 整模块/单用例跳过（符合"真实数据依赖用例自动跳过"设计），
+数据就位（模板流程重走后）自动恢复运行。
+**三塔层**：unit 191 OK；integration 62 OK（13 skipped）；e2e 22 OK（1 skipped）。
+**下一步（待用户确认）**：模板制作流程重走（重建企业级模板库 → 招标解析 → 项目模板）。
