@@ -17,8 +17,14 @@ LIB = os.path.join(ENT, "企业级", "素材库")
 RESUME_PNG = os.path.join(LIB, "人员", "张三", "简历", "简历_20261001_P0.png")
 
 # ⑪ CI/跨平台：真实企业数据不存在（如 CI ubuntu/windows 无 E:\ 数据）→ 整模块跳过
-_REAL_OK = os.path.isdir(ENT)
-skip_real = unittest.skipUnless(_REAL_OK, "真实企业目录不存在（CI/无数据环境），跳过真实数据集成测试")
+# ⑫ 数据前置细化：仅检查企业根目录不够——招标解析（素材清单）与项目模板是
+# fill 测试的实际输入，任一缺失（数据被清除/未生成）都应跳过而非启动后报错。
+_REAL_OK = (
+    os.path.isdir(ENT)
+    and os.path.isfile(os.path.join(PROJ, "招标解析", "素材清单.json"))
+    and os.path.isdir(os.path.join(PROJ, "项目模板"))
+)
+skip_real = unittest.skipUnless(_REAL_OK, "真实项目数据不存在（素材清单/项目模板缺失或 CI 无数据环境），跳过真实数据集成测试")
 
 
 @skip_real
