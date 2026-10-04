@@ -1,6 +1,14 @@
 # -*- coding: utf-8 -*-
-"""⑦ filler 拆包 · 图片插入与图片占位填充（含预览框移除、白名单组合）。"""
+"""⑦ filler 拆包 · 图片插入与图片占位填充（含预览框移除、白名单组合）。
+
+v2.0（2026-10-04 按成品标书）：图片插入方式由内联 inline 改为**浮动 anchor**
+（wrapNone、positionH=margin/left、positionV=paragraph），图片独立成段、
+浮动不挤占正文，与成品标书一致；尺寸由固定口径改为「宽=可用宽、高按原图等比」。
+"""
 from pathlib import Path
+
+from docx.oxml import parse_xml
+from docx.oxml.ns import nsdecls, qn
 
 from m5_project import image_spec as imgsp
 
@@ -11,7 +19,53 @@ from .fill_text import _para_full_text, _set_para_text
 __all__ = [
     "FILL_IMG_MAP", "_insert_image", "_insert_images_before", "_docpr_descrs",
     "_remove_ph_preview_by_marker", "_fill_image_placeholders", "_fill_cell_image",
+    "_to_floating_anchor",
 ]
+
+# 浮动图片 anchor 骨架（照成品标书 XML 结构）：wrapNone、positionH(margin,left)、
+# positionV(paragraph,posOffset)。extent/docPr/graphic 由 inline 复用（r:embed 不变）。
+_ANCHOR_TPL = (
+    '<wp:anchor %s distT="0" distB="0" distL="114300" distR="114300" '
+    'simplePos="0" relativeHeight="251709440" behindDoc="0" locked="0" '
+    'layoutInCell="1" allowOverlap="1">'
+    '<wp:simplePos x="0" y="0"/>'
+    '<wp:positionH relativeFrom="margin"><wp:align>left</wp:align></wp:positionH>'
+    '<wp:positionV relativeFrom="paragraph"><wp:posOffset>0</wp:posOffset></wp:positionV>'
+    '<wp:effectExtent l="0" t="0" r="635" b="0"/>'
+    '<wp:wrapNone/>'
+    '<wp:cNvGraphicFramePr><a:graphicFrameLocks noChangeAspect="1"/></wp:cNvGraphicFramePr>'
+    '</wp:anchor>' % nsdecls("wp", "a")
+)
+
+
+def _to_floating_anchor(drawing_el, pos_offset_emu=0):
+    """把 w:drawing 内的 wp:inline 原位替换为 wp:anchor（照成品标书）。
+
+    元素顺序按 OOXML CT_Anchor：simplePos, positionH, positionV, extent,
+    effectExtent, wrapNone, docPr, cNvGraphicFramePr, graphic。
+    保留同一 r:embed（不重建图片关系）；docPr 的 id/name 复用原值。
+    """
+    inline = drawing_el.find(qn("wp:inline"))
+    if inline is None:
+        return drawing_el
+    anchor = parse_xml(_ANCHOR_TPL)
+    eff = anchor.find(qn("wp:effectExtent"))
+    extent = inline.find(qn("wp:extent"))
+    if extent is not None:
+        anchor.insert(anchor.index(eff), extent)
+    docpr = inline.find(qn("wp:docPr"))
+    cnv = anchor.find(qn("wp:cNvGraphicFramePr"))
+    if docpr is not None:
+        anchor.insert(anchor.index(cnv), docpr)
+    posv = anchor.find(qn("wp:positionV"))
+    off = posv.find(qn("wp:posOffset"))
+    if off is not None:
+        off.set("val", str(int(pos_offset_emu)))
+    graphic = inline.find(qn("a:graphic"))
+    if graphic is not None:
+        anchor.append(graphic)
+    drawing_el.replace(inline, anchor)
+    return drawing_el
 
 
 # ---------------------------------------------------------------------------
@@ -41,16 +95,31 @@ FILL_IMG_MAP = {
 }
 
 
-def _insert_image(p, img_path, w_cm, h_cm):
-    """段落 p：清文本后新增 run 插入图片（宽高 Cm）。"""
+def _insert_image(p, img_path, w_cm, h_cm, floating=True):
+    """段落 p：清文本后新增 run 插入图片（宽高 Cm）。
+
+    floating=True（默认，段落图片）：add_picture 生成 inline 后转浮动 anchor，
+    图片独立段、不挤占正文（成品标书方式）；floating=False（表格单元格图）：
+    保持内联（表内图按单元格排版）。
+    """
     _set_para_text(p, "")
     run = p.add_run()
     run.add_picture(str(img_path), width=Cm(w_cm), height=Cm(h_cm))
+    if floating:
+        for el in run._r.iter():
+            if el.tag == qn("w:drawing"):
+                _to_floating_anchor(el)
+                break
+    return p
 
 
 def _insert_images_before(doc, para, items):
-    """在占位段前插入（分页段+居中图片段）；返回插入图片数。"""
-    from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_BREAK
+    """在占位段前插入（需分页图用「段前分页」，其余紧随）；返回插入图片数。
+
+    浮动 anchor 图不占段高，独立分页段会产生空页 → 改用 paragraph_format
+    .page_break_before（Word 推荐，无空页段）。
+    """
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
     from docx.shared import Cm as _Cm
     tmp = []
     for path, skey, pb in items:
@@ -58,13 +127,16 @@ def _insert_images_before(doc, para, items):
         if not size:
             continue
         w, h = size
-        if pb:
-            p = doc.add_paragraph()
-            p.add_run().add_break(WD_BREAK.PAGE)
-            tmp.append(p)
         p = doc.add_paragraph()
         p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        p.add_run().add_picture(path, width=_Cm(w), height=_Cm(h))
+        if pb:
+            p.paragraph_format.page_break_before = True
+        run = p.add_run()
+        run.add_picture(path, width=_Cm(w), height=_Cm(h))
+        for el in run._r.iter():
+            if el.tag == qn("w:drawing"):
+                _to_floating_anchor(el)
+                break
         tmp.append(p)
     for p in reversed(tmp):
         para._p.addprevious(p._p)
@@ -136,7 +208,7 @@ def _fill_image_placeholders(doc, lib_root, proj_dir, material, missing):
 
 
 def _fill_cell_image(cell, img_path, w_cm, h_cm):
-    """表格单元格内图片占位：首段落插图。"""
+    """表格单元格内图片占位：首段落插图（内联，表内排版）。"""
     p = cell.paragraphs[0] if cell.paragraphs else cell.add_paragraph()
     _set_para_text(p, "")
-    _insert_image(p, img_path, w_cm, h_cm)
+    _insert_image(p, img_path, w_cm, h_cm, floating=False)
