@@ -16,7 +16,12 @@ PROJ = os.path.join(ENT, "项目级", "示例示例园区尾水水质提升工�
 LIB = os.path.join(ENT, "企业级", "素材库")
 RESUME_PNG = os.path.join(LIB, "人员", "张三", "简历", "简历_20261001_P0.png")
 
+# ⑪ CI/跨平台：真实企业数据不存在（如 CI ubuntu/windows 无 E:\ 数据）→ 整模块跳过
+_REAL_OK = os.path.isdir(ENT)
+skip_real = unittest.skipUnless(_REAL_OK, "真实企业目录不存在（CI/无数据环境），跳过真实数据集成测试")
 
+
+@skip_real
 class TestParseCert(unittest.TestCase):
     def test_parse_cert(self):
         self.assertEqual(F._parse_cert("注册证34008007（房建+市政公用，2028.1.23）"),
@@ -28,6 +33,7 @@ class TestParseCert(unittest.TestCase):
         self.assertEqual(F._parse_cert(""), ("", ""))
 
 
+@skip_real
 class TestOcrResume(unittest.TestCase):
     def test_ocr_resume_fields(self):
         f = F.ocr_resume_fields(RESUME_PNG, cert_str="注册证34008007（房建+市政公用，2028.1.23）")
@@ -41,6 +47,7 @@ class TestOcrResume(unittest.TestCase):
         self.assertIn("主要经历", f)
 
 
+@skip_real
 class TestFillProject(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -118,6 +125,7 @@ class TestFillProject(unittest.TestCase):
             self.assertGreaterEqual(nn, min_n, "%s 应插入身份证正反面" % fn)
 
 
+@skip_real
 class TestFillPreviewPipeline(unittest.TestCase):
     """方案A 全链路：新生成模板（含预览框）→ 填充 → 预览框清零、真图插入。"""
 
