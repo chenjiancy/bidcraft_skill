@@ -98,6 +98,13 @@ class TestFillProject(unittest.TestCase):
         """方案A：统计含「占位框移除」（旧模板无预览框时为 0，键必须存在）。"""
         self.assertIn("占位框移除", self.stats)
 
+    def test_m7_check_on_generated_bid(self):
+        """② M7 三道检查作用于生成产物：格式/占位符/敏感痕迹全部通过（待补登记放行）。"""
+        from m7_check import checker as m7
+        res = m7.run_checks(Path(ENT), Path(PROJ), out_dir=Path(self.out))
+        self.assertTrue(res["ok"], "M7 未通过: %s" % res["检查"])
+        self.assertTrue(Path(self.out, "M7检查报告.md").is_file())
+
     def test_combo_images_inserted(self):
         # 组合图片插入：资质/三体系/职称/荣誉/身份证正反/社保（多页 P0/P1 逐页）
         from docx import Document
