@@ -1,0 +1,11 @@
+﻿python : .........................................
+所在位置 行:1 字符: 23
++ ... raft_skill; python -m unittest tests.unit.test_filler_whitelist tests ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (.................................:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+----------------------------------------------------------------------
+Ran 41 tests in 57.808s
+
+OK
