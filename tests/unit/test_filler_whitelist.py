@@ -67,29 +67,91 @@ class TestFilterWhitelist(unittest.TestCase):
 
 
 class TestBuildComboWhitelist(unittest.TestCase):
-    def test_advanced_honor_skips_unlisted(self):
+    def test_advanced_honor_only_listed_inserted(self):
         with tempfile.TemporaryDirectory() as td:
             base = Path(td)
             listed = _mkimg(base, "荣誉/优秀监理企业_20250101.png")
-            unlisted = _mkimg(base, "荣誉/先进监理企业_20250101.png")
+            _mkimg(base, "荣誉/先进监理企业_20250101.png")  # 目录里存在但清单未列
             mat = {"honors": [{"path": "荣誉/优秀监理企业_20250101.png"}]}
             wl = filler._build_whitelist(mat)
             items, missing, out = filler._build_combo(
-                "【图片：先进（优秀）监理企业证书】", base, base, [], wl)
-            self.assertIn("荣誉/先进监理企业_20250101.png", out)
+                "【图片：先进（优秀）监理企业证书】", base, base, mat, wl)
             rels = [i[0].replace("\\", "/") for i in items]
             self.assertTrue(any(r.endswith("荣誉/优秀监理企业_20250101.png") for r in rels))
             self.assertFalse(any(r.endswith("荣誉/先进监理企业_20250101.png") for r in rels))
+
+    def test_qual_combo_skips_unlisted_extra(self):
+        with tempfile.TemporaryDirectory() as td:
+            base = Path(td)
+            _mkimg(base, "资质/市政公用工程监理乙级_20291121_P0.png")
+            _mkimg(base, "资质/市政公用工程监理乙级_旧版.png")  # 前缀命中但清单未列
+            mat = {"qualification_required": [
+                {"path": "资质/市政公用工程监理乙级_20291121_P0.png"}]}
+            wl = filler._build_whitelist(mat)
+            items, missing, out = filler._build_combo(
+                "【图片：企业资质证书扫描件】", base, base, mat, wl)
+            self.assertIn("资质/市政公用工程监理乙级_旧版.png", out)
+            self.assertTrue(any("市政公用工程监理乙级_20291121_P0.png" in i[0].replace("\\", "/")
+                                for i in items))
 
     def test_no_whitelist_backward_compat(self):
         with tempfile.TemporaryDirectory() as td:
             base = Path(td)
             _mkimg(base, "荣誉/优秀监理企业_20250101.png")
             _mkimg(base, "荣誉/先进监理企业_20250101.png")
+            mat = {"honors": [{"path": "荣誉/优秀监理企业_20250101.png"}]}
             items, missing, out = filler._build_combo(
-                "【图片：先进（优秀）监理企业证书】", base, base, [], None)
+                "【图片：先进（优秀）监理企业证书】", base, base, mat, None)
             self.assertEqual(out, [])           # 旧调用不检查
-            self.assertEqual(len(items), 2)     # 全部 glob 结果插入
+            self.assertEqual(len(items), 1)     # ⑧ 数据驱动：仅清单列明 1 张
+
+
+class TestDataDriven(TestBuildComboWhitelist):
+    """⑧ 硬编码参数化：总监/法代/代理人/专业/资质等级/荣誉全部来自素材清单。"""
+
+    def test_omit_zc_derived_from_personnel(self):
+        persons = [
+            {"name": "张三", "status": "齐备", "title_cert": "高工（道路与桥梁）"},
+            {"name": "赵六", "status": "职称缺口", "title_cert": "库内无职称证书"},
+            {"name": "赵七", "status": "齐备", "title_cert": "无（名单—）"},
+        ]
+        self.assertEqual(filler._omit_zc(persons), {"赵六", "赵七"})
+
+    def test_director_names_from_material(self):
+        with tempfile.TemporaryDirectory() as td:
+            base = Path(td)
+            _mkimg(base, "人员/张三/职称证书/高工_道路_P0.png")
+            _mkimg(base, "人员/李四/身份证/身份证_P0.png")
+            _mkimg(base, "人员/王五/身份证/身份证_P0.png")
+            mat = {
+                "personnel": [{"name": "张三"}],
+                "企业基础信息": {"法定代表人姓名": "李四", "委托代理人姓名": "王五"},
+            }
+            wl = filler._build_whitelist(mat)
+            items, mis, out = filler._build_combo(
+                "【图片：总监高级工程师职称证书】", base, base, mat, wl)
+            self.assertTrue(any("人员/张三" in i[0].replace("\\", "/") for i in items))
+            items, mis, out = filler._build_combo(
+                "【图片：法定代表人身份证正、反面扫描件】", base, base, mat, wl)
+            self.assertTrue(any("人员/李四" in i[0].replace("\\", "/") for i in items))
+            items, mis, out = filler._build_combo(
+                "【图片：委托代理人身份证正、反面扫描件】", base, base, mat, wl)
+            self.assertTrue(any("人员/王五" in i[0].replace("\\", "/") for i in items))
+
+    def test_major_and_qual_level_derived(self):
+        mat = {
+            "投标资格专业": "市政公用工程",
+            "personnel": [{"name": "张三", "cert": "注册证34008007（房建+市政公用，2028.1.23）"}],
+            "qualification_required": [
+                {"path": "资质/市政公用工程监理乙级_20291121_P0.png"},
+                {"path": "资质/房屋建筑工程监理甲级_20281222_P0.png"},
+            ],
+        }
+        self.assertEqual(filler._cert_major(mat), "房建+市政公用")
+        self.assertEqual(filler._qual_level_from_mat(mat),
+                         "房屋建筑工程监理甲级；市政公用工程监理乙级")
+        self.assertEqual(filler._qual_cert_prefixes(mat),
+                         ["市政公用工程监理乙级", "房屋建筑工程监理甲级"])
 
 
 if __name__ == "__main__":

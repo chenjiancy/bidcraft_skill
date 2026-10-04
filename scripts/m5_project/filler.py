@@ -37,8 +37,21 @@ from m5_project import image_spec as imgsp
 FILL_ID = "m5-bid-fill"
 FILL_VERSION = "v1.0"
 
-# Tesseract OCR（环境实测：C:\Users\hxjlcj\AppData\Local\Programs\Tesseract-OCR\tesseract.exe，chi_sim 可用）
-TESS = r"C:\Users\hxjlcj\AppData\Local\Programs\Tesseract-OCR\tesseract.exe"
+# Tesseract OCR fallback（⑧：路径参数化——优先环境变量 TESSERACT_CMD，其次 PATH 内
+# tesseract，最后回退本机实测路径；新增机器或换环境无需改代码）
+def _find_tesseract():
+    import os
+    import shutil
+    env = os.environ.get("TESSERACT_CMD", "").strip()
+    if env and Path(env).is_file():
+        return env
+    w = shutil.which("tesseract")
+    if w:
+        return w
+    return r"C:\Users\hxjlcj\AppData\Local\Programs\Tesseract-OCR\tesseract.exe"
+
+
+TESS = _find_tesseract()
 
 DATE_RE = re.compile(r"^(\d{4})-(\d{2})-(\d{2})")
 
@@ -388,12 +401,11 @@ def _insert_image(p, img_path, w_cm, h_cm):
 
 
 # ---------------------------------------------------------------------------
-# 组合图片构建 v1.2（③ 素材清单白名单：只允许清单列明的素材，清单外报错）
+# 组合图片构建 v1.3（③ 白名单 + ⑧ 数据驱动：人名/专业/资质/荣誉/TESS 全部来自
+# 素材清单或环境，不再硬编码）
 # 每项：(路径, IMG_SPEC键, 是否分页)。多页素材按文件名 P0/P1 顺序逐页插入。
 # ---------------------------------------------------------------------------
 _CERT_DIRS = ("注册证书", "岗位证书")
-# 用户 2026-10-04 确认：赵六/赵七无职称证书素材，省略（不报缺图）
-_OMIT_ZC = {"赵六", "赵七"}
 # 项目资料目录（用户自行上传，如 社保*）——不在素材库，白名单默认放行
 _PROJ_DATA_PREFIX = "项目资料/"
 
@@ -480,6 +492,68 @@ def _filter_whitelist(files, lib_root, whitelist):
     return ok, outside
 
 
+def _omit_zc(persons):
+    """⑧ 动态化 _OMIT_ZC：职称缺口由素材清单 personnel 字段推导（status=职称缺口
+    或 title_cert 含「无」），不再硬编码姓名。"""
+    out = set()
+    for p in persons or []:
+        if (p.get("status") or "") == "职称缺口" or "无" in (p.get("title_cert") or ""):
+            out.add((p.get("name") or "").strip())
+    return out
+
+
+def _cert_major(material):
+    """⑧ 总监专业兜底：从 personnel[0].cert 括注中取专业段（如「房建+市政公用」）。"""
+    ps = material.get("personnel", []) or []
+    if ps:
+        cert = ps[0].get("cert", "") or ""
+        m = re.search(r"（([^）]*)", cert)
+        if m:
+            return m.group(1).strip().split("，")[0].strip()
+    return ""
+
+
+def _qual_level_from_mat(material):
+    """⑧ 企业资质等级：从素材清单 qualification_required 的 path 文件名推导
+    （如 房屋建筑工程监理甲级_20281222_P0.png → 房屋建筑工程监理甲级）。"""
+    parts = []
+    for item in material.get("qualification_required", []) or []:
+        p = (item.get("path") or "").replace("\\", "/").strip()
+        base = p.rsplit("/", 1)[-1]
+        if "甲级" in base or "乙级" in base:
+            prefix = re.sub(r"_\d{8}(_P\d+)?\.[^.]+$", "", base)
+            if prefix and prefix not in parts:
+                parts.append(prefix)
+    parts.sort(key=lambda s: 0 if "甲级" in s else 1)
+    return "；".join(parts)
+
+
+def _qual_cert_prefixes(material):
+    """⑧ 资质证书组合 glob 前缀：从清单 qualification_required 路径文件名推导。"""
+    out = []
+    for item in material.get("qualification_required", []) or []:
+        p = (item.get("path") or "").replace("\\", "/").strip()
+        base = p.rsplit("/", 1)[-1]
+        if "甲级" in base or "乙级" in base:
+            prefix = re.sub(r"_\d{8}(_P\d+)?\.[^.]+$", "", base)
+            if prefix and prefix not in out:
+                out.append(prefix)
+    return out
+
+
+def _honor_paths(material, starts):
+    """⑧ 荣誉组合：从清单 honors[].path 直接取文件（文件名前缀匹配 starts）。"""
+    out = []
+    for item in material.get("honors", []) or []:
+        p = (item.get("path") or "").replace("\\", "/").strip()
+        if not p:
+            continue
+        base = p.rsplit("/", 1)[-1]
+        if base.startswith(starts) and p not in out:
+            out.append(p)
+    return out
+
+
 def _find_person_images(lib_root, name, *kinds):
     """人员子目录按类型收集图片；多页（_P0/_P1...）按页码有序、单页在后。"""
     base = Path(lib_root) / "人员" / name
@@ -521,12 +595,19 @@ def _build_zc_items(files):
     return items
 
 
-def _build_combo(key, lib_root, proj_dir, persons, whitelist=None):
+def _build_combo(key, lib_root, proj_dir, material, whitelist=None):
     """组合图片占位 → (items, missing明细, outside清单外)。
     ③白名单：whitelist=None 时不做过滤（兼容旧调用）；否则每个 glob 结果
-    必须命中清单白名单，未列明的素材记入 outside 且不插入。"""
+    必须命中清单白名单，未列明的素材记入 outside 且不插入。
+    ⑧数据驱动：总监/法代/代理人姓名与资质/荣誉文件均从素材清单取，无硬编码姓名。"""
     items, missing, outside = [], [], []
     base = Path(lib_root)
+    persons = material.get("personnel", []) or []
+    biz = material.get("企业基础信息", {}) or {}
+    director = persons[0].get("name", "") if persons else ""
+    legal = (biz.get("法定代表人姓名") or "").strip()
+    agent = (biz.get("委托代理人姓名") or "").strip()
+    omit = _omit_zc(persons)
 
     def _take(fs):
         """过滤 glob 结果并收集清单外。"""
@@ -535,9 +616,10 @@ def _build_combo(key, lib_root, proj_dir, persons, whitelist=None):
         return _filter_whitelist(fs, base, whitelist)
 
     if "企业资质证书扫描件" in key:
-        for pat, skey in (("房屋建筑工程监理甲级*.png", "资质证书_房屋建筑工程甲级"),
-                          ("市政公用工程监理乙级*.png", "资质证书_市政公用工程乙级")):
-            fs, out = _take(sorted((base / "资质").glob(pat)))
+        prefixes = _qual_cert_prefixes(material) or ["房屋建筑工程监理甲级", "市政公用工程监理乙级"]
+        for prefix in prefixes:
+            skey = "资质证书_房屋建筑工程甲级" if "甲级" in prefix else "资质证书_市政公用工程乙级"
+            fs, out = _take(sorted((base / "资质").glob(prefix + "*.png")))
             outside += out
             for f in fs:
                 items.append((str(f), skey, True))
@@ -555,7 +637,7 @@ def _build_combo(key, lib_root, proj_dir, persons, whitelist=None):
                 items.append((str(c), skey, True))
             zc, out = _take(_find_person_images(base, name, "职称证书"))
             outside += out
-            if not zc and name not in _OMIT_ZC:
+            if not zc and name not in omit:
                 missing.append("拟派人员[%s]职称证书" % name)
             items.extend(_build_zc_items(zc))
             idc, out = _take(_find_person_images(base, name, "身份证"))
@@ -579,50 +661,62 @@ def _build_combo(key, lib_root, proj_dir, persons, whitelist=None):
         if not items:
             missing.append("三体系证书素材缺失")
     elif "总监高级工程师职称证书" in key:
-        files, out = _take(_find_person_images(base, "张三", "职称证书"))
+        files, out = _take(_find_person_images(base, director, "职称证书"))
         outside += out
         items.extend(_build_zc_items(files))
         if not items:
-            missing.append("张三职称证书素材缺失")
+            missing.append("%s职称证书素材缺失" % director)
     elif "其他监理人员职称证书" in key:
         for p in persons[1:]:
             name = p.get("name", "")
             files, out = _take(_find_person_images(base, name, "职称证书"))
             outside += out
             if not files:
-                if name not in _OMIT_ZC:
+                if name not in omit:
                     missing.append("其他监理人员[%s]职称证书" % name)
                 continue
             items.extend(_build_zc_items(files))
     elif "先进（优秀）监理企业证书" in key:
-        for pat in ("先进监理企业*.png", "优秀监理企业_20250101.png"):
-            fs, out = _take(sorted((base / "荣誉").glob(pat)))
-            outside += out
-            for f in fs:
-                items.append((str(f), "先进优秀监理企业证书", True))
+        rels = _honor_paths(material, ("先进", "优秀"))
+        if rels:
+            fs = [Path(lib_root) / r for r in rels]
+        else:
+            fs = sorted((base / "荣誉").glob("先进监理企业*.png")) + \
+                sorted((base / "荣誉").glob("优秀监理企业*.png"))
+        fs, out = _take(fs)
+        outside += out
+        for f in fs:
+            items.append((str(f), "先进优秀监理企业证书", True))
         if not items:
             missing.append("先进/优秀监理企业证书素材缺失")
     elif "监理示范（优质）工程" in key:
-        fs, out = _take(sorted((base / "荣誉").glob("监理示范工程*.png")))
+        rels = _honor_paths(material, ("监理示范",))
+        if rels:
+            fs = [Path(lib_root) / r for r in rels]
+        else:
+            fs = sorted((base / "荣誉").glob("监理示范工程*.png"))
+        fs, out = _take(fs)
         outside += out
         for f in fs:
             items.append((str(f), "监理示范优质工程", True))
         if not items:
             missing.append("监理示范工程证书素材缺失")
     elif "法定代表人身份证正、反面" in key:
-        idc, out = _take(_find_person_images(base, "李四", "身份证"))
-        outside += out
-        for i, f in enumerate(idc):
-            items.append((str(f), "身份证", i == 0))
+        if legal:
+            idc, out = _take(_find_person_images(base, legal, "身份证"))
+            outside += out
+            for i, f in enumerate(idc):
+                items.append((str(f), "身份证", i == 0))
         if not items:
-            missing.append("李四身份证素材缺失")
+            missing.append("法定代表人[%s]身份证素材缺失" % (legal or "未配置"))
     elif "委托代理人身份证正、反面" in key:
-        idc, out = _take(_find_person_images(base, "王五", "身份证"))
-        outside += out
-        for i, f in enumerate(idc):
-            items.append((str(f), "身份证", i == 0))
+        if agent:
+            idc, out = _take(_find_person_images(base, agent, "身份证"))
+            outside += out
+            for i, f in enumerate(idc):
+                items.append((str(f), "身份证", i == 0))
         if not items:
-            missing.append("王五身份证素材缺失")
+            missing.append("委托代理人[%s]身份证素材缺失" % (agent or "未配置"))
     else:
         missing.append("未实现组合规则")
     return items, missing, outside
@@ -692,8 +786,8 @@ def _fill_image_placeholders(doc, lib_root, proj_dir, material, missing):
             continue
         path, rule_key, note = mapped
         if path is None:
-            # 组合占位 v1.2：按素材清单白名单从素材库构建（多页素材带 P0/P1 逐页插入）
-            items, mis, out = _build_combo(t, lib_root, proj_dir, persons, whitelist)
+            # 组合占位 v1.3：按素材清单白名单 + 数据驱动构建（多页素材带 P0/P1 逐页插入）
+            items, mis, out = _build_combo(t, lib_root, proj_dir, material, whitelist)
             outside += out
             if items:
                 _insert_images_before(doc, p, items)
@@ -885,9 +979,10 @@ def _fill_text_placeholders(doc, material, biz, deadline, pending):
                 ps = material.get("personnel", [])
                 v = ps[0].get("name", "") if ps else ""
             elif key == "_director_major":
-                v = "市政公用工程"
+                # ⑧ 数据驱动：素材清单「投标资格专业」优先，其次 personnel[0].cert 括注
+                v = material.get("投标资格专业") or _cert_major(material)
             elif key == "_qual_level":
-                v = "房屋建筑工程监理甲级；市政公用工程监理乙级"
+                v = _qual_level_from_mat(material)
             elif key == "_bail_cap":
                 v = "壹万元整"
             elif key == "投标截止日期":
