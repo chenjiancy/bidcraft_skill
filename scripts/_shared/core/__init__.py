@@ -20,3 +20,4 @@ from .batch import *          # noqa: F401,F403
 from .trash import *          # noqa: F401,F403
 from .inbox import *          # noqa: F401,F403
 from .ops import *            # noqa: F401,F403
+from .retrieval import *      # noqa: F401,F403

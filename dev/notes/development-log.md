@@ -627,3 +627,20 @@
 **验证**：unit test_pdf_extract 7 项（文本/页标记/双栏列序/表格 Markdown/全空行剔除/竖线转义/损坏 PDF 报错/空文字层报错）+ 集成 test_tender 1 项（extract_text_file 直接消费真 PDF）+ e2e test_tender_cli 1 项（--file <pdf> 免 --text-file 全流程）；test_extract_pdf_with_text_file 回退路径保持通过。
 **三塔层全绿**：unit 158 + integration 76 + e2e 21 = **255 项**（较 246 再 +9）。
 **下一步**：⑤ 素材检索升级混合检索 + 重排（core.query 现为 in 子串匹配，素材量级上来后召回率会崩；对标企业级 RAG：关键词 + 向量 + 重排）。
+
+
+### ⑤ 素材检索升级混合检索 + 重排（P1）
+**背景**：core.query 是 in 子串匹配，素材量级上来后召回率会崩——真实素材库验证：搜「先进监理企业」精确查询只命中 1 条（先进监理企业），「优秀监理企业」3 条同义变体全部漏召回。对标企业级 RAG「关键词 + 向量 + 重排」。
+**实现**：
+- 新增 scripts/_shared/core/retrieval.py（纯标准库，CI 双平台可跑）：
+  - 向量层：字符 bigram n-gram 余弦相似度（中文无分词器场景的标准轻量做法，2-gram 对「先进监理企业」vs「优秀监理企业」公共片段 监理/理企/企业）；
+  - 召回混合：精确子串命中（关键词层）+ n-gram 相似（向量层，MIN_SIM=0.22，模糊按 0.65 打折）；
+  - 重排：字段权重 rel_path(2.0) > keywords(1.5) > subtype/original_filename(1.0) > note(0.5)，总分降序取 top_k；
+  - 过滤：category/subtype/owner/日期 与 core.query 完全一致（先过滤后打分）；
+  - keyword 支持 str/list 多词取和；无 keyword 等价 query 原行为。
+- core/__init__.py re-export；CLI query 加 --fuzzy/--top-k（默认行为不变，精确子串检索不受影响）；--json 输出带 score。
+**真实素材库效果**（和县监理，336 条台账）：query --fuzzy --keyword 先进监理企业 → 精确 4.00（先进监理企业）+ 优秀监理企业×3 各 1.04 + 企业历史 0.42 + 监理合同 0.25 依次重排，召回率从 1 条提升到 20 条上限内有序。
+**踩坑**：e2e 种子用 sub="企业荣誉" 触发「未定义的大类/子类」（荣誉 合法子类仅 荣誉证书）→ 改 sub="荣誉证书"；单测多词用例断言误用列表成员判断（assertIn 字符串 vs 列表）→ 改 any(sub in rel)。
+**验证**：unit test_retrieval 12 项（n-gram 同义相似/无关低分/空串、精确>模糊排序、同义变体召回、top_k、过滤、多词、无关键词全返回、日期过滤、无关词排除）+ e2e test_cli 1 项（精确 0 命中 → --fuzzy 召回带匹配度，非 fuzzy 行为不变）。
+**三塔层全绿**：unit 170 + integration 76 + e2e 22 = **268 项**（较 255 再 +13）。
+**下一步**：⑨ 评估用 docxtpl（Jinja2 语法）替代部分自研 XML 操作（行循环/合并单元格更成熟），需与「文字 100% 契约、保留原文样式」需求小规模对比验证后再定。
