@@ -700,3 +700,27 @@
 **验证**：unit test_template_preview 8 项（精确命中/缺文件→None/关键词兜底/组合→None/尺寸精确/兜底/默认/端到端：副本生成+2 预览框打标+原文件 hash 不变+说明产出）。
 **三塔层全绿**：unit 181 + integration 76 + e2e 22 = **279 项**（较 271 +8，新增 test_template_preview 8 项）。
 **下一步（待用户确认）**：预览图集是否满意；表格内组织机构框图预览是否纳入后续调整；预览框 v2 调整方向（用户对项目级预览版暂不满意，待其给出具体需求）。
+
+### 第一项调整：图片浮动定位 + 统一等比尺寸（2026-10-04，按成品标书）
+**背景**（用户确认）：分析成品标书（桌面 马鞍山和县化工园尾水水质提升工程/投标文件）后确认调整方向——图片插入方式与图文混排对齐成品：
+①浮动定位（anchor、wrapNone、独立段）；②尺寸「宽≈可用宽、高按原图等比」；
+③图前小标题；④身份证左右并排；⑤业绩图统一等比。本项实施 ①+②。
+**实现**：
+- image_spec.py v1.0→v2.0：fit_size 除身份证（保留固定框 8×5 contain）外一律
+  「宽=可用宽16、高按原图比例」；支持 max_w/max_h 收紧（表内图）；IMG_SPEC 的「高」
+  字段降级为预览框/描述用。
+- fill_images.py：新增 _to_floating_anchor（wp:inline→wp:anchor 原位替换，照成品标书
+  XML：wrapNone、positionH=margin/left、positionV=paragraph/posOffset、元素顺序按
+  CT_Anchor、复用同一 r:embed）；_insert_image 默认转浮动（表格内图 floating=False 保持内联）；
+  _insert_images_before 分页由「独立分页段」改为「段前分页 pageBreakBefore」
+  （浮动 anchor 图不占段高，独立分页段会产生空页——实测 p6 空白，改后消失）。
+**真实验证**：商务标_预览v2 全量填充；docx 结构级：34+ 图全部 ANCHOR+wrapNone；
+尺寸抽查：竖版证书 16×22.7、横版 16×11.3、身份证 7.8~8×5；PDF 目检：
+资质证书/备案表逐页全页显示、空页消除、乙级证书整页竖排、附表2/3 正常。
+**已知待办（后续项）**：图前小标题、身份证左右并排（当前仍上下排）、业绩图并入
+资格证明组合规则、预览框 v2 同步新口径。
+**验证**：新增 tests/unit/test_image_spec_v2.py 8 项（统一等比/身份证固定框/
+max_w-max_h/unknown key/anchor 结构/元素顺序/inline 保留）。
+**三塔层全绿**：unit 189 + integration 76 + e2e 22 = **287 项**（较 279 +8）。
+**下一步（待用户确认）**：第二项「图前自动插小标题」（资质/执照/注册证/开户许可证/
+人名/业绩标题等，标题样式对齐成品黑体小节标题）。
