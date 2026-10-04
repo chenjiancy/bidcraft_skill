@@ -142,15 +142,15 @@ def _draw_label(draw, img, label, pad, label_h):
         pass
 
 
-def make_placeholder_png(ph_text, assets=None, out_path=None, dpi=150):
-    """生成占位 PNG（尺寸=image_spec 目标口径）。
+def make_placeholder_png(ph_text, assets=None, out_path=None, dpi=150, box_size=None):
+    """生成占位 PNG（尺寸=image_spec 目标口径，box_size 覆盖时用给定 (宽cm, 高cm)）。
 
     assets=None → 灰底 + 【待补素材】+ 尺寸（人工可见缺什么）；
     assets 非空 → 真实素材缩略图 + 底部标注「填充素材：<文件名>（N张）｜高Xcm×宽Ycm」。
     返回写入的 PNG 路径；out_path 缺省时写系统临时目录（按文案 hash 命名）。
     """
     from PIL import Image, ImageDraw
-    w_cm, h_cm = box_size_for(ph_text)
+    w_cm, h_cm = box_size if box_size else box_size_for(ph_text)
     W = max(40, int(round(w_cm * dpi / 2.54)))
     H = max(40, int(round(h_cm * dpi / 2.54)))
     img = Image.new("RGB", (W, H), "#f2f2f2")

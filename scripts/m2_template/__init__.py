@@ -28,6 +28,7 @@ from pathlib import Path
 
 from _shared import core            # noqa: E402
 from . import template_lib as tl     # noqa: E402
+from . import template_preview as tp  # noqa: E402
 
 try:  # Windows 控制台中文输出
     sys.stdout.reconfigure(encoding="utf-8")
@@ -186,6 +187,24 @@ def cmd_tpl_registry(args):
 # --------------------------------------------------------------------------
 # 子命令注册（由薄壳 bidcraft.py 调用）
 # --------------------------------------------------------------------------
+def cmd_tpl_preview(args):
+    """企业级模板库占位预览图集：不改原文件，副本内插预览框。"""
+    ent = get_ent(args)
+    res = tp.build_template_previews(ent, args.agency, args.mode,
+                                     out_dir=args.out or "", lib_root=args.lib_root or "")
+    if args.json:
+        print(json.dumps(res, ensure_ascii=False, indent=2))
+        return
+    print("占位预览图集已生成：%s" % res["输出目录"])
+    print("说明文件：%s" % res["说明文件"])
+    for r in res["文件"]:
+        print("  %-36s 图片占位 %2d ｜ 预览框 %2d ｜ 有素材 %2d ｜ 待补 %2d"
+              % (r["文件"], r["图片占位"], r["预览框"], r["素材数"], r["待补数"]))
+    t = res["合计"]
+    print("合计：图片占位 %d ｜ 预览框 %d ｜ 有素材 %d ｜ 待补 %d"
+          % (t["图片占位"], t["预览框"], t["有素材"], t["待补"]))
+
+
 def register_parser(sub):
     sp = sub.add_parser("tpl-init", help="M2：初始化模板库台账（幂等；--force 重建为空台账）")
     sp.add_argument("--force", action="store_true", help="已存在时重建为空台账（仅迁移场景）")
@@ -224,3 +243,10 @@ def register_parser(sub):
     sp.add_argument("--mode", required=True, choices=tl.MODES, help="采购方式")
     sp.add_argument("--file", default="", help="只显示包含该文件名的节")
     sp.set_defaults(func=cmd_tpl_registry)
+
+    sp = sub.add_parser("tpl-preview", help="M2：企业级模板库占位预览图集（不改原文件，副本内插预览框）")
+    sp.add_argument("--agency", required=True, help="模板库目录名（如 大成工程咨询有限公司）")
+    sp.add_argument("--mode", required=True, choices=tl.MODES, help="采购方式")
+    sp.add_argument("--out", default="", help="输出目录（默认 企业级/模板库/_占位预览图集/<代理>/<方式>）")
+    sp.add_argument("--lib-root", default="", help="企业级素材库目录（默认 企业级/素材库）")
+    sp.set_defaults(func=cmd_tpl_preview)
