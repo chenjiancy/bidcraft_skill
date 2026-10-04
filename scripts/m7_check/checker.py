@@ -29,8 +29,11 @@ CHECKS = [
     {"id": "sensitive", "name": "敏感/残留痕迹", "level": "警告",
      "desc": "扫描未清理痕迹与配置关键词（预览框说明/占位提示/未替换括注等）", "fn": "check_sensitive"},
     {"id": "word_open", "name": "Word 可打开性（COM 冒烟）", "level": "致命",
-     "desc": "每文件全新 Word 实例只读打开，防「文件可能已损坏」交付事故；无 pywin32 环境跳过",
+     "desc": "单 Word 实例只读打开（Quit 统一收口，规避 Close 崩溃路径）；无 pywin32 环境跳过",
      "fn": "check_word_open"},
+    {"id": "pages", "name": "页数一致性（模板↔商务标）", "level": "致命",
+     "desc": "商务标每文件页数必须与项目模板一致（一页不得跨页、模板几页商务标几页）；无 Word 环境跳过",
+     "fn": "check_pages"},
     {"id": "frozen", "name": "冻结版一致（⑥ proj-freeze）", "level": "致命",
      "desc": "有冻结清单时：模板文件 sha256 必须与冻结清单一致（已改=须重新冻结）",
      "fn": "check_frozen"},
@@ -211,36 +214,58 @@ def check_sensitive(out_dir, tpl_dir):
 
 
 def check_word_open(out_dir, tpl_dir):
-    """⑫ Word 可打开性冒烟：每文件全新 Dispatch（避免 COM 复用假阳性）。
+    """⑫ Word 可打开性冒烟：单 Word 实例只读打开每个商务标文件。
+    退出只 Quit（自动关闭全部文档，规避 doc.Close 崩溃路径）。
     无 pywin32 环境 → 跳过（ok 不降级，报告注明）。"""
     if not HAVE_COM:
         return True, ["跳过：环境无 pywin32，未执行 Word 冒烟"]
+    from _shared import com_util
+    if not com_util.HAVE_COM:
+        return True, ["跳过：环境无 pywin32，未执行 Word 冒烟"]
     issues = []
-    for o in _docx_paths(out_dir):
-        word = None
-        try:
-            pythoncom.CoInitialize()
-            word = win32com.client.DispatchEx("Word.Application")
-            word.Visible = False
-            try:
-                word.DisplayAlerts = 0
-            except Exception:
-                pass
-            doc = word.Documents.Open(str(o.resolve()), ReadOnly=True)
-            doc.Close(False)
-            issues_ok = True
-        except Exception as e:
-            issues.append("%s：Word 无法打开 → %s" % (o.name, e))
-        finally:
-            try:
-                if word is not None:
-                    word.Quit()
-            except Exception:
-                pass
-            try:
-                pythoncom.CoUninitialize()
-            except Exception:
-                pass
+    try:
+        with com_util.WordCOM() as w:
+            for o in _docx_paths(out_dir):
+                try:
+                    w.open_readonly(o)
+                except Exception as e:
+                    issues.append("%s：Word 无法打开 → %s" % (o.name, e))
+    except Exception as e:
+        return False, ["Word COM 初始化失败 → %s" % e]
+    return (not issues, issues)
+
+
+def check_pages(out_dir, tpl_dir):
+    """⑫ 页数一致性：商务标每文件页数必须与项目模板一致
+    （企业模板/项目模板一页不得跨页生成，商务标只能同页数；模板 N 页则商务标 N 页）。
+    无 Word 环境 → 跳过（不降级，报告注明）。"""
+    if not HAVE_COM:
+        return True, ["跳过：环境无 Word/pywin32，未执行页数统计"]
+    from _shared import com_util
+    if not com_util.HAVE_COM:
+        return True, ["跳过：环境无 Word/pywin32，未执行页数统计"]
+    issues = []
+    try:
+        with com_util.WordCOM() as w:
+            for o in _docx_paths(out_dir):
+                tpl = Path(tpl_dir) / o.name
+                try:
+                    n_out = w.pages_of(o)
+                except Exception as e:
+                    issues.append("%s：页数统计失败 → %s" % (o.name, e))
+                    continue
+                if not tpl.is_file():
+                    continue                     # 模板缺失由 check_format 报告
+                try:
+                    n_tpl = w.pages_of(tpl)
+                except Exception as e:
+                    issues.append("%s（模板）：页数统计失败 → %s" % (o.name, e))
+                    continue
+                if n_out != n_tpl:
+                    issues.append("%s：商务标 %d 页 ≠ 模板 %d 页（一页不得跨页/页数必须一致）"
+                                  % (o.name, n_out, n_tpl))
+    except Exception as e:
+        return False, ["Word COM 初始化失败 → %s" % e]
     return (not issues, issues)
 
 

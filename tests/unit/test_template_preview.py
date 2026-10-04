@@ -64,7 +64,7 @@ class TestResolveAssets(unittest.TestCase):
 class TestPreviewBoxSize(unittest.TestCase):
     def test_exact_spec(self):
         self.assertEqual(TP._preview_box_size("【图片：三体系认证证书】"), (16.0, 23.0))
-        self.assertEqual(TP._preview_box_size("【图片：法定代表人身份证正、反面扫描件】"), (8.0, 5.0))
+        self.assertEqual(TP._preview_box_size("【图片：法定代表人身份证正、反面扫描件】"), (7.5, 4.5))
 
     def test_keyword_fallback(self):
         self.assertEqual(TP._preview_box_size("【图片：人员职称证书】"), (16.0, 23.0))
