@@ -48,6 +48,24 @@ class TenderBase(unittest.TestCase):
         p.write_text(content, encoding="utf-8")
         return p
 
+    def _make_pdf(self, name="招标文件.pdf"):
+        """用 PyMuPDF 生成带中文字层的最小 PDF（无 fitz 时返回 None，用例跳过）。"""
+        try:
+            import pymupdf as fitz
+        except ImportError:
+            try:
+                import fitz
+            except ImportError:
+                return None
+        p = Path(self.tmp) / name
+        d = fitz.open()
+        page = d.new_page()
+        page.insert_text((72, 72), "第一章 招标公告", fontname="china-s")
+        page.insert_text((72, 96), "投标截止时间：2026年10月30日", fontname="china-s")
+        d.save(str(p))
+        d.close()
+        return p
+
     def _make_points(self, project="P"):
         md = "# 投标要点\n## 项目概况\n- 项目名称：XX"
         doc = {"project": project, "modules": [
@@ -118,6 +136,20 @@ class TestExtract(TenderBase):
     def test_write_original(self):
         rel = tender.write_original(self.tdir, "招标文件", "正文内容")
         self.assertEqual(rel, "原文_招标文件.txt")
+        self.assertTrue((self.tdir / rel).exists())
+
+    def test_pdf_extract_auto(self):
+        """④ PDF 结构化提取：extract_text_file 直接消费 PDF（表格/多栏通道），
+        不再依赖 agent 手工 --text-file。无 PyMuPDF 环境自动跳过。"""
+        p = self._make_pdf()
+        if p is None:
+            self.skipTest("未安装 PyMuPDF")
+        text = tender.extract_text_file(p)
+        self.assertIn("第一章 招标公告", text)
+        self.assertIn("投标截止时间：2026年10月30日", text)
+        self.assertIn("【第 1 页】", text)
+        # 原文落盘路径同样可用
+        rel = tender.write_original(self.tdir, "招标文件_pdf", text)
         self.assertTrue((self.tdir / rel).exists())
 
 
