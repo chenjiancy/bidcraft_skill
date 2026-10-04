@@ -14,12 +14,27 @@ from m7_check import checker as m7  # noqa: E402
 
 class TestChecksTable(unittest.TestCase):
     def test_table_rows_have_schema(self):
-        self.assertGreaterEqual(len(m7.CHECKS), 3)
+        self.assertGreaterEqual(len(m7.CHECKS), 4)
         for item in m7.CHECKS:
-            self.assertIn(item["id"], ("format", "placeholder", "sensitive"))
+            self.assertIn(item["id"], ("format", "placeholder", "sensitive", "word_open"))
             self.assertTrue(callable(getattr(m7, item["fn"], None)),
                             "检查实现缺失: %s" % item["fn"])
             self.assertIn("level", item)
+
+    def test_word_open_skips_without_com(self):
+        """⑫ 无 pywin32 环境跳过且不降级 ok。"""
+        old = m7.HAVE_COM
+        try:
+            m7.HAVE_COM = False
+            with tempfile.TemporaryDirectory() as td:
+                out, tpl = Path(td) / "out", Path(td) / "tpl"
+                out.mkdir(); tpl.mkdir()
+                (out / "a.docx").write_bytes(b"x")
+                ok, issues = m7.check_word_open(out, tpl)
+                self.assertTrue(ok)
+                self.assertTrue(any("跳过" in x for x in issues))
+        finally:
+            m7.HAVE_COM = old
 
 
 class TestCheckPlaceholder(unittest.TestCase):
