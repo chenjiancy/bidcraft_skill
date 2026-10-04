@@ -531,3 +531,15 @@
 **验证**：`tests/unit/test_filler_whitelist.py` 5 用例（清单提取含顿号拆出/目录前缀/人员目录边界/过滤/组合插入只含清单内/无白名单旧调用兼容）；集成 test_m5_filler 在真实素材库+补全后清单断言 清单外为空。
 **三塔层全绿**：unit 126 + integration 74 + e2e 19 = **219 项**（基线 205 → +14：docx_util 9 + whitelist 5，无回归）。
 **下一步**：⑧ 硬编码参数化（陈云/邵章华/孙婧/TESS 路径/总监专业「市政公用工程」改由素材清单与配置驱动）。
+
+### ⑧ 硬编码参数化（P1）
+**点位**：filler 中 TESS 绝对路径、总监专业「市政公用工程」、企业资质等级字符串、_OMIT_ZC 姓名集合、_build_combo 中 陈云/邵章华/孙婧 硬编码人名、资质/荣誉 glob 模式。
+**实现**：
+- TESS：`_find_tesseract()`——环境变量 TESSERACT_CMD → PATH 中 tesseract → 本机回退路径，换机/换环境不改代码。
+- 总监专业：素材清单新增「投标资格专业」=市政公用工程（权威字段），兜底 `_cert_major` 从 personnel[0].cert 括注解析。
+- 企业资质等级：`_qual_level_from_mat` 从 qualification_required 路径文件名推导（房屋建筑工程监理甲级_20281222_P0.png → 房屋建筑工程监理甲级），甲级在前。
+- _OMIT_ZC 动态化：`_omit_zc(persons)` 由 personnel 推导（status=职称缺口 或 title_cert 含「无」→ 阮旭/黄诚），不再硬编码。
+- _build_combo：总监职称=personnel[0].name、法代=企业基础信息.法定代表人姓名、代理人=委托代理人姓名（⑧后素材清单已补该字段）；资质组合前缀 `_qual_cert_prefixes`、荣誉文件 `_honor_paths` 均从清单路径推导，清单空时兜底旧 glob。
+**验证**：test_filler_whitelist 扩至 12 用例（含 _omit_zc 推导、人名数据驱动、专业/资质等级推导、资质组合清单外剔除）。
+**三塔层全绿**：unit 133 + integration 74 + e2e 19 = **226 项**（较 219 再 +7）。
+**下一步**：② M7 检查三道（格式 diff / 占位符清零 / 敏感词残留，可增行检查表）。
