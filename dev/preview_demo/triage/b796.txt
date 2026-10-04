@@ -1,0 +1,2 @@
+block796 blip r:embed=rId28 target=media/image1.png
+block796 段落文本: '2、 法定代表人联系方式（手机）：'

@@ -1,0 +1,14 @@
+A_blank_save: OK
+B_blank_move: OK
+C_blank_nomove_native: OK
+D_blank_native: OK
+E_block865: OK
+F_block866_867_868: OK
+G_table882: OK
+H_table890: OK
+I_table896: OK
+J_table916: OK
+K_table922: OK
+L_table930: OK
+M_table939: OK
+N_table946: OK

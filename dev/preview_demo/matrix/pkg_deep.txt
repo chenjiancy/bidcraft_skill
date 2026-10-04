@@ -1,0 +1,30 @@
+OLD: zip=42KB 文件数=15 压缩方式={8: 15} 未压缩总大小=781KB
+   [Content_Types].xml                      size=1KB comp=8
+   _rels/.rels                              size=0KB comp=8
+   docProps/app.xml                         size=1KB comp=8
+   docProps/core.xml                        size=0KB comp=8
+   word/document.xml                        size=415KB comp=8
+   word/_rels/document.xml.rels             size=1KB comp=8
+   word/styles.xml                          size=333KB comp=8
+   word/theme/theme1.xml                    size=7KB comp=8
+   document.xml md5=5d8046dc9cfc len=425214
+RT: zip=42KB 文件数=15 压缩方式={8: 15} 未压缩总大小=781KB
+   [Content_Types].xml                      size=1KB comp=8
+   _rels/.rels                              size=0KB comp=8
+   docProps/app.xml                         size=1KB comp=8
+   docProps/core.xml                        size=0KB comp=8
+   word/document.xml                        size=415KB comp=8
+   word/_rels/document.xml.rels             size=1KB comp=8
+   word/styles.xml                          size=333KB comp=8
+   word/theme/theme1.xml                    size=7KB comp=8
+   document.xml md5=5d8046dc9cfc len=425214
+NEW: zip=366KB 文件数=27 压缩方式={8: 27} 未压缩总大小=1625KB
+   [Content_Types].xml                      size=1KB comp=8
+   _rels/.rels                              size=0KB comp=8
+   docProps/core.xml                        size=0KB comp=8
+   docProps/app.xml                         size=1KB comp=8
+   word/document.xml                        size=453KB comp=8
+   word/_rels/document.xml.rels             size=2KB comp=8
+   word/styles.xml                          size=341KB comp=8
+   word/stylesWithEffects.xml               size=427KB comp=8
+   document.xml md5=18cdc0c2b618 len=464174

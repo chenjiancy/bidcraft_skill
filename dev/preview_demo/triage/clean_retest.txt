@@ -1,0 +1,4 @@
+OLD原版 -> OK
+RT往返 -> OK
+A重打包 -> OK
+NEW演示 -> FAIL com_error(-2147352567, '发生意外。', (0, 'Microsoft Word', '文件可能已经损坏。', 'wdmain11.chm', 25272, -2146822496), None) (0, 'Microsoft Word', '文件可能已经损坏。', 'wdmain11.chm', 25272, -2146822496)

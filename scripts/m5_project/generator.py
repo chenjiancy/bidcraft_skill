@@ -27,6 +27,7 @@ from pathlib import Path
 
 from _shared import core
 from m_feedback import feedback as fb
+from . import ph_preview as phprev   # 图片占位预览框（方案A：模板直接可见位置/尺寸/内容）
 
 try:
     from docx import Document
@@ -600,30 +601,70 @@ def _make_image_ph_para(text, font):
     return p
 
 
+def _set_picture_marker(run, marker):
+    """给段落内图片打标记：wp:docPr@descr = marker（填充引擎按此定位/删除预览框）。"""
+    for el in run._r.iter():
+        if el.tag.endswith("}docPr"):
+            el.set("descr", marker)
+            return True
+    return False
+
+
+def _make_ph_preview_para(doc, ph_text):
+    """构造图片占位预览框段：灰底占位图（尺寸=image_spec 目标口径），docPr 打标 IMG_PH:xxx。"""
+    from docx.shared import Cm
+    png = phprev.make_placeholder_png(ph_text)
+    w_cm, h_cm = phprev.box_size_for(ph_text)
+    p = doc.add_paragraph()
+    p.alignment = 1                                     # CENTER
+    run = p.add_run()
+    run.add_picture(png, width=Cm(w_cm), height=Cm(h_cm))
+    _set_picture_marker(run, phprev.PH_PREVIEW_PREFIX + ph_text)
+    return p
+
+
+def _insert_ph_preview_after(doc, anchor_el, ph_text):
+    """把预览框段移动到锚点元素（占位文字段）之后；返回是否成功。"""
+    try:
+        p = _make_ph_preview_para(doc, ph_text)
+        anchor_el.addnext(p._p)
+        return True
+    except Exception:
+        return False
+
+
 def _insert_image_ph_after_table(doc, ctx_map, rules, font):
-    """在指定表格（按表前文关键词，去空格匹配）之后插入图片占位段。"""
-    n = 0
+    """在指定表格（按表前文关键词，去空格匹配）之后插入图片占位段 + 预览框。
+    返回 (占位段数, 预览框数)。"""
+    n = n_prev = 0
     for table in doc.tables:
         ctx = ctx_map.get(table._tbl, "").replace(" ", "").replace("\u3000", "")
         for kw, phs in rules:
             if kw in ctx:
                 for text in phs:
-                    table._tbl.addnext(_make_image_ph_para(text, font))
+                    el = _make_image_ph_para(text, font)
+                    table._tbl.addnext(el)
                     n += 1
-    return n
+                    if _insert_ph_preview_after(doc, el, text):
+                        n_prev += 1
+    return n, n_prev
 
 
 def _insert_image_ph_after_para(doc, rules, font):
-    """在锚点段落（含关键词）之后插入图片占位段。"""
-    n = 0
+    """在锚点段落（含关键词）之后插入图片占位段 + 预览框。
+    返回 (占位段数, 预览框数)。"""
+    n = n_prev = 0
     for p in doc.paragraphs:
         full = p.text
         for kw, phs in rules:
             if kw in full:
                 for text in phs:
-                    p._p.addnext(_make_image_ph_para(text, font))
+                    el = _make_image_ph_para(text, font)
+                    p._p.addnext(el)
                     n += 1
-    return n
+                    if _insert_ph_preview_after(doc, el, text):
+                        n_prev += 1
+    return n, n_prev
 
 
 def _fill_list_table(table, rows_target=None, tag_map=None):
@@ -880,6 +921,38 @@ def _extract_blocks(src_path):
     return blocks, doc
 
 
+_RNS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+
+
+def _sanitize_copy(node):
+    """深拷贝招标文件块后清理跨包引用，防止 Word 报「文件可能已经损坏」。
+
+    招标原文存在两类跨包引用，深拷贝进新文档后在新 rels 中无对应 part，会形成悬空引用：
+    A. 章节段落 w:pPr/w:sectPr 内的 <w:footerReference r:id=...> / headerReference
+       （指向源文档 footer/header part，旧模板是人工用 Word 保存时被自动修复的）；
+    B. 原文示例图（a:blip r:embed=... 指向源媒体，如身份证样例/委托书样例扫描件，
+       商务标图片一律来自素材库占位，原文示例图不应进入模板）。
+    处理：1) 移除 headerReference/footerReference；2) 移除 w:drawing/w:object/w:pict 示例图；
+          3) 其余元素剥离 r:embed / r:id / r:link 属性（如超链接退化为纯文本）。
+    """
+    node = copy.deepcopy(node)
+    for tag in (qn("w:headerReference"), qn("w:footerReference")):
+        for el in node.iter(tag):
+            parent = el.getparent()
+            if parent is not None:
+                parent.remove(el)
+    for tag in (qn("w:drawing"), qn("w:object"), qn("w:pict")):
+        for el in list(node.iter(tag)):
+            parent = el.getparent()
+            if parent is not None:
+                parent.remove(el)
+    for el in node.iter():
+        for attr in ("{%s}embed" % _RNS, "{%s}id" % _RNS, "{%s}link" % _RNS):
+            if attr in el.attrib:
+                del el.attrib[attr]
+    return node
+
+
 def build_docx(blocks, span, items, out_path, material, font=None, rules=None, equip_rows=None):
     """
     从招标文件原文块 [s,e] 深拷贝构建项目模板 docx：
@@ -906,9 +979,9 @@ def build_docx(blocks, span, items, out_path, material, font=None, rules=None, e
             t = _para_text(blk["node"]).strip()
             if t:
                 last_para = t
-            doc.element.body.append(copy.deepcopy(blk["node"]))
+            doc.element.body.append(_sanitize_copy(blk["node"]))
         else:
-            new_node = copy.deepcopy(blk["node"])
+            new_node = _sanitize_copy(blk["node"])
             ctx_map[new_node] = last_para
             tbl_meta.append((new_node, _item_id_for_block(i, items)))
             doc.element.body.append(new_node)
@@ -928,12 +1001,22 @@ def build_docx(blocks, span, items, out_path, material, font=None, rules=None, e
     n_star = _remove_stray_star(doc)
     n_shade = _strip_shading_and_highlight(doc)
     n_font = _apply_file_font(doc, font) if font else 0
-    n_img = _insert_image_ph_after_table(doc, ctx_map, rules.get("img_after_table", []), font or "宋体")
-    n_img += _insert_image_ph_after_para(doc, rules.get("img_after_para", []), font or "宋体")
+    n_img, n_prev = _insert_image_ph_after_table(doc, ctx_map, rules.get("img_after_table", []), font or "宋体")
+    n_img2, n_prev2 = _insert_image_ph_after_para(doc, rules.get("img_after_para", []), font or "宋体")
+    n_img += n_img2
+    n_prev += n_prev2
+    # 规范化 body：w:sectPr 必须是 body 最后一个子元素。
+    # python-docx 1.2.0 空 Document() 的 body 仅含 sectPr，正文 append 后会跑到内容前，
+    # Word 打开会报「文件可能已经损坏」；保存前移回末尾（旧模板经 Word 修订保存时被自动修复）。
+    body_el = doc.element.body
+    sp_el = body_el.find(qn("w:sectPr"))
+    if sp_el is not None:
+        body_el.remove(sp_el)
+        body_el.append(sp_el)
     doc.save(out_path)
     total = ph_para + ph_row + sum(tbl_stats.values()) + n_img
     info = {"占位符数": total, "段落占位": ph_para, "表格占位": ph_row + sum(tbl_stats.values()),
-            "图片占位": n_img}
+            "图片占位": n_img, "图片占位框": n_prev}
     if n_equip:
         info["附表9设备数据行"] = n_equip
     if n_shade:
@@ -1062,6 +1145,7 @@ def generate(ent, project, contract_path=None, material_path=None, source_path=N
             "文件": fname, "契约项": ids, "块范围": [lo, hi],
             "占位符数": info.get("占位符数", 0),
             "图片占位": info.get("图片占位", 0),
+            "图片占位框": info.get("图片占位框", 0),
             "字体": info.get("统一字体", FILE_FONT.get(fname, "")),
             "去底纹": info.get("去底纹", 0),
         })
@@ -1083,7 +1167,8 @@ def _write_ph_manifest(out_dir, results, material):
     lines = ["# 项目占位符清单", ""]
     lines.append("- 项目：%s ｜ 生成器：%s %s ｜ 生成时间：%s"
                  % (material.get("project", ""), GEN_ID, GEN_VERSION, core.now_iso()))
-    lines.append("- 说明：占位符统一【xxx】；图片占位【图片：xxx】；人工审核可增删；")
+    lines.append("- 说明：占位符统一【xxx】；图片占位【图片：xxx】；")
+    lines.append("  每个图片占位后附灰底预览框（框内标注将插入内容+尺寸，见即可审）；人工审核可增删；")
     lines.append("  审核通过后冻结（只读+版本号），商务标只认冻结版。")
     lines.append("")
     total = 0

@@ -1,0 +1,6 @@
+...x="2880000" cy="1800000"/><wp:docPr id="1" name="Picture 1" descr="IMG_PH:【图片：法定代表人身份证正、反面扫描件】"/><wp:cNvGraphicFramePr><a:graphicFrameLocks noChangeAspect="1"/></wp:cNvGraphicFramePr><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic><pic:nvPicPr><pic:cNvPr id="0" name="bidcraft_ph_af8e5a56addf.png"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="rId9"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="2880000" cy="1800000"/></a:xfrm><a:prstGeom prst="rect"/></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p><w:p w14:paraId="272C2329"><w:pPr><w:pStyle w:val="5"/><...
+
+所有 r:embed:
+  embed=rId9
+源块 784..804 含关系引用:
+  block 796: blip
