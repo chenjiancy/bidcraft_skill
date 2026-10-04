@@ -14,9 +14,9 @@ from m7_check import checker as m7  # noqa: E402
 
 class TestChecksTable(unittest.TestCase):
     def test_table_rows_have_schema(self):
-        self.assertGreaterEqual(len(m7.CHECKS), 4)
+        self.assertGreaterEqual(len(m7.CHECKS), 5)
         for item in m7.CHECKS:
-            self.assertIn(item["id"], ("format", "placeholder", "sensitive", "word_open"))
+            self.assertIn(item["id"], ("format", "placeholder", "sensitive", "word_open", "frozen"))
             self.assertTrue(callable(getattr(m7, item["fn"], None)),
                             "检查实现缺失: %s" % item["fn"])
             self.assertIn("level", item)

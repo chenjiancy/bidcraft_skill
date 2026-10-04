@@ -121,7 +121,9 @@ def register(ent, rel_path, level="项目级", project="", ptype="", generator="
         raise FeedbackError("系统文件不登记基线：%s" % rel)
 
     rows = load_baseline(ent)
-    idx = baseline_index(ent)
+    # 重要：索引必须基于同一份 rows 构建（baseline_index 会重新读盘，
+    # 得到不同对象，改了 idx[rel] 也影响不到 rows，导致保存失效——⑥ 踩坑）
+    idx = {core.norm_rel(r.get("相对路径", "")): r for r in rows if r.get("相对路径")}
     sha = core.sha256_of(abs_path)
     fp = _text_fingerprint(abs_path)
     now = core.now_iso()
