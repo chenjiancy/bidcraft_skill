@@ -73,12 +73,21 @@ def load_ledger(ent):
 
 
 def save_ledger(ent, rows):
+    """⑩ 模板台账单源化：只写 JSON（权威）；CSV 按需 export_ledger_csv 导出。"""
     root = template_root(ent)
     root.mkdir(parents=True, exist_ok=True)
     rows = list(rows)
     (root / LEDGER_JSON).write_text(
         json.dumps(rows, ensure_ascii=False, indent=2), encoding="utf-8"
     )
+
+
+def export_ledger_csv(ent, rows=None):
+    """⑩ 按需导出模板台账 CSV（UTF-8 BOM）；rows 缺省时从当前 JSON 读。"""
+    root = template_root(ent)
+    root.mkdir(parents=True, exist_ok=True)
+    if rows is None:
+        rows = load_ledger(ent)
     with open(root / LEDGER_CSV, "w", encoding="utf-8-sig", newline="") as f:
         w = csv.DictWriter(f, fieldnames=TEMPLATE_COLUMNS, extrasaction="ignore")
         w.writeheader()

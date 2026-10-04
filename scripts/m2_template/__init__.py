@@ -92,7 +92,7 @@ def cmd_tpl_init(args):
         ("台账已存在，已复用（%d 条）：%s" % (len(rows), tl.template_root(ent))
          if existed else
          "已初始化模板台账：%s" % tl.template_root(ent))
-        + "\n台账文件：%s / %s" % (tl.LEDGER_CSV, tl.LEDGER_JSON)
+        + "\n台账文件：%s（JSON 权威，CSV 按需导出）" % tl.LEDGER_JSON
         + "\n目录：模板库\\<招标代理机构>\\{投标,采购,询比价}"
         + ("" if not args.force else "\n（--force：已重建为空台账）")
     ))

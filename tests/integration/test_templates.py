@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """L2 集成测试：M2 模板库（真实企业骨架 + 存储层全链路：init→import→list→query→sync→overview→registry）。"""
+import csv
 import json
 import os
 import sys
@@ -57,10 +58,15 @@ class TestTemplateLibFlow(unittest.TestCase):
         self.assertEqual(r1["占位符数"], "3")
         self.assertEqual(r1["图片占位符数"], "1")
 
-        # 台账 JSON/CSV 双份一致
+        # ⑩ 台账单源化：JSON 权威；CSV 按需导出后与 JSON 一致
         j = json.loads((tl.template_root(self.ent) / tl.LEDGER_JSON).read_text(encoding="utf-8"))
         self.assertEqual(len(j), 2)
-        self.assertTrue((tl.template_root(self.ent) / tl.LEDGER_CSV).exists())
+        self.assertFalse((tl.template_root(self.ent) / tl.LEDGER_CSV).exists())
+        tl.export_ledger_csv(self.ent)
+        with open(tl.template_root(self.ent) / tl.LEDGER_CSV, encoding="utf-8-sig", newline="") as f:
+            csv_rows = list(csv.DictReader(f))
+        self.assertEqual(len(csv_rows), 2)
+        self.assertEqual(csv_rows[0]["文件"], j[0]["文件"])
 
         # list / query / overview
         self.assertEqual(len(tl.list_templates(self.ent, agency="大成工程咨询有限公司")), 2)
