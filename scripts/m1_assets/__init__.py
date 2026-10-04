@@ -101,7 +101,7 @@ def cmd_init_enterprise(args):
         ("企业已存在，已复用：%s" if existed else "已创建企业：%s") % ent.name
         + "\n素材库路径：%s" % core.lib_root(ent)
         + "\n已初始化子目录：%s" % "、".join(core.ENTERPRISE_SUBDIRS)
-        + "\n台账：%s / %s" % (core.LEDGER_CSV, core.LEDGER_JSON)
+        + "\n台账：%s（JSON 权威，CSV 按需导出）" % core.LEDGER_JSON
     ))
 
 

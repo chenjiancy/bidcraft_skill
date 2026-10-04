@@ -57,7 +57,8 @@ class TestTplCliFlow(TplCliBase):
         r = run(str(self.root), "tpl-init")
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertTrue((self.tpl_dir / "模板台账.json").exists())
-        self.assertTrue((self.tpl_dir / "模板台账.csv").exists())
+        # ⑩ 单源化：CSV 不再自动生成，按需导出
+        self.assertFalse((self.tpl_dir / "模板台账.csv").exists())
         r = run(str(self.root), "tpl-init")
         self.assertEqual(r.returncode, 0)
 

@@ -562,3 +562,10 @@
 **验证**：unit +1（无 COM 环境跳过路径）；集成 +0（真实生成 10 docx 全开，test_m5_filler 耗时 27s→58s）；CLI 对真实商务标（含 79MB 资格证明）四道 ok=true。
 **三塔层全绿**：unit 142 + integration 75 + e2e 19 = **236 项**。
 **下一步**：⑩ 台账 JSON/CSV 双写改单源（JSON 权威，CSV 按需导出）。
+
+### ⑩ 台账 JSON/CSV 双写改单源（P2）
+**背景**：素材台账与模板台账每写一次 JSON+CSV 双份，长期必然漂移（读以 JSON 优先，CSV 形同虚设还误导）。
+**实现**：core.save_ledger / template_lib.save_ledger 只写 JSON（权威）；新增 export_ledger_csv（按需导出，UTF-8 BOM，rows 缺省从 JSON 读）；load_ledger 保留 CSV 兜底（兼容旧库）。CLI init 提示文案与 references/M1-素材库-操作手册 同步改「JSON 权威，CSV 按需导出」。
+**验证**：新增 unit test_core_ledger 2 用例（save 只写 JSON / export 后 CSV 与 JSON 一致）；test_template_lib、test_templates、test_tpl_cli 改为断言「保存不生成 CSV、导出后生成」。
+**三塔层全绿**：unit 144 + integration 75 + e2e 19 = **238 项**（较 236 再 +2）。
+**下一步**：⑪ CI 增加 Windows runner（当前 Actions 默认 ubuntu，中文编码/路径类问题只在本地暴露）。

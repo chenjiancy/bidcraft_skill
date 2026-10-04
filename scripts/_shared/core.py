@@ -214,12 +214,21 @@ def load_ledger(ent):
 
 
 def save_ledger(ent, rows):
+    """⑩ 台账单源化：只写 JSON（权威）；CSV 按需 export_ledger_csv 导出，避免双写漂移。"""
     ent = Path(ent)
     lib = lib_root(ent)
     rows = list(rows)
     (lib / LEDGER_JSON).write_text(
         json.dumps(rows, ensure_ascii=False, indent=2), encoding="utf-8"
     )
+
+
+def export_ledger_csv(ent, rows=None):
+    """⑩ 按需导出 CSV（UTF-8 BOM，人读友好）；rows 缺省时从当前 JSON 台账读。"""
+    ent = Path(ent)
+    lib = lib_root(ent)
+    if rows is None:
+        rows = load_ledger(ent)
     with open(lib / LEDGER_CSV, "w", encoding="utf-8-sig", newline="") as f:
         w = csv.DictWriter(f, fieldnames=LEDGER_COLUMNS, extrasaction="ignore")
         w.writeheader()

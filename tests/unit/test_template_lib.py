@@ -114,7 +114,10 @@ class TestLedgerIO(TemplateLibInit):
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0]["代理机构"], "某代理")
         self.assertEqual(rows[0]["占位符数"], "5")
-        # CSV 双写存在且可读回
+        # ⑩ 单源化：保存只写 JSON，CSV 按需导出（不再自动双写）
+        self.assertTrue((tl.template_root(ent) / tl.LEDGER_JSON).exists())
+        self.assertFalse((tl.template_root(ent) / tl.LEDGER_CSV).exists())
+        tl.export_ledger_csv(ent)
         self.assertTrue((tl.template_root(ent) / tl.LEDGER_CSV).exists())
         rows2 = tl.load_ledger(ent)
         self.assertEqual(len(rows2), 1)
