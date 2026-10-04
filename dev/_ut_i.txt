@@ -1,0 +1,11 @@
+﻿python : ...........................................................................
+所在位置 行:1 字符: 226
++ ... ct -Last 3; python -m unittest discover -s tests/integration -p "test ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (.................................:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+----------------------------------------------------------------------
+Ran 75 tests in 63.351s
+
+OK

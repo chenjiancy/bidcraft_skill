@@ -590,3 +590,20 @@
 **验证**：新增 unit test_freeze 5 用例 + test_feedback_register 2 用例 + e2e test_freeze_cli 1 用例（冻结→审计未变→篡改→审计已改）。
 **三塔层全绿**：unit 151 + integration 75 + e2e 20 = **246 项**（较 238 再 +8）。
 **下一步**：⑦ 超行数拆分（generator ~1100 / filler ~870 / core ~1100 行，均超 500 行约定）。
+
+
+### ⑦ 超行数拆分（P1）
+**背景**：generator.py 1180 行、filler.py 1113 行、core.py 1175 行，违反「单文件 ~500 行」约定；文件过大不利于单测定位与后续 ④⑤⑨ 扩展。
+**实现**：
+- generator.py → 薄 facade，拆 7 子模块（同目录 m5_project/）：gen_common（常量/FILE_MAP/RULES/SME_SAMPLE/GenError/HAVE_DOCX）、gen_text（段落占位）、gen_images（图片占位+预览框）、gen_tables（表格占位/份数复制/附表9设备行）、gen_blocks（块抽取 _extract_blocks/_sanitize_copy/build_docx）、gen_paths（默认路径）、gen_main（generate/占位符清单/扫描）。facade `from .gen_* import *` 再导出全部历史符号（含 core/fb/phprev 兼容）。
+- filler.py → 薄 facade，拆 7 子模块：fill_common（常量/依赖）、fill_ocr（简历 OCR，含新补 `_ocr_tsv` tesseract TSV 实现）、fill_combo（白名单/组合构建 287 行最大）、fill_text（文字占位 TEXT_KEY_MAP 31 项）、fill_images（图片插入 FILL_IMG_MAP 14 项）、fill_tables（人员/简历/业绩表）、fill_main（fill_project 主流程 + 三份报告）。
+- core.py → 删除，替换为 `scripts/_shared/core/` 包：basic（常量/LibraryError/工具）、lib（Library）、ledger（台账单源）、batch（Inbox）、trash（回收站）、inbox（归属校验/propose/apply/同名冲突 476 行）、ops（巡检/检索/概览）。`__init__.py` re-export 全部历史符号（core.Library/core.Inbox/propose/apply/query/inspect/overview/ledger 全套），对外 API 零变化。
+**踩坑**：
+1. gen_main.py 漏 `from pathlib import Path` → NameError（Path(ent)），已补。
+2. filler 原文件引用 `_ocr_tsv` 却从未定义（rapidocr 失败分支潜在 NameError）→ fill_ocr.py 补 tesseract TSV 真实实现。
+3. core 拆包循环依赖：Library.init_enterprise 调 save_ledger → basic 不能 import ledger；Library 单独放 lib.py 解决。
+4. ownership_check 依赖 Library → ops.py 从 .inbox 导入 ownership_check、inbox 从 .lib 导入 Library，无环。
+5. 拆包后行数复核：最大 inbox.py 626 行仍超限 → 再拆 Inbox 类到 batch.py（154 行），inbox.py 降到 476 行；全部模块 <500。
+**验证**：facade 冒烟（_parse_cert/fill_project/_build_combo/TEXT_KEY_MAP 31/FILL_IMG_MAP 14）；41 项定向测试（test_filler_whitelist/test_feedback/test_m5_filler 真实数据）全绿；CLI `--root E:\监理标书制作 --enterprise 和县… overview` 真实台账 336 条正常。
+**三塔层全绿**：unit 151 + integration 75 + e2e 20 = **246 项**（与 ⑥ 基线一致，拆包不增删测试点）。
+**下一步**：④ PDF 结构化解析通道（M4 对 PDF 依赖 agent 人工读 + 手动传文本 → 引入表格/多栏感知的 PDF 解析，自动化格式契约解析）。
