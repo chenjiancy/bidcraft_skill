@@ -23,5 +23,5 @@ Thumbs.db
 # 运行时数据：素材库等企业级数据不在仓库内（由 --root / BIDCRAFT_LIB_ROOT 指定），
 # 本地兜底目录 ./素材库 一律忽略，避免敏感/大体积素材入库
 素材库/
-dev/_*.txt
+dev/_*
 dev/docxtpl_eval/_deps/

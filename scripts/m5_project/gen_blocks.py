@@ -68,7 +68,8 @@ def _sanitize_copy(node):
     return node
 
 
-def build_docx(blocks, span, items, out_path, material, font=None, rules=None, equip_rows=None):
+def build_docx(blocks, span, items, out_path, material, font=None, rules=None, equip_rows=None,
+               assets_map=None):
     """
     从招标文件原文块 [s,e] 深拷贝构建项目模板 docx：
       1) 段落/表格逐块深拷贝（文字 100% 契约）；
@@ -76,6 +77,8 @@ def build_docx(blocks, span, items, out_path, material, font=None, rules=None, e
       3) 段落级全局占位 + 范本专属处理（封面标题/授权拆行/中小企业声明函示例值）
          + 段落标签填充 + 落款日期 + 行路由 + 列表/标签值型占位（占位键名参照模板库登记清单）；
       4) 图片占位【图片：xxx】（表格后/锚点段后，模板库同款带边框样式）；
+         assets_map {占位文案: [(素材绝对路径, 口径key, 换页), ...]} → 预览框 v2
+         直接绘制将填充的真实素材缩略图（素材清单白名单解析，见 gen_main.generate）；
       5) 附表9 仪器设备表：数据行替换为模板库范本数据行（企业固定设备，equip_rows）；
       6) 后处理：去除文字底纹/高亮 + 统一文件字体（与模板库基础模板一致）。
     返回 {"占位符数", "段落占位", "表格占位", "图片占位", "去底纹", "统一字体"}。
@@ -116,8 +119,8 @@ def build_docx(blocks, span, items, out_path, material, font=None, rules=None, e
     n_star = _remove_stray_star(doc)
     n_shade = _strip_shading_and_highlight(doc)
     n_font = _apply_file_font(doc, font) if font else 0
-    n_img, n_prev = _insert_image_ph_after_table(doc, ctx_map, rules.get("img_after_table", []), font or "宋体")
-    n_img2, n_prev2 = _insert_image_ph_after_para(doc, rules.get("img_after_para", []), font or "宋体")
+    n_img, n_prev = _insert_image_ph_after_table(doc, ctx_map, rules.get("img_after_table", []), font or "宋体", assets_map)
+    n_img2, n_prev2 = _insert_image_ph_after_para(doc, rules.get("img_after_para", []), font or "宋体", assets_map)
     n_img += n_img2
     n_prev += n_prev2
     # 规范化 body：w:sectPr 必须是 body 最后一个子元素。

@@ -15,7 +15,41 @@ from .gen_paths import (_default_contract_path, _default_material_path,
                         _default_source_docx, _resolve_project_dir)
 from .gen_tables import _extract_tpl_equip_rows
 
-__all__ = ["generate", "_write_ph_manifest", "_scan_placeholders"]
+__all__ = ["generate", "_write_ph_manifest", "_scan_placeholders", "_resolve_assets_map"]
+
+
+def _resolve_assets_map(ent, proj_dir, material):
+    """预览框 v2 素材映射：{图片占位文案: [(素材绝对路径, 口径key, 换页), ...]}。
+
+    复用填充引擎同一套组合解析（fill_combo._build_combo + 白名单），保证
+    模板预览与商务标实际填充所见一致。素材库不存在/解析失败 → 返回空映射
+    （预览框退化为【待补素材】灰底标注，不阻断生成）。
+    """
+    from . import fill_combo as fc
+    from .fill_images import FILL_IMG_MAP
+    lib_root = Path(ent) / "企业级" / "素材库"
+    if not lib_root.is_dir():
+        return {}
+    whitelist = fc._build_whitelist(material)
+    phs = set()
+    for fname in set(IMAGE_PH_AFTER_TABLE) | set(IMAGE_PH_AFTER_PARA):
+        for _kw, plist in IMAGE_PH_AFTER_TABLE.get(fname, []) + IMAGE_PH_AFTER_PARA.get(fname, []):
+            phs.update(plist)
+    assets_map = {}
+    for key in phs:
+        mapped = FILL_IMG_MAP.get(key)
+        if mapped and mapped[0]:                 # 单图占位（固定素材库路径，白名单外不受影响）
+            full = lib_root / mapped[0]
+            if full.is_file():
+                assets_map[key] = [(str(full), mapped[1], True)]
+            continue
+        try:                                     # 组合占位：同填充引擎的素材清单白名单解析
+            items, _miss, _out = fc._build_combo(key, lib_root, proj_dir, material, whitelist)
+            if items:
+                assets_map[key] = items
+        except Exception:
+            continue                       # 单项解析失败不阻断，预览框退化为待补标注
+    return assets_map
 
 
 def generate(ent, project, contract_path=None, material_path=None, source_path=None,
@@ -73,6 +107,9 @@ def generate(ent, project, contract_path=None, material_path=None, source_path=N
             continue
         merged.setdefault(m["file"], []).append(it)
 
+    # 预览框 v2：素材清单白名单 → 每个图片占位解析真实素材路径（_build_combo 规则同填充引擎）
+    assets_map = _resolve_assets_map(ent, proj_dir, material)
+
     for fname, items in merged.items():
         ids = [it["id"] for it in items]
         lo = min(it.get("块范围", [0])[0] for it in items if it.get("块范围"))
@@ -92,7 +129,7 @@ def generate(ent, project, contract_path=None, material_path=None, source_path=N
         }
         info = build_docx(blocks, (lo, hi), items, out_file, material,
                           font=FILE_FONT.get(fname), rules=rules,
-                          equip_rows=tpl_equip_rows)
+                          equip_rows=tpl_equip_rows, assets_map=assets_map)
         rel = "项目级/%s/项目模板/%s" % (project, fname)
         if register_baseline:
             try:
