@@ -607,3 +607,23 @@
 **验证**：facade 冒烟（_parse_cert/fill_project/_build_combo/TEXT_KEY_MAP 31/FILL_IMG_MAP 14）；41 项定向测试（test_filler_whitelist/test_feedback/test_m5_filler 真实数据）全绿；CLI `--root E:\监理标书制作 --enterprise 和县… overview` 真实台账 336 条正常。
 **三塔层全绿**：unit 151 + integration 75 + e2e 20 = **246 项**（与 ⑥ 基线一致，拆包不增删测试点）。
 **下一步**：④ PDF 结构化解析通道（M4 对 PDF 依赖 agent 人工读 + 手动传文本 → 引入表格/多栏感知的 PDF 解析，自动化格式契约解析）。
+
+
+### ④ PDF 结构化解析通道（P1）
+**背景**：M4 对 PDF 依赖 agent 人工读 + 手动传 --text-file（非 RAG 最佳实践：解析→结构感知切片→入库→多路召回），"格式契约解析"存在大量 agent 手工环节。
+**实现**：
+- 新增 scripts/m4_tender/pdf_extract.py（PyMuPDF，fitz API；本机 1.28.2 已装，CI 未装自动降级）：
+  - 文本块级提取（get_text dict blocks，不同栏即不同块，天然多栏）；
+  - 行内双栏拆分：x0 聚簇最大空隙 > max(20% 块宽, 24pt) → 切左右栏、先左后右；
+  - 表格感知：page.find_tables() 抽成 Markdown 表格（含表头分隔行），与表格 bbox 重叠 >50% 的文本块正文去重；
+  - 每页「【第 N 页】」锚点标记（agent 回看条款可带页码）；
+  - extract_pdf(path) → (text, blocks 结构切片 [{page, kind: para|table, text, bbox}])，blocks 供 ⑤ 混合检索 RAG 切片直接复用；
+  - 降级：无 PyMuPDF → LibraryError 提示 pip install pymupdf 或 --text-file（既有契约不变）；空文字层（纯扫描件）→ 明确报错引导 OCR。
+- tender.py：SUPPORTED_EXTS 加 .pdf；extract_text_file 加 PDF 分支；CLI 帮助与用法、操作手册同步（PDF 内置，--text-file 仅作图片/扫描件回退）。
+**踩坑**：
+1. fitz 1.28 顶层 import fitz 有弃用警告 → try pymupdf 优先、fitz 回退。
+2. 测试 PDF 中文乱码：PyMuPDF 默认 helv 字体无中文字形（渲染成 ·）→ 测试用 fontname="china-s" 内置 CJK 字体。
+3. find_tables 对不闭合网格会丢列 → 单测改画闭合 2x3 网格；空文本判断从「text 非空」改为「blocks 非空」（页标记也算文本）。
+**验证**：unit test_pdf_extract 7 项（文本/页标记/双栏列序/表格 Markdown/全空行剔除/竖线转义/损坏 PDF 报错/空文字层报错）+ 集成 test_tender 1 项（extract_text_file 直接消费真 PDF）+ e2e test_tender_cli 1 项（--file <pdf> 免 --text-file 全流程）；test_extract_pdf_with_text_file 回退路径保持通过。
+**三塔层全绿**：unit 158 + integration 76 + e2e 21 = **255 项**（较 246 再 +9）。
+**下一步**：⑤ 素材检索升级混合检索 + 重排（core.query 现为 in 子串匹配，素材量级上来后召回率会崩；对标企业级 RAG：关键词 + 向量 + 重排）。

@@ -2,11 +2,13 @@
 """
 bidcraft · M4 招标文件解析 —— 存储/编排层（确定性文件操作）
 
-v1.1 分工：语义解析由 agent 完成；本层只做项目级目录存取、原文提取、
+v1.2 分工：语义解析由 agent 完成；本层只做项目级目录存取、原文提取（④：PDF
+现由 PyMuPDF 表格/多栏感知结构化提取，不再强制 agent 手工 --text-file）、
 agent 产物的校验落盘（文本 + JSON 双份）、素材库对照与对照表输出。
 
 数据落位（项目级）：<软件根>/<企业>/项目级/<项目名>/招标解析/
-依赖：Python 标准库（DOCX 用 zipfile + xml.etree 提取，无第三方包）。
+依赖：Python 标准库（DOCX 用 zipfile + xml.etree 提取；PDF 可选 PyMuPDF，
+未安装时自动降级要求 --text-file）。
 """
 
 import csv
@@ -18,11 +20,11 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 from _shared import core
-from . import rules
+from . import pdf_extract, rules
 
 W_NS = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 
-SUPPORTED_EXTS = (".docx", ".txt", ".md", ".text")
+SUPPORTED_EXTS = (".docx", ".txt", ".md", ".text", ".pdf")
 PROJECT_SUBDIR = "项目级"
 TENDER_SUBDIR = "招标解析"
 SOURCE_SUBDIR = "源文件"
@@ -99,15 +101,18 @@ def read_text(path):
 
 
 def extract_text_file(path):
-    """按扩展名提取正文：docx 内置解析；txt/md 直接解码；其他格式报错引导。"""
+    """按扩展名提取正文：docx 内置解析；txt/md 直接解码；pdf 走 PyMuPDF
+    表格/多栏感知结构化提取（未装 PyMuPDF 时回退要求 --text-file）；其他格式报错引导。"""
     p = Path(path)
     ext = p.suffix.lower()
     if ext == ".docx":
         return extract_docx(p)
     if ext in (".txt", ".md", ".text"):
         return read_text(p)
+    if ext == ".pdf":
+        return pdf_extract.extract_pdf_text(p)
     raise core.LibraryError(
-        "不支持的格式：%s。脚本内置支持 DOCX/TXT/MD；PDF/图片请由 agent 提取正文后以 --text-file 传入。" % (ext or "未知"))
+        "不支持的格式：%s。脚本内置支持 DOCX/TXT/MD/PDF；图片请由 agent 提取正文后以 --text-file 传入。" % (ext or "未知"))
 
 
 def write_original(tdir, src_stem, text):

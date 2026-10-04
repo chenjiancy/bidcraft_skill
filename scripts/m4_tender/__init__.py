@@ -7,8 +7,10 @@ bidcraft · M4 招标文件解析 —— CLI（命令实现 + 子命令注册）
   # 0) 初始化项目级招标解析目录（幂等；须先有企业，见 M1 init-enterprise）
   python bidcraft.py tender-init --project "XX安置房项目监理"
 
-  # 1) 提取招标文件原文（DOCX/TXT/MD 内置；PDF/图片由 agent 提取后 --text-file 传入）
+  # 1) 提取招标文件原文（DOCX/TXT/MD/PDF 内置；PDF 走 PyMuPDF 表格/多栏感知提取；
+  #    --text-file 仅作图片/纯扫描件等回退）
   python bidcraft.py tender-extract --project "XX安置房项目监理" --file "D:/下载/招标文件.docx"
+  python bidcraft.py tender-extract --project "XX安置房项目监理" --file "D:/下载/招标文件.pdf"
   python bidcraft.py tender-extract --project "XX安置房项目监理" --text-file "D:/下载/招标文件_文本.txt"
 
   # 2) agent 完成语义解析后，提交双份产物落盘（文本 + JSON，须按操作手册模板）
@@ -102,7 +104,8 @@ def cmd_tender_extract(args):
         dst, created = tender.archive_source(tdir, args.project, args.file)
         archived = {"path": str(dst), "created": created, "name": dst.name}
         stem = Path(args.file).stem
-        # 2) 提取正文：DOCX/TXT/MD 内置；PDF/图片需 agent 以 --text-file 提供
+        # 2) 提取正文：DOCX/TXT/MD/PDF 内置（PDF=PyMuPDF 表格/多栏感知，④）；
+        #    图片/纯扫描件等需 agent 以 --text-file 提供
         try:
             text = tender.extract_text_file(args.file)
             kind = "auto"
@@ -198,7 +201,7 @@ def register_parser(sub):
     sp.add_argument("--project", required=True, help="投标项目名（禁路径分隔符）")
     sp.set_defaults(func=cmd_tender_init)
 
-    sp = sub.add_parser("tender-extract", help="M4：归档招标文件原件（源文件/）并提取原文（DOCX/TXT/MD 内置；PDF/图片配 --text-file）")
+    sp = sub.add_parser("tender-extract", help="M4：归档招标文件原件（源文件/）并提取原文（DOCX/TXT/MD/PDF 内置；PDF=PyMuPDF 表格/多栏感知；图片/扫描件配 --text-file）")
     sp.add_argument("--project", required=True)
     sp.add_argument("--file", help="招标文件原件路径（任意格式，自动归档到 源文件/）")
     sp.add_argument("--text-file", help="已提取文本路径（PDF/图片场景，agent 提取后传入）")

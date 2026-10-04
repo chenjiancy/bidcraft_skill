@@ -102,7 +102,7 @@ class TestTenderCliFlow(TenderCliBase):
         self.assertEqual(r.returncode, 1)
 
     def test_extract_pdf_with_text_file(self):
-        """PDF 场景：--file 归档原件 + --text-file 提供 agent 提取文本。"""
+        """PDF 场景：--file 归档原件 + --text-file 提供 agent 提取文本（回退路径）。"""
         r = run(str(self.root), "tender-init", "--project", PROJECT)
         self.assertEqual(r.returncode, 0)
         pdf = self.root / "招标文件.pdf"
@@ -114,6 +114,31 @@ class TestTenderCliFlow(TenderCliBase):
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertTrue((self.tdir / "源文件" / ("源文件_%s.pdf" % PROJECT)).exists())
         self.assertTrue((self.tdir / "原文_招标文件.txt").exists())
+
+    def test_extract_pdf_auto(self):
+        """④ PDF 自动提取：--file <真 PDF> 不再需要 --text-file。无 PyMuPDF 跳过。"""
+        try:
+            import pymupdf as fitz
+        except ImportError:
+            try:
+                import fitz
+            except ImportError:
+                self.skipTest("未安装 PyMuPDF")
+        r = run(str(self.root), "tender-init", "--project", PROJECT)
+        self.assertEqual(r.returncode, 0)
+        pdf = self.root / "招标文件.pdf"
+        d = fitz.open()
+        page = d.new_page()
+        page.insert_text((72, 72), "第一章 招标公告", fontname="china-s")
+        d.save(str(pdf))
+        d.close()
+        r = run(str(self.root), "tender-extract", "--project", PROJECT, "--file", str(pdf))
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertTrue((self.tdir / "源文件" / ("源文件_%s.pdf" % PROJECT)).exists())
+        self.assertTrue((self.tdir / "原文_招标文件.txt").exists())
+        content = (self.tdir / "原文_招标文件.txt").read_text(encoding="utf-8")
+        self.assertIn("第一章 招标公告", content)
+        self.assertIn("【第 1 页】", content)
 
     def test_parse_bad_json_exit1(self):
         r = run(str(self.root), "tender-init", "--project", PROJECT)
