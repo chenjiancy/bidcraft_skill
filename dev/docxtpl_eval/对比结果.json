@@ -1,0 +1,82 @@
+{
+  "fixed_text": {
+    "self": {
+      "第一章 投标文件格式": true,
+      "项目名称：": true,
+      "（盖章）": true,
+      "姓名": true,
+      "出生年月": true,
+      "备注": true
+    },
+    "docxtpl": {
+      "第一章 投标文件格式": true,
+      "项目名称：": true,
+      "（盖章）": true,
+      "姓名": true,
+      "出生年月": true,
+      "备注": true
+    }
+  },
+  "style": {
+    "self": {
+      "title_run": {
+        "font": "黑体",
+        "size": 16.0,
+        "bold": true
+      },
+      "body_runs": [
+        {
+          "font": "宋体",
+          "size": 12.0,
+          "bold": false
+        }
+      ],
+      "table_borders": true,
+      "header_bold": true,
+      "loop_row_borders": [
+        false,
+        false,
+        false
+      ]
+    },
+    "docxtpl": {
+      "title_run": {
+        "font": "黑体",
+        "size": 16.0,
+        "bold": true
+      },
+      "body_runs": [
+        {
+          "font": "宋体",
+          "size": 12.0,
+          "bold": false
+        }
+      ],
+      "table_borders": true,
+      "header_bold": true,
+      "loop_row_borders": [
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "lines": {
+    "self_render": 53,
+    "docxtpl_render": 29
+  },
+  "deps": {
+    "self": [
+      "python-docx（已在产品依赖）",
+      "docx_util（自研公共工具）"
+    ],
+    "docxtpl": [
+      "docxtpl",
+      "jinja2（第三方，CI 需新增依赖）"
+    ]
+  },
+  "rows_rendered": {
+    "self": 4,
+    "docxtpl": 4
+  }
+}
