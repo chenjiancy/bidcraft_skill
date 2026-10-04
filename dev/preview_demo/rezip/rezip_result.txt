@@ -1,4 +1,0 @@
-A_order_same_orig -> OK (zip=42KB)
-B_sorted -> OK (zip=42KB)
-C_ct_first -> OK (zip=42KB)
-D_stored -> OK (zip=782KB)
