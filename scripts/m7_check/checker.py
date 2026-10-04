@@ -31,6 +31,9 @@ CHECKS = [
     {"id": "word_open", "name": "Word 可打开性（COM 冒烟）", "level": "致命",
      "desc": "每文件全新 Word 实例只读打开，防「文件可能已损坏」交付事故；无 pywin32 环境跳过",
      "fn": "check_word_open"},
+    {"id": "frozen", "name": "冻结版一致（⑥ proj-freeze）", "level": "致命",
+     "desc": "有冻结清单时：模板文件 sha256 必须与冻结清单一致（已改=须重新冻结）",
+     "fn": "check_frozen"},
 ]
 
 try:
@@ -238,6 +241,29 @@ def check_word_open(out_dir, tpl_dir):
                 pythoncom.CoUninitialize()
             except Exception:
                 pass
+    return (not issues, issues)
+
+
+def check_frozen(out_dir, tpl_dir):
+    """⑥ 冻结版一致：项目模板有 冻结清单.json 时，逐文件 sha256 比对；
+    无冻结清单 → 跳过（未冻结项目，提示不降级）。"""
+    tpl = Path(tpl_dir)
+    mp = tpl / "冻结清单.json"
+    if not mp.is_file():
+        return True, ["未发现冻结清单（项目模板未冻结，跳过一致校验）"]
+    try:
+        data = core.read_json(str(mp), None) or {}
+    except Exception as e:
+        return False, ["冻结清单解析失败: %s" % e]
+    issues = []
+    for item in data.get("文件", []) or []:
+        f = tpl / item.get("文件", "")
+        if not f.is_file():
+            issues.append("冻结文件缺失：%s" % item.get("文件", ""))
+            continue
+        if core.sha256_of(f) != item.get("sha256"):
+            issues.append("冻结版已改动（须重新 proj-freeze）：%s（清单 %s）"
+                          % (item.get("文件", ""), item.get("版本", "")))
     return (not issues, issues)
 
 

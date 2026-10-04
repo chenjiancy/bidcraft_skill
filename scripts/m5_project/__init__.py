@@ -17,6 +17,7 @@ from pathlib import Path
 
 from _shared import core            # noqa: E402
 from . import generator as gen      # noqa: E402
+from . import freeze as fz          # noqa: E402
 
 try:
     sys.stdout.reconfigure(encoding="utf-8")
@@ -57,6 +58,36 @@ def cmd_proj_gen(args):
     print("已登记产物基线（fb）")
 
 
+def cmd_proj_freeze(args):
+    ent = get_ent(args)
+    proj = ent / "项目级" / args.project
+    if not proj.is_dir():
+        print("错误：项目目录不存在：%s" % proj, file=sys.stderr)
+        raise SystemExit(1)
+    tpl = args.tpl or str(proj / "项目模板")
+    if args.check:
+        res = fz.audit_frozen(ent, args.project, tpl_dir=tpl)
+        if args.json:
+            print(json.dumps(res, ensure_ascii=False, indent=2))
+            return
+        print("冻结审计：未变 %d / 已改 %d / 缺失 %d"
+              % (len(res["unchanged"]), len(res["modified"]), len(res["missing"])))
+        for r in res["modified"]:
+            print("  ✗ 已改（须重新冻结）：%s（基线 %s）" % (r["相对路径"], r["版本"]))
+        for r in res["missing"]:
+            print("  ✗ 缺失：%s" % r["相对路径"])
+        if not res["modified"] and not res["missing"]:
+            print("冻结版未变，商务标可放心使用。")
+        return
+    man = fz.freeze_project(ent, args.project, tpl_dir=tpl, note=args.note)
+    if args.json:
+        print(json.dumps(man, ensure_ascii=False, indent=2))
+        return
+    print("已冻结：%s ｜ 冻结版本 %s ｜ %d 个模板文件（基线已登记，改动会被 fb audit 检出）"
+          % (args.project, man["冻结版本"], man["文件数"]))
+    print("冻结清单：%s" % fz.freeze_manifest_path(tpl))
+
+
 def register_parser(sub):
     sp = sub.add_parser("proj-gen", help="M5：按格式契约+素材清单动态生成项目模板（docx+占位符）")
     sp.add_argument("--project", required=True, help="项目名（项目级/<项目>）")
@@ -67,3 +98,10 @@ def register_parser(sub):
     sp.add_argument("--base-dir", default="", help="基础模板目录（企业级/模板库/<代理>/<方式>/，样式参考）")
     sp.add_argument("--no-baseline", action="store_true", help="跳过产物基线登记")
     sp.set_defaults(func=cmd_proj_gen)
+
+    sp = sub.add_parser("proj-freeze", help="M5：冻结项目模板（登记fb基线+冻结清单，商务标只认冻结版）")
+    sp.add_argument("--project", required=True, help="项目名（项目级/<项目>）")
+    sp.add_argument("--tpl", default="", help="项目模板目录（默认 项目级/<项目>/项目模板）")
+    sp.add_argument("--check", action="store_true", help="仅审计冻结后是否被改动（不重新冻结）")
+    sp.add_argument("--note", default="", help="冻结备注")
+    sp.set_defaults(func=cmd_proj_freeze)

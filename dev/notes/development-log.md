@@ -578,3 +578,15 @@
 **验证**：本地（有真实数据）26 项集成全过；无数据环境由 skip 装饰器保证。
 **三塔层全绿**：unit 144 + integration 75 + e2e 19 = **238 项**。
 **下一步**：⑥ proj-freeze 冻结命令自动化（hash 登记、只读标记、版本号、变更必须走 fb 流程）。
+
+### ⑥ proj-freeze 冻结命令自动化（P2）
+**背景**：商务标只认冻结版模板，此前「冻结」靠口头约定，无 hash 登记/版本号/只读约束，改动无痕。
+**实现**：
+- 新增 scripts/m5_project/freeze.py：freeze_project（校验目录含 docx → 逐文件 fb.register 登记基线（ptype=项目模板、generator=proj-freeze、重复冻结自动 bump 版本）→ 写 冻结清单.json（冻结版本 vN、每文件 sha256+版本、说明「商务标只认冻结版模板；模板改动需重新 proj-freeze」））；audit_frozen（复用 fb.audit(full=True) 按 tpl 相对路径前缀过滤 未变/已改/缺失）；_next_freeze_version（v1→读清单→v(N+1)）。
+- m5_project/__init__.py 注册 CLI：proj-freeze --project [--tpl] [--check] [--note]（--check 仅审计不重新冻结）。
+- M7 CHECKS 追加第 5 行 `frozen`（可增行机制实证）：有冻结清单时逐文件 sha256 与清单比对，改动即「冻结版已改动（须重新 proj-freeze）」；无清单跳过不降级。
+**踩坑（重要）**：freeze 首轮真实项目执行发现 fb.register 不落盘——register 里 `idx = baseline_index(ent)` 重新读盘，idx[rel] 与 rows 是两份独立解析的 dict，改 idx[rel] 不影响 rows，save 写回未修改旧数据。修复：register 内索引基于同一份 rows 构建。新增 test_feedback_register 2 用例防回归。这是 ⑥ 暴露的既有静默 bug（此前所有 register 版本 bump 均未真正落盘）。
+**真实项目落地**：和县化工园尾水 项目模板 已冻结 冻结版本 v2（10 文件，fb 版本 v2，清单 sha256 齐全）；清理陈旧基线行 投标保证金材料.docx（10-03 人工修订已移除，仅存于 项目模板_范本_20261003）。proj-freeze --check 现报 未变 10/已改 0/缺失 0；M7 frozen 检查 ok。
+**验证**：新增 unit test_freeze 5 用例 + test_feedback_register 2 用例 + e2e test_freeze_cli 1 用例（冻结→审计未变→篡改→审计已改）。
+**三塔层全绿**：unit 151 + integration 75 + e2e 20 = **246 项**（较 238 再 +8）。
+**下一步**：⑦ 超行数拆分（generator ~1100 / filler ~870 / core ~1100 行，均超 500 行约定）。
