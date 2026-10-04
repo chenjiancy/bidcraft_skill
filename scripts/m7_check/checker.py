@@ -28,7 +28,17 @@ CHECKS = [
      "desc": "【图片：*】占位必须为 0；文字占位仅允许待补字段清单登记项", "fn": "check_placeholder"},
     {"id": "sensitive", "name": "敏感/残留痕迹", "level": "警告",
      "desc": "扫描未清理痕迹与配置关键词（预览框说明/占位提示/未替换括注等）", "fn": "check_sensitive"},
+    {"id": "word_open", "name": "Word 可打开性（COM 冒烟）", "level": "致命",
+     "desc": "每文件全新 Word 实例只读打开，防「文件可能已损坏」交付事故；无 pywin32 环境跳过",
+     "fn": "check_word_open"},
 ]
+
+try:
+    import win32com.client  # noqa: F401
+    import pythoncom        # noqa: F401
+    HAVE_COM = True
+except Exception:
+    HAVE_COM = False
 
 # 敏感/残留痕迹关键词（可增行；命中即记入报告）
 SENSITIVE_PATTERNS = [
@@ -194,6 +204,40 @@ def check_sensitive(out_dir, tpl_dir):
                 if pat in txt:
                     ctx = txt.strip().replace("\n", " ")[:60]
                     issues.append("%s：命中「%s」→ %s" % (o.name, pat, ctx))
+    return (not issues, issues)
+
+
+def check_word_open(out_dir, tpl_dir):
+    """⑫ Word 可打开性冒烟：每文件全新 Dispatch（避免 COM 复用假阳性）。
+    无 pywin32 环境 → 跳过（ok 不降级，报告注明）。"""
+    if not HAVE_COM:
+        return True, ["跳过：环境无 pywin32，未执行 Word 冒烟"]
+    issues = []
+    for o in _docx_paths(out_dir):
+        word = None
+        try:
+            pythoncom.CoInitialize()
+            word = win32com.client.DispatchEx("Word.Application")
+            word.Visible = False
+            try:
+                word.DisplayAlerts = 0
+            except Exception:
+                pass
+            doc = word.Documents.Open(str(o.resolve()), ReadOnly=True)
+            doc.Close(False)
+            issues_ok = True
+        except Exception as e:
+            issues.append("%s：Word 无法打开 → %s" % (o.name, e))
+        finally:
+            try:
+                if word is not None:
+                    word.Quit()
+            except Exception:
+                pass
+            try:
+                pythoncom.CoUninitialize()
+            except Exception:
+                pass
     return (not issues, issues)
 
 

@@ -555,3 +555,10 @@
 **验证**：unit test_m7_check 8 用例（检查表结构/图片占位/待补白名单/清单外/缺文件与表格签名/悬空引用/敏感词/报告写入）；集成 test_m5_filler +1（对真实生成商务标三道全过）；CLI 对真实商务标（10 docx）实测 ok=true。
 **三塔层全绿**：unit 141 + integration 75 + e2e 19 = **235 项**（较 226 再 +9）。
 **下一步**：⑫ Word 可打开性校验（COM 冒烟，防「文件可能已损坏」类交付事故）。
+
+### ⑫ Word 可打开性校验（P0，本轮新增建议）
+**背景**：上一轮定位 Word「文件可能已经损坏」根因（sectPr 前置 + 悬空 footerReference/示例图）后，防此类交付事故需常态化冒烟。
+**实现**：M7 检查表新增第 4 行 `word_open`（可增行机制实证）——每文件全新 `DispatchEx("Word.Application")` 只读打开（避免 COM 复用进程假阳性，沿用 _retest.py 教训），失败记 issue；无 pywin32 环境跳过且不降级 ok。
+**验证**：unit +1（无 COM 环境跳过路径）；集成 +0（真实生成 10 docx 全开，test_m5_filler 耗时 27s→58s）；CLI 对真实商务标（含 79MB 资格证明）四道 ok=true。
+**三塔层全绿**：unit 142 + integration 75 + e2e 19 = **236 项**。
+**下一步**：⑩ 台账 JSON/CSV 双写改单源（JSON 权威，CSV 按需导出）。
