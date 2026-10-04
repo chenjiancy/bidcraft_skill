@@ -26,6 +26,7 @@ import re
 from pathlib import Path
 
 from _shared import core
+from _shared import docx_util as _docx_util
 from m_feedback import feedback as fb
 from . import ph_preview as phprev   # 图片占位预览框（方案A：模板直接可见位置/尺寸/内容）
 
@@ -283,31 +284,13 @@ def _header_cells(table):
 
 
 def set_cell_text(cell, text):
-    """清空单元格并写入文本（保留首个 run 的 rPr 与段落 pPr）。"""
-    p = cell.paragraphs[0]
-    runs = p.runs
-    if runs:
-        runs[0].text = text
-        for r in runs[1:]:
-            r._element.getparent().remove(r._element)
-    else:
-        p.add_run(text)
+    """清空单元格并写入文本（保留首个 run 的 rPr 与段落 pPr）。委托 _shared.docx_util。"""
+    return _docx_util.set_cell_text(cell, text)
 
 
 def _replace_text_in_runs(p, old, new):
-    """段落文本级替换（保留首 run rPr 与段落 pPr；占位词跨 run 也能命中）。"""
-    full = "".join(r.text for r in p.runs)
-    if old in full:
-        newtext = full.replace(old, new)
-        runs = p.runs
-        if runs:
-            runs[0].text = newtext
-            for r in runs[1:]:
-                r._element.getparent().remove(r._element)
-        else:
-            p.add_run(newtext)
-        return True
-    return False
+    """段落文本级替换（保留首 run rPr 与段落 pPr；占位词跨 run 也能命中）。委托公共工具。"""
+    return _docx_util.replace_in_para(p, old, new) > 0
 
 
 def _apply_global_ph(doc):
@@ -416,14 +399,8 @@ def _apply_row_rules(doc, ctx_map):
 
 
 def _set_para_text(p, text):
-    """段落整段写文本（保留首 run rPr 与段落 pPr）。"""
-    runs = p.runs
-    if runs:
-        runs[0].text = text
-        for r in runs[1:]:
-            r._element.getparent().remove(r._element)
-    else:
-        p.add_run(text)
+    """段落整段写文本（保留首 run rPr 与段落 pPr）。委托公共工具。"""
+    return _docx_util.set_para_text(p, text)
 
 
 def _apply_para_label_rules(doc, rules):
@@ -827,7 +804,7 @@ def _post_process_tables(doc, material, ctx_map):
 
 
 def _para_text(node):
-    return "".join(t.text or "" for t in node.iter(qn("w:t")))
+    return _docx_util.para_text(node)
 
 
 def _extract_tpl_equip_rows(tpl_path):

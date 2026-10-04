@@ -22,6 +22,7 @@ import sys
 from pathlib import Path
 
 from _shared import core
+from _shared import docx_util as _docx_util
 
 try:
     from docx import Document
@@ -122,34 +123,19 @@ FILL_IMG_MAP = {
 
 
 # ---------------------------------------------------------------------------
-# 通用 docx 工具
+# 通用 docx 工具（委托 _shared.docx_util，跨 run 安全）
 # ---------------------------------------------------------------------------
 def _para_full_text(p):
-    return "".join(node.text or "" for node in p._p.iter(qn("w:t")))
+    return _docx_util.para_text(p)
 
 
 def _para_runs(p):
-    return [node for node in p._p.iter(qn("w:r"))]
+    return _docx_util.para_runs(p)
 
 
 def _set_para_text(p, text):
-    """整段替换为 text，保留首 run 的 rPr（样式）。"""
-    runs = _para_runs(p)
-    if not runs:
-        r = p._p.makeelement(qn("w:r"), {})
-        p._p.append(r)
-        runs = [r]
-    t_els = [node for node in runs[0].iter(qn("w:t"))]
-    if t_els:
-        t_els[0].text = text
-        for t in t_els[1:]:
-            t.getparent().remove(t)
-    else:
-        t = runs[0].makeelement(qn("w:t"), {})
-        runs[0].append(t)
-        t.text = text
-    for r in runs[1:]:
-        p._p.remove(r)
+    """整段替换为 text，保留首 run 的 rPr（样式）。委托公共工具。"""
+    return _docx_util.set_para_text(p, text)
 
 
 def _iter_doc_paragraphs(doc):
@@ -402,12 +388,96 @@ def _insert_image(p, img_path, w_cm, h_cm):
 
 
 # ---------------------------------------------------------------------------
-# 组合图片构建 v1.1（FILL_IMG_MAP 中 path=None 的组合占位）
+# 组合图片构建 v1.2（③ 素材清单白名单：只允许清单列明的素材，清单外报错）
 # 每项：(路径, IMG_SPEC键, 是否分页)。多页素材按文件名 P0/P1 顺序逐页插入。
 # ---------------------------------------------------------------------------
 _CERT_DIRS = ("注册证书", "岗位证书")
 # 用户 2026-10-04 确认：赵六/赵七无职称证书素材，省略（不报缺图）
 _OMIT_ZC = {"赵六", "赵七"}
+# 项目资料目录（用户自行上传，如 社保*）——不在素材库，白名单默认放行
+_PROJ_DATA_PREFIX = "项目资料/"
+
+
+def _norm_path(p):
+    return str(p).replace("\\", "/").strip().strip("/")
+
+
+def _build_whitelist(material):
+    """从素材清单提取白名单 → (allowed_paths, allowed_person_dirs, allowed_prefixes)。
+
+    数据来源：
+      1) 各 section（qualification_required/iso_certificates/honors/performance/
+         social_security_required）的 path 字段（精确路径；目录型加前缀；逗号/顿号
+         分隔的多文件逐个拆出）；
+      2) 人员目录：personnel[].name + 企业基础信息.法定代表人姓名 / 委托代理人姓名
+         → "人员/<姓名>" 前缀；
+      3) "项目资料/" 固定放行（用户上传目录，不在素材库）。
+    返回三元组，供 _is_whitelisted 判定。
+    """
+    allowed, prefixes, person_names = set(), set(), set()
+    sections = ("qualification_required", "iso_certificates", "honors",
+                "performance", "social_security_required")
+    for section in sections:
+        v = material.get(section)
+        items = v if isinstance(v, list) else ([v] if isinstance(v, dict) else [])
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            raw = item.get("path", "")
+            if not raw:
+                continue
+            raw = str(raw).replace("\\", "/").strip()
+            is_dir = raw.endswith("/")
+            parts = [raw]
+            for sep in ("、", "，", ","):
+                if sep in raw:
+                    parts = [x for x in raw.split(sep) if x.strip()]
+                    break
+            for part in parts:
+                part = _norm_path(part)
+                if not part:
+                    continue
+                allowed.add(part)
+                if is_dir:
+                    prefixes.add(part + "/")
+    for person in material.get("personnel", []) or []:
+        n = (person.get("name") or "").strip()
+        if n:
+            person_names.add(n)
+    biz = material.get("企业基础信息", {}) or {}
+    for k in ("法定代表人姓名", "委托代理人姓名"):
+        n = (biz.get(k) or "").strip()
+        if n:
+            person_names.add(n)
+    person_dirs = {"人员/%s" % n for n in person_names}
+    prefixes.add(_PROJ_DATA_PREFIX)
+    return allowed, person_dirs, prefixes
+
+
+def _is_whitelisted(rel, whitelist):
+    """相对素材库路径是否在清单白名单内（精确路径 / 人员目录前缀 / 前缀 / 项目资料）。"""
+    allowed, person_dirs, prefixes = whitelist
+    rel = _norm_path(rel)
+    if rel in allowed:
+        return True
+    if any(rel.startswith(p + "/") for p in person_dirs):
+        return True
+    if any(rel.startswith(p) for p in prefixes):
+        return True
+    return False
+
+
+def _filter_whitelist(files, lib_root, whitelist):
+    """过滤 glob 结果：清单内返回原路径，清单外返回相对路径列表。"""
+    ok, outside = [], []
+    lib_root = Path(lib_root)
+    for f in files:
+        rel = _norm_path(str(Path(f).relative_to(lib_root)))
+        if _is_whitelisted(rel, whitelist):
+            ok.append(f)
+        else:
+            outside.append(rel)
+    return ok, outside
 
 
 def _find_person_images(lib_root, name, *kinds):
@@ -451,14 +521,24 @@ def _build_zc_items(files):
     return items
 
 
-def _build_combo(key, lib_root, proj_dir, persons):
-    """组合图片占位 → (items, missing明细)。"""
-    items, missing = [], []
+def _build_combo(key, lib_root, proj_dir, persons, whitelist=None):
+    """组合图片占位 → (items, missing明细, outside清单外)。
+    ③白名单：whitelist=None 时不做过滤（兼容旧调用）；否则每个 glob 结果
+    必须命中清单白名单，未列明的素材记入 outside 且不插入。"""
+    items, missing, outside = [], [], []
     base = Path(lib_root)
+
+    def _take(fs):
+        """过滤 glob 结果并收集清单外。"""
+        if whitelist is None:
+            return fs, []
+        return _filter_whitelist(fs, base, whitelist)
+
     if "企业资质证书扫描件" in key:
         for pat, skey in (("房屋建筑工程监理甲级*.png", "资质证书_房屋建筑工程甲级"),
                           ("市政公用工程监理乙级*.png", "资质证书_市政公用工程乙级")):
-            fs = sorted((base / "资质").glob(pat))
+            fs, out = _take(sorted((base / "资质").glob(pat)))
+            outside += out
             for f in fs:
                 items.append((str(f), skey, True))
         if not items:
@@ -466,17 +546,20 @@ def _build_combo(key, lib_root, proj_dir, persons):
     elif "拟派监理人员注册证书" in key:
         for p in persons:
             name = p.get("name", "")
-            certs = _find_person_images(base, name, "注册证书", "岗位证书")
+            certs, out = _take(_find_person_images(base, name, "注册证书", "岗位证书"))
+            outside += out
             if not certs:
                 missing.append("拟派人员[%s]注册/岗位证书" % name)
             for c in certs:
                 skey = "岗位证书" if c.parent.name == "岗位证书" else "注册监理工程师证书"
                 items.append((str(c), skey, True))
-            zc = _find_person_images(base, name, "职称证书")
+            zc, out = _take(_find_person_images(base, name, "职称证书"))
+            outside += out
             if not zc and name not in _OMIT_ZC:
                 missing.append("拟派人员[%s]职称证书" % name)
             items.extend(_build_zc_items(zc))
-            idc = _find_person_images(base, name, "身份证")
+            idc, out = _take(_find_person_images(base, name, "身份证"))
+            outside += out
             if not idc:
                 missing.append("拟派人员[%s]身份证" % name)
             for i, f in enumerate(idc):
@@ -489,19 +572,23 @@ def _build_combo(key, lib_root, proj_dir, persons):
         if not items:
             missing.append("6人社保证明待出具（项目资料/社保* 待上传）")
     elif "三体系认证证书" in key:
-        for f in sorted((base / "资质").glob("ISO*.png")):
+        fs, out = _take(sorted((base / "资质").glob("ISO*.png")))
+        outside += out
+        for f in fs:
             items.append((str(f), "三体系认证证书", True))
         if not items:
             missing.append("三体系证书素材缺失")
     elif "总监高级工程师职称证书" in key:
-        files = _find_person_images(base, "张三", "职称证书")
+        files, out = _take(_find_person_images(base, "张三", "职称证书"))
+        outside += out
         items.extend(_build_zc_items(files))
         if not items:
             missing.append("张三职称证书素材缺失")
     elif "其他监理人员职称证书" in key:
         for p in persons[1:]:
             name = p.get("name", "")
-            files = _find_person_images(base, name, "职称证书")
+            files, out = _take(_find_person_images(base, name, "职称证书"))
+            outside += out
             if not files:
                 if name not in _OMIT_ZC:
                     missing.append("其他监理人员[%s]职称证书" % name)
@@ -509,32 +596,36 @@ def _build_combo(key, lib_root, proj_dir, persons):
             items.extend(_build_zc_items(files))
     elif "先进（优秀）监理企业证书" in key:
         for pat in ("先进监理企业*.png", "优秀监理企业_20250101.png"):
-            fs = sorted((base / "荣誉").glob(pat))
+            fs, out = _take(sorted((base / "荣誉").glob(pat)))
+            outside += out
             for f in fs:
                 items.append((str(f), "先进优秀监理企业证书", True))
         if not items:
             missing.append("先进/优秀监理企业证书素材缺失")
     elif "监理示范（优质）工程" in key:
-        fs = sorted((base / "荣誉").glob("监理示范工程*.png"))
+        fs, out = _take(sorted((base / "荣誉").glob("监理示范工程*.png")))
+        outside += out
         for f in fs:
             items.append((str(f), "监理示范优质工程", True))
         if not items:
             missing.append("监理示范工程证书素材缺失")
     elif "法定代表人身份证正、反面" in key:
-        idc = _find_person_images(base, "李四", "身份证")
+        idc, out = _take(_find_person_images(base, "李四", "身份证"))
+        outside += out
         for i, f in enumerate(idc):
             items.append((str(f), "身份证", i == 0))
         if not items:
             missing.append("李四身份证素材缺失")
     elif "委托代理人身份证正、反面" in key:
-        idc = _find_person_images(base, "王五", "身份证")
+        idc, out = _take(_find_person_images(base, "王五", "身份证"))
+        outside += out
         for i, f in enumerate(idc):
             items.append((str(f), "身份证", i == 0))
         if not items:
             missing.append("王五身份证素材缺失")
     else:
         missing.append("未实现组合规则")
-    return items, missing
+    return items, missing, outside
 
 
 def _insert_images_before(doc, para, items):
@@ -583,10 +674,12 @@ def _remove_ph_preview_by_marker(doc, ph_text):
 
 def _fill_image_placeholders(doc, lib_root, proj_dir, material, missing):
     """段落级【图片：xxx】：取图插入（按口径），删除占位段；缺图删除占位 + missing。
-    返回移除的预览框数（方案A：模板中的灰底占位框在插入真图前先删除）。"""
+    返回 (移除的预览框数, 清单外素材相对路径列表)（③白名单：组合构建只允许清单素材）。"""
     from .ph_preview import PH_PREVIEW_PREFIX
     persons = material.get("personnel", []) or []
+    whitelist = _build_whitelist(material)
     n_prev = 0
+    outside = []
     for p in list(doc.paragraphs):
         t = _para_full_text(p).strip()
         if not (t.startswith("【图片：") and t.endswith("】")):
@@ -599,8 +692,9 @@ def _fill_image_placeholders(doc, lib_root, proj_dir, material, missing):
             continue
         path, rule_key, note = mapped
         if path is None:
-            # 组合占位 v1.1：按素材清单从素材库构建（多页素材带 P0/P1 逐页插入）
-            items, mis = _build_combo(t, lib_root, proj_dir, persons)
+            # 组合占位 v1.2：按素材清单白名单从素材库构建（多页素材带 P0/P1 逐页插入）
+            items, mis, out = _build_combo(t, lib_root, proj_dir, persons, whitelist)
+            outside += out
             if items:
                 _insert_images_before(doc, p, items)
             for m in mis:
@@ -618,7 +712,7 @@ def _fill_image_placeholders(doc, lib_root, proj_dir, material, missing):
             p._p.getparent().remove(p._p)
             continue
         _insert_image(p, str(full), size[0], size[1])
-    return n_prev
+    return n_prev, outside
 
 
 def _fill_cell_image(cell, img_path, w_cm, h_cm):
@@ -839,12 +933,15 @@ def fill_project(ent, proj_dir, out_dir=None, lib_root=None, register=True):
     biz = material.get("企业基础信息", {}) or {}
     deadline = material.get("投标截止日期", "") or _load_deadline(proj_dir)
 
-    stats = {"文件": [], "缺图": [], "待补": [], "文字占位填充": 0, "占位框移除": 0}
+    stats = {"文件": [], "缺图": [], "待补": [], "清单外": [],
+             "文字占位填充": 0, "占位框移除": 0}
     for f in sorted(tpl_dir.glob("*.docx")):
         doc = Document(str(f))
         missing, pending = [], []
         filled = _fill_text_placeholders(doc, material, biz, deadline, pending)
-        stats["占位框移除"] += _fill_image_placeholders(doc, lib_root, proj_dir, material, missing)
+        n_prev, outside = _fill_image_placeholders(doc, lib_root, proj_dir, material, missing)
+        stats["占位框移除"] += n_prev
+        stats["清单外"] += outside
         _fill_personnel_tables(doc, material, pending)
         _fill_resume_tables(doc, lib_root, material, pending)
         _fill_performance_tables(doc, material, pending)
@@ -871,6 +968,7 @@ def fill_project(ent, proj_dir, out_dir=None, lib_root=None, register=True):
 
     stats["缺图"] = list(dict.fromkeys(stats["缺图"]))
     stats["待补"] = list(dict.fromkeys(stats["待补"]))
+    stats["清单外"] = list(dict.fromkeys(stats["清单外"]))
     _write_reports(out, stats, deadline)
     if register:
         core.write_json(str(out / "生成记录.json"), {
@@ -889,6 +987,15 @@ def _write_reports(out, stats, deadline):
     if not stats["缺图"]:
         lines.append("- 无")
     (out / "缺图清单.md").write_text("\n".join(lines), encoding="utf-8")
+
+    lines = ["# 清单外素材（商务标生成 %s）" % _fmt_date(deadline), "",
+             "以下素材库文件**未在素材清单列明**，按白名单规则未插入商务标；"
+             "如确需使用，请先在素材清单登记（propose/apply）后再重新生成：", ""]
+    for rel in stats["清单外"]:
+        lines.append("- %s" % rel)
+    if not stats["清单外"]:
+        lines.append("- 无")
+    (out / "清单外素材.md").write_text("\n".join(lines), encoding="utf-8")
 
     lines = ["# 待补字段清单（商务标生成 %s）" % _fmt_date(deadline), "",
              "以下文字占位无值或待确认，**保留占位符**，交标前人工填写：", ""]
