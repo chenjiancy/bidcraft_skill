@@ -61,6 +61,18 @@ class TestFitSize(unittest.TestCase):
         self.assertAlmostEqual(w, 8.0, delta=0.1)
         self.assertAlmostEqual(h, 5.0, delta=0.1)
 
+    def test_id_card_legal_agent_box(self):
+        """法代/授权身份证固定框 7.5×4.5（用户 2026-10-05 确认）：contain 等比置框内。"""
+        w, h = imgsp.fit_size(str(self.idc), "身份证_法代授权")
+        # 960×600 在 7.5×4.5 框内 → 按高限缩：7.2×4.5
+        self.assertAlmostEqual(w, 7.2, delta=0.1)
+        self.assertAlmostEqual(h, 4.5, delta=0.1)
+        # 占位文案映射正确
+        self.assertEqual(imgsp.spec_for("【图片：法定代表人身份证正、反面扫描件】"),
+                         "身份证_法代授权")
+        self.assertEqual(imgsp.spec_for("【图片：委托代理人身份证正、反面扫描件】"),
+                         "身份证_法代授权")
+
     def test_max_w_and_max_h(self):
         """max_w/max_h 收紧：可用宽 16 超 max_h 时按 max_h 定高、宽随比例收缩。"""
         w, h = imgsp.fit_size(str(self.vert), "营业执照扫描件", max_w=15, max_h=None)

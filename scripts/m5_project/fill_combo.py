@@ -312,7 +312,7 @@ def _build_combo(key, lib_root, proj_dir, material, whitelist=None):
             idc, out = _take(_find_person_images(base, legal, "身份证"))
             outside += out
             for i, f in enumerate(idc):
-                items.append((str(f), "身份证", i == 0))
+                items.append((str(f), "身份证_法代授权", i == 0))
         if not items:
             missing.append("法定代表人[%s]身份证素材缺失" % (legal or "未配置"))
     elif "委托代理人身份证正、反面" in key:
@@ -320,7 +320,7 @@ def _build_combo(key, lib_root, proj_dir, material, whitelist=None):
             idc, out = _take(_find_person_images(base, agent, "身份证"))
             outside += out
             for i, f in enumerate(idc):
-                items.append((str(f), "身份证", i == 0))
+                items.append((str(f), "身份证_法代授权", i == 0))
         if not items:
             missing.append("委托代理人[%s]身份证素材缺失" % (agent or "未配置"))
     else:
