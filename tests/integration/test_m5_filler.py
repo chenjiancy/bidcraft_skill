@@ -146,8 +146,10 @@ class TestFillPreviewPipeline(unittest.TestCase):
         mat = json.loads((Path(PROJ) / "招标解析" / "素材清单.json").read_text(encoding="utf-8"))
         doc = Document(str(doc_path))
         missing = []
-        removed = F._fill_image_placeholders(doc, LIB, PROJ, mat, missing)
+        removed, outside = F._fill_image_placeholders(doc, LIB, PROJ, mat, missing)
         self.assertGreater(removed, 0, "应移除预览框")
+        # ③ 白名单：真实素材库全部在素材清单列明 → 清单外为空
+        self.assertEqual(outside, [], "组合构建清单外素材应为空，实际: %s" % outside)
         # 剩余预览框应为 0
         left = sum(1 for p in doc.paragraphs for el in p._p.iter()
                    if el.tag.endswith("}docPr")

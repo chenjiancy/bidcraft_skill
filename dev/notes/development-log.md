@@ -512,3 +512,22 @@
 
 **耗时**：约 3.5 小时（含 Word 损坏根因定位四轮诊断）。
 **下一步**：①向用户展示演示模板/渲染效果并确认验收；②用户逐项对齐差距问题（位置/尺寸/缺失/排版/文字）；③确认后提交推送 git。
+
+## 2026-10-04 建议逐一实施（①②③ 段）
+
+**需求**：用户原话「所有建议逐一实现」——按优先序逐项落地全部 12 条改进建议（P0①占位符工具化 / ③素材白名单 / ⑧硬编码参数化 / ②M7检查三道 / ⑫Word可打开校验 / ⑩台账单源 / ⑪CI Windows / ⑥proj-freeze / ⑦超行数拆分 / ④PDF结构化解析 / ⑤混合检索重排 / ⑨docxtpl评估），每项过三塔层回归再进下一项。
+
+### ① 占位符跨 run 替换工具化（P0）
+**背景**：generator/filler 手工处理 run 多次踩坑（doc.paragraphs.index 失效、id() 去重误杀、跨 run 拆分漏替换）；Word 模板自动化公认「第一坑」。
+**实现**：新增 `scripts/_shared/docx_util.py`：`para_text`（iter(w:t) 含嵌套/超链接）、`para_runs`（iter(w:r)）、`set_para_text`（保留首 run rPr+段落 pPr，空段落补建 run；兼容 Paragraph 与原生 w:p 元素）、`replace_in_para`（返回替换次数，old 空返回 0）、`set_cell_text`。generator 的 set_cell_text/_replace_text_in_runs/_set_para_text/_para_text 与 filler 的 _para_full_text/_para_runs/_set_para_text 全部改为委托。
+**验证**：新增 `tests/unit/test_docx_util.py` 9 用例（跨 run 拼接/保留 rPr/空段落建 run/多 run 折叠/跨 run 替换/多处替换计数/未命中 0/空 old 0/单元格写入），全过。
+
+### ③ filler 组合构建按素材清单白名单（P0，回应「5 处清单外素材已插入商务标」）
+**背景**：`_build_combo` 直接 glob 素材库硬编码路径（资质/人员/社保/ISO/荣誉/总监/法代/代理人），素材库有而清单未列的文件会被静默插入。
+**实现**：
+- `_build_whitelist(material)`：从素材清单 qualification_required/iso_certificates/honors/performance/social_security_required 的 path 字段提取精确路径与目录前缀（顿号/逗号多文件逐个拆出），+ personnel[].name + 企业基础信息.法定代表人姓名/委托代理人姓名 → 人员目录前缀，+ 项目资料/ 固定放行；`_is_whitelisted` 精确路径/人员目录边界/前缀判定；`_filter_whitelist` 过滤 glob 结果。
+- `_build_combo` 全部分支接入 `_take()` 白名单过滤，返回三元组 (items, missing, outside)；`_fill_image_placeholders` 返回 (n_prev, outside)；fill_project 统计加「清单外」，新增 `商务标/清单外素材.md`（清单外不插入，提示先登记再重新生成）。
+- **素材清单数据补全**（白名单的事实源）：qualification_required 补「监理企业资质证书（房屋建筑甲级）」（P0/P1，组合 glob 使用但未列明）；honors 补 先进监理企业_20250101 + 监理示范工程_20221201/_20241201/_20251201；企业基础信息补 委托代理人姓名=孙婧（此前清单无法检索到，仅 filler 硬编码）。
+**验证**：`tests/unit/test_filler_whitelist.py` 5 用例（清单提取含顿号拆出/目录前缀/人员目录边界/过滤/组合插入只含清单内/无白名单旧调用兼容）；集成 test_m5_filler 在真实素材库+补全后清单断言 清单外为空。
+**三塔层全绿**：unit 126 + integration 74 + e2e 19 = **219 项**（基线 205 → +14：docx_util 9 + whitelist 5，无回归）。
+**下一步**：⑧ 硬编码参数化（陈云/邵章华/孙婧/TESS 路径/总监专业「市政公用工程」改由素材清单与配置驱动）。
