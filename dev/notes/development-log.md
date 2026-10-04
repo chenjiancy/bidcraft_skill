@@ -569,3 +569,12 @@
 **验证**：新增 unit test_core_ledger 2 用例（save 只写 JSON / export 后 CSV 与 JSON 一致）；test_template_lib、test_templates、test_tpl_cli 改为断言「保存不生成 CSV、导出后生成」。
 **三塔层全绿**：unit 144 + integration 75 + e2e 19 = **238 项**（较 236 再 +2）。
 **下一步**：⑪ CI 增加 Windows runner（当前 Actions 默认 ubuntu，中文编码/路径类问题只在本地暴露）。
+
+### ⑪ CI 增加 Windows runner（P2）
+**背景**：GitHub Actions 默认 ubuntu，中文编码/路径类问题只在本地 Windows 暴露；另发现集成测试 test_m5_filler 无真实数据跳过保护，CI 上必挂。
+**实现**：
+- ci.yml：test-pyramid 与 compile-check 均加 os matrix [ubuntu-latest, windows-latest]（python 3.10/3.11/3.12 × 双平台）；compile-check 扩展为全部包（_shared/m1/m2/m4/m5/m7/m_feedback）。
+- test_m5_filler：整模块 `skip_real`（真实企业目录 E:\... 不存在时整模块跳过），与 test_proj_gen 既有守卫一致，保证 ubuntu/无数据环境 CI 绿。
+**验证**：本地（有真实数据）26 项集成全过；无数据环境由 skip 装饰器保证。
+**三塔层全绿**：unit 144 + integration 75 + e2e 19 = **238 项**。
+**下一步**：⑥ proj-freeze 冻结命令自动化（hash 登记、只读标记、版本号、变更必须走 fb 流程）。

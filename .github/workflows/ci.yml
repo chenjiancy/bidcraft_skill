@@ -7,12 +7,14 @@ on:
 
 jobs:
   # 测试金字塔：L1 单元(最多最快) → L2 集成 → L3 端到端(最少最慢)
+  # ⑪ 双平台 runner：ubuntu（标准）+ windows（暴露中文编码/路径类本地问题）
   test-pyramid:
     strategy:
       fail-fast: false
       matrix:
+        os: [ubuntu-latest, windows-latest]
         python-version: ["3.10", "3.11", "3.12"]
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -22,14 +24,18 @@ jobs:
       # 零外部依赖：全部基于 Python 标准库 unittest，保证跨环境/平台可复用
       - name: L1 单元测试（命名规范引擎）
         run: python -m unittest discover -s tests/unit -t . -v
-      - name: L2 集成测试（存储层 core）
+      - name: L2 集成测试（存储层 core；真实数据依赖用例自动跳过）
         run: python -m unittest discover -s tests/integration -t . -v
       - name: L3 端到端测试（CLI 全流程）
         run: python -m unittest discover -s tests/e2e -t . -v
 
-  # 静态编译检查：全部脚本可被 py_compile（防语法/导入回归）
+  # 静态编译检查：全部脚本可被 py_compile（防语法/导入回归）；双平台
   compile-check:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -37,4 +43,4 @@ jobs:
           python-version: "3.11"
       - name: py_compile 全部脚本
         run: |
-          python -m py_compile scripts/bidcraft.py scripts/_shared/*.py scripts/m1_assets/*.py
+          python -m py_compile scripts/bidcraft.py scripts/_shared/*.py scripts/m1_assets/*.py scripts/m2_template/*.py scripts/m4_tender/*.py scripts/m5_project/*.py scripts/m7_check/*.py scripts/m_feedback/*.py
