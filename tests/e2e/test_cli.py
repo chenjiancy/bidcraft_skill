@@ -90,6 +90,28 @@ class TestCliFlow(CliBase):
         self.assertEqual(ov["ledger_total"], 1)
         self.assertEqual(ov["path"], str(self.lib))
 
+    def test_query_fuzzy_hybrid(self):
+        """⑤ 混合检索：同义变体在精确查询漏召回、--fuzzy 能召回并带匹配度。"""
+        self._init()
+        self._seed("优秀监理企业_20250101.png", cat="荣誉", sub="荣誉证书", kw="优秀监理企业")
+        # 精确子串：先进监理企业 → 0 命中
+        r, q = run_json(str(self.root), "query", "--keyword", "先进监理企业")
+        self.assertEqual(r.returncode, 0)
+        self.assertEqual(len(q), 0, "in 子串匹配漏召回同义变体")
+        # 混合检索：召回并带 score
+        r = run(str(self.root), "query", "--fuzzy", "--keyword", "先进监理企业")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("优秀监理企业", r.stdout)
+        self.assertIn("匹配度", r.stdout)
+        r, q = run_json(str(self.root), "query", "--fuzzy", "--keyword", "先进监理企业",
+                        "--top-k", "3")
+        self.assertEqual(r.returncode, 0)
+        self.assertEqual(len(q), 1)
+        self.assertGreater(q[0]["score"], 0)
+        # 默认（非 fuzzy）行为不受影响
+        r, q = run_json(str(self.root), "query", "--keyword", "优秀监理企业")
+        self.assertEqual(len(q), 1)
+
     def test_name_conflict_unconfirmed_exit2(self):
         self._init()
         self._seed("ISO9001_20260101.pdf")

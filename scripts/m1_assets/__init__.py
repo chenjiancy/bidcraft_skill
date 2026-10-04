@@ -288,6 +288,25 @@ def cmd_inspect(args):
 
 def cmd_query(args):
     ent = get_ent(args)
+    if getattr(args, "fuzzy", False):
+        # ⑤ 混合检索：n-gram 相似召回 + 字段加权重排（精确命中优先）
+        hits = core.query_hybrid(ent, category=args.category, subtype=args.subtype,
+                                 keyword=args.keyword,
+                                 expires_before=args.expires_before,
+                                 expires_after=args.expires_after,
+                                 owner=args.owner, top_k=args.top_k)
+        rows = [h["row"] for h in hits]
+        if args.json:
+            print(json.dumps(hits, ensure_ascii=False, indent=2))
+        else:
+            if not rows:
+                print("未命中任何素材。")
+                return
+            t = [[r.get("id"), r.get("category"), r.get("subtype"), r.get("rel_path"),
+                  r.get("dates"), "%.2f" % h["score"]] for r, h in zip(rows, hits)]
+            print(table(t, ["ID", "大类", "子类", "路径", "日期", "匹配度"]) +
+                  "\n\n共 %d 条（混合检索：精确命中优先，字符相似度兜底）" % len(rows))
+        return
     rows = core.query(ent, category=args.category, subtype=args.subtype, keyword=args.keyword,
                       expires_before=args.expires_before, expires_after=args.expires_after,
                       owner=args.owner)
@@ -426,13 +445,16 @@ def register_parser(sub):
     sp = sub.add_parser("inspect", help="巡检：非常规上传 + 命名规范 + 归属")
     sp.set_defaults(func=cmd_inspect)
 
-    sp = sub.add_parser("query", help="按条件检索素材台账")
+    sp = sub.add_parser("query", help="按条件检索素材台账（默认精确子串；--fuzzy 走 ⑤ 混合检索+重排）")
     sp.add_argument("--category")
     sp.add_argument("--subtype")
     sp.add_argument("--keyword")
     sp.add_argument("--owner")
     sp.add_argument("--expires-before", help="到期日早于 YYYYMMDD")
     sp.add_argument("--expires-after", help="到期日晚于/等于 YYYYMMDD")
+    sp.add_argument("--fuzzy", action="store_true",
+                    help="混合检索：字符相似度兜底召回 + 字段加权重排（返回带 score）")
+    sp.add_argument("--top-k", type=int, default=20, help="混合检索返回条数上限（默认 20）")
     sp.set_defaults(func=cmd_query)
 
     sp = sub.add_parser("trash", help="把素材移入回收站")
