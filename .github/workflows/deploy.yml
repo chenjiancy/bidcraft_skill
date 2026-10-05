@@ -19,6 +19,9 @@ jobs:
   deploy:
     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
     runs-on: self-hosted
+    permissions:
+      contents: read
+      issues: write
     steps:
       - name: 部署到生产环境
         # runner 服务账户 ExecutionPolicy=Restricted，PowerShell dot-source 受限；
@@ -27,3 +30,23 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: powershell -NoProfile -ExecutionPolicy Bypass -File "E:\标书匠生产\升级生产.ps1"
+
+      # 部署失败通知：自动开 Issue（生产未更新是最严重问题，必须可见）
+      - name: 部署失败通知（自动开 Issue）
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner, repo = context.repo.repo;
+            const open = await github.rest.issues.listForRepo({owner, repo, state:'open', labels:['deploy-failure']});
+            if (open.data.length > 0) {
+              console.log('已有未关闭的部署失败 Issue，跳过');
+            } else {
+              await github.rest.issues.create({
+                owner, repo,
+                title: `部署失败：${context.runId}`,
+                body: `生产环境自动部署失败，请查看：${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`,
+                labels: ['deploy-failure']
+              });
+              console.log('已创建部署失败 Issue');
+            }
