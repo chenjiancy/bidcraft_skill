@@ -30,6 +30,6 @@ jobs:
             -czf "bidcraft_skill-${{ steps.ver.outputs.tag }}.tar.gz" .
 
       - name: 发布 GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: "bidcraft_skill-*.tar.gz"
