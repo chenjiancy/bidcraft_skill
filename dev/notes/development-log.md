@@ -1009,3 +1009,11 @@ PDF 69 页目检 + media 拼图三段逐张判定；8 张待确认图由用户�
 - VERSION 文件（主版本 0.1）+ .github/workflows/tag-release.yml：push main 时自动打递增 tag v0.1.<run_number>（GITHUB_TOKEN push tag 不触发循环）。
 - main 分支保护：必须 PR 才能合并 + CI checks（test-pyramid/compile-check）必须绿 + 分支保持最新。
 - 流程变更：以后开发推功能分支 → 开 PR → CI 绿 → 合并 main → 自动 deploy + 自动打版本 tag。
+
+## 2026-10-05 第三阶段完成：main 分支保护全绿生效
+- 仓库改为 PUBLIC（免费层分支保护要求）；enforce_admins=true。
+- 保护规则（gh api 创建并验证）：必须 PR 才能合并（0 审批可自合）；3 个必需 check（test-pyramid、compile-check ubuntu/windows）；strict（分支需最新）；禁止 force push/删除；必需会话解决。
+- 实测：直接 push main → remote rejected（protected branch hook declined）✓
+- 版本号：VERSION=0.1 + tag-release.yml 自动打 v0.1.<run_number> tag（push main 时）。
+- CI 调整：test-pyramid 聚焦 windows/3.12（check 名稳定，便于分支保护维护）；compile-check 保留双平台。
+- 流程变更：开发 → 功能分支 push → PR → CI 全绿 → 合并 main → 自动 deploy（生产）+ 自动打版本 tag。
