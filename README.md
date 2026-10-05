@@ -56,3 +56,10 @@ python -m unittest discover -s tests/e2e -t .         # L3 端到端：CLI 全�
 - **测试金字塔**：层越低用例越多越快；新增逻辑按「先补对应层测试再实现」推进。
 - **CI**（`.github/workflows/ci.yml`）：push/PR 触发，Python 3.10–3.12 三塔层 + py_compile 全绿才算通过。
 - **CD**（`.github/workflows/release.yml`）：打 `v*` 标签自动打包发布 skill 可分发包（排除素材库/缓存）。
+
+## 生产环境部署与升级（2026-10-05 起）
+
+- **开发与生产隔离**：开发/测试只在本仓库；生产环境 `E:\标书匠生产` 是**独立 git 仓库**（`git@github.com:chenjiancy/bidcraft_skill.git` main 分支，sparse-checkout 只检出 `scripts references SKILL.md README.md .gitignore`），工作区**无 tests/dev/.github**，本地永不开发。
+- **唯一升级通道**：生产目录内 `升级生产.ps1`——防污染检查（已跟踪文件有改动→中止）→ `git fetch` → `git pull --ff-only` → 冒烟（`bidcraft.py --help`）→ 记入 `版本记录.txt`。可选注册 Windows 计划任务定时执行（准实时）。
+- **升级流程**：本仓库测试全绿 → commit + push → 生产执行 `.\升级生产.ps1` 拉取。生产数据始终在 `E:\监理标书制作`（--root 指向），不在仓库内。
+- **后续（全自动 CI/CD）**：注册 GitHub Actions self-hosted runner 到生产机 + deploy.yml，实现 push 即部署（见路线图）。
