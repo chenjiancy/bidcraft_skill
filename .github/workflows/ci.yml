@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
   pull_request:
+  # 手动触发入口（故障恢复：GitHub 偶发事件丢失时可手动补跑 CI）
+  workflow_dispatch:
 
 jobs:
   # 测试金字塔：L1 单元(最多最快) → L2 集成 → L3 端到端(最少最慢)
