@@ -21,7 +21,12 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      # 零外部依赖：全部基于 Python 标准库 unittest，保证跨环境/平台可复用
+      # 运行依赖：python-docx(模板/填充/docx读写)、Pillow(图框预览)。
+      # 可选依赖不进 CI：PyMuPDF(PDF解析)、rapidocr(OCR)，均有函数级容错回退。
+      - name: 安装运行依赖
+        run: python -m pip install python-docx Pillow
+
+      # 零外部依赖的测试框架：全部基于 Python 标准库 unittest，保证跨环境/平台可复用
       - name: L1 单元测试（命名规范引擎）
         run: python -m unittest discover -s tests/unit -t . -v
       - name: L2 集成测试（存储层 core；真实数据依赖用例自动跳过）
