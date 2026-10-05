@@ -12,6 +12,8 @@ on:
 
 jobs:
   analyze:
+    # fork PR 来源限定：外部 fork 的 PR 不消耗 CodeQL 分析额度
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     name: Analyze
     runs-on: ubuntu-latest
     permissions:
