@@ -71,7 +71,7 @@ class TestDiffTemplateVsContract:
         tpl2 = self.root / "tpl2.docx"
         _mk_doc(["项目名称：【项目名称】"]).save(str(tpl2))
         src2 = self.root / "src2.docx"
-        _mk_doc(["项目名称：示例示例园区尾水水质提升工程"]).save(str(src2))
+        _mk_doc(["项目名称：示例化工园尾水水质提升工程"]).save(str(src2))
         blocks2, _ = _extract_blocks(src2)
         diffs2 = gd.diff_template_vs_contract(tpl2, blocks2, [0, 0], "F01", "封面.docx")
         assert all(d["类别"] == "placeholder_zone" for d in diffs2)
