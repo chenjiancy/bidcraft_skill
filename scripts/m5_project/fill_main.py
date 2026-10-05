@@ -119,7 +119,7 @@ if __name__ == "__main__":
     import argparse
     ap = argparse.ArgumentParser(description="M5 填充引擎：项目模板 → 商务标")
     ap.add_argument("--ent", default=r"E:\监理标书制作\示例建设工程监理有限公司")
-    ap.add_argument("--proj", default=r"E:\监理标书制作\示例建设工程监理有限公司\项目级\示例示例园区尾水水质提升工程（EPC总承包）监理")
+    ap.add_argument("--proj", default=r"E:\监理标书制作\示例建设工程监理有限公司\项目级\示例化工园尾水水质提升工程（EPC总承包）监理")
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
     s = fill_project(args.ent, args.proj, out_dir=args.out)

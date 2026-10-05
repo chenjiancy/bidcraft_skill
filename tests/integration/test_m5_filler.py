@@ -11,8 +11,12 @@ from pathlib import Path
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "scripts"))
 from m5_project import filler as F                       # noqa: E402
 
-ENT = r"E:\监理标书制作\示例建设工程监理有限公司"
-PROJ = os.path.join(ENT, "项目级", "示例示例园区尾水水质提升工程（EPC总承包）监理")
+# 真实数据路径：默认示例名（公网安全）；本地真实回归通过环境变量注入：
+#   set BIDCRAFT_TEST_ENT=E:\监理标书制作\和县建设工程监理有限公司
+#   set BIDCRAFT_TEST_PROJ=马鞍山和县化工园尾水水质提升工程（EPC总承包）监理
+ENT = os.environ.get("BIDCRAFT_TEST_ENT", r"E:\监理标书制作\示例建设工程监理有限公司")
+_PROJ_NAME = os.environ.get("BIDCRAFT_TEST_PROJ", "示例化工园尾水水质提升工程（EPC总承包）监理")
+PROJ = os.path.join(ENT, "项目级", _PROJ_NAME)
 LIB = os.path.join(ENT, "企业级", "素材库")
 RESUME_PNG = os.path.join(LIB, "人员", "张三", "简历", "简历_20261001_P0.png")
 

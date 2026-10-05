@@ -3,7 +3,7 @@
 bidcraft · M7 交标前质量检查 —— 命令实现 + 子命令注册
 
 用法：
-  python bidcraft.py m7-check --project "示例示例园区尾水水质提升工程（EPC总承包）监理"
+  python bidcraft.py m7-check --project "示例化工园尾水水质提升工程（EPC总承包）监理"
       [--out <商务标目录>] [--tpl <项目模板目录>]
 """
 

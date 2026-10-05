@@ -17,8 +17,9 @@ from pathlib import Path
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "scripts"))
 from m5_project import generator as gen           # noqa: E402
 
-REAL_ENT = r"E:\监理标书制作\示例建设工程监理有限公司"
-REAL_PROJECT = "示例示例园区尾水水质提升工程（EPC总承包）监理"
+# 真实数据路径：默认示例名（公网安全）；本地真实回归通过环境变量注入（同 test_m5_filler）。
+REAL_ENT = os.environ.get("BIDCRAFT_TEST_ENT", r"E:\监理标书制作\示例建设工程监理有限公司")
+REAL_PROJECT = os.environ.get("BIDCRAFT_TEST_PROJ", "示例化工园尾水水质提升工程（EPC总承包）监理")
 
 
 def _have_docx():

@@ -35,3 +35,4 @@ references/M1-素材库-操作手册.md
 references/module-contracts.md
 references/M2-模板库-需求对齐.md
 references/产物反馈机制-需求对齐.md
+tests/run_local_regression.bat
