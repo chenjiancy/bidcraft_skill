@@ -7,6 +7,10 @@ on:
   # 手动触发入口（故障恢复：GitHub 偶发事件丢失时可手动补跑 CI）
   workflow_dispatch:
 
+# 权限最小化：CI 只读代码，无任何写权限
+permissions:
+  contents: read
+
 jobs:
   # 测试金字塔：L1 单元(最多最快) → L2 集成 → L3 端到端(最少最慢)
   # ⑪ 聚焦本机生产环境（Windows + Python 3.12，与 C:\Python312 一致）；矩阵变体会使
