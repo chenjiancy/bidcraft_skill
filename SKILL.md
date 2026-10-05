@@ -1,8 +1,8 @@
 ---
 name: bidcraft
-version: 0.8.8
+version: 0.1.16
 display_name: 标书匠
-description: 标书制作工作台（agent 驱动，项目级 skill，平台无关）。统一编排标书全流程：招标文件解析、商务标制作、技术标制作、标书检查（商务标/技术标）、AI模拟评标。当用户表达"做标书""生成商务标/技术标""解析招标文件""检查标书""模拟评标""整理投标素材/模板/知识库""投标辅助""归档投标素材""企业素材库"等意图时触发。M1 素材库已交付（脚本位于 scripts/，用法见 references/M1-素材库-操作手册.md）；M4 招标解析已交付（v0.8.1：解析由 agent 完成，脚本 tender-* 做编排与素材对照，tender-init 自动创建项目级「招标解析 + 项目资料」目录，用法见 references/M4-招标文件解析-操作手册.md）；M2 模板库首批 10 模板+占位符登记清单已入库（企业级\模板库\大成工程咨询有限公司\投标，全流程决策见 references/M2-模板库-需求对齐.md，台账+CLI 已交付）；产物反馈机制（所有生成产物人工可改、系统自动识别并动态完善、应用前须评估报告确认，见 references/产物反馈机制-需求对齐.md）；素材库、模板库为**企业级**数据（按企业隔离、主要支撑商务标），知识库为**共享级**数据（所有企业共用、与企业无关、主要支撑技术标）；软件数据目录分**企业级/项目级/共享资源**三层，企业间、项目间完全隔离，初始化时先确认软件应用项目目录的创建位置；脚本按「模块分包 + 共享层」组织；其余模块按 references/module-contracts.md 路线图逐步完善。越界请求应说明范围并引导至对应专项技能（招标文件解读优先用 bid-doc-interpreter，合规审查用 bid-compliance-checker，排版去AI味用 bid-service-plan-markup-docx / tencent-docx）。
+description: 标书制作工作台（agent 驱动，项目级 skill，平台无关）。统一编排标书全流程：招标文件解析、商务标制作、技术标制作、标书检查、AI模拟评标。触发词："做标书""生成商务标/技术标""解析招标文件""检查标书""模拟评标""整理投标素材/模板/知识库""归档投标素材""企业素材库"等。已交付：M1 素材库、M2 模板库、M4 招标解析、M5 项目模板生成+产物反馈、M7 标书检查（模块总览见正文第四节，用法见文档索引）。越界请求引导至专项技能（bid-doc-interpreter、bid-compliance-checker、bid-service-plan-markup-docx）。
 agent_created: true
 ---
 
@@ -41,13 +41,13 @@ agent_created: true
 ```
 scripts/
 ├── bidcraft.py            # 统一入口（薄壳）：只做 argparse 组装 + 调度，不写逻辑
-├── _shared/               # 跨模块共享层：core.py（存储）/ naming.py（命名）/ util.py（公共）
+├── _shared/               # 跨模块共享层：core/（存储包）/ naming.py（命名）/ com_util.py（控制台）/ docx_util.py（docx 公共）
 └── m<n>_<name>/           # 每个模块一个子包，包内暴露 register_parser(subparsers) 挂载子命令
 ```
 
-- **当前状态**：✅ M1 已按分包结构迁移（`scripts/m1_assets/` 子包 + `scripts/_shared/` 共享层：`core.py`/`naming.py`）；后续模块（M2–M8）按同结构落位。
+- **当前状态**：✅ M1 已按分包结构迁移（`scripts/m1_assets/` 子包 + `scripts/_shared/` 共享层：`core/` 存储包、`naming.py`）；后续模块（M2–M8）按同结构落位。
 - **约束**：单文件控制在 ~500 行内，超标即再拆；新增模块只加子包 + 入口注册一行，不动既有代码。
-- 完整约定见 `references/模块开发规范.md`。
+- 完整约定 + 测试金字塔 + CI/CD 见 `references/模块开发规范.md`。
 
 **软件目录结构约定（重要）**：本 skill 驱动的是"监理标书制作**软件应用项目**"（非某个具体标书项目）。运行时数据按三层组织，企业间完全隔离、项目间完全隔离：
 
@@ -69,7 +69,7 @@ scripts/
 
 **素材库不入仓库（数据隔离）**：素材库数据存放于软件根（如 `E:\监理标书制作\<企业>\企业级\素材库`），在仓库之外，天然不进 git；`.gitignore` 同时忽略兜底目录 `素材库/`。**素材一旦归档即受保护**，任何更改必须走标准流程（propose/apply/回收站等），除非用户明确指令。测试全部使用 `tempfile` 临时素材根，绝不触碰真实素材库。
 
-**测试与 CI/CD（开发必读）**：本仓库用**测试金字塔**分层保障质量——L1 单元（`tests/unit`，命名引擎，最多最快）、L2 集成（`tests/integration`，存储层 core）、L3 端到端（`tests/e2e`，CLI 全流程，最少最慢）；测试框架全部基于 Python 标准库 `unittest`。**运行依赖**：`python-docx`（模板/填充/docx 读写）、`Pillow`（图框预览）——CI 会自动安装；可选依赖不进 CI：PyMuPDF（PDF 解析）、rapidocr（OCR），均有函数级容错回退。开发新模块时先补对应层测试再实现。CI（`.github/workflows/ci.yml`）在 push/PR 时对 Python 3.10–3.12 跑三塔层 + `py_compile`；CD（`.github/workflows/release.yml`）在打 `v*` 标签时打包发布 skill 可分发包（排除素材库/缓存）。本机运行：`python -m unittest discover -s tests/<层> -t .`（本机需 `pip install python-docx Pillow`）。
+**测试与 CI/CD（开发必读，详见 `references/模块开发规范.md`）**：本仓库用**测试金字塔**分层保障质量（L1 单元 tests/unit、L2 集成 tests/integration、L3 端到端 tests/e2e，框架仅标准库 unittest）；运行依赖 python-docx/Pillow（CI 自动安装），可选依赖（PyMuPDF/rapidocr）不进 CI 且有函数级容错；本机跑 `python -m unittest discover -s tests/<层> -t .`。CI（ci.yml）在 push/PR 时三塔层 + py_compile；CD（release.yml）在打 `v*` 标签时打包发布。
 
 ## 四、八大能力模块总览
 | 编号 | 模块 | 一句话职责 | 状态 |
