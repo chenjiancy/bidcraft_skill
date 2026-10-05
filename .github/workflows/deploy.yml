@@ -31,6 +31,23 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: powershell -NoProfile -ExecutionPolicy Bypass -File "E:\标书匠生产\升级生产.ps1"
 
+      # 部署成功：关闭所有未关闭的部署失败 Issue（防累积）
+      - name: 部署成功关闭失败 Issue
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner, repo = context.repo.repo;
+            const open = await github.rest.issues.listForRepo({owner, repo, state:'open', labels:['deploy-failure']});
+            for (const issue of open.data) {
+              await github.rest.issues.update({
+                owner, repo, issue_number: issue.number,
+                state: 'closed', state_reason: 'completed'
+              });
+              console.log(`已关闭部署失败 Issue #${issue.number}`);
+            }
+            if (open.data.length === 0) console.log('无未关闭的部署失败 Issue');
+
       # 部署失败通知：自动开 Issue（生产未更新是最严重问题，必须可见）
       - name: 部署失败通知（自动开 Issue）
         if: failure()
