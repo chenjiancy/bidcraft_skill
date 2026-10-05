@@ -990,3 +990,7 @@ PDF 69 页目检 + media 拼图三段逐张判定；8 张待确认图由用户�
 **修复**：ci.yml 测试前加 pip install python-docx Pillow；SKILL.md/README 修正"零外部依赖"表述（python-docx/Pillow 为运行依赖，PyMuPDF/rapidocr 可选函数级容错）。
 **依赖清单**：docx_util/fill_images/fill_common/gen_common/gen_images/gen_diff/gen_main/checker/template_preview 等用 python-docx；image_spec/ph_preview 用 Pillow（函数内 import）；pdf_extract(fitz)/fill_ocr(rapidocr) 可选。
 **验证**：本地三塔层 193/63/22 全绿；推送后 CI 应绿 → deploy 自动部署。
+
+### 2026-10-05 CI/CD 第二步（终）：deploy 自动化踩坑链修复，闭环验证
+踩坑链：①runner 服务账户 ExecutionPolicy=Restricted → shell 改 cmd 调 powershell -Bypass；②git dubious ownership（生产目录属 Administrators，NETWORK SERVICE 被 git 拒绝）→ 升级脚本开头加 safe.directory（幂等）。CI 云端修复链：③缺 python-docx（ModuleNotFoundError）→ ci.yml 装 python-docx Pillow；④compile-check(windows) PowerShell 不展开 *.py → shell: bash。
+**验证**：CI #83/#84 全绿；手动升级脚本生产快进 c70d702→2a16370（4 提交）冒烟通过；推送后 Deploy 应自动执行（待验证）。
