@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """M5 填充引擎集成测试：项目模板 → 商务标（OCR 简历填充、业绩表、缺图清单、封面日期）。
-依赖真实项目数据（E:\\监理标书制作\\和县建设工程监理有限公司）。"""
+依赖真实项目数据（E:\\监理标书制作\\示例建设工程监理有限公司）。"""
 import os
 import shutil
 import sys
@@ -11,10 +11,10 @@ from pathlib import Path
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "scripts"))
 from m5_project import filler as F                       # noqa: E402
 
-ENT = r"E:\监理标书制作\和县建设工程监理有限公司"
-PROJ = os.path.join(ENT, "项目级", "马鞍山和县化工园尾水水质提升工程（EPC总承包）监理")
+ENT = r"E:\监理标书制作\示例建设工程监理有限公司"
+PROJ = os.path.join(ENT, "项目级", "示例示例园区尾水水质提升工程（EPC总承包）监理")
 LIB = os.path.join(ENT, "企业级", "素材库")
-RESUME_PNG = os.path.join(LIB, "人员", "陈云", "简历", "简历_20261001_P0.png")
+RESUME_PNG = os.path.join(LIB, "人员", "张三", "简历", "简历_20261001_P0.png")
 
 # ⑪ CI/跨平台：真实企业数据不存在（如 CI ubuntu/windows 无 E:\ 数据）→ 整模块跳过
 # ⑫ 数据前置细化：仅检查企业根目录不够——招标解析（素材清单）与项目模板是
@@ -43,7 +43,7 @@ class TestParseCert(unittest.TestCase):
 class TestOcrResume(unittest.TestCase):
     def test_ocr_resume_fields(self):
         f = F.ocr_resume_fields(RESUME_PNG, cert_str="注册证34008007（房建+市政公用，2028.1.23）")
-        self.assertEqual(f.get("人员姓名"), "陈云")
+        self.assertEqual(f.get("人员姓名"), "张三")
         self.assertEqual(f.get("性别"), "男")
         self.assertEqual(f.get("出生年月"), "1983.9")
         self.assertEqual(f.get("学历"), "本科")
@@ -80,7 +80,7 @@ class TestFillProject(unittest.TestCase):
                    and len(t.rows) >= 11]
         self.assertEqual(len(resumes), 6)
         r0 = "".join(c.text for c in resumes[0].rows[0].cells)
-        self.assertIn("陈云", r0)
+        self.assertIn("张三", r0)
         self.assertIn("1983.9", r0)
         self.assertIn("男", r0)
         r1 = "".join(c.text for c in resumes[0].rows[1].cells)
@@ -94,14 +94,14 @@ class TestFillProject(unittest.TestCase):
             first = "".join(c.text for c in t.rows[0].cells).replace(" ", "")
             if "项目名称" in first and "（万元）" not in first:
                 r1 = "".join(c.text for c in t.rows[1].cells)
-                self.assertIn("和县横江片区污水管网整治工程", r1)
+                self.assertIn("示例横江片区污水管网整治工程", r1)
                 self.assertIn("14594.33", r1)
                 found = True
                 break
         self.assertTrue(found, "未找到附表2 已完成工程汇总表")
 
     def test_missing_image_report(self):
-        # 社保已上传、阮旭/黄诚职称用户确认省略 → 缺图归零
+        # 社保已上传、赵六/黄诚职称用户确认省略 → 缺图归零
         self.assertEqual(len(self.stats["缺图"]), 0, "缺图应为 0，实际 %s" % self.stats["缺图"])
         self.assertTrue(os.path.exists(os.path.join(self.out, "缺图清单.md")))
         self.assertTrue(os.path.exists(os.path.join(self.out, "待补字段清单.md")))

@@ -88,14 +88,14 @@ class PdfExtractTest(unittest.TestCase):
             p.draw_line((x, rows[0]), (x, rows[-1]))
         for y in rows:
             p.draw_line((cols[0], y), (cols[-1], y))
-        cells = [("项目名称", "监理服务期"), ("化工园尾水", "365 天"), ("招标人", "和县某单位")]
+        cells = [("项目名称", "监理服务期"), ("示例园区尾水", "365 天"), ("招标人", "示例某单位")]
         for (r, c), txt in zip([(0, 0), (0, 1), (1, 0), (1, 1), (2, 0), (2, 1)],
-                               ["项目名称", "监理服务期", "化工园尾水", "365 天", "招标人", "和县某单位"]):
+                               ["项目名称", "监理服务期", "示例园区尾水", "365 天", "招标人", "示例某单位"]):
             p.insert_text((cols[c] + 8, rows[r] + 24), txt, fontname="china-s")
         d.save(str(path))
         d.close()
         text, blocks = pdf_extract.extract_pdf(str(path))
-        for cell in ("项目名称", "监理服务期", "化工园尾水", "365 天", "招标人", "和县某单位"):
+        for cell in ("项目名称", "监理服务期", "示例园区尾水", "365 天", "招标人", "示例某单位"):
             self.assertIn(cell, text, "单元格文字不应丢失：%s" % cell)
         # 出现 Markdown 表格标记（表头分隔行）
         self.assertIn("| --- | --- |", text)

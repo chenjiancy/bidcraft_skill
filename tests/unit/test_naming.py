@@ -240,13 +240,13 @@ class TestClassifyAndGuess(unittest.TestCase):
 class TestProjectFolder(unittest.TestCase):
     def test_build(self):
         self.assertEqual(
-            nm.build_project_folder("和县某安置房监理", "20260101", "张三"),
-            "和县某安置房监理_20260101_张三")
+            nm.build_project_folder("示例某安置房监理", "20260101", "张三"),
+            "示例某安置房监理_20260101_张三")
 
     def test_no_director(self):
         self.assertEqual(
-            nm.build_project_folder("和县某项目监理", "20260101"),
-            "和县某项目监理_20260101_无总监")
+            nm.build_project_folder("示例某项目监理", "20260101"),
+            "示例某项目监理_20260101_无总监")
 
     def test_validate_ok_and_bad(self):
         self.assertTrue(nm.validate_project_folder("某项目_20260101_李四")[0])

@@ -4,7 +4,7 @@ bidcraft · M5 项目模板生成器 —— 命令实现 + 子命令注册
 
 用法总览（示例）
 ----------------
-  python bidcraft.py proj-gen --project "马鞍山和县化工园尾水水质提升工程（EPC总承包）监理"
+  python bidcraft.py proj-gen --project "示例示例园区尾水水质提升工程（EPC总承包）监理"
       [--contract <格式契约.json>] [--material <素材清单.json>] [--source <招标文件.docx>]
       [--out <输出目录>] [--no-baseline]
 """

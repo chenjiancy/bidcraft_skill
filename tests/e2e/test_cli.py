@@ -11,7 +11,7 @@ from pathlib import Path
 
 _SCRIPTS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "scripts")
 CLI = os.path.join(_SCRIPTS, "bidcraft.py")
-ENT = "和县测试监理有限公司"
+ENT = "示例测试监理有限公司"
 
 
 def run(root, *args):

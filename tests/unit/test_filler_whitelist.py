@@ -28,10 +28,10 @@ class TestBuildWhitelist(unittest.TestCase):
             ],
             "iso_certificates": [{"name": "ISO9001", "path": "资质/ISO9001_20290318.png"}],
             "honors": [{"name": "优秀", "path": "荣誉/优秀监理企业_20230201.png"}],
-            "performance": [{"name": "横江", "path": "业绩/和县横江片区污水管网整治工程_20260201_邵章华/"}],
+            "performance": [{"name": "横江", "path": "业绩/示例横江片区污水管网整治工程_20260201_李四/"}],
             "social_security_required": {"status": "已上传", "path": "项目资料/社保_P0.png、社保_P1.png"},
-            "personnel": [{"name": "陈云"}, {"name": "阮旭"}],
-            "企业基础信息": {"法定代表人姓名": "邵章华", "委托代理人姓名": "孙婧"},
+            "personnel": [{"name": "张三"}, {"name": "赵六"}],
+            "企业基础信息": {"法定代表人姓名": "李四", "委托代理人姓名": "王五"},
         }
         allowed, person_dirs, prefixes = filler._build_whitelist(mat)
         self.assertIn("资质/营业执照_副本_长期.png", allowed)
@@ -39,19 +39,19 @@ class TestBuildWhitelist(unittest.TestCase):
         self.assertIn("资质/房屋建筑工程监理甲级_20281222_P1.png", allowed)   # 顿号拆出
         self.assertIn("资质/ISO9001_20290318.png", allowed)
         self.assertIn("荣誉/优秀监理企业_20230201.png", allowed)
-        self.assertIn("业绩/和县横江片区污水管网整治工程_20260201_邵章华/", prefixes)  # 目录型前缀
-        self.assertIn("人员/陈云", person_dirs)
-        self.assertIn("人员/邵章华", person_dirs)
-        self.assertIn("人员/孙婧", person_dirs)
+        self.assertIn("业绩/示例横江片区污水管网整治工程_20260201_李四/", prefixes)  # 目录型前缀
+        self.assertIn("人员/张三", person_dirs)
+        self.assertIn("人员/李四", person_dirs)
+        self.assertIn("人员/王五", person_dirs)
         self.assertTrue(any(p.startswith("项目资料/") for p in prefixes))
 
     def test_is_whitelisted(self):
-        wl = ({"资质/营业执照.png"}, {"人员/陈云"}, {"项目资料/"})
+        wl = ({"资质/营业执照.png"}, {"人员/张三"}, {"项目资料/"})
         self.assertTrue(filler._is_whitelisted("资质/营业执照.png", wl))
-        self.assertTrue(filler._is_whitelisted("人员/陈云/职称证书/高级工程师_P0.png", wl))
+        self.assertTrue(filler._is_whitelisted("人员/张三/职称证书/高级工程师_P0.png", wl))
         self.assertTrue(filler._is_whitelisted("项目资料/社保_P0.png", wl))
         self.assertFalse(filler._is_whitelisted("荣誉/先进监理企业_20250101.png", wl))
-        self.assertFalse(filler._is_whitelisted("人员/陈云2/身份证/1.png", wl))  # 目录边界
+        self.assertFalse(filler._is_whitelisted("人员/张三2/身份证/1.png", wl))  # 目录边界
 
 
 class TestFilterWhitelist(unittest.TestCase):
@@ -60,7 +60,7 @@ class TestFilterWhitelist(unittest.TestCase):
             base = Path(td)
             a = _mkimg(base, "荣誉/优秀监理企业_20250101.png")
             b = _mkimg(base, "荣誉/先进监理企业_20250101.png")  # 未列明
-            wl = ({"荣誉/优秀监理企业_20250101.png"}, {"人员/陈云"}, {"项目资料/"})
+            wl = ({"荣誉/优秀监理企业_20250101.png"}, {"人员/张三"}, {"项目资料/"})
             ok, out = filler._filter_whitelist([a, b], base, wl)
             self.assertEqual(ok, [a])
             self.assertEqual(out, ["荣誉/先进监理企业_20250101.png"])
@@ -111,37 +111,37 @@ class TestDataDriven(TestBuildComboWhitelist):
 
     def test_omit_zc_derived_from_personnel(self):
         persons = [
-            {"name": "陈云", "status": "齐备", "title_cert": "高工（道路与桥梁）"},
-            {"name": "阮旭", "status": "职称缺口", "title_cert": "库内无职称证书"},
+            {"name": "张三", "status": "齐备", "title_cert": "高工（道路与桥梁）"},
+            {"name": "赵六", "status": "职称缺口", "title_cert": "库内无职称证书"},
             {"name": "黄诚", "status": "齐备", "title_cert": "无（名单—）"},
         ]
-        self.assertEqual(filler._omit_zc(persons), {"阮旭", "黄诚"})
+        self.assertEqual(filler._omit_zc(persons), {"赵六", "黄诚"})
 
     def test_director_names_from_material(self):
         with tempfile.TemporaryDirectory() as td:
             base = Path(td)
-            _mkimg(base, "人员/陈云/职称证书/高工_道路_P0.png")
-            _mkimg(base, "人员/邵章华/身份证/身份证_P0.png")
-            _mkimg(base, "人员/孙婧/身份证/身份证_P0.png")
+            _mkimg(base, "人员/张三/职称证书/高工_道路_P0.png")
+            _mkimg(base, "人员/李四/身份证/身份证_P0.png")
+            _mkimg(base, "人员/王五/身份证/身份证_P0.png")
             mat = {
-                "personnel": [{"name": "陈云"}],
-                "企业基础信息": {"法定代表人姓名": "邵章华", "委托代理人姓名": "孙婧"},
+                "personnel": [{"name": "张三"}],
+                "企业基础信息": {"法定代表人姓名": "李四", "委托代理人姓名": "王五"},
             }
             wl = filler._build_whitelist(mat)
             items, mis, out = filler._build_combo(
                 "【图片：总监高级工程师职称证书】", base, base, mat, wl)
-            self.assertTrue(any("人员/陈云" in i[0].replace("\\", "/") for i in items))
+            self.assertTrue(any("人员/张三" in i[0].replace("\\", "/") for i in items))
             items, mis, out = filler._build_combo(
                 "【图片：法定代表人身份证正、反面扫描件】", base, base, mat, wl)
-            self.assertTrue(any("人员/邵章华" in i[0].replace("\\", "/") for i in items))
+            self.assertTrue(any("人员/李四" in i[0].replace("\\", "/") for i in items))
             items, mis, out = filler._build_combo(
                 "【图片：委托代理人身份证正、反面扫描件】", base, base, mat, wl)
-            self.assertTrue(any("人员/孙婧" in i[0].replace("\\", "/") for i in items))
+            self.assertTrue(any("人员/王五" in i[0].replace("\\", "/") for i in items))
 
     def test_major_and_qual_level_derived(self):
         mat = {
             "投标资格专业": "市政公用工程",
-            "personnel": [{"name": "陈云", "cert": "注册证34008007（房建+市政公用，2028.1.23）"}],
+            "personnel": [{"name": "张三", "cert": "注册证34008007（房建+市政公用，2028.1.23）"}],
             "qualification_required": [
                 {"path": "资质/市政公用工程监理乙级_20291121_P0.png"},
                 {"path": "资质/房屋建筑工程监理甲级_20281222_P0.png"},

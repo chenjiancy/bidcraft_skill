@@ -17,8 +17,8 @@ from pathlib import Path
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "scripts"))
 from m5_project import generator as gen           # noqa: E402
 
-REAL_ENT = r"E:\监理标书制作\和县建设工程监理有限公司"
-REAL_PROJECT = "马鞍山和县化工园尾水水质提升工程（EPC总承包）监理"
+REAL_ENT = r"E:\监理标书制作\示例建设工程监理有限公司"
+REAL_PROJECT = "示例示例园区尾水水质提升工程（EPC总承包）监理"
 
 
 def _have_docx():

@@ -5,7 +5,7 @@ bidcraft · M1 素材库 —— 模块子包（命令实现 + 子命令注册）
 用法总览（示例）
 ----------------
   # 0) 建企业（首次调用 skill 必做；软件目录三层结构由 init-enterprise 生成）
-  python bidcraft.py init-enterprise --name "马鞍山XX工程监理有限公司"
+  python bidcraft.py init-enterprise --name "示例XX工程监理有限公司"
 
   # 1) 打开收件箱 → 逐张上传 → 关闭收件箱
   python bidcraft.py open-inbox

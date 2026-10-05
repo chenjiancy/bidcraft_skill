@@ -360,16 +360,16 @@ class TestArchiveFlow(CoreBase):
         prop = core.propose(self.ent, require_closed=True)
         it = prop["items"][0]
         it["category"], it["subtype"] = "人员", "注册证书"
-        it["person"] = "陈云"
+        it["person"] = "张三"
         it["keywords"] = ["监理工程师"]
         it["dates"] = ["20280123", "20270220"]
         res = core.apply(self.ent, prop)
         self.assertEqual(res["summary"]["archived"], 1, res["failed"])
-        self.assertTrue((self.libroot / "人员" / "陈云" / "注册证书" / "监理工程师_20280123_20270220.png").exists())
+        self.assertTrue((self.libroot / "人员" / "张三" / "注册证书" / "监理工程师_20280123_20270220.png").exists())
 
     def test_registration_same_person_new_cert_conflicts(self):
         """注册证书：同人再传新证书（新使用有效期）→ 判同名（更新语义）。"""
-        self._archive_credential("陈云", "注册证书", ["监理工程师"], ["20280123", "20270220"],
+        self._archive_credential("张三", "注册证书", ["监理工程师"], ["20280123", "20270220"],
                                  "监理工程师_20280123_20270220.png")
         inbox = core.Inbox(self.ent)
         inbox.open()
@@ -378,7 +378,7 @@ class TestArchiveFlow(CoreBase):
         prop = core.propose(self.ent, require_closed=True)
         it = prop["items"][0]
         it["category"], it["subtype"] = "人员", "注册证书"
-        it["person"] = "陈云"
+        it["person"] = "张三"
         it["keywords"] = ["监理工程师"]
         it["dates"] = ["20280123", "20280220"]
         res = core.apply(self.ent, prop)

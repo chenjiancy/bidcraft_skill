@@ -13,8 +13,8 @@ REPO = Path(__file__).resolve().parents[2]
 SCRIPTS = REPO / "scripts"
 CLI = [sys.executable, str(SCRIPTS / "bidcraft.py")]
 
-REAL_ENT = r"E:\监理标书制作\和县建设工程监理有限公司"
-REAL_PROJECT = "马鞍山和县化工园尾水水质提升工程（EPC总承包）监理"
+REAL_ENT = r"E:\监理标书制作\示例建设工程监理有限公司"
+REAL_PROJECT = "示例示例园区尾水水质提升工程（EPC总承包）监理"
 
 
 def run(*args, root=None, ent=None, **kw):
@@ -124,7 +124,7 @@ class TestProjGenCli(unittest.TestCase):
         out = Path(self.tmp) / "项目模板"
         r = run("proj-gen", "--project", REAL_PROJECT, "--out", str(out),
                 "--no-baseline", "--json",
-                ent="和县建设工程监理有限公司", root=r"E:\监理标书制作")
+                ent="示例建设工程监理有限公司", root=r"E:\监理标书制作")
         self.assertEqual(r.returncode, 0, r.stderr)
         data = json.loads(r.stdout)
         self.assertIn("目录", data)

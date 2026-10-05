@@ -5,8 +5,8 @@ bidcraft · 产物反馈机制 —— 模块子包（命令实现 + 子命令注
 用法总览（示例）
 ----------------
   # 1) 登记/刷新产物基线（生成器落盘后调用；agent 也可手动登记）
-  python bidcraft.py fb-baseline --path "项目级/马鞍山…/项目模板/开标一览表.docx" \
-      --level 项目级 --project "马鞍山…" --type 项目模板 --generator m5-project-gen
+  python bidcraft.py fb-baseline --path "项目级/示例…/项目模板/开标一览表.docx" \
+      --level 项目级 --project "示例…" --type 项目模板 --generator m5-project-gen
 
   # 2) 变更检测（自动：每轮任务开始 --quick；深度：--full）
   python bidcraft.py fb-audit --quick
