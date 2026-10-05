@@ -1004,3 +1004,8 @@ PDF 69 页目检 + media 拼图三段逐张判定；8 张待确认图由用户�
 - Deploy #6：pull 已成功快进（reflog: 7001c20→363579b），但脚本误判失败（0 捕获歧义）→ 改为「退出码=0 且 HEAD==FETCH_HEAD」双条件判定，避免误报；重试逻辑保留（直连 GitHub，不用代理）。
 - 版本记录写入：NETWORK SERVICE 对 E:\标书匠生产 无写权限 → icacls 授予 (OI)(CI)M；脚本内写失败降级为警告不阻断部署。
 - 用户明确规则：拉取一律直连 GitHub 原地址（https://github.com/chenjiancy/bidcraft_skill.git），不使用任何加速代理（git 全局代理、环境变量代理均为空，已核查）。
+
+## 2026-10-05 第三阶段加固：main 分支保护 + 版本号自动递增
+- VERSION 文件（主版本 0.1）+ .github/workflows/tag-release.yml：push main 时自动打递增 tag v0.1.<run_number>（GITHUB_TOKEN push tag 不触发循环）。
+- main 分支保护：必须 PR 才能合并 + CI checks（test-pyramid/compile-check）必须绿 + 分支保持最新。
+- 流程变更：以后开发推功能分支 → 开 PR → CI 绿 → 合并 main → 自动 deploy + 自动打版本 tag。

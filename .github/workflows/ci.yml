@@ -7,19 +7,15 @@ on:
 
 jobs:
   # 测试金字塔：L1 单元(最多最快) → L2 集成 → L3 端到端(最少最慢)
-  # ⑪ 双平台 runner：ubuntu（标准）+ windows（暴露中文编码/路径类本地问题）
+  # ⑪ 聚焦本机生产环境（Windows + Python 3.12，与 C:\Python312 一致）；矩阵变体会使
+  #    分支保护的状态检查按变体展开成多个 check，维护成本高 → 用单 job 保证 check 名稳定。
   test-pyramid:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-        python-version: ["3.10", "3.11", "3.12"]
-    runs-on: ${{ matrix.os }}
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.12"
 
       # 运行依赖：python-docx(模板/填充/docx读写)、Pillow(图框预览)。
       # 可选依赖不进 CI：PyMuPDF(PDF解析)、rapidocr(OCR)，均有函数级容错回退。
