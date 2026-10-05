@@ -17,6 +17,9 @@ jobs:
   #    分支保护的状态检查按变体展开成多个 check，维护成本高 → 用单 job 保证 check 名稳定。
   test-pyramid:
     runs-on: windows-latest
+    permissions:
+      contents: read
+      issues: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -37,6 +40,26 @@ jobs:
         run: python -m unittest discover -s tests/integration -t . -v
       - name: L3 端到端测试（CLI 全流程）
         run: python -m unittest discover -s tests/e2e -t . -v
+
+      # 失败通知：仅 main 分支（push/合并）失败时开 Issue（PR 失败属开发中，不打扰）
+      - name: 失败通知（自动开 Issue）
+        if: failure() && github.ref == 'refs/heads/main'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner, repo = context.repo.repo;
+            const open = await github.rest.issues.listForRepo({owner, repo, state:'open', labels:['ci-failure']});
+            if (open.data.length > 0) {
+              console.log('已有未关闭的 CI 失败 Issue，跳过');
+            } else {
+              await github.rest.issues.create({
+                owner, repo,
+                title: `CI 失败：${context.runId}`,
+                body: `main 分支 CI 流水线失败，请查看：${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`,
+                labels: ['ci-failure']
+              });
+              console.log('已创建 CI 失败 Issue');
+            }
 
   # 静态编译检查：全部脚本可被 py_compile（防语法/导入回归）；双平台
   compile-check:
