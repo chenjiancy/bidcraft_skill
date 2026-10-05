@@ -34,12 +34,25 @@ jobs:
         run: python -m pip install python-docx Pillow
 
       # 零外部依赖的测试框架：全部基于 Python 标准库 unittest，保证跨环境/平台可复用
+      # bash + tee：输出保存为日志（上传 artifacts），PIPESTATUS 保留 python 真实退出码
       - name: L1 单元测试（命名规范引擎）
-        run: python -m unittest discover -s tests/unit -t . -v
+        shell: bash
+        run: python -m unittest discover -s tests/unit -t . -v 2>&1 | tee test-unit.log; exit ${PIPESTATUS[0]}
       - name: L2 集成测试（存储层 core；真实数据依赖用例自动跳过）
-        run: python -m unittest discover -s tests/integration -t . -v
+        shell: bash
+        run: python -m unittest discover -s tests/integration -t . -v 2>&1 | tee test-integration.log; exit ${PIPESTATUS[0]}
       - name: L3 端到端测试（CLI 全流程）
-        run: python -m unittest discover -s tests/e2e -t . -v
+        shell: bash
+        run: python -m unittest discover -s tests/e2e -t . -v 2>&1 | tee test-e2e.log; exit ${PIPESTATUS[0]}
+
+      # 测试报告 artifacts：无论成败均可下载查看（--if-no-files-found 忽略日志缺失）
+      - name: 上传测试日志
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-logs
+          path: test-*.log
+          if-no-files-found: ignore
 
       # 失败通知：仅 main 分支（push/合并）失败时开 Issue（PR 失败属开发中，不打扰）
       - name: 失败通知（自动开 Issue）
