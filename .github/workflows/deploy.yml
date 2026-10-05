@@ -1,0 +1,21 @@
+name: Deploy to Production
+
+# 云端正向：CI（ci.yml 三塔层测试）全部通过后，才在本机 self-hosted runner 上部署到生产环境。
+# 生产环境 E:\标书匠生产 是独立 git 仓库（sparse-checkout 只检出发布文件），
+# 部署 = 执行其目录内升级生产.ps1（防污染检查 → HTTPS+token 拉取 main → 冒烟 → 记录版本）。
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: self-hosted
+    steps:
+      - name: 部署到生产环境
+        shell: powershell
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: powershell -ExecutionPolicy Bypass -File "E:\标书匠生产\升级生产.ps1"
