@@ -978,3 +978,9 @@ PDF 69 页目检 + media 拼图三段逐张判定；8 张待确认图由用户�
 **生产真实测试发现 bug**：query --keyword 报 TypeError（keywords 字段为 list 而非 str）。根因：30 条身份证素材台账 keywords=[]（历史脏数据，应为 ""）。
 **修复**：1) ops.py query 兼容 keywords list（防御性加固）；2) 生产台账 JSON+CSV 30 条 []->""（已备份素材库\_备份\素材台账.json.20261005_*.bak）；3) 新增集成测试 test_query_tolerates_legacy_list_keywords。
 **验证**：三塔层全绿（unit 193 / integration 63 / e2e 22）；生产重跑 query 营业执照 1 条、陈云 6 条正常。
+
+### 2026-10-05 生产环境 CI/CD 第一步：生产目录改 git 仓库 + 一键升级脚本
+**改造**：E:\标书匠生产 由 robocopy 复制改造成独立 git 仓库（git init + remote origin git@github.com:chenjiancy/bidcraft_skill.git + sparse-checkout set scripts references SKILL.md README.md + checkout main tracking origin/main）。工作区仅发布文件，无 tests/dev。
+**运维**：升级生产.ps1（防污染检查仅查 tracked 改动、untracked 运维文件不阻塞；git fetch→pull --ff-only→冒烟→版本记录.txt）；生产环境说明.txt。
+**踩坑**：PowerShell 5.1 下 2>&1 重定向原生命令 stderr 会产生 NativeCommandError，配合 Continue='Stop' 会终止脚本 → 不用 2>&1 直接显示 stderr 并查 0；ps1 必须 UTF-8 BOM（Write 工具无 BOM 会被 5.1 按 ANSI 解析致中文乱码/语法错）。
+**验证**：升级脚本测试显示已是最新 c956ab8；生产 CLI overview 336 条正常；README 部署章节已推送（闭环：开发 push → 生产升级脚本拉取）。
