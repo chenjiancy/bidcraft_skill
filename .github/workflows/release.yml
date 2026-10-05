@@ -3,6 +3,8 @@ name: CD · 发布 skill 包
 on:
   push:
     tags: ["v*"]
+  # 手动触发入口（可选：手动打包发布）
+  workflow_dispatch:
 
 jobs:
   release:
