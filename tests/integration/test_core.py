@@ -464,6 +464,17 @@ class TestQueryInspectOverview(CoreBase):
         self.assertEqual(ov["ledger_total"], 1)
         self.assertEqual(ov["path"], str(self.libroot))
 
+    def test_query_tolerates_legacy_list_keywords(self):
+        # 兼容历史脏数据：台账 keywords 字段为 list（空列表）时 query 不崩溃
+        self._seed_one()
+        ledger = core.load_ledger(self.ent)
+        ledger[0]["keywords"] = []
+        core.save_ledger(self.ent, ledger)
+        rows = core.query(self.ent, keyword="ISO9001")
+        self.assertEqual(len(rows), 1)
+        rows2 = core.query(self.ent, keyword="不存在关键词")
+        self.assertEqual(len(rows2), 0)
+
     def test_inspect_catches_untracked(self):
         (self.libroot / "资质").mkdir(exist_ok=True)
         (self.libroot / "资质" / "裸文件_20260101.jpg").write_text("x", encoding="utf-8")
