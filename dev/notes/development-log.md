@@ -972,3 +972,9 @@ PDF 69 页目检 + media 拼图三段逐张判定；8 张待确认图由用户�
 **处理**：从源文件 deepcopy 单元格段落恢复附表6 整表原文（表头+总监/专监/监理员3类别行含注(1)(2)(3)+底部注1-4）；附表7 注1/注2 段落 deepcopy 恢复原文；全文核查其余注/备注均已是原文。
 **验证**：51 页与源一致；P24 附表6、P25 附表7 一页完整不跨页；文字占位 48种158次→41种145次；图框仍44个。
 **规则落地**：附表6、附表7 注、全部注/备注 = 动态更新源（项目模板制作时依据招标解析投标文件格式内容更新）。
+
+### 2026-10-05 生产环境部署 + 真实测试发现并修复 keywords 脏数据 bug
+**部署**：发布版 v0.8.8 部署到 E:\标书匠生产（独立目录，仅 scripts/references/SKILL.md/README，排除 tests/dev/.preview/.git）；数据原位使用 E:\监理标书制作（--root）。
+**生产真实测试发现 bug**：query --keyword 报 TypeError（keywords 字段为 list 而非 str）。根因：30 条身份证素材台账 keywords=[]（历史脏数据，应为 ""）。
+**修复**：1) ops.py query 兼容 keywords list（防御性加固）；2) 生产台账 JSON+CSV 30 条 []->""（已备份素材库\_备份\素材台账.json.20261005_*.bak）；3) 新增集成测试 test_query_tolerates_legacy_list_keywords。
+**验证**：三塔层全绿（unit 193 / integration 63 / e2e 22）；生产重跑 query 营业执照 1 条、陈云 6 条正常。

@@ -94,8 +94,11 @@ def query(ent, category=None, keyword=None, subtype=None, expires_before=None,
         if owner and owner not in (r.get("owner") or ""):
             continue
         if keyword:
+            kw_val = r.get("keywords") or ""
+            if isinstance(kw_val, list):  # 兼容历史脏数据（空列表/列表关键词）
+                kw_val = "、".join(str(x) for x in kw_val if str(x).strip())
             hay = " ".join([
-                r.get("rel_path", ""), r.get("keywords", ""),
+                r.get("rel_path", ""), kw_val,
                 r.get("subtype", ""), r.get("note", ""),
                 r.get("original_filename", ""),
             ])
