@@ -59,9 +59,17 @@ python -m unittest discover -s tests/e2e -t .         # L3 端到端：CLI 全�
 - **CI**（`.github/workflows/ci.yml`）：push/PR 触发，Python 3.10–3.12 三塔层 + py_compile 全绿才算通过。
 - **CD**（`.github/workflows/release.yml`）：打 `v*` 标签自动打包发布 skill 可分发包（排除素材库/缓存）。
 
-## 生产环境部署与升级（2026-10-05 起）
+## 生产环境部署与升级（2026-10-05 现行流程）
 
 - **开发与生产隔离**：开发/测试只在本仓库；生产环境 `E:\标书匠生产` 是**独立 git 仓库**（`git@github.com:chenjiancy/bidcraft_skill.git` main 分支，sparse-checkout 只检出 `scripts references SKILL.md README.md .gitignore`），工作区**无 tests/dev/.github**，本地永不开发。
-- **唯一升级通道**：生产目录内 `升级生产.ps1`——防污染检查（已跟踪文件有改动→中止）→ `git fetch` → `git pull --ff-only` → 冒烟（`bidcraft.py --help`）→ 记入 `版本记录.txt`。可选注册 Windows 计划任务定时执行（准实时）。
-- **升级流程**：本仓库测试全绿 → commit + push → 生产执行 `.\升级生产.ps1` 拉取。生产数据始终在 `E:\监理标书制作`（--root 指向），不在仓库内。
-- **后续（全自动 CI/CD）**：注册 GitHub Actions self-hosted runner 到生产机 + deploy.yml，实现 push 即部署（见路线图）。
+- **升级链路（全自动，push 即部署）**：
+  1. **main 受保护**：必须 PR 合并（0 审批可自合）、3 个必需 check（`test-pyramid` / `compile-check (ubuntu-latest)` / `compile-check (windows-latest)`，strict）、禁止强推/删除、必需会话解决、管理员同受保护（enforce_admins）。
+  2. 功能分支 push → 开 PR → 检查全绿 → 合并。
+  3. 合并自动触发：CI → `deploy.yml`（self-hosted runner，Windows 服务）→ 生产 fast-forward + 冒烟 + 写 `版本记录.txt`。
+  4. 自动打版本 tag `v0.1.<run_number>`（`tag-release.yml`，push main 触发，run_number 仓库级单调递增）。
+  5. **兜底**：Windows 计划任务「Bidcraft生产定时升级」每 6 小时自动跑 `升级生产.ps1`（GitHub 偶发断连时自动补拉；输出记 `E:\标书匠生产\升级日志.txt`；错过后补跑）。
+- **手动升级（兜底命令）**：`cd E:\标书匠生产; .\升级生产.ps1`——防污染检查（已跟踪文件有改动→中止）→ fetch/pull → 冒烟 → 记版本。生产数据始终在 `E:\监理标书制作`（--root 指向），不在仓库内。
+- **敏感信息治理（仓库 public 后）**：
+  - 5 个业务文档（`dev/notes/development-log.md`、4 个 references 需求对齐/操作手册）**本地保留、.gitignore 不进公网**（历史已用 git-filter-repo 重写清除）。
+  - 代码/测试中真实企业/人员/项目名一律**示例名**（示例建设工程监理有限公司、张三/李四/王五等）。
+  - 真实数据路径**环境变量注入**：`BIDCRAFT_TEST_ENT` / `BIDCRAFT_TEST_PROJ`（默认示例名；本地真实回归用 `tests\run_local_regression.bat`，含真实路径、gitignore）。
