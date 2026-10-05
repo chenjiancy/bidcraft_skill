@@ -15,7 +15,9 @@ jobs:
     runs-on: self-hosted
     steps:
       - name: 部署到生产环境
-        shell: powershell
+        # runner 服务账户 ExecutionPolicy=Restricted，PowerShell dot-source 受限；
+        # 用 cmd 调 powershell.exe 子进程（-ExecutionPolicy Bypass）执行升级脚本
+        shell: cmd
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: powershell -ExecutionPolicy Bypass -File "E:\标书匠生产\升级生产.ps1"
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File "E:\标书匠生产\升级生产.ps1"
