@@ -1,0 +1,37 @@
+name: CodeQL
+
+# 代码安全扫描（公开仓库免费）：Python 代码 + GitHub Actions workflow 文件本身
+# 发现安全漏洞 / workflow 注入 / 密钥误写等问题，PR 阶段阻断，并加入分支保护必需 check。
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '0 12 * * 1' # 每周一中午，例行扫描
+  workflow_dispatch:
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ['python']
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{matrix.language}}"
