@@ -999,3 +999,8 @@ PDF 69 页目检 + media 拼图三段逐张判定；8 张待确认图由用户�
 - Deploy #5 踩坑链：①runner 服务账户 PATH 无 python → 升级脚本增加 python 探测（BIDCRAFT_PYTHON → C:\Python312\python.exe → C:\Python311\python.exe → D:\anaconda3\python.exe → python 兜底）；②C:\Python312 安装 python-docx/Pillow 并授权 NETWORK SERVICE (OI)(CI)RX；③HTTPS fetch 偶发 schannel close_notify → fetch/pull 加重试（3 次、间隔 3s）。
 - 验证：生产 HEAD 由 runner 自动快进 2a16370→7001c20（HTTPS+GITHUB_TOKEN 认证、safe.directory 生效）；Deploy to Production #5 全绿（"已是最新版本"分支 exit 0）。
 - 下一项：推送真实新提交验证「push → CI 绿 → deploy 快进 → 冒烟 → 写版本记录」完整闭环。
+
+## 2026-10-05 CI/CD 部署判定与权限修复
+- Deploy #6：pull 已成功快进（reflog: 7001c20→363579b），但脚本误判失败（0 捕获歧义）→ 改为「退出码=0 且 HEAD==FETCH_HEAD」双条件判定，避免误报；重试逻辑保留（直连 GitHub，不用代理）。
+- 版本记录写入：NETWORK SERVICE 对 E:\标书匠生产 无写权限 → icacls 授予 (OI)(CI)M；脚本内写失败降级为警告不阻断部署。
+- 用户明确规则：拉取一律直连 GitHub 原地址（https://github.com/chenjiancy/bidcraft_skill.git），不使用任何加速代理（git 全局代理、环境变量代理均为空，已核查）。
