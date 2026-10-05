@@ -1,0 +1,31 @@
+name: 版本打标
+
+# 每次推送到 main（含 PR 合并）自动打递增版本 tag：v<主版本>.<仓库全局运行序号>
+# 例如 VERSION=0.1、run_number=87 → tag v0.1.87。run_number 仓库级单调递增，天然不重复。
+# 使用 GITHUB_TOKEN 推送 tag 不会再次触发本 workflow / CI（官方行为），无循环。
+# tag 仅为版本标识（git describe --tags --always 可读），不参与部署逻辑。
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: 读取主版本号
+        id: ver
+        run: |
+          VER=$(tr -d '[:space:]' < VERSION)
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+      - name: 打递增 tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          TAG="v${{ steps.ver.outputs.version }}.${{ github.run_number }}"
+          git tag "$TAG"
+          git push origin "$TAG"
+          echo "已打 tag: $TAG"
