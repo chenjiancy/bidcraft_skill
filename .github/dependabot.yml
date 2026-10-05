@@ -1,0 +1,14 @@
+# Dependabot 依赖漏洞告警（公开仓库免费）：
+# - pip：Python 依赖（python-docx/Pillow 等）有已知漏洞时自动开修复 PR
+# - github-actions：Actions 自身（checkout/setup-python 等）版本更新
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
