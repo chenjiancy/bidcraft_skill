@@ -47,5 +47,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: py_compile 全部脚本
+        # Windows runner 默认 shell 是 PowerShell，不展开 *.py 通配符 → 显式用 bash（runner 自带）
+        shell: bash
         run: |
           python -m py_compile scripts/bidcraft.py scripts/_shared/*.py scripts/m1_assets/*.py scripts/m2_template/*.py scripts/m4_tender/*.py scripts/m5_project/*.py scripts/m7_check/*.py scripts/m_feedback/*.py
