@@ -1,6 +1,6 @@
 ---
 name: bidcraft
-version: 0.1.16
+# 发布版本以 git tag v0.1.<run_number> 为准（唯一真源，不在此处维护以避免漂移）
 display_name: 标书匠
 description: 标书制作工作台（agent 驱动，项目级 skill，平台无关）。统一编排标书全流程：招标文件解析、商务标制作、技术标制作、标书检查、AI模拟评标。触发词："做标书""生成商务标/技术标""解析招标文件""检查标书""模拟评标""整理投标素材/模板/知识库""归档投标素材""企业素材库"等。已交付：M1 素材库、M2 模板库、M4 招标解析、M5 项目模板生成+产物反馈、M7 标书检查（模块总览见正文第四节，用法见文档索引）。越界请求引导至专项技能（bid-doc-interpreter、bid-compliance-checker、bid-service-plan-markup-docx）。
 agent_created: true
