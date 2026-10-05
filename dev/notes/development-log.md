@@ -994,3 +994,8 @@ PDF 69 页目检 + media 拼图三段逐张判定；8 张待确认图由用户�
 ### 2026-10-05 CI/CD 第二步（终）：deploy 自动化踩坑链修复，闭环验证
 踩坑链：①runner 服务账户 ExecutionPolicy=Restricted → shell 改 cmd 调 powershell -Bypass；②git dubious ownership（生产目录属 Administrators，NETWORK SERVICE 被 git 拒绝）→ 升级脚本开头加 safe.directory（幂等）。CI 云端修复链：③缺 python-docx（ModuleNotFoundError）→ ci.yml 装 python-docx Pillow；④compile-check(windows) PowerShell 不展开 *.py → shell: bash。
 **验证**：CI #83/#84 全绿；手动升级脚本生产快进 c70d702→2a16370（4 提交）冒烟通过；推送后 Deploy 应自动执行（待验证）。
+
+## 2026-10-05 CI/CD 闭环：runner 自动部署全绿
+- Deploy #5 踩坑链：①runner 服务账户 PATH 无 python → 升级脚本增加 python 探测（BIDCRAFT_PYTHON → C:\Python312\python.exe → C:\Python311\python.exe → D:\anaconda3\python.exe → python 兜底）；②C:\Python312 安装 python-docx/Pillow 并授权 NETWORK SERVICE (OI)(CI)RX；③HTTPS fetch 偶发 schannel close_notify → fetch/pull 加重试（3 次、间隔 3s）。
+- 验证：生产 HEAD 由 runner 自动快进 2a16370→7001c20（HTTPS+GITHUB_TOKEN 认证、safe.directory 生效）；Deploy to Production #5 全绿（"已是最新版本"分支 exit 0）。
+- 下一项：推送真实新提交验证「push → CI 绿 → deploy 快进 → 冒烟 → 写版本记录」完整闭环。
