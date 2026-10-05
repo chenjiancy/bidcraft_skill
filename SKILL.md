@@ -69,7 +69,7 @@ scripts/
 
 **素材库不入仓库（数据隔离）**：素材库数据存放于软件根（如 `E:\监理标书制作\<企业>\企业级\素材库`），在仓库之外，天然不进 git；`.gitignore` 同时忽略兜底目录 `素材库/`。**素材一旦归档即受保护**，任何更改必须走标准流程（propose/apply/回收站等），除非用户明确指令。测试全部使用 `tempfile` 临时素材根，绝不触碰真实素材库。
 
-**测试与 CI/CD（开发必读）**：本仓库用**测试金字塔**分层保障质量——L1 单元（`tests/unit`，命名引擎，最多最快）、L2 集成（`tests/integration`，存储层 core）、L3 端到端（`tests/e2e`，CLI 全流程，最少最慢）；全部基于 Python 标准库 `unittest`，零外部依赖。开发新模块时先补对应层测试再实现。CI（`.github/workflows/ci.yml`）在 push/PR 时对 Python 3.10–3.12 跑三塔层 + `py_compile`；CD（`.github/workflows/release.yml`）在打 `v*` 标签时打包发布 skill 可分发包（排除素材库/缓存）。本机运行：`python -m unittest discover -s tests/<层> -t .`。
+**测试与 CI/CD（开发必读）**：本仓库用**测试金字塔**分层保障质量——L1 单元（`tests/unit`，命名引擎，最多最快）、L2 集成（`tests/integration`，存储层 core）、L3 端到端（`tests/e2e`，CLI 全流程，最少最慢）；测试框架全部基于 Python 标准库 `unittest`。**运行依赖**：`python-docx`（模板/填充/docx 读写）、`Pillow`（图框预览）——CI 会自动安装；可选依赖不进 CI：PyMuPDF（PDF 解析）、rapidocr（OCR），均有函数级容错回退。开发新模块时先补对应层测试再实现。CI（`.github/workflows/ci.yml`）在 push/PR 时对 Python 3.10–3.12 跑三塔层 + `py_compile`；CD（`.github/workflows/release.yml`）在打 `v*` 标签时打包发布 skill 可分发包（排除素材库/缓存）。本机运行：`python -m unittest discover -s tests/<层> -t .`（本机需 `pip install python-docx Pillow`）。
 
 ## 四、八大能力模块总览
 | 编号 | 模块 | 一句话职责 | 状态 |

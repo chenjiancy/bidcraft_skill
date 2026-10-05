@@ -47,7 +47,9 @@ bidcraft_skill/
 ## 开发与测试（金字塔 + CI/CD）
 
 ```powershell
-# 本机跑三塔层测试（零外部依赖，仅 Python 标准库 unittest）
+# 首次运行需安装运行依赖（python-docx/Pillow；CI 会自动安装）
+pip install python-docx Pillow
+# 本机跑三塔层测试（测试框架仅 Python 标准库 unittest）
 python -m unittest discover -s tests/unit -t .        # L1 单元：命名引擎（最多、最快）
 python -m unittest discover -s tests/integration -t . # L2 集成：存储层 core
 python -m unittest discover -s tests/e2e -t .         # L3 端到端：CLI 全流程（最少、最慢）

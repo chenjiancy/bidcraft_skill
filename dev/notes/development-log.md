@@ -984,3 +984,9 @@ PDF 69 页目检 + media 拼图三段逐张判定；8 张待确认图由用户�
 **运维**：升级生产.ps1（防污染检查仅查 tracked 改动、untracked 运维文件不阻塞；git fetch→pull --ff-only→冒烟→版本记录.txt）；生产环境说明.txt。
 **踩坑**：PowerShell 5.1 下 2>&1 重定向原生命令 stderr 会产生 NativeCommandError，配合 Continue='Stop' 会终止脚本 → 不用 2>&1 直接显示 stderr 并查 0；ps1 必须 UTF-8 BOM（Write 工具无 BOM 会被 5.1 按 ANSI 解析致中文乱码/语法错）。
 **验证**：升级脚本测试显示已是最新 c956ab8；生产 CLI overview 336 条正常；README 部署章节已推送（闭环：开发 push → 生产升级脚本拉取）。
+
+### 2026-10-05 CI/CD 第二步（续）：修复 CI 云端失败根因（缺 python-docx）
+**根因**：ci.yml 从未安装 python-docx；scripts/_shared/docx_util.py、m5_project/fill_images.py 顶层 import docx，云端 runner 无此依赖 → ModuleNotFoundError。历史 CI 从引入 docx_util 起一直红（82 条记录多数 failed），本地绿因本机已装 python-docx。deploy #1 Skipped 即因 CI 结论非 success。
+**修复**：ci.yml 测试前加 pip install python-docx Pillow；SKILL.md/README 修正"零外部依赖"表述（python-docx/Pillow 为运行依赖，PyMuPDF/rapidocr 可选函数级容错）。
+**依赖清单**：docx_util/fill_images/fill_common/gen_common/gen_images/gen_diff/gen_main/checker/template_preview 等用 python-docx；image_spec/ph_preview 用 Pillow（函数内 import）；pdf_extract(fitz)/fill_ocr(rapidocr) 可选。
+**验证**：本地三塔层 193/63/22 全绿；推送后 CI 应绿 → deploy 自动部署。
