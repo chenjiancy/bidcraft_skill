@@ -23,6 +23,7 @@ SAMPLE = """和县2026年老旧小区改造项目（EPC总承包）监理采购
 投标人须具有房屋建筑工程监理甲级资质。
 拟派总监理工程师1名、专业监理工程师2名、监理员2名。
 监理费率报价不得超过1.5%。
+评分：监理大纲50分、企业实力18分、荣誉8分、总监荣誉4分、价格20分，合计100分。
 """
 
 
@@ -79,6 +80,25 @@ class TestExtractFields(unittest.TestCase):
         self.assertEqual(f["qualification"]["module"], "qualification")
         self.assertEqual(f["staff_count"]["module"], "staff")
         self.assertEqual(f["percent"]["module"], "pricing")
+
+    def test_score_points(self):
+        """v2.4：评分分值抽取（模块5 scoring）。"""
+        f = rule_extract.extract_fields(SAMPLE)
+        self.assertEqual(f["score_points"]["module"], "scoring")
+        vals = f["score_points"]["value"]
+        self.assertIn("50", vals)
+        self.assertIn("18", vals)
+        self.assertIn("20", vals)
+
+    def test_score_sum_check(self):
+        """v2.4：评分分值合计校验派生字段（参考合计 vs 100）。"""
+        f = rule_extract.extract_fields(SAMPLE)
+        sc = f["score_sum_check"]
+        self.assertEqual(sc["label"], "评分分值合计校验")
+        self.assertEqual(sc["module"], "scoring")
+        # SAMPLE 中抽取分值含 50+18+8+4+20=100（含 1.5 费率与 100 合计 行内的干扰值）
+        self.assertEqual(sc["value"]["参考总分"], 100)
+        self.assertTrue(sc["note"])
 
 
 if __name__ == "__main__":

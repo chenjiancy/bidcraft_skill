@@ -51,6 +51,9 @@ RULES = [
     # -- 模块 3 人员配备 --
     {"id": "staff_count", "label": "人员数量", "module": "staff", "multi": True,
      "pattern": re.compile(r"((?:总监理工程师|专业监理工程师|监理员)[^。\n]{0,10}?\d+\s*名)")},
+    # -- 模块 5 评标办法（v2.4 扩展：评分分值抽取 + 合计=100 校验）--
+    {"id": "score_points", "label": "评分分值", "module": "scoring", "multi": True,
+     "pattern": re.compile(r"(\d+(?:\.\d+)?)\s*分")},
     # -- 模块 6 报价要求（只解析费率/百分比规则，报价金额由用户提供）--
     {"id": "percent", "label": "百分比/费率", "module": "pricing", "multi": True,
      "pattern": re.compile(r"(\d+(?:\.\d+)?)\s*%")},
@@ -71,12 +74,36 @@ def _context(line, idx, all_lines):
     return ctx
 
 
+def _score_sum_check(values):
+    """评分分值合计校验（v2.4）：抽取分值去重求和，与 100 比较 → 确定性参考。
+
+    评分分值抽取为宽松正则（\d+ 分），可能混入非评分语境分值；故仅做
+    「参考合计 vs 100」提示，需人工核对，不强制一致。
+    """
+    nums = []
+    for v in values:
+        try:
+            nums.append(float(v))
+        except (TypeError, ValueError):
+            continue
+    total = round(sum(nums), 2)
+    return {
+        "label": "评分分值合计校验",
+        "module": "scoring",
+        "value": {"参考总分": 100, "抽取分值合计": total,
+                  "一致": abs(total - 100) < 0.01},
+        "count": len(nums),
+        "note": "确定性参考：抽取到的『数字 分』去重求和。若混入非评分分值会偏差，须人工核对评分表后确认",
+    }
+
+
 def extract_fields(text):
     """
     按规则表抽取确定性字段 → {id: {label, value, module, count, lines, evidence}}。
 
     value：multi=True → 数组（去重保序）；multi=False → 首中字符串。
     lines：命中行号（1 基，可回看原文）。
+    v2.4：命中 score_points 时附加 score_sum_check 派生校验字段。
     """
     lines = (text or "").splitlines()
     out = {}
@@ -109,4 +136,6 @@ def extract_fields(text):
             "lines": found_lines,
             "evidence": _context(idx0, idx0, lines),
         }
+    if "score_points" in out:
+        out["score_sum_check"] = _score_sum_check(out["score_points"]["value"])
     return out
