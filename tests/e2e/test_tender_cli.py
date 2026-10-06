@@ -35,13 +35,22 @@ class TenderCliBase(unittest.TestCase):
         shutil.rmtree(self.tmp, ignore_errors=True)
 
     def _seed_products(self):
-        """agent 产物：投标要点 / 素材清单 文本 + JSON。"""
+        """agent 产物：投标要点 / 素材清单 文本 + JSON（v2.1：投标要点须 9 模块全覆盖）。"""
         pmd = self.root / "points.md"
         pmd.write_text("# 投标要点\n## 项目概况\n- 项目名称：XX", encoding="utf-8")
         pjson = self.root / "points.json"
         pjson.write_text(json.dumps({"project": PROJECT, "modules": [
-            {"id": "m1", "title": "项目概况", "type": "fields",
-             "fields": {"project_name": {"value": "XX", "evidence": "第1页"}}}]},
+            {"id": "basic", "title": "项目基本信息", "type": "fields",
+             "fields": {"项目名称": {"value": "XX", "evidence": "第1页"}}},
+            {"id": "qualification", "title": "资格条件", "type": "items", "items": []},
+            {"id": "staff", "title": "人员配备", "type": "fields", "fields": {}},
+            {"id": "project_overview", "title": "项目概况与监理工作内容", "type": "fields", "fields": {}},
+            {"id": "scoring", "title": "评分办法", "type": "mixed"},
+            {"id": "pricing", "title": "报价要求", "type": "fields", "fields": {}},
+            {"id": "submission", "title": "响应文件编制与递交", "type": "fields", "fields": {}},
+            {"id": "reject", "title": "废标/否决红线", "type": "items", "items": []},
+            {"id": "pending", "title": "待确认/缺失项", "type": "items", "items": []}],
+            },
             ensure_ascii=False, indent=2), encoding="utf-8")
         lmd = self.root / "list.md"
         lmd.write_text("# 素材清单", encoding="utf-8")
@@ -155,6 +164,87 @@ class TestTenderCliFlow(TenderCliBase):
                 "--points-md", str(pmd), "--points-json", str(pbad),
                 "--list-md", str(lmd), "--list-json", str(ljson))
         self.assertEqual(r.returncode, 1)
+
+    def test_parse_missing_9module_exit1(self):
+        """v2.1：投标要点缺标准模块（如 pending）→ tender-parse 拒绝落盘。"""
+        r = run(str(self.root), "tender-init", "--project", PROJECT)
+        self.assertEqual(r.returncode, 0)
+        pmd, pjson, lmd, ljson = self._seed_products()
+        doc = json.loads(pjson.read_text(encoding="utf-8"))
+        doc["modules"] = [m for m in doc["modules"] if m["id"] != "pending"]
+        pjson.write_text(json.dumps(doc, ensure_ascii=False), encoding="utf-8")
+        r = run(str(self.root), "tender-parse", "--project", PROJECT,
+                "--points-md", str(pmd), "--points-json", str(pjson),
+                "--list-md", str(lmd), "--list-json", str(ljson))
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("pending", r.stderr)
+
+
+class TestTenderFmtRuleDiffCli(TenderCliBase):
+    """v2.1：tender-fmt / tender-rule / tender-diff CLI 全流程。"""
+
+    FMT_TEXT = (
+        "第一章 招标公告\n"
+        "项目编号：HXTD-2026-018\n"
+        "最高投标限价：48.86万元\n"
+        "投标截止时间：2026年8月10日 14:00\n"
+        "第七章 响应文件格式\n"
+        "一、投标函\n"
+        "（一）投标函格式\n"
+        "法定代表人：\n"
+        "第八章 评标标准\n"
+    )
+
+    def _seed_original(self):
+        txt = self.root / "招标文件.txt"
+        txt.write_text(self.FMT_TEXT, encoding="utf-8")
+        r = run(str(self.root), "tender-extract", "--project", PROJECT, "--file", str(txt))
+        self.assertEqual(r.returncode, 0, r.stderr)
+
+    def test_fmt_rule_diff_flow(self):
+        r = run(str(self.root), "tender-init", "--project", PROJECT)
+        self.assertEqual(r.returncode, 0)
+        self._seed_original()
+
+        # tender-fmt：响应文件格式独立文件（自动定位章节）
+        r = run(str(self.root), "tender-fmt", "--project", PROJECT)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        fmt_p = self.tdir / ("响应文件格式_%s.txt" % PROJECT)
+        self.assertTrue(fmt_p.exists())
+        content = fmt_p.read_text(encoding="utf-8")
+        self.assertIn("第七章 响应文件格式", content)
+        self.assertIn("法定代表人：", content)
+        self.assertNotIn("第八章", content)
+
+        # tender-rule：通道A 文档解析
+        r = run(str(self.root), "tender-rule", "--project", PROJECT)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        rule_p = self.tdir / ("文档解析_%s.json" % PROJECT)
+        self.assertTrue(rule_p.exists())
+        self.assertIn("HXTD-2026-018", rule_p.read_text(encoding="utf-8"))
+
+        # tender-diff：双通道差异比对（通道B 无对应字段 → 存在性差异）
+        pmd, pjson, lmd, ljson = self._seed_products()
+        r = run(str(self.root), "tender-parse", "--project", PROJECT,
+                "--points-md", str(pmd), "--points-json", str(pjson),
+                "--list-md", str(lmd), "--list-json", str(ljson))
+        self.assertEqual(r.returncode, 0, r.stderr)
+        r = run(str(self.root), "tender-diff", "--project", PROJECT)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertTrue((self.tdir / ("双通道差异_%s.json" % PROJECT)).exists())
+        self.assertTrue((self.tdir / ("双通道差异_%s.md" % PROJECT)).exists())
+        self.assertIn("存在性差异", r.stdout)
+
+    def test_fmt_not_found_exit1(self):
+        r = run(str(self.root), "tender-init", "--project", PROJECT)
+        self.assertEqual(r.returncode, 0)
+        txt = self.root / "招标文件.txt"
+        txt.write_text("第一章 招标公告\n一、投标函\n", encoding="utf-8")
+        r = run(str(self.root), "tender-extract", "--project", PROJECT, "--file", str(txt))
+        self.assertEqual(r.returncode, 0)
+        r = run(str(self.root), "tender-fmt", "--project", PROJECT)
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("定位失败", r.stderr)
 
     def test_m1_regression_still_ok(self):
         """回归：挂载 M4 后 M1 命令不受影响。"""

@@ -20,7 +20,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 from _shared import core
-from . import pdf_extract, rules
+from . import pdf_extract, rules, rule_extract
 
 W_NS = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 
@@ -233,3 +233,93 @@ def _write_check_csv(path, rows):
                 "必须" if r["required"] else "加分", r["source"], r["status"],
                 r["hits"], "、".join(r["paths"][:5]), r["suggestion"],
             ])
+
+
+# --------------------------------------------------------------------------
+# v2.1 响应文件格式独立文件（脚本化提取：原文 → 章节切片 → 落盘）
+# --------------------------------------------------------------------------
+def _find_original(tdir):
+    """定位原文文件：原文_*.txt（唯一，找不到/多个时明确报错）。"""
+    cands = sorted(Path(tdir).glob("原文_*.txt"))
+    if not cands:
+        raise core.LibraryError("未找到原文文件（原文_*.txt）：%s（先执行 tender-extract）" % tdir)
+    if len(cands) > 1:
+        raise core.LibraryError("存在多个原文文件：%s（请先整理，或手动指定）" % "、".join(p.name for p in cands))
+    return cands[0]
+
+
+def extract_fmt(tdir, project, start=None, end=None):
+    """
+    响应文件格式章节脚本化提取 → 响应文件格式_<项目>.txt（一字不改切片）。
+
+    自动定位「响应文件格式/投标文件格式」章节；start/end（1 基行号）可覆盖。
+    返回 {path, start, end, lines, chars}。
+    """
+    tdir = Path(tdir)
+    src = _find_original(tdir)
+    text = decode_bytes(src.read_bytes())
+    lines = text.splitlines()
+    try:
+        fmt_text, s, e = rules.extract_fmt(lines, start, end)
+    except ValueError as ex:
+        raise core.LibraryError("响应文件格式章节定位失败：%s" % ex)
+    dst = tdir / ("%s.txt" % rules.fmt_base(project))
+    dst.write_text(fmt_text, encoding="utf-8")
+    return {"path": str(dst), "start": s, "end": e,
+            "lines": e - s + 1, "chars": len(fmt_text)}
+
+
+# --------------------------------------------------------------------------
+# v2.1 双通道解析 · 通道A 文档解析（规则引擎落盘）+ 双通道差异比对
+# --------------------------------------------------------------------------
+def run_rule_extract(tdir, project):
+    """
+    通道A：规则引擎从原文抽取确定性字段 → 文档解析_<项目>.json。
+    返回 {path, fields, count}。
+    """
+    tdir = Path(tdir)
+    src = _find_original(tdir)
+    text = decode_bytes(src.read_bytes())
+    fields = rule_extract.extract_fields(text)
+    doc = {"project": project, "channel": "A", "note": "文档解析（规则引擎，确定性字段）",
+           "fields": fields, "generated": core.now_iso()}
+    dst = tdir / ("%s.json" % rules.rule_base(project))
+    dst.write_text(json.dumps(doc, ensure_ascii=False, indent=2), encoding="utf-8")
+    return {"path": str(dst), "fields": fields, "count": len(fields)}
+
+
+def run_dual_diff(tdir, project):
+    """
+    双通道差异比对：通道A 文档解析.json vs 通道B 投标要点.json → 差异清单。
+
+    差异类型：事实值不同 / 存在性差异（v2.1 三类中的确定性两类；语义冲突由
+    agent 在投标要点 diffs 中标注）。落盘 双通道差异_<项目>.json/.md。
+    返回 (diff_list, md_path, json_path)。
+    """
+    tdir = Path(tdir)
+    rule_json = tdir / ("%s.json" % rules.rule_base(project))
+    points_json = tdir / ("%s.json" % rules.points_base(project))
+    for p, what in ((rule_json, "文档解析（先执行 tender-rule）"),
+                    (points_json, "投标要点（先执行 tender-parse）")):
+        if not p.exists():
+            raise core.LibraryError("缺少 %s：%s" % (what, p))
+    fields = (load_doc(rule_json) or {}).get("fields") or {}
+    doc_b = load_doc(points_json) or {}
+    diffs = rules.compare_dual(fields, doc_b)
+    md_lines = ["# 双通道解析差异 · %s" % project, "",
+                "- 通道A：文档解析（规则引擎）｜通道B：agent 语义解析（9 模块）",
+                "- 差异类型：事实值不同 / 存在性差异 / 语义冲突",
+                "- 裁决：以招标原文为最终依据，并入投标要点 diffs 块由用户确认", ""]
+    if not diffs:
+        md_lines.append("（两通道对已抽取确定性字段无实质差异）")
+    for i, d in enumerate(diffs, 1):
+        md_lines.append("%d. [%s] %s" % (i, d["差异类型"], d["解析项"]))
+        md_lines.append("   通道A：%s" % d["通道A"])
+        md_lines.append("   通道B：%s" % d["通道B"])
+    md_path = tdir / ("%s.md" % rules.diff_base(project))
+    json_path = tdir / ("%s.json" % rules.diff_base(project))
+    md_path.write_text("\n".join(md_lines), encoding="utf-8")
+    json_path.write_text(json.dumps({"project": project, "diffs": diffs,
+                                     "generated": core.now_iso()},
+                                    ensure_ascii=False, indent=2), encoding="utf-8")
+    return diffs, md_path, json_path

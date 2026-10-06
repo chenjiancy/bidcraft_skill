@@ -36,11 +36,33 @@ class TestValidateProjectName(unittest.TestCase):
 
 
 # --------------------------------------------------------------------------
-# 产物 JSON 最小结构校验
+# 产物 JSON 最小结构校验（v2.1：9 模块全覆盖 + diffs 结构）
 # --------------------------------------------------------------------------
+def _points9(extra=None, **kw):
+    """9 模块全集的合法投标要点 JSON。"""
+    doc = {"project": "P1", "modules": [
+        {"id": "basic", "title": "项目基本信息", "type": "fields"},
+        {"id": "qualification", "title": "资格条件", "type": "items"},
+        {"id": "staff", "title": "人员配备", "type": "fields"},
+        {"id": "project_overview", "title": "项目概况与监理工作内容", "type": "fields"},
+        {"id": "scoring", "title": "评分办法", "type": "mixed"},
+        {"id": "pricing", "title": "报价要求", "type": "fields"},
+        {"id": "submission", "title": "响应文件编制与递交", "type": "fields"},
+        {"id": "reject", "title": "废标/否决红线", "type": "items"},
+        {"id": "pending", "title": "待确认/缺失项", "type": "items"},
+    ]}
+    if extra:
+        doc["modules"].append(extra)
+    doc.update(kw)
+    return doc
+
+
 class TestValidatePointsJson(unittest.TestCase):
-    def test_valid(self):
-        doc = {"project": "P1", "modules": [{"id": "m1", "title": "项目概况", "type": "fields"}]}
+    def test_valid_9modules(self):
+        self.assertEqual(rules.validate_points_json(_points9()), (True, []))
+
+    def test_valid_with_extra_module(self):
+        doc = _points9(extra={"id": "performance", "title": "补充", "type": "items"})
         self.assertEqual(rules.validate_points_json(doc), (True, []))
 
     def test_top_not_dict(self):
@@ -51,6 +73,53 @@ class TestValidatePointsJson(unittest.TestCase):
 
     def test_modules_empty(self):
         self.assertFalse(rules.validate_points_json({"modules": []})[0])
+
+    def test_missing_standard_module(self):
+        """v2.1：缺任一标准模块 → 校验失败（9 模块框架强制全覆盖）。"""
+        doc = _points9()
+        doc["modules"] = [m for m in doc["modules"] if m["id"] != "pending"]
+        ok, issues = rules.validate_points_json(doc)
+        self.assertFalse(ok)
+        self.assertTrue(any("pending" in i for i in issues))
+
+    def test_module_missing_title_type(self):
+        doc = _points9()
+        doc["modules"][0] = {"id": "basic"}
+        ok, issues = rules.validate_points_json(doc)
+        self.assertFalse(ok)
+        self.assertTrue(any("title" in i for i in issues))
+        self.assertTrue(any("type" in i for i in issues))
+
+    def test_duplicate_module_id(self):
+        doc = _points9()
+        doc["modules"].append({"id": "basic", "title": "重复", "type": "fields"})
+        ok, issues = rules.validate_points_json(doc)
+        self.assertFalse(ok)
+        self.assertTrue(any("重复" in i for i in issues))
+
+    def test_diffs_valid(self):
+        doc = _points9(diffs=[{"解析项": "履约保证金", "通道A": "不采用",
+                               "通道B": "承诺递交履约担保", "差异类型": "语义冲突"}])
+        self.assertEqual(rules.validate_points_json(doc), (True, []))
+
+    def test_diffs_empty_list_ok(self):
+        self.assertEqual(rules.validate_points_json(_points9(diffs=[])), (True, []))
+
+    def test_diffs_not_list(self):
+        doc = _points9(diffs="x")
+        self.assertFalse(rules.validate_points_json(doc)[0])
+
+    def test_diffs_item_missing_parse_item(self):
+        doc = _points9(diffs=[{"通道A": "1"}])
+        ok, issues = rules.validate_points_json(doc)
+        self.assertFalse(ok)
+        self.assertTrue(any("解析项" in i for i in issues))
+
+    def test_diffs_bad_type(self):
+        doc = _points9(diffs=[{"解析项": "保证金", "差异类型": "其他"}])
+        ok, issues = rules.validate_points_json(doc)
+        self.assertFalse(ok)
+        self.assertTrue(any("差异类型" in i for i in issues))
 
 
 class TestValidateListJson(unittest.TestCase):
@@ -193,6 +262,124 @@ class TestRender(unittest.TestCase):
         t = rules.render_check_text(rows, s, "P1")
         self.assertIn("废标风险", t)
         self.assertIn("业绩/监理合同", t)
+
+
+# --------------------------------------------------------------------------
+# v2.1 响应文件格式章节定位（find_fmt_span / extract_fmt）
+# --------------------------------------------------------------------------
+class TestFindFmtSpan(unittest.TestCase):
+    LINES = [
+        "第一章 招标公告",
+        "项目编号：HXTD-2026-018",
+        "第六章 评标办法",
+        "第七章 响应文件格式",
+        "一、投标函",
+        "（一）投标函格式",
+        "法定代表人：",
+        "第八章 评标标准",
+        "",
+        "1",
+    ]
+
+    def test_auto_chapter_span(self):
+        s, e = rules.find_fmt_span(self.LINES)
+        self.assertEqual(s, 4)      # 第七章
+        self.assertEqual(e, 8)      # 第八章（不含）
+
+    def test_explicit_span(self):
+        s, e = rules.find_fmt_span(self.LINES, start=4, end=7)
+        self.assertEqual((s, e), (4, 7))
+
+    def test_no_next_chapter_cleans_tail(self):
+        lines = self.LINES[:7] + ["", "", "1"]     # 无后续章 → 文件尾清理
+        s, e = rules.find_fmt_span(lines)
+        self.assertEqual((s, e), (4, 8))           # 清理尾部空行 + 页码
+
+    def test_extract_fmt_text(self):
+        text, s, e = rules.extract_fmt(self.LINES)
+        self.assertEqual(s, 4)
+        self.assertEqual(e, 8)
+        self.assertIn("第七章 响应文件格式", text)
+        self.assertIn("法定代表人：", text)
+        self.assertNotIn("第八章", text)
+
+    def test_standalone_title(self):
+        lines = ["第一章 招标公告", "响应文件格式", "一、投标函", "二、承诺函"]
+        s, e = rules.find_fmt_span(lines)
+        self.assertEqual(s, 2)
+        self.assertEqual(e, 5)      # 内容到最后一行（1 基 4 含）→ end 不含 = 5
+
+    def test_toc_entry_ignored(self):
+        """目录条目（带点线页码）在前，正文章节标题在后 → 取正文（最后一个匹配）。"""
+        lines = ["第一章 招标公告", "目录", "第七章 响应文件格式.............42",
+                 "第七章 响应文件格式", "一、投标函", "二、承诺函", "第八章 评标标准"]
+        s, e = rules.find_fmt_span(lines)
+        self.assertEqual(s, 4)
+        self.assertEqual(e, 7)
+
+    def test_not_found_raises(self):
+        with self.assertRaises(ValueError):
+            rules.find_fmt_span(["第一章 招标公告", "一、投标函"])
+
+    def test_invalid_span_raises(self):
+        with self.assertRaises(ValueError):
+            rules.find_fmt_span(self.LINES, start=9, end=3)
+
+
+# --------------------------------------------------------------------------
+# v2.1 双通道字段比对（compare_dual）
+# --------------------------------------------------------------------------
+class TestDualCompare(unittest.TestCase):
+    def test_norm_value(self):
+        self.assertEqual(rules.norm_value(" HXTD-2026-018 "), "hxtd-2026-018")
+        self.assertEqual(rules.norm_value("４８．８６万元"), "４８．８６万元")  # 全角数字不转换（保真）
+        self.assertEqual(rules.norm_value(None), "")
+
+    def test_consistent_not_diff(self):
+        fields = {"project_no": {"label": "项目编号", "value": "HXTD-2026-018"}}
+        doc = {"modules": [{"id": "basic", "title": "t", "type": "fields",
+                            "fields": {"项目编号": {"value": "HXTD-2026-018"}}}]}
+        self.assertEqual(rules.compare_dual(fields, doc), [])
+
+    def test_fact_value_diff(self):
+        fields = {"budget": {"label": "最高投标限价", "value": "48.86万元"}}
+        doc = {"modules": [{"id": "basic", "title": "t", "type": "fields",
+                            "fields": {"最高投标限价": {"value": "50万元"}}}]}
+        diffs = rules.compare_dual(fields, doc)
+        self.assertEqual(len(diffs), 1)
+        self.assertEqual(diffs[0]["差异类型"], "事实值不同")
+        self.assertEqual(diffs[0]["解析项"], "最高投标限价")
+
+    def test_existence_diff(self):
+        fields = {"deposit": {"label": "投标保证金", "value": "无"}}
+        doc = {"modules": [{"id": "basic", "title": "t", "type": "fields", "fields": {}}]}
+        diffs = rules.compare_dual(fields, doc)
+        self.assertEqual(len(diffs), 1)
+        self.assertEqual(diffs[0]["差异类型"], "存在性差异")
+
+    def test_multi_value_b_any_match(self):
+        fields = {"staff_count": {"label": "人员数量", "value": ["总监理工程师1名"]}}
+        doc = {"modules": [{"id": "staff", "title": "t", "type": "fields",
+                            "fields": {"人员数量": {"value": "总监理工程师 1 名"}}}]}
+        self.assertEqual(rules.compare_dual(fields, doc), [])
+
+    def test_unit_suffix_not_diff(self):
+        """单位后缀差异（48.86 vs 48.86万元）→ 数字归一化视为一致，不列差异。"""
+        fields = {"budget": {"label": "最高投标限价", "value": "48.86"}}
+        doc = {"modules": [{"id": "basic", "title": "t", "type": "fields",
+                            "fields": {"最高投标限价": {"value": "48.86 万元"}}}]}
+        self.assertEqual(rules.compare_dual(fields, doc), [])
+
+    def test_number_diff_still_diff(self):
+        fields = {"budget": {"label": "最高投标限价", "value": "48.86"}}
+        doc = {"modules": [{"id": "basic", "title": "t", "type": "fields",
+                            "fields": {"最高投标限价": {"value": "50万元"}}}]}
+        diffs = rules.compare_dual(fields, doc)
+        self.assertEqual(len(diffs), 1)
+        self.assertEqual(diffs[0]["差异类型"], "事实值不同")
+
+    def test_empty_fields_no_diff(self):
+        self.assertEqual(rules.compare_dual({}, {"modules": []}), [])
 
 
 if __name__ == "__main__":
