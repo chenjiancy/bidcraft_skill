@@ -69,8 +69,17 @@ class TenderBase(unittest.TestCase):
     def _make_points(self, project="P"):
         md = "# 投标要点\n## 项目概况\n- 项目名称：XX"
         doc = {"project": project, "modules": [
-            {"id": "m1", "title": "项目概况", "type": "fields",
-             "fields": {"project_name": {"value": "XX", "evidence": "第1页"}}}]}
+            {"id": "basic", "title": "项目基本信息", "type": "fields",
+             "fields": {"项目名称": {"value": "XX", "evidence": "第1页"}}},
+            {"id": "qualification", "title": "资格条件", "type": "items", "items": []},
+            {"id": "staff", "title": "人员配备", "type": "fields", "fields": {}},
+            {"id": "project_overview", "title": "项目概况与监理工作内容", "type": "fields", "fields": {}},
+            {"id": "scoring", "title": "评分办法", "type": "mixed"},
+            {"id": "pricing", "title": "报价要求", "type": "fields", "fields": {}},
+            {"id": "submission", "title": "响应文件编制与递交", "type": "fields", "fields": {}},
+            {"id": "reject", "title": "废标/否决红线", "type": "items", "items": []},
+            {"id": "pending", "title": "待确认/缺失项", "type": "items", "items": []},
+        ]}
         return self._write_pair("points", md, doc)
 
     def _make_list(self, items=None, project="P"):
@@ -190,7 +199,7 @@ class TestSaveProducts(TenderBase):
         self.assertEqual(md_d.name, "投标要点_%s.md" % self.PROJECT)
         # 双份内容一致（JSON 可读）
         doc = core.read_json(json_d)
-        self.assertEqual(len(doc["modules"]), 1)
+        self.assertEqual(len(doc["modules"]), 9)
 
         md_l, json_l = self._make_list()
         md_d, json_d = tender.save_list(self.tdir, self.PROJECT, md_l, json_l)
@@ -218,7 +227,16 @@ class TestSaveProducts(TenderBase):
         md_p.write_bytes("# 投标要点".encode("utf-8-sig"))
         json_p = Path(self.tmp) / "bom.json"
         json_p.write_bytes(json.dumps({"project": "P", "modules": [
-            {"id": "m1", "title": "项目概况", "type": "fields", "fields": {}}]},
+            {"id": "basic", "title": "项目基本信息", "type": "fields", "fields": {}},
+            {"id": "qualification", "title": "资格条件", "type": "items", "items": []},
+            {"id": "staff", "title": "人员配备", "type": "fields", "fields": {}},
+            {"id": "project_overview", "title": "项目概况与监理工作内容", "type": "fields", "fields": {}},
+            {"id": "scoring", "title": "评分办法", "type": "mixed"},
+            {"id": "pricing", "title": "报价要求", "type": "fields", "fields": {}},
+            {"id": "submission", "title": "响应文件编制与递交", "type": "fields", "fields": {}},
+            {"id": "reject", "title": "废标/否决红线", "type": "items", "items": []},
+            {"id": "pending", "title": "待确认/缺失项", "type": "items", "items": []}],
+            },
             ensure_ascii=False).encode("utf-8-sig"))
         md_d, _ = tender.save_points(self.tdir, self.PROJECT, md_p, json_p)
         self.assertEqual(md_d.read_text(encoding="utf-8")[0], "#", "落盘 md 不应带 BOM")
@@ -272,6 +290,94 @@ class TestCheck(TenderBase):
         self.assertEqual(rows[0]["status"], "缺失·必须")
         self.assertEqual(summary["missing_required"], 1)
         self.assertEqual(summary["redlines"], ["资质/市政公用工程监理"])
+
+
+class TestFmtRuleDiff(TenderBase):
+    """v2.1：响应文件格式脚本化提取 + 通道A 规则抽取 + 双通道差异比对（落盘流）。"""
+
+    FMT_TEXT = (
+        "第一章 招标公告\n"
+        "项目编号：HXTD-2026-018\n"
+        "最高投标限价：48.86万元\n"
+        "投标截止时间：2026年8月10日 14:00\n"
+        "第七章 响应文件格式\n"
+        "一、投标函\n"
+        "（一）投标函格式\n"
+        "法定代表人：\n"
+        "第八章 评标标准\n"
+    )
+
+    def _seed_original(self, text):
+        p = self._make_txt("招标文件_提取.txt", text)
+        rel = tender.write_original(self.tdir, p.stem, text)
+        return rel
+
+    def test_extract_fmt_auto(self):
+        self._seed_original(self.FMT_TEXT)
+        r = tender.extract_fmt(self.tdir, self.PROJECT)
+        dst = Path(r["path"])
+        self.assertTrue(dst.exists())
+        self.assertEqual(dst.name, "响应文件格式_%s.txt" % self.PROJECT)
+        self.assertEqual(r["start"], 5)          # 第七章
+        self.assertEqual(r["end"], 9)            # 第八章（不含）
+        content = dst.read_text(encoding="utf-8")
+        self.assertIn("第七章 响应文件格式", content)
+        self.assertIn("法定代表人：", content)
+        self.assertNotIn("第八章", content)
+        # 切片即原文（一字不改）
+        self.assertEqual(content, "\n".join(self.FMT_TEXT.splitlines()[4:8]))
+
+    def test_extract_fmt_explicit_span(self):
+        self._seed_original(self.FMT_TEXT)
+        r = tender.extract_fmt(self.tdir, self.PROJECT, start=5, end=8)
+        content = Path(r["path"]).read_text(encoding="utf-8")
+        self.assertIn("一、投标函", content)
+        self.assertNotIn("法定代表人：", content)
+
+    def test_extract_fmt_not_found(self):
+        self._seed_original("第一章 招标公告\n一、投标函\n")
+        with self.assertRaises(core.LibraryError):
+            tender.extract_fmt(self.tdir, self.PROJECT)
+
+    def test_rule_extract(self):
+        self._seed_original(self.FMT_TEXT)
+        r = tender.run_rule_extract(self.tdir, self.PROJECT)
+        dst = Path(r["path"])
+        self.assertTrue(dst.exists())
+        self.assertEqual(dst.name, "文档解析_%s.json" % self.PROJECT)
+        self.assertIn("project_no", r["fields"])
+        self.assertEqual(r["fields"]["project_no"]["value"], "HXTD-2026-018")
+        self.assertIn("budget", r["fields"])
+
+    def test_dual_diff(self):
+        self._seed_original(self.FMT_TEXT)
+        tender.run_rule_extract(self.tdir, self.PROJECT)
+        md_p, json_p = self._make_points()
+        # 通道B 故意与通道A 冲突（项目编号不同 → 事实值不同；缺预算 → 存在性差异）
+        doc = json.loads(json_p.read_text(encoding="utf-8"))
+        doc["modules"][0]["fields"]["项目编号"] = {"value": "WRONG-999"}
+        json_p.write_text(json.dumps(doc, ensure_ascii=False), encoding="utf-8")
+        tender.save_points(self.tdir, self.PROJECT, md_p, json_p)
+        diffs, md_path, json_path = tender.run_dual_diff(self.tdir, self.PROJECT)
+        # 通道A 命中 3 字段：项目编号(事实值不同)、最高投标限价/投标截止时间(存在性差异)
+        self.assertEqual(len(diffs), 3)
+        types = {d["差异类型"] for d in diffs}
+        self.assertIn("事实值不同", types)
+        self.assertIn("存在性差异", types)
+        self.assertTrue(md_path.exists())
+        self.assertTrue(json_path.exists())
+        md_text = md_path.read_text(encoding="utf-8")
+        self.assertIn("项目编号", md_text)
+        self.assertIn("最高投标限价", md_text)
+
+    def test_dual_diff_missing_products(self):
+        self._seed_original(self.FMT_TEXT)
+        with self.assertRaises(core.LibraryError):
+            tender.run_dual_diff(self.tdir, self.PROJECT)   # 无 文档解析.json
+
+
+if __name__ == "__main__":
+    unittest.main()
 
 
 if __name__ == "__main__":

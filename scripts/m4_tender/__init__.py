@@ -171,6 +171,54 @@ def cmd_tender_check(args):
         print("\n对照表已写入：%s\n缺料补充请确认后反馈给 agent 更新素材库/清单。" % (tdir / csv_name))
 
 
+def cmd_tender_fmt(args):
+    """v2.1：响应文件格式章节脚本化提取 → 响应文件格式_<项目>.txt（一字不改）。"""
+    ent = get_ent(args)
+    tdir = tender.ensure_project_dir(ent, args.project)
+    r = tender.extract_fmt(tdir, args.project, getattr(args, "start", None),
+                           getattr(args, "end", None))
+    dump(r, args, human=(
+        "响应文件格式已提取（切片 %d–%d 行，共 %d 行 / %d 字符，与原文逐行一致）：\n  %s\n"
+        "下一步：本文件是内容地基，供 M2 项目模板生成时做内容校验（D25）；一字不改，除非人工修改。"
+        % (r["start"], r["end"], r["lines"], r["chars"], r["path"])
+    ))
+
+
+def cmd_tender_rule(args):
+    """v2.1：通道A 文档解析——规则引擎从原文抽取确定性字段 → 文档解析_<项目>.json。"""
+    ent = get_ent(args)
+    tdir = tender.ensure_project_dir(ent, args.project)
+    r = tender.run_rule_extract(tdir, args.project)
+    if args.json:
+        print(json.dumps(r, ensure_ascii=False, indent=2))
+        return
+    print("通道A 文档解析（规则引擎）已落盘：%s（%d 个字段）" % (r["path"], r["count"]))
+    rows = [[f["label"], f["module"],
+             "、".join(f["value"]) if isinstance(f["value"], list) else str(f["value"]),
+             "、".join(str(x) for x in f["lines"][:5])] for f in r["fields"].values()]
+    print("\n" + table(rows, ["字段", "模块", "值", "原文行"]))
+    print("\n下一步：tender-diff --project \"%s\" 做双通道差异比对（通道A vs 通道B 投标要点）" % args.project)
+
+
+def cmd_tender_diff(args):
+    """v2.1：双通道差异比对：文档解析.json vs 投标要点.json → 差异清单。"""
+    ent = get_ent(args)
+    tdir = tender.ensure_project_dir(ent, args.project)
+    diffs, md_p, json_p = tender.run_dual_diff(tdir, args.project)
+    if args.json:
+        print(json.dumps({"project": args.project, "diffs": diffs}, ensure_ascii=False, indent=2))
+        return
+    print("双通道解析差异：共 %d 项（通道A 文档解析 vs 通道B 语义解析）\n" % len(diffs))
+    if not diffs:
+        print("（两通道对已抽取确定性字段无实质差异）")
+    for i, d in enumerate(diffs, 1):
+        print("%d. [%s] %s" % (i, d["差异类型"], d["解析项"]))
+        print("   通道A：%s" % d["通道A"])
+        print("   通道B：%s" % d["通道B"])
+    print("\n差异清单已落盘：\n  %s\n  %s" % (md_p, json_p))
+    print("提示：差异并入投标要点 diffs 块（由 agent 合并），以招标原文为最终依据，用户裁决。")
+
+
 def cmd_tender_show(args):
     ent = get_ent(args)
     tdir = tender.project_tender_dir(ent, args.project)
@@ -218,6 +266,20 @@ def register_parser(sub):
     sp = sub.add_parser("tender-check", help="M4：素材清单逐项对照素材库 → 对照表 CSV + 缺料标红")
     sp.add_argument("--project", required=True)
     sp.set_defaults(func=cmd_tender_check)
+
+    sp = sub.add_parser("tender-fmt", help="M4·v2.1：响应文件格式章节脚本化提取 → 响应文件格式_<项目>.txt（一字不改；--start/--end 可覆盖 1 基行号）")
+    sp.add_argument("--project", required=True)
+    sp.add_argument("--start", type=int, help="起始行号（1 基，自动定位失败时指定）")
+    sp.add_argument("--end", type=int, help="结束行号（1 基，含；默认定位到下一章或文件尾）")
+    sp.set_defaults(func=cmd_tender_fmt)
+
+    sp = sub.add_parser("tender-rule", help="M4·v2.1：通道A 文档解析（规则引擎）→ 文档解析_<项目>.json（确定性字段）")
+    sp.add_argument("--project", required=True)
+    sp.set_defaults(func=cmd_tender_rule)
+
+    sp = sub.add_parser("tender-diff", help="M4·v2.1：双通道差异比对（通道A 文档解析 vs 通道B 投标要点）→ 双通道差异_<项目>.json/.md")
+    sp.add_argument("--project", required=True)
+    sp.set_defaults(func=cmd_tender_diff)
 
     sp = sub.add_parser("tender-show", help="M4：人读查看解析产物（默认投标要点）")
     sp.add_argument("--project", required=True)
