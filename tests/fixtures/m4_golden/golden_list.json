@@ -1,0 +1,167 @@
+{
+  "project": "和县2026年老旧小区改造项目（EPC总承包）监理",
+  "items": [
+    {
+      "category": "资质",
+      "subtype": "营业执照",
+      "keywords": [
+        "营业执照"
+      ],
+      "purpose": "初审不通过项1：缺营业执照；资格证明表1附营业执照扫描件",
+      "required": true,
+      "source": "须知25.2(1)/附表1"
+    },
+    {
+      "category": "资质",
+      "subtype": "企业资质",
+      "keywords": [
+        "房建",
+        "甲级"
+      ],
+      "purpose": "资格条件：监理综合资质或房屋建筑工程监理甲级及以上资质",
+      "required": true,
+      "source": "采购公告四.2"
+    },
+    {
+      "category": "资质",
+      "subtype": "体系认证",
+      "keywords": [
+        "认证"
+      ],
+      "purpose": "评分：三体系认证（质量/环境/职业健康安全）各1分共3分",
+      "required": false,
+      "source": "评分办法 供应商综合实力"
+    },
+    {
+      "category": "人员",
+      "subtype": "注册证书",
+      "keywords": [
+        "注册监理工程师"
+      ],
+      "purpose": "总监 1 名：房屋建筑工程全国注册监理工程师且在本单位注册（配备表最低要求）",
+      "required": true,
+      "source": "采购公告四.3/第五章第二节"
+    },
+    {
+      "category": "人员",
+      "subtype": "职称证书",
+      "keywords": [
+        "高级工程师"
+      ],
+      "purpose": "评分：总监高级工程师及以上职称 3 分",
+      "required": false,
+      "source": "评分办法 供应商综合实力"
+    },
+    {
+      "category": "人员",
+      "subtype": "注册证书",
+      "keywords": [
+        "监理工程师"
+      ],
+      "purpose": "专业监理工程师 2 名：房建专业全国注册监理工程师或省监理工程师岗位/从业水平能力证书且在本单位注册",
+      "required": true,
+      "source": "第五章第二节/附表6"
+    },
+    {
+      "category": "人员",
+      "subtype": "岗位证书",
+      "keywords": [
+        "监理员"
+      ],
+      "purpose": "监理员 2 名：监理员以上（含监理员）注册（或岗位）证书",
+      "required": true,
+      "source": "第五章第二节/附表6"
+    },
+    {
+      "category": "人员",
+      "subtype": "社保",
+      "keywords": [
+        "社保"
+      ],
+      "purpose": "配备人员 2026 年 1 月以来任意一个月社保缴纳证明（前附表20 列明 8 种形式）",
+      "required": true,
+      "source": "第五章第二节注4/前附表20"
+    },
+    {
+      "category": "人员",
+      "subtype": "简历",
+      "keywords": [
+        "简历"
+      ],
+      "purpose": "附表8 拟投入监理人员简历表（附身份证/社保/职称/注册证书等）",
+      "required": true,
+      "source": "第七章 附表8"
+    },
+    {
+      "category": "业绩",
+      "subtype": "企业业绩",
+      "keywords": [
+        "房建"
+      ],
+      "purpose": "评分：2022.1.1 以来单份合同施工投资估算价（建安费）6000 万元以上房建监理业绩，每项 2 分最多 2 项（4 分）",
+      "required": false,
+      "source": "评分办法 供应商综合实力"
+    },
+    {
+      "category": "业绩",
+      "subtype": "总监业绩",
+      "keywords": [
+        "总监"
+      ],
+      "purpose": "评分：总监身份承担的 6000 万元以上房建监理业绩每项 4 分最多 1 项（合同+竣工验收证明，以合同签订时间认定）",
+      "required": false,
+      "source": "评分办法 供应商综合实力"
+    },
+    {
+      "category": "荣誉",
+      "subtype": "企业荣誉",
+      "keywords": [
+        "优秀监理企业"
+      ],
+      "purpose": "评分：地市级及以上先进（优秀）监理企业表彰每项 2 分最多 4 分（协会须民政部门登记可查）",
+      "required": false,
+      "source": "评分办法 供应商荣誉"
+    },
+    {
+      "category": "荣誉",
+      "subtype": "工程荣誉",
+      "keywords": [
+        "优质",
+        "示范"
+      ],
+      "purpose": "评分：企业监理房建工程获地市级及以上优秀优质示范类表彰每项 2 分最多 4 分",
+      "required": false,
+      "source": "评分办法 供应商荣誉"
+    },
+    {
+      "category": "荣誉",
+      "subtype": "总监荣誉",
+      "keywords": [
+        "优秀总监"
+      ],
+      "purpose": "评分：2022.1.1 以来地市级及以上优秀先进类总监表彰每项 2 分最多 4 分",
+      "required": false,
+      "source": "评分办法 总监荣誉"
+    },
+    {
+      "category": "企业介绍",
+      "subtype": "组织机构",
+      "keywords": [
+        "组织机构"
+      ],
+      "purpose": "附表1 组织机构（组织机构框图+企业简介+资质证书扫描件）",
+      "required": true,
+      "source": "第七章 附表1"
+    },
+    {
+      "category": "企业介绍",
+      "subtype": "企业简介",
+      "keywords": [
+        "简介"
+      ],
+      "purpose": "附表1 附企业简介",
+      "required": false,
+      "source": "第七章 附表1"
+    }
+  ]
+}

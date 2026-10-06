@@ -77,6 +77,20 @@ def validate_points_json(obj):
                     issues.append("diffs[%d].解析项 缺失（差异须指明解析项）" % i)
                 if d.get("差异类型") and d["差异类型"] not in DIFF_TYPES:
                     issues.append("diffs[%d].差异类型 非法（须为 %s 之一）" % (i, "/".join(DIFF_TYPES)))
+    # v2.4：已裁决事项（可选数组，存在则校验结构；裁决记录由 agent 在用户裁决后写入）
+    verdicts = obj.get("verdicts")
+    if verdicts is not None:
+        if not isinstance(verdicts, list):
+            issues.append("verdicts 必须是数组（已裁决事项）")
+        else:
+            for i, v in enumerate(verdicts):
+                if not isinstance(v, dict):
+                    issues.append("verdicts[%d] 必须是对象" % i)
+                    continue
+                if not v.get("item"):
+                    issues.append("verdicts[%d].item 缺失（裁决对象）" % i)
+                if not v.get("decision"):
+                    issues.append("verdicts[%d].decision 缺失（裁决结论）" % i)
     return (not issues), issues
 
 
@@ -150,6 +164,16 @@ def rule_base(project):
 
 def diff_base(project):
     return "双通道差异_%s" % project
+
+
+def report_base(project):
+    """投标要点 HTML 文件名（闸门① 展示，v2.3+；与 md/json 同基名，扩展 .html）。"""
+    return "投标要点_%s" % project
+
+
+def annex_base(project):
+    """补遗/澄清原文文件名（v2.4+：补遗归档与跨文件比对前置）。"""
+    return "补遗原文_%s" % project
 
 
 # --------------------------------------------------------------------------

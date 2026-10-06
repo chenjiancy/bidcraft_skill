@@ -241,6 +241,31 @@ def cmd_tender_show(args):
     print(f.read_text(encoding="utf-8"))
 
 
+def cmd_tender_report(args):
+    """v2.3：投标要点 HTML 渲染（闸门① 核对形态）→ 投标要点_<项目>.html。"""
+    ent = get_ent(args)
+    tdir = tender.ensure_project_dir(ent, args.project)
+    r = tender.render_report(tdir, args.project)
+    dump(r, args, human=(
+        "投标要点 HTML 已生成（%d 字符）：\n  %s\n"
+        "打开方式：浏览器打开该文件核对（闸门①）；与 md/json 同源渲染，逐项核对 9 模块、"
+        "双通道差异、已裁决事项、废标红线。" % (r["chars"], r["path"])
+    ))
+
+
+def cmd_tender_annex(args):
+    """v2.4：补遗/澄清/修改文件归档 + 原文提取 → 补遗/ + 补遗原文_<项目>_<n>.txt。"""
+    ent = get_ent(args)
+    tdir = tender.ensure_project_dir(ent, args.project)
+    r = tender.run_annex(tdir, args.project, args.file, args.type)
+    dump(r, args, human=(
+        "补遗（%s）已归档并提取正文：\n  原件：%s\n  正文：%s（%d 行）\n"
+        "下一步：agent 按提示词【补遗/澄清比对】与原文件逐条比对，输出对投标人影响对照表，"
+        "并以补遗后的要求为准更新相关模块（投标要点重新落盘）。"
+        % (r["type"], r["path"], r["text_path"], r["lines"])
+    ))
+
+
 # --------------------------------------------------------------------------
 # 子命令注册（由薄壳 bidcraft.py 调用）
 # --------------------------------------------------------------------------
@@ -286,3 +311,14 @@ def register_parser(sub):
     sp.add_argument("--what", choices=("points", "list", "check"), default="points",
                     help="points=投标要点 / list=素材清单 / check=素材对照（默认 points）")
     sp.set_defaults(func=cmd_tender_show)
+
+    sp = sub.add_parser("tender-report", help="M4·v2.3：投标要点 HTML 渲染（闸门① 核对形态）→ 投标要点_<项目>.html")
+    sp.add_argument("--project", required=True)
+    sp.set_defaults(func=cmd_tender_report)
+
+    sp = sub.add_parser("tender-annex", help="M4·v2.4：补遗/澄清/修改文件归档（补遗/）并提取正文 → 供 agent 跨文件比对")
+    sp.add_argument("--project", required=True)
+    sp.add_argument("--file", required=True, help="补遗/澄清/修改文件路径（DOCX/TXT/MD/PDF 内置；图片配 --text-file 由 agent 提取）")
+    sp.add_argument("--type", choices=("补遗", "澄清", "修改"), default="补遗",
+                    help="文件类型（默认 补遗）")
+    sp.set_defaults(func=cmd_tender_annex)

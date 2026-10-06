@@ -20,7 +20,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 from _shared import core
-from . import pdf_extract, rules, rule_extract
+from . import pdf_extract, rules, rule_extract, tender_report
 
 W_NS = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 
@@ -323,3 +323,69 @@ def run_dual_diff(tdir, project):
                                      "generated": core.now_iso()},
                                     ensure_ascii=False, indent=2), encoding="utf-8")
     return diffs, md_path, json_path
+
+
+# --------------------------------------------------------------------------
+# v2.3 投标要点 HTML 展示（闸门① 核对形态；脚本化渲染）
+# --------------------------------------------------------------------------
+def render_report(tdir, project):
+    """
+    读 投标要点.json + 双通道差异.json → 渲染单文件 HTML → 投标要点_<项目>.html。
+
+    返回 {path, chars}。HTML 为闸门① 展示形态（浏览器打开核对）。
+    """
+    tdir = Path(tdir)
+    points_json = tdir / ("%s.json" % rules.points_base(project))
+    diff_json = tdir / ("%s.json" % rules.diff_base(project))
+    for p, what in ((points_json, "投标要点（先执行 tender-parse）"),
+                    (diff_json, "双通道差异（先执行 tender-diff）")):
+        if not p.exists():
+            raise core.LibraryError("缺少 %s：%s" % (what, p))
+    points_doc = load_doc(points_json)
+    diff_doc = load_doc(diff_json)
+    if not points_doc:
+        raise core.LibraryError("投标要点 JSON 无法读取：%s" % points_json)
+    html_text = tender_report.render_report_html(
+        points_doc, diff_doc or {}, core.now_iso()[:10])
+    dst = tdir / ("%s.html" % rules.report_base(project))
+    dst.write_text(html_text, encoding="utf-8")
+    return {"path": str(dst), "chars": len(html_text)}
+
+
+# --------------------------------------------------------------------------
+# v2.4 补遗/澄清归档与原文提取（跨文件比对前置；语义对比由 agent 按提示词执行）
+# --------------------------------------------------------------------------
+ANNEX_SUBDIR = "补遗"
+
+
+def run_annex(tdir, project, annex_file, annex_type):
+    """
+    归档补遗/澄清/修改文件到 招标解析/补遗/ 并提取正文 → 补遗原文_<项目>_<n>.txt。
+
+    返回 {path, text_path, type, kind, lines}。语义跨文件比对由 agent 按提示词
+    【补遗/澄清比对】执行（输出对投标人影响对照表，更新相关模块）。
+    """
+    tdir = Path(tdir)
+    src = Path(annex_file)
+    if not src.exists():
+        raise core.LibraryError("补遗文件不存在：%s" % src)
+    sub = tdir / ANNEX_SUBDIR
+    sub.mkdir(parents=True, exist_ok=True)
+    # 序号：补遗_<项目>_<n>.<ext>（n 递增，避免覆盖）
+    ext = src.suffix.lower() or ".bin"
+    n = 1
+    while (sub / ("补遗_%s_%d%s" % (project, n, ext))).exists():
+        n += 1
+    dst = sub / ("补遗_%s_%d%s" % (project, n, ext))
+    shutil.copy2(src, dst)
+    # 提取正文：DOCX/TXT/MD/PDF 内置；其他格式需 agent 以 --text-file 提供
+    try:
+        text = extract_text_file(src)
+        kind = "auto"
+    except core.LibraryError as ex:
+        raise core.LibraryError(
+            "%s；原件已归档至 %s，请 agent 提取正文后另行补录（或补传 --text-file）" % (ex, dst))
+    text_name = rules.annex_base(project) + "_%d.txt" % n
+    (tdir / text_name).write_text(text, encoding="utf-8")
+    return {"path": str(dst), "text_path": str(tdir / text_name), "type": annex_type,
+            "kind": kind, "lines": len(text.splitlines())}
