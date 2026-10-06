@@ -49,8 +49,9 @@ class Library:
         """
         初始化企业（三层结构）：
           软件根/<企业>/
+            ├── 回收站/           ← 公司级统一回收站（删除的项目/素材均先进此处，30 天保留）
             ├── 企业级/
-            │   ├── 素材库/        ← 素材库：资质/人员/业绩/荣誉/财务/收件箱/回收站 + 台账
+            │   ├── 素材库/        ← 素材库：资质/人员/业绩/荣誉/财务/收件箱 + 台账
             │   └── 模板库/
             └── 项目级/
         """
@@ -59,6 +60,7 @@ class Library:
         ent = self.root / dirname
         existed = ent.is_dir()
         ent.mkdir(parents=True, exist_ok=True)
+        (ent / "回收站").mkdir(exist_ok=True)       # 公司级统一回收站（删除动作先进此处）
         (ent / "项目级").mkdir(exist_ok=True)
         (ent / "企业级" / "模板库").mkdir(parents=True, exist_ok=True)
         lib = lib_root(ent)                      # 企业级/素材库
