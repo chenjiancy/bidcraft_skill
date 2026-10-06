@@ -99,6 +99,7 @@ def cmd_init_enterprise(args):
     obj = {"ok": True, "enterprise": ent.name, "path": str(core.lib_root(ent)), "already_existed": existed}
     dump(obj, args, human=(
         ("企业已存在，已复用：%s" if existed else "已创建企业：%s") % ent.name
+        + "\n公司回收站：%s（删除的项目/素材先进此处，30 天后清理）" % (ent / "回收站")
         + "\n素材库路径：%s" % core.lib_root(ent)
         + "\n已初始化子目录：%s" % "、".join(core.ENTERPRISE_SUBDIRS)
         + "\n台账：%s（JSON 权威，CSV 按需导出）" % core.LEDGER_JSON
@@ -323,8 +324,22 @@ def cmd_query(args):
 
 def cmd_trash(args):
     ent = get_ent(args)
-    dest = core.move_to_trash(ent, args.path, reason=args.reason or "用户删除")
-    dump({"moved_to": str(dest)}, args, human="已移入回收站：%s（30 天后自动清理）" % dest)
+    dest = core.move_to_trash(ent, core.lib_rel(args.path), reason=args.reason or "用户删除")
+    dump({"moved_to": str(dest)}, args, human="已移入公司回收站：%s（30 天后自动清理）" % dest)
+
+
+def cmd_rm_project(args):
+    ent = get_ent(args)
+    proj = args.project.strip("/\\")
+    if not proj:
+        raise SystemExit("项目名不能为空")
+    src = Path(ent) / "项目级" / proj
+    if not src.exists():
+        projs = "、".join(d.name for d in (Path(ent) / "项目级").iterdir() if d.is_dir()) or "无"
+        raise core.LibraryError("项目不存在：%s（项目级下现有：%s）" % (proj, projs))
+    dest = core.move_to_trash(ent, "项目级/%s" % proj, reason=args.reason or "删除项目")
+    dump({"moved_to": str(dest), "project": proj}, args, human=(
+        "项目已移入公司回收站：%s（30 天后自动清理）\n恢复方式：从回收站手动移回 项目级/ 下" % dest))
 
 
 def cmd_cleanup_trash(args):
@@ -457,10 +472,15 @@ def register_parser(sub):
     sp.add_argument("--top-k", type=int, default=20, help="混合检索返回条数上限（默认 20）")
     sp.set_defaults(func=cmd_query)
 
-    sp = sub.add_parser("trash", help="把素材移入回收站")
+    sp = sub.add_parser("trash", help="把素材移入公司回收站")
     sp.add_argument("--path", required=True, help="相对素材库的路径，如 资质/旧证书_20200101.jpg")
     sp.add_argument("--reason", help="删除原因")
     sp.set_defaults(func=cmd_trash)
+
+    sp = sub.add_parser("rm-project", help="删除项目：整体移入公司回收站（30 天后清理）")
+    sp.add_argument("--project", required=True, help="项目名（项目级下的目录名）")
+    sp.add_argument("--reason", help="删除原因")
+    sp.set_defaults(func=cmd_rm_project)
 
     sp = sub.add_parser("cleanup-trash", help="清理超期回收站文件")
     sp.add_argument("--days", type=int, default=core.TRASH_RETENTION_DAYS)

@@ -38,6 +38,7 @@ class TestInitStructure(CoreBase):
     def test_three_layer(self):
         self.assertTrue((self.ent_dir / "项目级").is_dir())
         self.assertTrue((self.ent_dir / "企业级" / "模板库").is_dir())
+        self.assertTrue((self.ent_dir / "回收站").is_dir(), "公司根回收站缺失")
         for sub in core.ENTERPRISE_SUBDIRS:
             self.assertTrue((self.libroot / sub).is_dir(), "缺 %s" % sub)
         self.assertTrue((self.libroot / core.LEDGER_JSON).exists())
@@ -231,9 +232,9 @@ class TestArchiveFlow(CoreBase):
         it2["on_conflict"] = "trash_old"
         res = core.apply(self.ent, prop2)
         self.assertEqual(res["summary"]["archived"], 1, res["failed"])
-        # 旧文件入回收站、原位置消失
+        # 旧文件入公司回收站、原位置消失
         self.assertFalse((self.libroot / "人员" / "陈阳" / "简历" / "简历_20261001.png").exists())
-        self.assertTrue((self.libroot / "回收站" / "简历_20261001.png").exists())
+        self.assertTrue((self.ent_dir / "回收站" / "简历_20261001.png").exists())
         # 台账：旧行清理，仅 1 条新行（无同 rel_path 重复）
         rows = core.load_ledger(self.ent)
         self.assertEqual(len(rows), 1)
@@ -502,12 +503,45 @@ class TestOwnershipAndTrash(CoreBase):
         self._seed_one()
         src = self.libroot / "资质" / "ISO9001_20260101.pdf"
         self.assertTrue(src.exists())
-        dest = core.move_to_trash(self.ent, "资质/ISO9001_20260101.pdf", reason="测试")
+        dest = core.move_to_trash(self.ent, "企业级/素材库/资质/ISO9001_20260101.pdf", reason="测试")
         self.assertFalse(src.exists())
         self.assertTrue(dest.exists())
+        self.assertTrue(dest.parent == self.ent_dir / "回收站")
         self.assertEqual(len(core.trash_manifest(self.ent)), 1)
         core.cleanup_trash(self.ent, days=0)
         self.assertEqual(len(core.trash_manifest(self.ent)), 0)
+
+    def test_rm_project_moves_dir_to_company_trash(self):
+        """删除项目：整个目录移入公司回收站并登记，清理后删除。"""
+        proj = self.ent_dir / "项目级" / "示例项目监理"
+        (proj / "招标解析").mkdir(parents=True)
+        (proj / "招标解析" / "投标要点.md").write_text("dummy", encoding="utf-8")
+        (proj / "项目资料").mkdir()
+        dest = core.move_to_trash(self.ent, "项目级/示例项目监理", reason="删除项目")
+        self.assertFalse(proj.exists())
+        self.assertTrue((dest / "招标解析" / "投标要点.md").exists())
+        self.assertTrue(dest.parent == self.ent_dir / "回收站")
+        self.assertEqual(len(core.trash_manifest(self.ent)), 1)
+        core.cleanup_trash(self.ent, days=0)
+        self.assertFalse(dest.exists())
+        self.assertEqual(len(core.trash_manifest(self.ent)), 0)
+
+    def test_legacy_lib_trash_auto_migrates(self):
+        """旧素材库回收站（企业级/素材库/回收站）首次访问自动迁移到公司根。"""
+        old_dir = self.libroot / "回收站"
+        old_dir.mkdir(parents=True)
+        (old_dir / "旧证书_20250101.jpg").write_text("x", encoding="utf-8")
+        core.write_json(old_dir / core.TRASH_JSON, [
+            {"file": "旧证书_20250101.jpg", "original_rel": "资质/旧证书_20250101.jpg",
+             "reason": "测试", "deleted_at": core.now_iso(),
+             "expire_at": core.now_iso()}])
+        tdir = core.trash_dir(self.ent)
+        self.assertEqual(tdir, self.ent_dir / "回收站")
+        self.assertTrue((tdir / "旧证书_20250101.jpg").exists())
+        self.assertFalse(old_dir.exists())
+        # 清单 original_rel 已补公司根前缀
+        rows = core.trash_manifest(self.ent)
+        self.assertEqual(rows[0]["original_rel"], "企业级/素材库/资质/旧证书_20250101.jpg")
 
     def _seed_one(self):
         inbox = core.Inbox(self.ent)

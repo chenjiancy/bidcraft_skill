@@ -67,7 +67,8 @@ class TestCliInit(CliBase):
         self._init()
         self.assertTrue((self.ent_dir / "项目级").is_dir())
         self.assertTrue((self.ent_dir / "企业级" / "模板库").is_dir())
-        for s in ["资质", "人员", "业绩", "荣誉", "财务", "收件箱", "回收站"]:
+        self.assertTrue((self.ent_dir / "回收站").is_dir(), "公司根回收站缺失")
+        for s in ["资质", "人员", "业绩", "荣誉", "财务", "收件箱"]:
             self.assertTrue((self.lib / s).is_dir(), s)
         self.assertTrue((self.lib / "素材台账.json").exists())
 
@@ -140,8 +141,24 @@ class TestCliFlow(CliBase):
         r = run(str(self.root), "trash", "--path", "资质/ISO9001_20260101.pdf")
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertFalse((self.lib / "资质" / "ISO9001_20260101.pdf").exists())
+        self.assertTrue((self.ent_dir / "回收站" / "ISO9001_20260101.pdf").exists(),
+                        "素材应进入公司根回收站")
         r = run(str(self.root), "cleanup-trash", "--days", "0")
         self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertFalse((self.ent_dir / "回收站" / "ISO9001_20260101.pdf").exists())
+
+    def test_rm_project(self):
+        self._init()
+        proj = self.ent_dir / "项目级" / "示例项目监理"
+        (proj / "招标解析").mkdir(parents=True)
+        (proj / "招标解析" / "投标要点.md").write_text("dummy", encoding="utf-8")
+        r = run(str(self.root), "rm-project", "--project", "示例项目监理")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertFalse(proj.exists())
+        self.assertTrue((self.ent_dir / "回收站" / "示例项目监理" / "招标解析" / "投标要点.md").exists())
+        # 不存在的项目 → exit 1
+        r = run(str(self.root), "rm-project", "--project", "不存在项目")
+        self.assertEqual(r.returncode, 1)
 
 
 if __name__ == "__main__":

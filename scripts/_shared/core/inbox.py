@@ -13,7 +13,7 @@ from .basic import (CLASSIFY_DIRS, LibraryError, META_JSON, PERSON_SUBDIRS,
 from .batch import Inbox
 from .ledger import load_ledger, new_ledger_row, save_ledger
 from .lib import Library
-from .trash import move_to_trash
+from .trash import lib_rel, move_to_trash
 
 __all__ = ["ownership_check", "_suggest_fields", "_group_hint", "propose",
            "_target_rel", "_strip_page_suffix", "_ledger_person", "_name_conflict_hit",
@@ -445,7 +445,7 @@ def apply(ent, proposal, require_closed=True):
             continue
         if decision == "delete":
             try:
-                move_to_trash(ent, norm_rel("收件箱/%s" % it["file"]), reason="归档时用户选择删除")
+                move_to_trash(ent, lib_rel("收件箱/%s" % it["file"]), reason="归档时用户选择删除")
                 results["trashed"].append({"seq": seq, "file": it["file"]})
                 handled_files.append(it["file"])
             except LibraryError as e:
@@ -468,7 +468,7 @@ def apply(ent, proposal, require_closed=True):
             for old_rel in item.get("conflict_with") or []:
                 try:
                     old_rel = norm_rel(str(old_rel))
-                    move_to_trash(ent, old_rel, reason="被新素材更新替代")
+                    move_to_trash(ent, lib_rel(old_rel), reason="被新素材更新替代")
                     rows[:] = [r for r in rows if norm_rel(r.get("rel_path", "")) != old_rel]
                     index.pop(old_rel, None)
                 except LibraryError as e:
@@ -505,7 +505,7 @@ def apply(ent, proposal, require_closed=True):
                 results["skipped"].append({"seq": seq, "file": it["file"], "reason": "目标已存在，跳过"})
                 continue
             if mode == "trash_old":
-                move_to_trash(ent, rel, reason="被新素材覆盖")
+                move_to_trash(ent, lib_rel(rel), reason="被新素材覆盖")
                 rows[:] = [r for r in rows if norm_rel(r.get("rel_path", "")) != rel]
                 index.pop(rel, None)
             else:  # keep_both
