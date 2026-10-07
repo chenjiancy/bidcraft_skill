@@ -214,6 +214,31 @@ class TestSaveProducts(TenderBase):
         with self.assertRaises(core.LibraryError):
             tender.save_points(self.tdir, self.PROJECT, md, bad)
 
+    def test_save_points_diffs_require_verdicts(self):
+        """v2.5 裁决检查点（落盘层强制）：diffs 非空但无 verdicts → 拒绝落盘。"""
+        md, json_p = self._make_points()
+        doc = core.read_json(json_p)
+        doc["diffs"] = [{"解析项": "履约保证金", "通道A": "不采用",
+                         "通道B": "承诺递交履约担保", "差异类型": "语义冲突"}]
+        with_diffs = Path(self.tmp) / "diffs.json"
+        with_diffs.write_text(json.dumps(doc, ensure_ascii=False), encoding="utf-8")
+        with self.assertRaises(core.LibraryError) as ctx:
+            tender.save_points(self.tdir, self.PROJECT, md, with_diffs)
+        self.assertIn("裁决检查点", str(ctx.exception))
+
+    def test_save_points_diffs_with_verdicts_ok(self):
+        """v2.5 裁决检查点：diffs 非空 + verdicts 有记录 → 正常落盘。"""
+        md, json_p = self._make_points()
+        doc = core.read_json(json_p)
+        doc["diffs"] = [{"解析项": "履约保证金", "通道A": "不采用",
+                         "通道B": "承诺递交履约担保", "差异类型": "语义冲突"}]
+        doc["verdicts"] = [{"item": "履约保证金", "decision": "以招标原文为准", "date": "2026-10-07"}]
+        ok_p = Path(self.tmp) / "with_verdicts.json"
+        ok_p.write_text(json.dumps(doc, ensure_ascii=False), encoding="utf-8")
+        md_d, json_d = tender.save_points(self.tdir, self.PROJECT, md, ok_p)
+        self.assertTrue(md_d.exists())
+        self.assertTrue(json_d.exists())
+
     def test_save_list_bad_item_rejected(self):
         md, _ = self._make_list()
         bad = Path(self.tmp) / "bad.json"

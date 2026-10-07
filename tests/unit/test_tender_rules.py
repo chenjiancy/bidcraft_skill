@@ -98,12 +98,37 @@ class TestValidatePointsJson(unittest.TestCase):
         self.assertTrue(any("重复" in i for i in issues))
 
     def test_diffs_valid(self):
+        """v2.5 裁决检查点：diffs 非空时必须带 verdicts 才通过。"""
         doc = _points9(diffs=[{"解析项": "履约保证金", "通道A": "不采用",
-                               "通道B": "承诺递交履约担保", "差异类型": "语义冲突"}])
+                               "通道B": "承诺递交履约担保", "差异类型": "语义冲突"}],
+                       verdicts=[{"item": "履约保证金", "decision": "以招标原文为准，采用通道A",
+                                  "date": "2026-10-07"}])
         self.assertEqual(rules.validate_points_json(doc), (True, []))
 
     def test_diffs_empty_list_ok(self):
         self.assertEqual(rules.validate_points_json(_points9(diffs=[])), (True, []))
+
+    def test_diffs_require_verdicts_gate(self):
+        """v2.5 裁决检查点：diffs 非空且 verdicts 缺失/为空 → 拒绝（机器强制，杜绝静默略过）。"""
+        doc = _points9(diffs=[{"解析项": "履约保证金", "通道A": "不采用",
+                               "通道B": "承诺递交履约担保", "差异类型": "语义冲突"}])
+        ok, issues = rules.validate_points_json(doc)
+        self.assertFalse(ok)
+        self.assertTrue(any("裁决检查点" in i for i in issues))
+
+    def test_diffs_require_verdicts_gate_empty_verdicts(self):
+        """diffs 非空 + verdicts 为空数组 → 同样拒绝（空数组=无裁决记录）。"""
+        doc = _points9(diffs=[{"解析项": "履约保证金", "通道A": "不采用",
+                               "通道B": "承诺递交履约担保", "差异类型": "语义冲突"}],
+                       verdicts=[])
+        ok, issues = rules.validate_points_json(doc)
+        self.assertFalse(ok)
+        self.assertTrue(any("裁决检查点" in i for i in issues))
+
+    def test_verdicts_without_diffs_ok(self):
+        """diffs 为空 + verdicts 有记录（裁决后差异已移除）→ 通过（golden 语义）。"""
+        doc = _points9(diffs=[], verdicts=[{"item": "双通道差异第 1 项", "decision": "实质一致不列示"}])
+        self.assertEqual(rules.validate_points_json(doc), (True, []))
 
     def test_diffs_not_list(self):
         doc = _points9(diffs="x")
