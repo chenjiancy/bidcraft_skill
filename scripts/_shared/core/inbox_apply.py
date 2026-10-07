@@ -184,6 +184,9 @@ def apply(ent, proposal, require_closed=True):
 
     by_seq = {i.get("seq"): i for i in batch.get("items", [])}
 
+    # 恒多页子类（如身份证：人像面_P0 / 国徽面_P1）：即使单页也保留页码，禁止单页去页码
+    _MULTI_PAGE_SUBTYPES = {"身份证"}
+
     # 单页去页码：同 target 基名在本次批次内只出现一次且 page==0 → 视为单页，去掉 _P0
     _single_base_counts = defaultdict(int)
     for _item in proposal.get("items", []):
@@ -255,7 +258,8 @@ def apply(ent, proposal, require_closed=True):
                 )
             except (nm.NamingError, Exception):
                 _f = None
-            if _f and _single_base_counts.get((item.get("category"), _f)) == 1:
+            if (_f and _single_base_counts.get((item.get("category"), _f)) == 1
+                    and (item.get("subtype") or "") not in _MULTI_PAGE_SUBTYPES):
                 item["page"] = None
 
         try:
