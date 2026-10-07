@@ -182,6 +182,20 @@ class TestArchiveFlow(CoreBase):
         self.assertTrue((self.libroot / "人员" / "张三" / "身份证" / "身份证_20260101_P0.png").exists())
         self.assertTrue((self.libroot / "人员" / "张三" / "身份证" / "身份证_20260101_P1.png").exists())
 
+    def test_single_page_id_keeps_p0(self):
+        # 身份证为恒多页子类：即使仅一页 page=0，也保留 _P0（不因单页去页码丢页码）
+        prop = self._upload_propose("身份证_20260101.png")
+        it = prop["items"][0]
+        it["category"], it["subtype"] = "人员", "身份证"
+        it["dates"], it["date_type"], it["person"] = ["20260101"], "到期日", "张三"
+        it["page"] = 0
+        res = core.apply(self.ent, prop)
+        self.assertEqual(res["summary"]["archived"], 1, res["failed"])
+        self.assertTrue((self.libroot / "人员" / "张三" / "身份证" / "身份证_20260101_P0.png").exists())
+        self.assertFalse((self.libroot / "人员" / "张三" / "身份证" / "身份证_20260101.png").exists())
+        row = core.load_ledger(self.ent)[0]
+        self.assertEqual(row["page_index"], 0)
+
     def _archive_person_resume(self, fname, person, upload_date):
         """上传并归档一份人员简历（固定词子类：关键字为空，person 必填）。"""
         inbox = core.Inbox(self.ent)
