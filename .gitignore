@@ -31,6 +31,8 @@ dev/docxtpl_eval/_deps/
 
 # 敏感业务信息（企业名/人员名/项目名）：本地保留、不进公网仓库
 dev/notes/development-log.md
+dev/notes/经验总结-*.md
+dev/notes/经验总结-*.pdf
 references/M1-素材库-操作手册.md
 references/module-contracts.md
 references/M2-模板库-需求对齐.md
