@@ -9,7 +9,9 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "scripts"))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 from m5_project import filler as F                       # noqa: E402
+from _data_guard import skip_unless_data                 # noqa: E402
 
 # 真实数据路径：默认示例名（公网安全）；本地真实回归通过环境变量注入：
 #   set BIDCRAFT_TEST_ENT=E:\监理标书制作\和县建设工程监理有限公司
@@ -21,14 +23,12 @@ LIB = os.path.join(ENT, "企业级", "素材库")
 RESUME_PNG = os.path.join(LIB, "人员", "张三", "简历", "简历_20261001_P0.png")
 
 # ⑪ CI/跨平台：真实企业数据不存在（如 CI ubuntu/windows 无 E:\ 数据）→ 整模块跳过
-# ⑫ 数据前置细化：仅检查企业根目录不够——招标解析（素材清单）与项目模板是
-# fill 测试的实际输入，任一缺失（数据被清除/未生成）都应跳过而非启动后报错。
-_REAL_OK = (
-    os.path.isdir(ENT)
-    and os.path.isfile(os.path.join(PROJ, "招标解析", "素材清单.json"))
-    and os.path.isdir(os.path.join(PROJ, "项目模板"))
-)
-skip_real = unittest.skipUnless(_REAL_OK, "真实项目数据不存在（素材清单/项目模板缺失或 CI 无数据环境），跳过真实数据集成测试")
+# ⑫ 数据前置细化（改进清单④ / _data_guard）：只查企业根不够——招标解析（素材清单）与
+# 项目模板是 fill 测试的实际输入，任一缺失 → SkipTest（前置依赖清单化，缺失自动列出）。
+skip_real = skip_unless_data([
+    "项目级/%s/招标解析/素材清单.json" % _PROJ_NAME,
+    "项目级/%s/项目模板" % _PROJ_NAME,
+], base=ENT)
 
 
 @skip_real

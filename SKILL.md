@@ -45,8 +45,8 @@ scripts/
 └── m<n>_<name>/           # 每个模块一个子包，包内暴露 register_parser(subparsers) 挂载子命令
 ```
 
-- **当前状态**：✅ M1 已按分包结构迁移（`scripts/m1_assets/` 子包 + `scripts/_shared/` 共享层：`core/` 存储包、`naming.py`）；后续模块（M2–M8）按同结构落位。
-- **约束**：单文件控制在 ~500 行内，超标即再拆；新增模块只加子包 + 入口注册一行，不动既有代码。
+- **当前状态**：✅ M0 环境体检 + M1 已按分包结构迁移（`scripts/m0_env/` 环境基线 + `scripts/m1_assets/` 子包 + `scripts/_shared/` 共享层：`core/` 存储包、`naming.py`）；后续模块（M2–M8）按同结构落位。
+- **约束**：单文件控制在 ~500 行内，超标即再拆；新增模块只加子包 + 入口注册一行，不动既有代码。已按此拆分的文件（接口零变化，由原文件 re-export 保持对外符号）：`_shared/naming.py` → `naming_base`（常量/规则表）+ `naming_build`（构建/校验/解析）+ `naming_classify`（日期/分类）；`_shared/core/inbox.py` → `inbox_apply.py`（apply 组）；`m1_assets/__init__.py` → `m1_assets/commands.py`（命令实现）。
 - 完整约定 + 测试金字塔 + CI/CD 见 `references/模块开发规范.md`。
 
 **软件目录结构约定（重要）**：本 skill 驱动的是"监理标书制作**软件应用项目**"（非某个具体标书项目）。运行时数据按三层组织，企业间完全隔离、项目间完全隔离：
@@ -71,12 +71,13 @@ scripts/
 
 **素材库不入仓库（数据隔离）**：素材库数据存放于软件根（如 `E:\监理标书制作\<企业>\企业级\素材库`），在仓库之外，天然不进 git；`.gitignore` 同时忽略兜底目录 `素材库/`。**素材一旦归档即受保护**，任何更改必须走标准流程（propose/apply/回收站等），除非用户明确指令。测试全部使用 `tempfile` 临时素材根，绝不触碰真实素材库。
 
-**测试与 CI/CD（开发必读，详见 `references/模块开发规范.md`）**：本仓库用**测试金字塔**分层保障质量（L1 单元 tests/unit、L2 集成 tests/integration、L3 端到端 tests/e2e，框架仅标准库 unittest）；运行依赖 python-docx/Pillow（CI 自动安装），可选依赖（PyMuPDF/rapidocr）不进 CI 且有函数级容错；本机跑 `python -m unittest discover -s tests/<层> -t .`。CI（ci.yml）在 push/PR 时三塔层 + py_compile；CD（release.yml）在打 `v*` 标签时打包发布。
+**测试与 CI/CD（开发必读，详见 `references/模块开发规范.md`）**：本仓库用**测试金字塔**分层保障质量（L1 单元 tests/unit、L2 集成 tests/integration、L3 端到端 tests/e2e，框架仅标准库 unittest）；运行依赖 python-docx/Pillow（CI 自动安装），可选依赖（PyMuPDF/rapidocr）不进 CI 且有函数级容错；本机跑 `python -m unittest discover -s tests/<层> -t .`。**真实数据用例前置依赖清单化**（改进清单④）：`tests/_data_guard.py` 提供 `require_data(paths)` / `skip_unless_data(paths)`，skip 条件 = 用例依赖的数据文件清单（素材清单/项目模板/简历图等），任一缺失 → SkipTest 而非报错；真实路径由 `BIDCRAFT_TEST_ENT`/`BIDCRAFT_TEST_PROJ` 注入（默认示例名，公网安全）。CI（ci.yml）在 push/PR 时三塔层 + py_compile；CD（release.yml）在打 `v*` 标签时打包发布。
 
 ## 四、八大能力模块总览
 | 编号 | 模块 | 一句话职责 | 状态 |
 |------|------|------------|------|
-| M1 | 素材库 | 采集/归类/检索企业投标素材（能力在 scripts/，数据目录企业级，由 `--root`/`BIDCRAFT_LIB_ROOT` 指定） | ✅ 已交付（v0.2，v0.3 起数据目录企业级） |
+| M0 | 环境基线 | 运行环境一键体检（`env-check`：Python 版本/关键依赖/Word COM 实弹冒烟/gen_py 缓存/标书常用字体/tesseract+rapidocr OCR）——换机/重装/异常排查先跑 | ✅ 已交付（`scripts/m0_env/` + `env-check` 命令） |
+| M1 | 素材库 | 采集/归类/检索企业投标素材（能力在 scripts/，数据目录企业级，由 `--root`/`BIDCRAFT_LIB_ROOT` 指定）；**数据一致性巡检 `reconcile`**：台账↔磁盘↔回收站三方对账（只读，全企业或指定企业） | ✅ 已交付（v0.2，v0.3 起数据目录企业级；v0.4 加 reconcile） |
 | M2 | 模板库 | 管理企业商务标/技术标/封面/目录等模板文件（**企业级**，同素材库；实现逻辑不同——管模板而非素材）；首批 10 模板+占位符登记清单已入库（大成工程咨询\投标） | ✅ 已交付（台账+CLI：tpl-init/import/list/query/overview/sync/registry） |
 | M3 | 知识库 | 沉淀法规、评分标准、技术方案素材等共享知识（**共享级**，所有企业共用、与企业无关） | ⏳ 待实现（共享级） |
 | M4 | 招标文件解析 | 按**解析内容框架 v5（9 模块）**拆解招标要点（**双通道解析**：`tender-rule` 通道A 文档解析=规则引擎抽取确定性字段（含评分分值合计校验），通道B agent 语义解析=9 模块要点，**必须使用 `references/M4-招标文件解析-提示词.md`**（v1.1 分段精读流程），`tender-diff` 比对实质差异列示入投标要点由用户裁决，**裁决检查点程序化**（diffs 非空且无已裁决事项 → tender-parse 拒绝落盘，v2.5））；**合同内容一律不解析**（除非用户明确要求）；**响应文件格式全文提取为独立文件**（`tender-fmt` 脚本化切片，一字不改，内容地基，供 M2 内容校验）；解析完成先经**用户确认闸门**（投标要点以**单文件 HTML 展示**核对——`tender-report` 脚本化渲染，差异**逐项明示裁决**，v2.4/v2.5）再进入素材清单（询问两分支）；补遗/澄清走 `tender-annex` 归档并跨文件比对；tender-init 自动创建项目级「招标解析 + 项目资料」目录 | ✅ 已交付（v2.5 流程+产物+脚本：tender-init/extract/fmt/rule/diff/parse/check/show/report/annex + 操作手册） |
