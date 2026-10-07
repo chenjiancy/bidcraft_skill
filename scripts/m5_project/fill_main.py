@@ -85,6 +85,13 @@ def fill_project(ent, proj_dir, out_dir=None, lib_root=None, register=True):
             "项目": material.get("project", ""),
             "统计": {k: v for k, v in stats.items() if k not in ("文件",)},
         })
+    # ---- 写后回读（fail fast；register=False 时仅回读 docx 产物）----
+    for f in stats["文件"]:
+        core.readback.verify_docx_nonempty(out / f["文件"], label="商务标 docx")
+    if register:
+        core.readback.verify_json(out / "生成记录.json", required_fields=("项目",), label="生成记录")
+    core.readback.readback_files(
+        [out / "缺图清单.md", out / "清单外素材.md", out / "待补字段清单.md"], label="商务标清单")
     return stats
 
 

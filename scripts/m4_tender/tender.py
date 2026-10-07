@@ -174,6 +174,9 @@ def _save_pair(tdir, base, md_path, json_path, validate):
     json_dst = tdir / ("%s.json" % base)
     md_dst.write_text(decode_bytes(md_path.read_bytes()), encoding="utf-8")
     json_dst.write_text(json.dumps(doc, ensure_ascii=False, indent=2), encoding="utf-8")
+    # ---- 写后回读（fail fast）----
+    core.readback.verify_file(md_dst, label="产物 md")
+    core.readback.verify_json(json_dst, required_fields=("project",), label="产物 json")
     return md_dst, json_dst
 
 
@@ -285,6 +288,8 @@ def run_rule_extract(tdir, project):
            "fields": fields, "generated": core.now_iso()}
     dst = tdir / ("%s.json" % rules.rule_base(project))
     dst.write_text(json.dumps(doc, ensure_ascii=False, indent=2), encoding="utf-8")
+    # ---- 写后回读（fail fast）----
+    core.readback.verify_json(dst, required_fields=("fields",), label="文档解析 json")
     return {"path": str(dst), "fields": fields, "count": len(fields)}
 
 
@@ -322,6 +327,9 @@ def run_dual_diff(tdir, project):
     json_path.write_text(json.dumps({"project": project, "diffs": diffs,
                                      "generated": core.now_iso()},
                                     ensure_ascii=False, indent=2), encoding="utf-8")
+    # ---- 写后回读（fail fast）----
+    core.readback.verify_file(md_path, label="双通道差异 md")
+    core.readback.verify_json(json_path, required_fields=("project", "diffs"), label="双通道差异 json")
     return diffs, md_path, json_path
 
 
@@ -349,6 +357,8 @@ def render_report(tdir, project):
         points_doc, diff_doc or {}, core.now_iso()[:10])
     dst = tdir / ("%s.html" % rules.report_base(project))
     dst.write_text(html_text, encoding="utf-8")
+    # ---- 写后回读（fail fast）----
+    core.readback.verify_file(dst, label="投标要点 html")
     return {"path": str(dst), "chars": len(html_text)}
 
 

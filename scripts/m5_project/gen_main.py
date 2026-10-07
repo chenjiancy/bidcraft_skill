@@ -156,6 +156,12 @@ def generate(ent, project, contract_path=None, material_path=None, source_path=N
     }
     (out / "生成记录.json").write_text(json.dumps(record, ensure_ascii=False, indent=2), encoding="utf-8")
     _write_ph_manifest(out, results, material)
+
+    # ---- 写后回读（fail fast）----
+    for r in results:
+        core.readback.verify_docx_nonempty(out / r["文件"], label="项目模板 docx")
+    core.readback.verify_json(out / "生成记录.json", required_fields=("文件",), label="生成记录")
+    core.readback.verify_file(out / "项目占位符清单.md", label="占位符清单")
     return {"目录": str(out), "文件": results, "未生成": skipped}
 
 

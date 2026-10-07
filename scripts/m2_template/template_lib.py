@@ -226,6 +226,11 @@ def import_template(ent, agency, mode, src_path, note="", placeholders=None,
     rows = load_ledger(ent)
     rows.append(row)
     save_ledger(ent, rows)
+
+    # ---- 写后回读（fail fast）----
+    core.readback.verify_file(dst, label="模板目标")
+    if rel not in ledger_index(ent):
+        raise core.LibraryError("写后回读失败：模板未写入台账 %s" % rel)
     return row
 
 
