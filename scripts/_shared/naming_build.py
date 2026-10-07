@@ -8,7 +8,7 @@ bidcraft · M1 素材库 —— 命名规范引擎·构建/校验/解析（结�
 import os
 import re
 
-from .naming_base import (CONST, DATE, DATE_TOKEN_RE, DATE_TOKEN_RE_STR, ENUM,
+from .naming_base import (CONST, DATE, DATE_OPT, DATE_TOKEN_RE, DATE_TOKEN_RE_STR, ENUM,
                           KW, KW_OPT, NamingError, YEAR, PROJECT_FOLDER_SEGS)
 from .naming import (get_rule, list_subtypes, normalize_date, sanitize_keyword,
                      split_ext, split_page)
@@ -32,6 +32,8 @@ def _seg_atom(seg, leading=True):
         return r"(?:_[^_]+)?"
     if kind == DATE:
         return prefix + DATE_TOKEN_RE_STR
+    if kind == DATE_OPT:
+        return r"(?:_" + DATE_TOKEN_RE_STR + r")?"
     if kind == YEAR:
         return prefix + r"\d{4}"
     if kind == ENUM:
@@ -74,6 +76,9 @@ def _fill(segs, keywords, dates):
             if not dts:
                 raise NamingError("缺少日期字段（该位置需要一个日期）")
             parts.append(normalize_date(dts.pop(0)))
+        elif kind == DATE_OPT:
+            if dts:
+                parts.append(normalize_date(dts.pop(0)))
         elif kind == YEAR:
             if not dts:
                 raise NamingError("缺少日期字段（该位置需要年度）")
@@ -189,7 +194,7 @@ def parse_name(category, subtype, filename):
                 if idx < len(parts):
                     keywords.append(parts[idx])
                     idx += 1
-            elif kind == DATE:
+            elif kind in (DATE, DATE_OPT):
                 if idx < len(parts):
                     dates.append(parts[idx])
                     idx += 1
