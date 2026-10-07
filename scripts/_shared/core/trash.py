@@ -84,6 +84,14 @@ def move_to_trash(ent, rel_path, reason=""):
         "expire_at": (datetime.now() + timedelta(days=TRASH_RETENTION_DAYS)).isoformat(timespec="seconds"),
     })
     save_trash_manifest(ent, rows)
+
+    # ---- 写后回读（fail fast；支持文件与目录，故直接查存在性）----
+    if not dest.exists():
+        raise LibraryError("写后回读失败：回收站目标不存在 %s" % dest)
+    if src.exists():
+        raise LibraryError("写后回读失败：源未移除 %s" % rel_path)
+    if not any(r.get("file") == dest.name for r in trash_manifest(ent)):
+        raise LibraryError("写后回读失败：回收站清单未登记 %s" % dest.name)
     return dest
 
 

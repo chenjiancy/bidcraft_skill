@@ -16,6 +16,7 @@ from .basic import (LibraryError, META_JSON, PERSON_SUBDIRS, lib_root, norm_rel,
                     read_json, rel_to_path, today_str)
 from .batch import Inbox
 from .ledger import load_ledger, new_ledger_row, save_ledger
+from .readback import verify_consistency, verify_sha256
 from .trash import lib_rel, move_to_trash
 
 
@@ -179,6 +180,7 @@ def apply(ent, proposal, require_closed=True):
 
     results = {"archived": [], "skipped": [], "trashed": [], "failed": []}
     handled_files = []
+    _readback_targets = []  # (目标文件绝对路径, 收件箱登记 sha256)
 
     by_seq = {i.get("seq"): i for i in batch.get("items", [])}
 
@@ -309,9 +311,27 @@ def apply(ent, proposal, require_closed=True):
         index[rel] = row
         handled_files.append(it["file"])
         results["archived"].append({"seq": seq, "rel_path": rel, "id": row["id"]})
+        _readback_targets.append((dest, it.get("sha256", "")))
 
     save_ledger(ent, rows)
     inbox.remove_items(handled_files)
+
+    # ---- 写后回读（fail fast，绝不假装成功）----
+    # ① 每个归档目标文件存在且 sha256 与收件箱登记一致（移动不改变内容）
+    for dest, sha in _readback_targets:
+        verify_sha256(dest, sha, label="归档目标")
+    # ② 台账重载后确认每个归档目标均有记录
+    reloaded = {norm_rel(r.get("rel_path", "")) for r in load_ledger(ent)}
+    missing_rel = [
+        norm_rel(dest.relative_to(lib_root(ent)).as_posix())
+        for dest, _ in _readback_targets
+        if norm_rel(dest.relative_to(lib_root(ent)).as_posix()) not in reloaded
+    ]
+    if missing_rel:
+        raise LibraryError("写后回读失败：归档目标未写入台账：%s" % "、".join(missing_rel))
+    # ③ 三方对账（台账↔磁盘↔回收站）整体一致
+    if _readback_targets:
+        verify_consistency(ent, label="归档后一致性")
 
     results["summary"] = {
         "archived": len(results["archived"]),

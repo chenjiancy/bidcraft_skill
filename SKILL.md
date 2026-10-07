@@ -71,7 +71,7 @@ scripts/
 
 **素材库不入仓库（数据隔离）**：素材库数据存放于软件根（如 `E:\监理标书制作\<企业>\企业级\素材库`），在仓库之外，天然不进 git；`.gitignore` 同时忽略兜底目录 `素材库/`。**素材一旦归档即受保护**，任何更改必须走标准流程（propose/apply/回收站等），除非用户明确指令。测试全部使用 `tempfile` 临时素材根，绝不触碰真实素材库。
 
-**测试与 CI/CD（开发必读，详见 `references/模块开发规范.md`）**：本仓库用**测试金字塔**分层保障质量（L1 单元 tests/unit、L2 集成 tests/integration、L3 端到端 tests/e2e，框架仅标准库 unittest）；运行依赖 python-docx/Pillow（CI 自动安装），可选依赖（PyMuPDF/rapidocr）不进 CI 且有函数级容错；本机跑 `python -m unittest discover -s tests/<层> -t .`。**真实数据用例前置依赖清单化**（改进清单④）：`tests/_data_guard.py` 提供 `require_data(paths)` / `skip_unless_data(paths)`，skip 条件 = 用例依赖的数据文件清单（素材清单/项目模板/简历图等），任一缺失 → SkipTest 而非报错；真实路径由 `BIDCRAFT_TEST_ENT`/`BIDCRAFT_TEST_PROJ` 注入（默认示例名，公网安全）。CI（ci.yml）在 push/PR 时三塔层 + py_compile；CD（release.yml）在打 `v*` 标签时打包发布。
+**测试与 CI/CD（开发必读，详见 `references/模块开发规范.md`）**：本仓库用**测试金字塔**分层保障质量（L1 单元 tests/unit、L2 集成 tests/integration、L3 端到端 tests/e2e，框架仅标准库 unittest）；运行依赖 python-docx/Pillow（CI 自动安装），可选依赖（PyMuPDF/rapidocr）不进 CI 且有函数级容错；本机跑 `python -m unittest discover -s tests/<层> -t .`。**真实数据用例前置依赖清单化**（改进清单④）：`tests/_data_guard.py` 提供 `require_data(paths)` / `skip_unless_data(paths)`，skip 条件 = 用例依赖的数据文件清单（素材清单/项目模板/简历图等），任一缺失 → SkipTest 而非报错；真实路径由 `BIDCRAFT_TEST_ENT`/`BIDCRAFT_TEST_PROJ` 注入（默认示例名，公网安全）。**写后回读**（改进清单⑨，`scripts/_shared/core/readback.py` 通用工具）：各写操作落盘后自动回读验证——M1 apply 归档目标 sha256 与收件箱登记一致 + 台账存在 + 三方对账、move_to_trash 目标存在/源移除/清单登记；M2 tpl-import 模板文件 + 台账；M4 tender 产物 json 可解析 + 关键字段、md/html 非空；M5 proj-gen/fill 生成 docx 非空 + 生成记录 json 可解析；**失败即报错（fail fast），绝不假装成功**（只读验证、不自动修复，由用户处置）。CI（ci.yml）在 push/PR 时三塔层 + py_compile；CD（release.yml）在打 `v*` 标签时打包发布。
 
 ## 四、八大能力模块总览
 | 编号 | 模块 | 一句话职责 | 状态 |
