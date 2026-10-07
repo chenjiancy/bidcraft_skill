@@ -17,6 +17,7 @@ import sys
 # 保证 scripts/ 可被导入（不同启动方式下 sys.path[0] 可能不是脚本目录）
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import m0_env                       # noqa: E402
 import m1_assets                    # noqa: E402
 import m2_template                  # noqa: E402
 import m4_tender                    # noqa: E402
@@ -45,7 +46,8 @@ def build_parser():
     p.add_argument("--trash-days", type=int, default=core.TRASH_RETENTION_DAYS, help="回收站保留天数（默认 30）")
 
     sub = p.add_subparsers(dest="cmd", required=True)
-    m1_assets.register_parser(sub)          # 挂载 M1 素材库全部子命令
+    m0_env.register_parser(sub)         # 挂载 M0 环境体检
+    m1_assets.register_parser(sub)      # 挂载 M1 素材库全部子命令
     m2_template.register_parser(sub)        # 挂载 M2 模板库全部子命令
     m4_tender.register_parser(sub)          # 挂载 M4 招标解析子命令
     m_feedback.register_parser(sub)         # 挂载产物反馈机制（跨模块）

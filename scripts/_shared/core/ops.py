@@ -1,17 +1,19 @@
 # -*- coding: utf-8 -*-
-"""⑦ core 拆包 · 巡检 / 检索 / 概览。"""
+"""⑦ core 拆包 · 巡检 / 检索 / 概览 / 数据一致性对账。"""
 import re
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from .. import naming as nm
 
-from .basic import CLASSIFY_DIRS, lib_root, norm_rel, now_iso, rel_to_path
+from .basic import (CLASSIFY_DIRS, TRASH_JSON, TRASH_RETENTION_DAYS, lib_root,
+                    norm_rel, now_iso, rel_to_path)
 from .batch import Inbox
 from .inbox import ownership_check
 from .ledger import ledger_index, load_ledger
-from .trash import trash_manifest
+from .trash import trash_dir, trash_manifest
 
-__all__ = ["inspect", "query", "enterprise_overview"]
+__all__ = ["inspect", "query", "enterprise_overview", "consistency_check"]
 
 
 # --------------------------------------------------------------------------
@@ -148,4 +150,124 @@ def enterprise_overview(ent):
             "items": len((b or {}).get("items", [])),
         },
         "trash": len(trash_manifest(ent)),
+    }
+
+
+# --------------------------------------------------------------------------
+# 数据一致性对账（台账 ↔ 磁盘 ↔ 回收站）
+# --------------------------------------------------------------------------
+def consistency_check(ent):
+    """
+    三方对账：
+      1. 台账内部：重复 rel_path；
+      2. 台账 ↔ 磁盘：悬空（台账有、磁盘无）/ 未登记（磁盘有、台账无）/ 路径越界（首段非分类目录）；
+      3. 回收站清单 ↔ 回收站磁盘：清单悬空 / 孤儿文件 / 过期未清理。
+
+    返回 {"enterprise", "scanned_at", "summary", "issues", "ok"}；
+    issues 为空即 ok=True（不修改任何数据，纯只读对账）。
+    """
+    ent = Path(ent)
+    lib = lib_root(ent)
+    rows = load_ledger(ent)
+    index = ledger_index(ent)
+    issues = []
+
+    # 1) 台账内部：重复 rel_path
+    seen = {}
+    for r in rows:
+        rel = norm_rel(r.get("rel_path", ""))
+        if not rel:
+            continue
+        if rel in seen:
+            issues.append({
+                "type": "台账重复路径", "rel_path": rel,
+                "detail": "台账中同路径出现多行（id：%s 与 %s）" % (seen[rel], r.get("id", "")),
+            })
+        else:
+            seen[rel] = r.get("id", "")
+
+    # 2) 台账 ↔ 磁盘：悬空 / 越界
+    for rel in index:
+        first = rel.split("/")[0]
+        if first not in CLASSIFY_DIRS:
+            issues.append({
+                "type": "台账路径越界", "rel_path": rel,
+                "detail": "台账路径首段「%s」不在分类目录（%s）"
+                          % (first, "、".join(CLASSIFY_DIRS)),
+            })
+        if not rel_to_path(lib, rel).exists():
+            issues.append({
+                "type": "台账悬空", "rel_path": rel,
+                "detail": "台账有记录但磁盘无此文件（可能被手工移动/删除）",
+            })
+
+    # 3) 磁盘 ↔ 台账：未登记
+    disk_files = []
+    for cat in CLASSIFY_DIRS:
+        d = lib / cat
+        if not d.is_dir():
+            continue
+        for p in sorted(d.rglob("*")):
+            if not p.is_file() or p.name.startswith("."):
+                continue
+            rel = norm_rel(p.relative_to(lib).as_posix())
+            disk_files.append(rel)
+            if rel not in index:
+                issues.append({
+                    "type": "未登记文件", "rel_path": rel,
+                    "detail": "磁盘有文件但台账无记录（非常规上传或台账缺失）",
+                })
+
+    # 4) 回收站清单 ↔ 回收站磁盘
+    tdir = trash_dir(ent)
+    man = trash_manifest(ent)
+    known = {}
+    for r in man:
+        f = r.get("file", "")
+        known.setdefault(f, []).append(r)
+    trash_disk = []
+    if tdir.is_dir():
+        for p in tdir.iterdir():
+            if p.name.startswith(".") or p.name == TRASH_JSON:
+                continue
+            trash_disk.append(p.name)
+    for f in known:
+        if not (tdir / f).exists():
+            issues.append({
+                "type": "回收站清单悬空", "file": f,
+                "detail": "回收站清单有记录但磁盘无此文件（可能被手工删除）",
+            })
+    for f in trash_disk:
+        if f not in known:
+            issues.append({
+                "type": "回收站孤儿文件", "file": f,
+                "detail": "回收站磁盘有文件但清单无记录（可能直接拷贝/旧版遗留）",
+            })
+
+    # 5) 回收站过期未清理
+    cutoff = datetime.now() - timedelta(days=TRASH_RETENTION_DAYS)
+    for r in man:
+        try:
+            deleted_at = datetime.fromisoformat(r.get("deleted_at", ""))
+        except Exception:
+            continue
+        if deleted_at and deleted_at < cutoff and (tdir / r.get("file", "")).exists():
+            issues.append({
+                "type": "回收站过期未清理", "file": r.get("file"),
+                "detail": "已超保留期 %d 天仍存在（deleted_at=%s）"
+                          % (TRASH_RETENTION_DAYS, r.get("deleted_at")),
+            })
+
+    return {
+        "enterprise": ent.name,
+        "scanned_at": now_iso(),
+        "summary": {
+            "ledger_rows": len(rows),
+            "ledger_unique_paths": len(index),
+            "disk_files": len(disk_files),
+            "trash_manifest": len(man),
+            "trash_disk": len(trash_disk),
+        },
+        "issues": issues,
+        "ok": not issues,
     }
