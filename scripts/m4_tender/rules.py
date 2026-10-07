@@ -91,6 +91,14 @@ def validate_points_json(obj):
                     issues.append("verdicts[%d].item 缺失（裁决对象）" % i)
                 if not v.get("decision"):
                     issues.append("verdicts[%d].decision 缺失（裁决结论）" % i)
+    # v2.5 裁决检查点（程序化强制）：双通道差异非空（diffs 有实质差异待裁决）时，
+    # verdicts 必须存在且非空——agent 不得静默判定/略过差异后落盘（v2.4 纪律由
+    # 文档约束升级为机器强制）。正常裁决流程后：实质一致→差异移出 diffs；
+    # 真实差异→保留 diffs 且 verdicts 含对应裁决，均不受影响。
+    if isinstance(diffs, list) and diffs and not verdicts:
+        issues.append(
+            "裁决检查点：双通道差异 %d 条未裁决（diffs 非空但 verdicts 缺失/为空）——"
+            "须逐项在对话中请求用户裁决并写入已裁决事项（verdicts），不得静默略过后落盘" % len(diffs))
     return (not issues), issues
 
 
