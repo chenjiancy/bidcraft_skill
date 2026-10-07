@@ -193,9 +193,14 @@ def cmd_tender_rule(args):
         print(json.dumps(r, ensure_ascii=False, indent=2))
         return
     print("通道A 文档解析（规则引擎）已落盘：%s（%d 个字段）" % (r["path"], r["count"]))
-    rows = [[f["label"], f["module"],
-             "、".join(f["value"]) if isinstance(f["value"], list) else str(f["value"]),
-             "、".join(str(x) for x in f["lines"][:5])] for f in r["fields"].values()]
+    rows = []
+    for f in r["fields"].values():
+        v = "、".join(f["value"]) if isinstance(f["value"], list) else str(f["value"])
+        if "lines" in f:
+            ln = "、".join(str(x) for x in f["lines"][:5])
+        else:
+            ln = f.get("note", "")
+        rows.append([f.get("label", ""), f.get("module", ""), v, ln])
     print("\n" + table(rows, ["字段", "模块", "值", "原文行"]))
     print("\n下一步：tender-diff --project \"%s\" 做双通道差异比对（通道A vs 通道B 投标要点）" % args.project)
 
