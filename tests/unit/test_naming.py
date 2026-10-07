@@ -89,6 +89,31 @@ class TestBuildName(unittest.TestCase):
                           dates=["20270101", "20280101"]),
             "监理工程师_20270101_20280101")
 
+    def test_register_cert_single_date(self):
+        # 造价工程师仅注册日期（无有效期/使用有效期到期日）
+        self.assertEqual(
+            nm.build_name("人员", "注册证书", keywords=["一级造价工程师"],
+                          dates=["20230403"]),
+            "一级造价工程师_20230403")
+        self.assertEqual(
+            nm.build_name("人员", "注册证书", keywords=["一级造价工程师"],
+                          dates=["20230403"], page=0),
+            "一级造价工程师_20230403_P0")
+
+    def test_register_cert_no_date(self):
+        self.assertEqual(
+            nm.build_name("人员", "注册证书", keywords=["一级造价工程师"]),
+            "一级造价工程师")
+
+    def test_register_cert_validate_single_and_optional(self):
+        for name in ("一级建造师_20281116_20270405",
+                     "监理工程师_20280419_20270405",
+                     "一级造价工程师_20230403",
+                     "一级造价工程师"):
+            ok, _ = nm.validate("人员", "注册证书", name + ".png")
+            self.assertTrue(ok, name)
+
+
     def test_project_file_with_page(self):
         self.assertEqual(
             nm.build_name("业绩", "业绩文件", keywords=["监理合同"], page=0),

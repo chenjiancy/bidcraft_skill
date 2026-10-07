@@ -20,7 +20,7 @@ PAGE_SUFFIX_RE = re.compile(r"_P(\d+)$")
 EXT_RE = re.compile(r"^[A-Za-z0-9]{1,5}$")
 
 # 段类型
-CONST, KW, KW_OPT, DATE, ENUM, YEAR = "const", "kw", "kw_opt", "date", "enum", "year"
+CONST, KW, KW_OPT, DATE, DATE_OPT, ENUM, YEAR = "const", "kw", "kw_opt", "date", "date_opt", "enum", "year"
 
 
 def _c(literal):
@@ -61,8 +61,8 @@ RULES = {
 
     # ---- 人员 ----
     ("人员", "注册证书"): {
-        "segs": [(KW,), (DATE,), (DATE,)],
-        "hint": "注册证书名关键字_注册有效期_使用有效期到期日",
+        "segs": [(KW,), (DATE_OPT,), (DATE_OPT,)],
+        "hint": "注册证书名_日期1[_日期2]（建造师:有效期到期日_使用有效期到期日；监理工程师:注册有效期_使用有效期到期日；造价工程师:注册日期；无对应日期可省略）",
     },
     ("人员", "岗位证书"): {"segs": [(KW,), (DATE,)], "hint": "岗位证书关键字_到期日"},
     ("人员", "职称证书"): {"segs": [(KW,), (KW,), (KW_OPT,)], "hint": "职称等级关键字_专业[_年份]"},
