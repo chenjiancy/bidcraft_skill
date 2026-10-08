@@ -401,8 +401,83 @@ class TestFmtRuleDiff(TenderBase):
             tender.run_dual_diff(self.tdir, self.PROJECT)   # 无 文档解析.json
 
 
-if __name__ == "__main__":
-    unittest.main()
+class TestGap(TenderBase):
+    """v2.6：素材缺口收口（init → add → resolve/waive → verify，落盘 json/md）。"""
+
+    def test_init_add_resolve_waive_verify(self):
+        # init（幂等：再 init 不覆盖）
+        p1, created1 = tender.init_gap(self.tdir, self.PROJECT)
+        self.assertTrue(created1)
+        p2, created2 = tender.init_gap(self.tdir, self.PROJECT)
+        self.assertFalse(created2)
+        self.assertEqual(Path(p1), Path(p2))
+        # add 文字性缺口（用户输入类）
+        r1 = tender.add_gap(self.tdir, self.PROJECT, "拟派总监理工程师联系电话",
+                            "text", "投标要点·模块二·人员红线")
+        self.assertEqual(r1["gap_id"], "G01")
+        self.assertEqual(r1["status"], "待补充")
+        # add 图片/文件缺口（用户上传类）
+        r2 = tender.add_gap(self.tdir, self.PROJECT, "总监理工程师注册证扫描件",
+                            "asset", "响应文件格式·拟派人员表")
+        self.assertEqual(r2["gap_id"], "G02")
+        # verify：未收口
+        v = tender.verify_gap(self.tdir, self.PROJECT)
+        self.assertFalse(v["ok"])
+        self.assertEqual(v["summary"]["pending"], 2)
+        self.assertEqual([p["gap_id"] for p in v["pending"]], ["G01", "G02"])
+        # resolve 文字性（用户输入内容）
+        tender.resolve_gap(self.tdir, self.PROJECT, "G01", "13800000000", "用户会话输入")
+        # waive 图片/文件（用户确认无此素材）
+        tender.waive_gap(self.tdir, self.PROJECT, "G02", "用户无此素材，对投标无影响")
+        # verify：全部收口
+        v2 = tender.verify_gap(self.tdir, self.PROJECT)
+        self.assertTrue(v2["ok"])
+        self.assertEqual(v2["summary"], {"total": 2, "pending": 0, "done": 1, "waived": 1})
+        # 产物双份存在 + JSON 可校验
+        json_p = self.tdir / ("素材缺口_%s.json" % self.PROJECT)
+        md_p = self.tdir / ("素材缺口_%s.md" % self.PROJECT)
+        self.assertTrue(json_p.exists())
+        self.assertTrue(md_p.exists())
+        doc = json.loads(json_p.read_text(encoding="utf-8"))
+        ok, issues = rules.validate_gap_json(doc)
+        self.assertTrue(ok, issues)
+        md_text = md_p.read_text(encoding="utf-8")
+        self.assertIn("G01", md_text)
+        self.assertIn("13800000000", md_text)
+        self.assertIn("G02", md_text)
+
+    def test_show_gap(self):
+        tender.init_gap(self.tdir, self.PROJECT)
+        tender.add_gap(self.tdir, self.PROJECT, "拟派总监理工程师联系电话",
+                       "text", "投标要点·模块二")
+        r = tender.show_gap(self.tdir, self.PROJECT)
+        self.assertEqual(len(r["items"]), 1)
+        self.assertEqual(r["summary"]["pending"], 1)
+
+    def test_add_requires_source(self):
+        tender.init_gap(self.tdir, self.PROJECT)
+        with self.assertRaises(core.LibraryError):
+            tender.add_gap(self.tdir, self.PROJECT, "某某资料", "text", "")
+
+    def test_bad_type_rejected(self):
+        tender.init_gap(self.tdir, self.PROJECT)
+        with self.assertRaises(core.LibraryError):
+            tender.add_gap(self.tdir, self.PROJECT, "某某资料", "file", "投标要点")
+
+    def test_resolve_unknown_gap_id(self):
+        tender.init_gap(self.tdir, self.PROJECT)
+        with self.assertRaises(core.LibraryError):
+            tender.resolve_gap(self.tdir, self.PROJECT, "G99", "x")
+
+    def test_resolve_requires_value(self):
+        tender.init_gap(self.tdir, self.PROJECT)
+        tender.add_gap(self.tdir, self.PROJECT, "联系电话", "text", "投标要点")
+        with self.assertRaises(core.LibraryError):
+            tender.resolve_gap(self.tdir, self.PROJECT, "G01", "")
+
+    def test_verify_without_init_raises(self):
+        with self.assertRaises(core.LibraryError):
+            tender.verify_gap(self.tdir, self.PROJECT)
 
 
 if __name__ == "__main__":

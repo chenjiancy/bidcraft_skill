@@ -253,5 +253,88 @@ class TestTenderFmtRuleDiffCli(TenderCliBase):
         self.assertIn(ENT, r.stdout)
 
 
+class TestTenderGapCli(TenderCliBase):
+    """v2.6：素材缺口收口 CLI（init/add/resolve/waive/verify 契约 + 产物落位）。"""
+
+    def test_gap_full_flow(self):
+        r = run(str(self.root), "tender-init", "--project", PROJECT)
+        self.assertEqual(r.returncode, 0, r.stderr)
+
+        # init
+        r = run(str(self.root), "tender-gap", "--project", PROJECT, "--init")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        json_p = self.tdir / ("素材缺口_%s.json" % PROJECT)
+        md_p = self.tdir / ("素材缺口_%s.md" % PROJECT)
+        self.assertTrue(json_p.exists())
+        self.assertTrue(md_p.exists())
+
+        # add 文字性缺口
+        r = run(str(self.root), "tender-gap", "--project", PROJECT, "--add",
+                "--item", "拟派总监理工程师联系电话", "--type", "text",
+                "--source", "投标要点·模块二·人员红线")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("G01", r.stdout)
+        # add 图片/文件缺口
+        r = run(str(self.root), "tender-gap", "--project", PROJECT, "--add",
+                "--item", "总监理工程师注册证扫描件", "--type", "asset",
+                "--source", "响应文件格式·拟派人员表")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("G02", r.stdout)
+
+        # verify：未收口 → 列出待补充
+        r = run(str(self.root), "tender-gap", "--project", PROJECT, "--verify")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("尚未收口", r.stdout)
+        self.assertIn("G01", r.stdout)
+
+        # resolve（用户输入文字）
+        r = run(str(self.root), "tender-gap", "--project", PROJECT, "--resolve",
+                "--gap-id", "G01", "--value", "13800000000", "--note", "用户会话输入")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("已补充", r.stdout)
+        # waive（用户确认无此素材）
+        r = run(str(self.root), "tender-gap", "--project", PROJECT, "--waive",
+                "--gap-id", "G02", "--note", "用户无此素材，对投标无影响")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("豁免", r.stdout)
+
+        # verify：全部收口
+        r = run(str(self.root), "tender-gap", "--project", PROJECT, "--verify")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("全部收口", r.stdout)
+        self.assertIn("可以进入项目模板生成", r.stdout)
+
+        # show（人读渲染）
+        r = run(str(self.root), "tender-gap", "--project", PROJECT)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("素材缺口清单", r.stdout)
+        self.assertIn("13800000000", r.stdout)
+
+    def test_gap_show_without_init_raises(self):
+        r = run(str(self.root), "tender-gap", "--project", PROJECT)
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("先执行 tender-gap --init", r.stderr)
+
+    def test_gap_bad_type_exit1(self):
+        run(str(self.root), "tender-init", "--project", PROJECT)
+        run(str(self.root), "tender-gap", "--project", PROJECT, "--init")
+        r = run(str(self.root), "tender-gap", "--project", PROJECT, "--add",
+                "--item", "某某资料", "--type", "file", "--source", "投标要点")
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("必须是", r.stderr)
+
+    def test_gap_json_validate_ok(self):
+        run(str(self.root), "tender-init", "--project", PROJECT)
+        run(str(self.root), "tender-gap", "--project", PROJECT, "--init")
+        run(str(self.root), "tender-gap", "--project", PROJECT, "--add",
+            "--item", "联系电话", "--type", "text", "--source", "投标要点")
+        run(str(self.root), "tender-gap", "--project", PROJECT, "--resolve",
+            "--gap-id", "G01", "--value", "13900000000")
+        json_p = self.tdir / ("素材缺口_%s.json" % PROJECT)
+        doc = json.loads(json_p.read_text(encoding="utf-8"))
+        self.assertEqual(doc["items"][0]["status"], "已补充")
+        self.assertEqual(doc["items"][0]["value"], "13900000000")
+
+
 if __name__ == "__main__":
     unittest.main()

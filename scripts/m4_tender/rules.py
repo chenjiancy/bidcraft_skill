@@ -184,6 +184,11 @@ def annex_base(project):
     return "补遗原文_%s" % project
 
 
+def gap_base(project):
+    """素材缺口清单文件名（v2.6+：素材清单确认后的缺口收口产物）。"""
+    return "素材缺口_%s" % project
+
+
 # --------------------------------------------------------------------------
 # 素材对照（纯逻辑：items + 素材库命中数 → 对照行）
 # --------------------------------------------------------------------------
@@ -286,6 +291,86 @@ def render_check_text(rows, summary, project):
 
 def json_dumps(obj):
     return json.dumps(obj, ensure_ascii=False, indent=2)
+
+
+# --------------------------------------------------------------------------
+# v2.6 素材缺口收口（素材清单确认后的缺口收集：文字性→会话输入 / 图片文件→继续上传 / 用户豁免）
+# --------------------------------------------------------------------------
+GAP_TYPES = ("text", "asset")
+GAP_STATUSES = ("待补充", "已补充", "豁免")
+
+
+def validate_gap_json(obj):
+    """校验素材缺口清单 JSON 最小结构 → (ok, issues)。"""
+    issues = []
+    if not isinstance(obj, dict):
+        return False, ["素材缺口清单 JSON 顶层必须是对象"]
+    items = obj.get("items")
+    if not isinstance(items, list):
+        issues.append("items 必须是非空数组")
+        return False, issues
+    if not items:
+        issues.append("items 不能为空（无缺口也应保留结构，由用户确认收口）")
+        return False, issues
+    for i, it in enumerate(items):
+        if not isinstance(it, dict):
+            issues.append("items[%d] 必须是对象" % i)
+            continue
+        if not it.get("gap_id"):
+            issues.append("items[%d].gap_id 缺失（缺口项唯一标识）" % i)
+        if not it.get("item"):
+            issues.append("items[%d].item 缺失（缺口资料名）" % i)
+        if it.get("type") not in GAP_TYPES:
+            issues.append("items[%d].type 必须是 %s（text=文字性资料，asset=图片/文件素材）" % (i, "|".join(GAP_TYPES)))
+        if it.get("status") not in GAP_STATUSES:
+            issues.append("items[%d].status 必须是 %s" % (i, "|".join(GAP_STATUSES)))
+        if not it.get("source"):
+            issues.append("items[%d].source 缺失（来源：投标要点/响应文件格式/招标原文）" % i)
+    return (not issues), issues
+
+
+def build_gap_row(it):
+    """缺口项 → 收口行（供人读渲染 / JSON 汇总）。"""
+    return {
+        "gap_id": it.get("gap_id", ""),
+        "item": it.get("item", ""),
+        "type": it.get("type", "text"),
+        "source": it.get("source", ""),
+        "status": it.get("status", "待补充"),
+        "value": it.get("value", ""),
+        "note": it.get("note", ""),
+    }
+
+
+def render_gap_text(items, project):
+    """素材缺口清单 → 人读文本（状态标记：待补充=⏳/已补充=✅/豁免=⭕）。"""
+    lines = ["# 素材缺口清单 · %s" % project]
+    for it in items:
+        mark = {"待补充": "⏳", "已补充": "✅", "豁免": "⭕"}.get(it.get("status"), "?")
+        typ = "文字" if it.get("type") == "text" else "图片/文件"
+        tail = ""
+        if it.get("value"):
+            tail += "　已收内容：%s" % it.get("value")
+        if it.get("note"):
+            tail += "　备注：%s" % it.get("note")
+        lines.append("%s [%s] %s（%s）来源：%s%s" % (
+            mark, it.get("gap_id", "?"), it.get("item", "?"), typ,
+            it.get("source", ""), tail))
+    return "\n".join(lines)
+
+
+def summarize_gap(items):
+    """缺口汇总 → {total, pending, done, waived}。"""
+    s = {"total": len(items), "pending": 0, "done": 0, "waived": 0}
+    for it in items:
+        st = it.get("status", "待补充")
+        if st == "已补充":
+            s["done"] += 1
+        elif st == "豁免":
+            s["waived"] += 1
+        else:
+            s["pending"] += 1
+    return s
 
 
 # --------------------------------------------------------------------------
