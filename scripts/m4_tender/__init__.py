@@ -271,6 +271,66 @@ def cmd_tender_annex(args):
     ))
 
 
+def cmd_tender_gap(args):
+    """v2.6：素材缺口收口——素材清单确认后，招标解析仍需要的补充资料：
+    文字性（text）→ 会话窗口提示用户直接输入；图片/文件（asset）→ 用户继续上传；
+    用户确认无此素材/对投标无影响 → 豁免（waive）。全部收口（verify）后才进入项目模板生成。"""
+    ent = get_ent(args)
+    tdir = tender.ensure_project_dir(ent, args.project)
+    if args.init:
+        p, created = tender.init_gap(tdir, args.project)
+        dump({"ok": True, "created": created, "json": str(p)}, args, human=(
+            "素材缺口清单已%s：\n  %s\n"
+            "下一步：对照投标要点/响应文件格式，用 --add 逐项登记缺口资料（--type text=文字性/asset=图片文件）。"
+            % ("新建" if created else "复用（已有内容保留）", p)))
+        return
+    if args.add:
+        r = tender.add_gap(tdir, args.project, args.item, args.type, args.source)
+        dump(r, args, human=(
+            "已登记缺口项 %s：%s（%s）来源：%s　状态：待补充\n"
+            "→ 文字性资料请在会话中提示用户直接输入；图片/文件素材请用户继续上传。"
+            % (r["gap_id"], r["item"], "文字" if r["type"] == "text" else "图片/文件", r["source"])))
+        return
+    if args.resolve:
+        r = tender.resolve_gap(tdir, args.project, args.gap_id, args.value, args.note)
+        dump(r, args, human=("缺口项 %s 已标记【已补充】：%s%s"
+                             % (r["gap_id"], r["value"], "（备注：%s）" % r["note"] if r["note"] else "")))
+        return
+    if args.waive:
+        r = tender.waive_gap(tdir, args.project, args.gap_id, args.note)
+        dump(r, args, human=("缺口项 %s 已标记【豁免】：%s" % (r["gap_id"], r["note"])))
+        return
+    if args.verify:
+        r = tender.verify_gap(tdir, args.project)
+        if args.json:
+            print(json.dumps(r, ensure_ascii=False, indent=2))
+            return
+        s = r["summary"]
+        print("素材缺口收口判定：共 %d 项｜⏳待补充 %d｜✅已补充 %d｜⭕豁免 %d" % (
+            s["total"], s["pending"], s["done"], s["waived"]))
+        if r["ok"]:
+            print("✅ 全部收口（无待补充项）—— 可以进入项目模板生成环节（proj-gen）。")
+        else:
+            print("⏳ 尚未收口，待补充项：")
+            for p in r["pending"]:
+                print("  - %s %s（%s）来源：%s" % (p["gap_id"], p["item"], p["type"], p["source"]))
+            print("→ 文字性资料请在会话中提示用户输入（--resolve 填入 value）；"
+                  "图片/文件请用户继续上传（--resolve 填入素材路径）；"
+                  "用户确认无此素材/对投标无影响则 --waive 豁免。全部处理完后再 --verify。")
+        return
+    # 默认：show
+    r = tender.show_gap(tdir, args.project)
+    if args.json:
+        print(json.dumps({"project": args.project, "items": r["items"],
+                          "summary": r["summary"]}, ensure_ascii=False, indent=2))
+        return
+    print(rules.render_gap_text(r["items"], args.project))
+    s = r["summary"]
+    print("\n汇总：共 %d 项｜⏳待补充 %d｜✅已补充 %d｜⭕豁免 %d" % (
+        s["total"], s["pending"], s["done"], s["waived"]))
+    print("清单文件：\n  %s\n  %s" % (r["json"], r["md"]))
+
+
 # --------------------------------------------------------------------------
 # 子命令注册（由薄壳 bidcraft.py 调用）
 # --------------------------------------------------------------------------
@@ -327,3 +387,20 @@ def register_parser(sub):
     sp.add_argument("--type", choices=("补遗", "澄清", "修改"), default="补遗",
                     help="文件类型（默认 补遗）")
     sp.set_defaults(func=cmd_tender_annex)
+
+    sp = sub.add_parser("tender-gap", help="M4·v2.6：素材缺口收口（素材清单确认后：文字性资料→会话输入 / 图片文件→继续上传 / 用户豁免）→ 素材缺口_<项目>.json/.md")
+    sp.add_argument("--project", required=True)
+    g = sp.add_mutually_exclusive_group()
+    g.add_argument("--init", action="store_true", help="初始化/复用缺口清单（幂等，不覆盖已有内容）")
+    g.add_argument("--add", action="store_true", help="登记一个新缺口项（配 --item/--type/--source）")
+    g.add_argument("--resolve", action="store_true", help="标记已补充（用户已提供，配 --gap-id/--value/--note）")
+    g.add_argument("--waive", action="store_true", help="豁免（用户确认无此素材/对投标无影响，配 --gap-id/--note）")
+    g.add_argument("--verify", action="store_true", help="收口判定：无待补充项 → 可进入项目模板生成")
+    sp.add_argument("--gap-id", help="缺口项标识（G01…，--resolve/--waive 用）")
+    sp.add_argument("--item", help="缺口资料名（--add 用，如：拟派总监理工程师联系电话）")
+    sp.add_argument("--type", default="text",
+                    help="缺口类型（--add 用）：text=文字性资料（会话输入）/ asset=图片文件素材（继续上传，默认 text）")
+    sp.add_argument("--source", default="", help="来源条款（--add 用，如：投标要点·模块二·人员红线）")
+    sp.add_argument("--value", default="", help="已收内容（--resolve 用）：text=用户输入内容；asset=素材路径/归档位置")
+    sp.add_argument("--note", default="", help="备注（--resolve/--waive 用，如豁免原因）")
+    sp.set_defaults(func=cmd_tender_gap)

@@ -407,5 +407,89 @@ class TestDualCompare(unittest.TestCase):
         self.assertEqual(rules.compare_dual({}, {"modules": []}), [])
 
 
+# --------------------------------------------------------------------------
+# v2.6 素材缺口收口（validate_gap_json / summarize_gap / render_gap_text）
+# --------------------------------------------------------------------------
+def _gap_item(gap_id="G01", item="拟派总监理工程师联系电话", gtype="text",
+              source="投标要点·模块二·人员红线", status="待补充", value="", note=""):
+    return {"gap_id": gap_id, "item": item, "type": gtype, "source": source,
+            "status": status, "value": value, "note": note}
+
+
+class TestValidateGapJson(unittest.TestCase):
+    def test_valid_single(self):
+        doc = {"project": "P1", "items": [_gap_item()]}
+        ok, issues = rules.validate_gap_json(doc)
+        self.assertTrue(ok, issues)
+
+    def test_valid_mixed_status(self):
+        doc = {"project": "P1", "items": [
+            _gap_item("G01", status="已补充", value="13800000000"),
+            _gap_item("G02", item="总监理工程师注册证扫描件", gtype="asset",
+                      source="响应文件格式·拟派人员表", status="豁免", note="用户无此素材"),
+        ]}
+        ok, issues = rules.validate_gap_json(doc)
+        self.assertTrue(ok, issues)
+
+    def test_missing_gap_id(self):
+        it = _gap_item()
+        del it["gap_id"]
+        ok, issues = rules.validate_gap_json({"items": [it]})
+        self.assertFalse(ok)
+        self.assertTrue(any("gap_id" in x for x in issues))
+
+    def test_missing_item(self):
+        it = _gap_item()
+        del it["item"]
+        ok, issues = rules.validate_gap_json({"items": [it]})
+        self.assertFalse(ok)
+        self.assertTrue(any("item" in x for x in issues))
+
+    def test_bad_type(self):
+        ok, issues = rules.validate_gap_json({"items": [_gap_item(gtype="file")]})
+        self.assertFalse(ok)
+        self.assertTrue(any("type" in x for x in issues))
+
+    def test_bad_status(self):
+        ok, issues = rules.validate_gap_json({"items": [_gap_item(status="已删除")]})
+        self.assertFalse(ok)
+        self.assertTrue(any("status" in x for x in issues))
+
+    def test_missing_source(self):
+        it = _gap_item()
+        del it["source"]
+        ok, issues = rules.validate_gap_json({"items": [it]})
+        self.assertFalse(ok)
+        self.assertTrue(any("source" in x for x in issues))
+
+    def test_empty_items(self):
+        ok, issues = rules.validate_gap_json({"items": []})
+        self.assertFalse(ok)
+
+
+class TestGapSummaryAndRender(unittest.TestCase):
+    def test_summarize_mixed(self):
+        items = [
+            _gap_item("G01", status="已补充"),
+            _gap_item("G02", status="豁免"),
+            _gap_item("G03", status="待补充"),
+        ]
+        s = rules.summarize_gap(items)
+        self.assertEqual(s, {"total": 3, "pending": 1, "done": 1, "waived": 1})
+
+    def test_summarize_all_done(self):
+        s = rules.summarize_gap([_gap_item(status="已补充"), _gap_item("G02", status="豁免")])
+        self.assertEqual(s["pending"], 0)
+        self.assertEqual(s["total"], 2)
+
+    def test_render_gap_text(self):
+        items = [_gap_item(status="已补充", value="13800000000")]
+        text = rules.render_gap_text(items, "P1")
+        self.assertIn("# 素材缺口清单", text)
+        self.assertIn("G01", text)
+        self.assertIn("已收内容：13800000000", text)
+        self.assertIn("文字", text)
+
+
 if __name__ == "__main__":
     unittest.main()

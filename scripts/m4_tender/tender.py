@@ -363,8 +363,113 @@ def render_report(tdir, project):
 
 
 # --------------------------------------------------------------------------
-# v2.4 补遗/澄清归档与原文提取（跨文件比对前置；语义对比由 agent 按提示词执行）
+# v2.6 素材缺口收口（素材清单确认后：文字性资料→会话输入 / 图片文件→继续上传 / 用户豁免）
+# 产物：素材缺口_<项目>.json/.md（落位 招标解析/）
 # --------------------------------------------------------------------------
+def gap_paths(tdir, project):
+    tdir = Path(tdir)
+    return (tdir / ("%s.json" % rules.gap_base(project)),
+            tdir / ("%s.md" % rules.gap_base(project)))
+
+
+def _load_gap(tdir, project, must=True):
+    json_path, md_path = gap_paths(tdir, project)
+    if not json_path.exists():
+        if must:
+            raise core.LibraryError(
+                "素材缺口清单不存在：%s（先执行 tender-gap --init）" % json_path)
+        return None, json_path, md_path
+    doc = load_doc(json_path)
+    if not doc:
+        raise core.LibraryError("素材缺口清单 JSON 无法读取：%s" % json_path)
+    return doc, json_path, md_path
+
+
+def _write_gap(tdir, project, doc):
+    json_path, md_path = gap_paths(tdir, project)
+    json_path.write_text(json.dumps(doc, ensure_ascii=False, indent=2), encoding="utf-8")
+    items = doc.get("items") or []
+    md_path.write_text(rules.render_gap_text(items, project), encoding="utf-8")
+    # ---- 写后回读（fail fast）----
+    core.readback.verify_json(json_path, required_fields=("items",), label="素材缺口 json")
+    core.readback.verify_file(md_path, label="素材缺口 md")
+    return json_path, md_path
+
+
+def init_gap(tdir, project):
+    """初始化/复用素材缺口清单（幂等：已存在则返回现有，不覆盖用户已收内容）。"""
+    doc, json_path, md_path = _load_gap(tdir, project, must=False)
+    if doc is not None:
+        return json_path, False
+    doc = {"project": project, "items": [], "generated": core.now_iso()}
+    _write_gap(tdir, project, doc)
+    return json_path, True
+
+
+def add_gap(tdir, project, item, gtype, source):
+    """新增一个缺口项（gap_id 自动编号 G01/G02…；type=text 文字性 / asset 图片文件）。"""
+    if gtype not in rules.GAP_TYPES:
+        raise core.LibraryError("type 必须是 %s" % "|".join(rules.GAP_TYPES))
+    if not item or not str(item).strip():
+        raise core.LibraryError("item 不能为空（缺口资料名）")
+    if not source or not str(source).strip():
+        raise core.LibraryError("source 不能为空（来源：投标要点/响应文件格式/招标原文）")
+    doc, json_path, md_path = _load_gap(tdir, project)
+    items = doc.setdefault("items", [])
+    n = len(items) + 1
+    gap_id = "G%02d" % n
+    items.append({"gap_id": gap_id, "item": str(item).strip(),
+                  "type": gtype, "source": str(source).strip(),
+                  "status": "待补充", "value": "", "note": ""})
+    _write_gap(tdir, project, doc)
+    return {"gap_id": gap_id, "item": str(item).strip(), "type": gtype,
+            "source": str(source).strip(), "status": "待补充",
+            "json": str(json_path), "md": str(md_path)}
+
+
+def _update_gap_item(tdir, project, gap_id, **kw):
+    """按 gap_id 更新缺口项（找不到 → 报错）。返回更新后的行。"""
+    doc, json_path, md_path = _load_gap(tdir, project)
+    for it in doc.get("items", []):
+        if it.get("gap_id") == gap_id:
+            it.update({k: v for k, v in kw.items() if v is not None})
+            _write_gap(tdir, project, doc)
+            return {"gap_id": gap_id, "status": it.get("status"),
+                    "value": it.get("value", ""), "note": it.get("note", ""),
+                    "json": str(json_path), "md": str(md_path)}
+    raise core.LibraryError("缺口项不存在：%s（先执行 tender-gap --add）" % gap_id)
+
+
+def resolve_gap(tdir, project, gap_id, value=None, note=None):
+    """用户已提供：标记已补充（text=用户输入内容；asset=素材路径/归档位置）。"""
+    if value is None or not str(value).strip():
+        raise core.LibraryError("value 不能为空（text=用户输入内容；asset=素材路径/归档位置）")
+    return _update_gap_item(tdir, project, gap_id,
+                            status="已补充", value=str(value).strip(), note=note)
+
+
+def waive_gap(tdir, project, gap_id, note=None):
+    """用户确认豁免：无此素材 / 对投标无影响（不再补充，视为收口）。"""
+    return _update_gap_item(tdir, project, gap_id,
+                            status="豁免", note=note or "用户确认无此素材或对投标无影响")
+
+
+def show_gap(tdir, project):
+    """读缺口清单 → {doc, json, md, items, summary}。"""
+    doc, json_path, md_path = _load_gap(tdir, project)
+    items = doc.get("items") or []
+    return {"doc": doc, "json": str(json_path), "md": str(md_path),
+            "items": items, "summary": rules.summarize_gap(items)}
+
+
+def verify_gap(tdir, project):
+    """收口判定：无「待补充」项 → ok=True；否则列出剩余项（收口完成才可进入项目模板生成）。"""
+    doc, json_path, md_path = _load_gap(tdir, project)
+    items = doc.get("items") or []
+    pending = [rules.build_gap_row(it) for it in items if it.get("status") == "待补充"]
+    ok = not pending
+    return {"ok": ok, "pending": pending, "summary": rules.summarize_gap(items),
+            "json": str(json_path), "md": str(md_path)}
 ANNEX_SUBDIR = "补遗"
 
 

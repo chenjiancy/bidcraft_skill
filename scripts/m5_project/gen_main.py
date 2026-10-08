@@ -15,7 +15,21 @@ from .gen_paths import (_default_contract_path, _default_material_path,
                         _default_source_docx, _resolve_project_dir)
 from .gen_tables import _extract_tpl_equip_rows
 
-__all__ = ["generate", "_write_ph_manifest", "_scan_placeholders", "_resolve_assets_map"]
+__all__ = ["generate", "check_gap_closed", "_write_ph_manifest",
+           "_scan_placeholders", "_resolve_assets_map"]
+
+
+def check_gap_closed(proj_dir, project):
+    """v2.6 素材缺口收口闸门：读 招标解析/素材缺口_<项目>.json，
+    返回 (ok, pending, gap_json)。缺口清单不存在 → (True, [], None)（未启用缺口流程不拦截）；
+    存在且有「待补充」项 → (False, [row...], json)。"""
+    gap_json = Path(proj_dir) / "招标解析" / ("素材缺口_%s.json" % project)
+    if not gap_json.is_file():
+        return True, [], None
+    doc = core.read_json(gap_json, None) or {}
+    pending = [it for it in (doc.get("items") or [])
+               if it.get("status") == "待补充"]
+    return (not pending), pending, gap_json
 
 
 def _resolve_assets_map(ent, proj_dir, material):
@@ -68,6 +82,16 @@ def generate(ent, project, contract_path=None, material_path=None, source_path=N
     proj_dir = _resolve_project_dir(ent, project)
     if proj_dir is None:
         raise GenError("项目目录不存在：项目级/%s" % project)
+    # ---- v2.6 素材缺口收口闸门：缺口清单存在且仍有「待补充」项 → 拒绝生成 ----
+    ok_gap, pending_gap, gap_json = check_gap_closed(proj_dir, project)
+    if not ok_gap:
+        names = "、".join("%s(%s)" % (it.get("item", "?"), it.get("gap_id", "?"))
+                          for it in pending_gap)
+        raise GenError(
+            "素材缺口尚未收口（%d 项待补充：%s）——文字性资料请在会话中提示用户直接输入，"
+            "图片/文件请用户继续上传；用户确认无此素材或对投标无影响可豁免；"
+            "全部处理完（tender-gap --verify 通过）后再执行 proj-gen。\n缺口清单：%s"
+            % (len(pending_gap), names, gap_json))
     contract_path = Path(contract_path or _default_contract_path(proj_dir))
     material_path = Path(material_path or _default_material_path(proj_dir))
     source_path = Path(source_path or _default_source_docx(proj_dir))

@@ -330,5 +330,53 @@ class TestProjGenReal(unittest.TestCase):
             self.assertIn("占位符数", f)
 
 
+class TestGapGate(unittest.TestCase):
+    """v2.6：proj-gen 素材缺口收口闸门（纯函数，临时目录，不依赖真实项目）。"""
+
+    def _make_project(self, with_gap=False, statuses=("待补充",)):
+        tmp = tempfile.mkdtemp(prefix="bid_m5_gap_")
+        self.addCleanup(shutil.rmtree, tmp, ignore_errors=True)
+        proj = Path(tmp) / "项目级" / "缺口闸门测试项目"
+        tdir = proj / "招标解析"
+        tdir.mkdir(parents=True)
+        if with_gap:
+            items = [{"gap_id": "G%02d" % (i + 1), "item": "资料%d" % (i + 1),
+                      "type": "text", "source": "投标要点", "status": st}
+                     for i, st in enumerate(statuses)]
+            (tdir / "素材缺口_缺口闸门测试项目.json").write_text(
+                json.dumps({"project": "缺口闸门测试项目", "items": items},
+                           ensure_ascii=False), encoding="utf-8")
+        return proj
+
+    def test_no_gap_file_passes(self):
+        proj = self._make_project()
+        ok, pending, gap_json = gen.check_gap_closed(proj, "缺口闸门测试项目")
+        self.assertTrue(ok)
+        self.assertEqual(pending, [])
+        self.assertIsNone(gap_json)
+
+    def test_all_resolved_passes(self):
+        proj = self._make_project(with_gap=True, statuses=("已补充", "豁免"))
+        ok, pending, _ = gen.check_gap_closed(proj, "缺口闸门测试项目")
+        self.assertTrue(ok)
+        self.assertEqual(pending, [])
+
+    def test_pending_blocks(self):
+        proj = self._make_project(with_gap=True, statuses=("已补充", "待补充", "豁免"))
+        ok, pending, gap_json = gen.check_gap_closed(proj, "缺口闸门测试项目")
+        self.assertFalse(ok)
+        self.assertEqual(len(pending), 1)
+        self.assertEqual(pending[0]["gap_id"], "G02")
+        self.assertIsNotNone(gap_json)
+
+    def test_generate_raises_when_pending(self):
+        """generate() 遇未收口缺口 → GenError（缺口清单存在且有待补充项）。"""
+        proj = self._make_project(with_gap=True, statuses=("待补充",))
+        from m5_project.gen_common import GenError
+        with self.assertRaises(GenError) as ctx:
+            gen.generate(proj.parent.parent, "缺口闸门测试项目")
+        self.assertIn("素材缺口尚未收口", str(ctx.exception))
+
+
 if __name__ == "__main__":
     unittest.main()
