@@ -37,6 +37,26 @@ class TestParaText(unittest.TestCase):
         _split_run(p, [3, 5, 9])
         self.assertEqual(docx_util.para_text(p), "投标人名称：【企业名称】")
 
+    def test_set_para_text_with_nested_run(self):
+        """V5 真实验证（2026-10-11）：中小企业声明函样本含官网超链接（嵌套 w:r），
+        整段替换必须从真实父节点移除嵌套 run（旧实现 el.remove(r) 报
+        ValueError: Element is not a child of this node）。"""
+        from docx.oxml.ns import qn
+        doc = Document()
+        p = doc.add_paragraph()
+        p.add_run("前文")
+        hl = p._p.makeelement(qn("w:hyperlink"), {})
+        r2 = p._p.makeelement(qn("w:r"), {})
+        t = p._p.makeelement(qn("w:t"), {})
+        t.text = "链接文字"
+        r2.append(t)
+        hl.append(r2)
+        p._p.append(hl)
+        p.add_run("后文")
+        self.assertEqual(docx_util.para_text(p), "前文链接文字后文")
+        docx_util.set_para_text(p, "整段替换【测试】")
+        self.assertEqual(docx_util.para_text(p), "整段替换【测试】")
+
 
 class TestSetParaText(unittest.TestCase):
     def test_keeps_first_run_rpr(self):

@@ -94,6 +94,43 @@ class SmeFilledSampleTest(unittest.TestCase):
         self.assertIn("《政府采购促进中小企业发展管理办法》", out)
         self.assertIn("财库〔2020〕46号", out)
 
+    def test_scale_standards_not_hit(self):
+        """2026-10-11 真实验证回归：各行业划型标准为固定条款，占位规则不得误伤
+        「从业人员…人以下/及以上」「营业收入…万元以下/及以上」「资产总额…万元以下」。"""
+        lines = [
+            "（一）农、林、牧、渔业。营业收入20000 万元以下的为中小微型企业。",
+            "（二）工业。从业人员1000人以下或营业收入40000万元以下的为中小微型企业。",
+            "（三）建筑业。营业收入80000万元以下或资产总额80000万元以下的为中小微型企业。",
+            "（四）批发业。从业人员200人以下或营业收入40000万元以下的为中小微型企业。",
+            "（十六）其他未列明行业。从业人员300人以下的为中小微型企业。其中，"
+            "从业人员100人及以上的为中型企业；从业人员10人及以上的为小型企业。",
+        ]
+        for line in lines:
+            out = _apply(line)
+            self.assertEqual(out, line, "划型标准固定条款被误伤: %s -> %s" % (line, out))
+            self.assertNotIn("【从业人员】", out)
+            self.assertNotIn("【营业收入】", out)
+            self.assertNotIn("【资产总额】", out)
+
+    def test_no_double_placeholder(self):
+        """2026-10-11 回归：SME 占位后标注不得被重复替换（GLOBAL_PH 双重占位）。
+        【项目名称】正文两处（声明段+清单行）各一次为正确语义，其余占位每类一次。"""
+        out = _apply(self.P1 + self.P2)
+        self.assertEqual(out.count("【项目名称】"), 2, out)
+        for kw in ("【招标人名称】", "【企业名称】",
+                   "【从业人员】", "【营业收入】", "【资产总额】", "【企业类型】"):
+            self.assertEqual(out.count(kw), 1, "%s 出现 %d 次: %s" % (kw, out.count(kw), out))
+        # 不得出现双重占位（如「【招标人名称】【招标人名称】」）
+        for dbl in ("【招标人名称】【招标人名称】", "【项目名称】【项目名称】",
+                    "【企业名称】【企业名称】"):
+            self.assertNotIn(dbl, out)
+
+    def test_date_filled(self):
+        """已填样本落款日期（带前缀+具体值）→ 日期：【日期】。"""
+        out = _apply("投标人（盖单位公章）：\n日期：2026年8月31日")
+        self.assertIn("日期：【日期】", out)
+        self.assertNotIn("2026年8月31日", out)
+
 
 if __name__ == "__main__":
     unittest.main()

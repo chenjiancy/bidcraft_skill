@@ -149,15 +149,24 @@ def build_docx(blocks, span, items, out_path, material, font=None, rules=None,
                 tbl_meta.append((new_node, _item_id_for_block(i, items)))
                 doc.element.body.append(new_node)
     _duplicate_tables_by_contract(doc, tbl_meta, material, ctx_map)
-    ph_para = _apply_global_ph(doc)
+    # SME（中小企业声明函）占位化先行：样本为已填写实例（项目名/编号/招标人/
+    # 企业/数据），须先按 SME_PH_PATTERNS 吃掉实例值 → 【占位】；否则 GLOBAL_PH
+    # 提前把「（项目名称）」→【项目名称】会使 SME 项目名模式失配、原文实例值残留
+    # （2026-10-11 V5 真实验证发现）。
+    # SME（中小企业声明函）：完全走 SME_PH_PATTERNS（含项目/招标人/企业/数据/
+    # 日期占位），跳过 GLOBAL_PH —— 否则 GLOBAL_PH 会对 SME 已替换的
+    # 「（招标人名称）/（项目名称）」标注重复替换成【…】造成「【招标人名称】【招标人名称】」
+    # 双重占位（2026-10-11 V5 真实验证发现）。
+    if rules.get("sme_project"):
+        ph_para = _apply_f13_sme(doc, str(material.get("project", "") or ""))
+    else:
+        ph_para = _apply_global_ph(doc)
     if rules.get("cover_title"):
         ph_para += _fix_cover_title(doc, material)
     if rules.get("split_authorize"):
         ph_para += _split_authorize_info(doc)
     ph_para += _apply_para_label_rules(doc, rules.get("para_label", []))
     ph_para += _apply_date_ph(doc, rules.get("date_ph", False))
-    if rules.get("sme_project"):
-        ph_para += _apply_f13_sme(doc, str(material.get("project", "") or ""))
     ph_row = _apply_row_rules(doc, ctx_map)
     tbl_stats = _post_process_tables(doc, material, ctx_map)
     n_equip = _fill_equip_from_tpl(doc, ctx_map, equip_rows or []) if rules.get("equip_tpl") else 0

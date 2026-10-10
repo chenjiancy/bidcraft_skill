@@ -175,7 +175,7 @@ def generate(ent, project, contract_path=None, material_path=None, source_path=N
             src_range = (lo, hi)
         else:
             src_blocks, src_doc = _extract_blocks(extra_src)
-            src_range = (0, len(src_blocks))
+            src_range = (0, len(src_blocks) - 1)   # span 闭区间 [s, e]，len 会越界
             lo, hi = src_range
         out_file = out / fname
         # ---- 图片占位：静态锚点（gen_common）+ v5 动态（配置图片插入位置 + 素材清单）----
@@ -244,9 +244,9 @@ def generate(ent, project, contract_path=None, material_path=None, source_path=N
     if not skip_verify and results:
         try:
             from . import page_fit
-            pages = page_fit.verify_and_fit(ent, project, out, None,
-                                            results, register_baseline=register_baseline,
-                                            format_config=cfg)
+            # 传格式配置路径（非 dict）：page_fit 内部按路径加载并在 _format_config_path 复用
+            pages = page_fit.verify_and_fit(ent, project, out, format_config, results,
+                                            register_baseline=register_baseline)
         except Exception as ex:
             pages = {"结论": "校验器异常：%s" % ex, "文件": []}
 
