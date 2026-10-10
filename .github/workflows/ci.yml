@@ -30,10 +30,10 @@ jobs:
           cache: 'pip'
           cache-dependency-path: requirements.txt
 
-      # 运行依赖：python-docx(模板/填充/docx读写)、Pillow(图框预览)。
+      # 运行依赖：python-docx(模板/填充/docx读写)、Pillow(图框预览)、openpyxl(v5.1素材清单表读取/mat_export)。
       # 可选依赖不进 CI：PyMuPDF(PDF解析)、rapidocr(OCR)，均有函数级容错回退。
       - name: 安装运行依赖
-        run: python -m pip install python-docx Pillow
+        run: python -m pip install python-docx Pillow openpyxl
 
       # 零外部依赖的测试框架：全部基于 Python 标准库 unittest，保证跨环境/平台可复用
       # bash + tee：输出保存为日志（上传 artifacts），PIPESTATUS 保留 python 真实退出码

@@ -136,8 +136,13 @@ def generate(ent, project, contract_path=None, material_path=None, source_path=N
 
     for fname, items in merged.items():
         ids = [it["id"] for it in items]
-        lo = min(it.get("块范围", [0])[0] for it in items if it.get("块范围"))
-        hi = max(it.get("块范围", [0])[-1] for it in items if it.get("块范围"))
+        valid = [it for it in items if it.get("块范围")]
+        if not valid:
+            # 契约中该文件组全部未定位（如无中小企业声明函/开户许可证承诺函）→ 跳过不阻断
+            skipped.append({"契约项": ",".join(ids), "原因": "契约未定位块范围（跳过生成）"})
+            continue
+        lo = min(it.get("块范围", [0])[0] for it in valid)
+        hi = max(it.get("块范围", [0])[-1] for it in valid)
         out_file = out / fname
         rules = {
             "para_label": PARA_LABEL_RULES.get(fname, []),

@@ -1,3 +1,4 @@
 # bidcraft_skill 运行依赖（CI 使用；主脚本核心逻辑零第三方依赖，可选依赖不进 CI）
 python-docx
 Pillow
+openpyxl
