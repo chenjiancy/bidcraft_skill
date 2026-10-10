@@ -182,7 +182,63 @@ def cmd_proj_diff(args):
           "再运行 proj-diff --apply --diff <该json> 应用。" % (md, js))
 
 
+def cmd_proj_contract(args):
+    """M5 前置①：从招标文件 docx 自动生成格式契约 JSON（块范围定位）。"""
+    ent = get_ent(args)
+    from . import contract_gen as cg
+    src = Path(args.source) if args.source else None
+    if src is None:
+        # 默认：招标解析/招标文件-*.docx 或 招标文件_*.docx（源为 .doc 时提示先转换）
+        try:
+            from .gen_paths import _default_source_docx
+            src = _default_source_docx(ent / "项目级" / args.project)
+        except Exception as e:
+            print("错误：%s（源文件为 .doc 时请先用 scripts/tools/doc2docx.ps1 转换为 .docx）"
+                  % e, file=sys.stderr)
+            raise SystemExit(1)
+    contract = cg.build_contract_from_docx(src, args.project)
+    out = cg.write_contract(ent, args.project, contract, out_path=args.out)
+    if args.json:
+        print(json.dumps(contract, ensure_ascii=False, indent=2))
+        return
+    print("格式契约已生成：%s" % out)
+    print("格式章节：%s" % contract["格式章节"])
+    for it in contract["格式文件"]:
+        span = it["块范围"]
+        mark = "  ✓ " if span else "  —  "
+        print("%s%s  块 %s  %s" % (mark, it["id"], span if span else "（未定位，proj-gen 将跳过）", it["标题"]))
+
+
+def cmd_proj_tpl_import(args):
+    """M5 前置③：把格式契约空白格式提炼为企业级模板（企业级/模板库/<代理>/投标/）。"""
+    ent = get_ent(args)
+    from . import tpl_import as ti
+    res = ti.import_templates(ent, args.project, args.agent,
+                              source=args.source, out_dir=args.out)
+    if args.json:
+        print(json.dumps(res, ensure_ascii=False, indent=2))
+        return
+    print("企业模板已入库：%s" % res["模板目录"])
+    for f in res["文件"]:
+        print("  ✓ %-32s 契约项 %s  块 %s" % (f["模板"], f["契约项"], f["块范围"]))
+    for s in res["跳过"]:
+        print("  — 跳过 %-28s %s" % (s["模板"], s["原因"]))
+
+
 def register_parser(sub):
+    sp = sub.add_parser("proj-tpl-import", help="M5：格式契约空白格式提炼为企业级模板入库")
+    sp.add_argument("--project", required=True, help="项目名（项目级/<项目>）")
+    sp.add_argument("--agent", required=True, help="代理机构名（企业级/模板库/<代理>/投标/）")
+    sp.add_argument("--source", default="", help="招标文件 docx 路径（默认 招标解析/招标文件-*.docx）")
+    sp.add_argument("--out", default="", help="模板输出目录（默认 企业级/模板库/<代理>/投标/）")
+    sp.set_defaults(func=cmd_proj_tpl_import)
+
+    sp = sub.add_parser("proj-contract", help="M5：从招标文件 docx 生成格式契约 JSON（块范围定位）")
+    sp.add_argument("--project", required=True, help="项目名（项目级/<项目>）")
+    sp.add_argument("--source", default="", help="招标文件 docx 路径（默认 招标解析/招标文件-*.docx）")
+    sp.add_argument("--out", default="", help="契约 JSON 输出路径（默认 招标解析/格式契约/格式契约.json）")
+    sp.set_defaults(func=cmd_proj_contract)
+
     sp = sub.add_parser("proj-gen", help="M5：按格式契约+素材清单动态生成项目模板（docx+占位符）")
     sp.add_argument("--project", required=True, help="项目名（项目级/<项目>）")
     sp.add_argument("--contract", default="", help="格式契约 JSON 路径（默认 招标解析/格式契约/…json）")
