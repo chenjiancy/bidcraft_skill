@@ -76,7 +76,7 @@ def _resolve_assets_map(ent, proj_dir, material):
 
 def generate(ent, project, contract_path=None, material_path=None, source_path=None,
              out_dir=None, base_dir="", format_config=None, register_baseline=True,
-             skip_verify=False):
+             skip_verify=False, extra_sources=None):
     """
     主入口（v5，2026-10-10 用户定稿：格式配置 + 招标原文深拷贝）：
       1) 读内容契约 JSON / 素材清单 / 通用格式配置 format_config.json；
@@ -87,6 +87,9 @@ def generate(ent, project, contract_path=None, material_path=None, source_path=N
          独占一面）→ **图片占位**（【图片：xxx】占位段 + 灰底图框预览框：
          大小=image_spec 尺寸规定，位置=图片插入位置锚点，数量=素材清单动态）→
          只放占位无实际内容（商务标生成时填充）；
+         **补充文件**（extra_sources={文件名: 样本docx路径}）：招标原文投标格式
+         未列但用户确认需要的文件（如中小企业声明函），从企业自有样本 docx
+         深拷贝文字 → 套用格式配置 → 占位化（不参与招标原文文字硬校验）；
       4) 生成记录.json + 项目占位符清单.md + **代码硬校验**（verify_text 文字逐字比对）
          + 页数校验/独占面收敛（page_fit，按格式配置独占一面清单）；
       5) 登记产物基线（fb.register）。
@@ -152,14 +155,28 @@ def generate(ent, project, contract_path=None, material_path=None, source_path=N
     for fname, items in merged.items():
         ids = [it["id"] for it in items]
         valid = [it for it in items if it.get("块范围")]
-        if not valid:
+        # ---- 补充文件（extra_sources）：招标格式未列、用户确认需要的文件（如中小企业声明函）----
+        # 内容契约无块范围（原文未列）时，若提供了企业自有样本 docx → 从样本深拷贝生成。
+        extra_src = None
+        if not valid and extra_sources:
+            extra_src = Path(extra_sources.get(fname)) if extra_sources.get(fname) else None
+            if extra_src and not extra_src.is_file():
+                raise GenError("补充文件样本不存在：%s（%s）" % (extra_src, fname))
+        if not valid and extra_src is None:
             skipped.append({"契约项": ",".join(ids), "原因": "契约未定位块范围（跳过生成）"})
             continue
-        lo = min(it.get("块范围", [0])[0] for it in valid)
-        hi = max(it.get("块范围", [0])[-1] for it in valid)
-        # 章节标题段（「第X章 投标文件格式」）不拷贝（用户规则：仅章节标题不要）——
-        # 与代码硬校验共用 gen_common.skip_chapter_head（单一权威）
-        lo = skip_chapter_head(blocks, lo)
+        if valid:
+            lo = min(it.get("块范围", [0])[0] for it in valid)
+            hi = max(it.get("块范围", [0])[-1] for it in valid)
+            # 章节标题段（「第X章 投标文件格式」）不拷贝（用户规则：仅章节标题不要）——
+            # 与代码硬校验共用 gen_common.skip_chapter_head（单一权威）
+            lo = skip_chapter_head(blocks, lo)
+            src_blocks, src_doc = blocks, None
+            src_range = (lo, hi)
+        else:
+            src_blocks, src_doc = _extract_blocks(extra_src)
+            src_range = (0, len(src_blocks))
+            lo, hi = src_range
         out_file = out / fname
         # ---- 图片占位：静态锚点（gen_common）+ v5 动态（配置图片插入位置 + 素材清单）----
         img_after_table = list(IMAGE_PH_AFTER_TABLE.get(fname, []))
@@ -177,10 +194,12 @@ def generate(ent, project, contract_path=None, material_path=None, source_path=N
             "split_authorize": fname == "授权委托书.docx",
             "sme_project": fname == "中小企业声明函.docx",
         }
-        # ---- v5：招标原文深拷贝（文字表格保留，清无关格式）→ 格式配置应用 → 独占一面 ----
-        info = build_docx(blocks, (lo, hi), items, out_file, material,
+        # ---- 深拷贝（招标原文或补充样本）→ 格式配置应用 → 独占一面 ----
+        info = build_docx(src_blocks, src_range, items, out_file, material,
                           font=FILE_FONT.get(fname), rules=rules,
                           assets_map=assets_map)          # tpl_doc=None / style=None：纯深拷贝模式
+        if extra_src is not None:
+            info["补充文件"] = str(extra_src)
         fmt_stats = apply_format(Document(str(out_file)), fname, cfg)
         n_own = ensure_own_page(Document(str(out_file)), fname, cfg)
         info["格式应用"] = fmt_stats

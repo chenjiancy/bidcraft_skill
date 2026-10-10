@@ -35,6 +35,21 @@ def get_ent(args):
     return lib.resolve(getattr(args, "enterprise", None))
 
 
+def _parse_extra(args):
+    """解析 --extra '文件=样本路径;文件2=路径2' → {文件: 路径}。"""
+    out = {}
+    for seg in (args.extra or "").split(";"):
+        seg = seg.strip()
+        if not seg:
+            continue
+        if "=" not in seg:
+            print("错误：--extra 格式应为 文件=样本路径（分号分隔），收到：%s" % seg, file=sys.stderr)
+            raise SystemExit(1)
+        fname, path = seg.split("=", 1)
+        out[fname.strip()] = path.strip()
+    return out
+
+
 def cmd_proj_gen(args):
     ent = get_ent(args)
     if not gen.HAVE_DOCX:
@@ -47,6 +62,7 @@ def cmd_proj_gen(args):
         format_config=args.format_config,
         register_baseline=not args.no_baseline,
         skip_verify=getattr(args, "skip_verify", False),
+        extra_sources=_parse_extra(args) if getattr(args, "extra", "") else None,
     )
     if args.json:
         print(json.dumps(res, ensure_ascii=False, indent=2))
@@ -262,6 +278,7 @@ def register_parser(sub):
     sp.add_argument("--out", default="", help="项目模板输出目录（默认 项目级/<项目>/项目模板）")
     sp.add_argument("--base-dir", default="", help="保留兼容参数（V5 不使用）")
     sp.add_argument("--format-config", default="", help="通用格式配置 JSON 路径（默认 scripts/m5_project/format_config.json）")
+    sp.add_argument("--extra", default="", help="补充文件：'文件=样本docx路径;…'（招标格式未列、用户确认需要的文件，如 中小企业声明函.docx=样本路径；从样本深拷贝+格式配置+占位化）")
     sp.add_argument("--no-baseline", action="store_true", help="跳过产物基线登记")
     sp.add_argument("--skip-verify", action="store_true", help="跳过生成后代码硬校验（一般不用）")
     sp.set_defaults(func=cmd_proj_gen)
