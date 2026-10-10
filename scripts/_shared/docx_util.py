@@ -45,7 +45,7 @@ def set_para_text(p, text):
             first.append(t)
             t.text = text
         for r in runs[1:]:
-            el.remove(r)
+            r.getparent().remove(r)      # 兼容嵌套 run（超链接内 w:r）：从真实父节点移除
     else:
         r = el.makeelement(qn("w:r"), {})
         el.append(r)
