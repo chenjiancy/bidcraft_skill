@@ -21,17 +21,21 @@ def _resolve_project_dir(ent, project):
 
 
 def _default_contract_path(proj_dir):
-    p = proj_dir / "招标解析" / "格式契约" / "格式契约.json"
+    p = proj_dir / "招标解析" / "内容契约" / "内容契约.json"
     if not p.is_file():
-        raise GenError("找不到格式契约：%s（先运行 proj-contract 生成）" % p)
+        raise GenError("找不到内容契约：%s（先运行 proj-content-contract 生成）" % p)
     return p
 
 
 def _default_material_path(proj_dir):
     p = proj_dir / "招标解析" / "素材清单.json"
-    if not p.is_file():
-        raise GenError("找不到素材清单：%s" % p)
-    return p
+    if p.is_file():
+        return p
+    # proj-mat 默认落盘命名 素材清单_<项目>.json → glob 兼容（跳过空白表）
+    cands = sorted(glob.glob(str(proj_dir / "招标解析" / "素材清单_*.json")))
+    if cands:
+        return Path(cands[-1])
+    raise GenError("找不到素材清单（招标解析/素材清单.json 或 素材清单_*.json）：%s" % p)
 
 
 def _default_source_docx(proj_dir):

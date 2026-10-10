@@ -7,7 +7,9 @@ import copy
 import re
 
 from _shared import docx_util as _docx_util
-from .gen_common import (GLOBAL_PH, ROW_RULES, SME_SAMPLE, TAG_NOISE)  # noqa: F401
+from .gen_common import (COVER_NAME_PAT, COVER_NO_PAT, DATE_PH_PAT, GLOBAL_PH,
+                         ROW_RULES, SME_PH_PATTERNS, SME_SAMPLE, STRAY_STAR_TEXT,
+                         TAG_NOISE)  # noqa: F401
 
 __all__ = [
     "set_cell_text", "_replace_text_in_runs", "_set_para_text", "_para_text",
@@ -81,7 +83,7 @@ def _remove_stray_star(doc):
     """范本 v1.1：删除孤立「*」段落（招标文件格式残留，用户范本已删；如承诺函末尾）。"""
     n = 0
     for p in doc.paragraphs:
-        if "".join(r.text for r in p.runs).strip() == "*":
+        if "".join(r.text for r in p.runs).strip() == STRAY_STAR_TEXT:
             p._p.getparent().remove(p._p)
             n += 1
     return n
@@ -170,7 +172,7 @@ def _apply_date_ph(doc, enabled):
     """落款日期行『年 月 日』→ 整段替换【日期】（参照模板库）。"""
     if not enabled:
         return 0
-    pat = re.compile(r"^\s*(?:20\d{2}\s*)?年\s+月\s+日\s*$")
+    pat = DATE_PH_PAT
     n = 0
     for p in doc.paragraphs:
         full = "".join(r.text for r in p.runs)
@@ -180,21 +182,35 @@ def _apply_date_ph(doc, enabled):
     return n
 
 
-def _fix_cover_title(doc):
-    """封面标题（范本 v1.1）：招标文件首行「监理（项目名称）」→ 两行【项目名称】+【项目编号】。
-    调用时机在 _apply_global_ph 之后（此时首行已是「监理【项目名称】」）。"""
+def _fix_cover_title(doc, material=None):
+    """封面占位化（v2.0，M5 重设计：内容=招标原文一字不改，仅填写位置转占位）：
+    - 封面中「项目名称：<具体项目名>」→「项目名称：【项目名称】」；
+    - 「项目编号：<编号>」→「项目编号：【项目编号】」；
+    - 无具体项目名时（原文已是【项目名称】）不处理。
+    调用时机在 _apply_global_ph 之后。
+    """
     n = 0
-    paras = doc.paragraphs
-    for i, p in enumerate(paras):
-        full = "".join(r.text for r in p.runs).strip()
-        if "监理" in full and "【项目名称】" in full:
-            _set_para_text(p, "【项目名称】")
-            new_p = copy.deepcopy(p._p)
-            p._p.addnext(new_p)
-            # 新增段紧跟原段之后（原段在 body 中位置不变）→ 重新取列表，i+1 即新段
-            _set_para_text(doc.paragraphs[i + 1], "【项目编号】")
-            n += 1
-            break
+    proj_name = str((material or {}).get("project", "") or "")
+    pat_name = COVER_NAME_PAT
+    pat_no = COVER_NO_PAT
+    for p in doc.paragraphs:
+        full = "".join(r.text for r in p.runs)
+        newtext = full
+        m = pat_name.search(newtext)
+        if m and m.group(2).strip() and "【项目名称】" not in newtext:
+            # 仅当值=具体项目名（material.project）或非占位时替换
+            val = m.group(2).strip()
+            if proj_name and proj_name in val:
+                newtext = newtext.replace(val, "【项目名称】")
+                n += 1
+        if pat_no.search(newtext) and "【项目编号】" not in newtext:
+            m2 = pat_no.search(newtext)
+            val2 = m2.group(2)
+            if val2 and not val2.startswith("【"):
+                newtext = newtext.replace(val2, "【项目编号】")
+                n += 1
+        if newtext != full:
+            _set_para_text(p, newtext)
     return n
 
 
@@ -248,24 +264,22 @@ def _split_authorize_info(doc):
 
 
 def _apply_f13_sme(doc, project_name):
-    """中小企业声明函（范本 v1.1）：原文具体项目名 → 【项目名称】；【项目编号】；
-    从业人员/营业收入/资产总额/企业类型 → SME_SAMPLE 默认示例值（模板库范本保留值）。
+    """中小企业声明函（v2.0，M5 重设计）：原文具体项目名 → 【项目名称】；
+    从业人员/营业收入/资产总额/企业类型 → 占位符【从业人员】【营业收入】
+    【资产总额】【企业类型】（v1.5 起不再写入企业模板示例值——占位填充源=
+    素材清单，不得用企业模板内置内容）。
     原文为固定招标条款，其余一字不改。"""
     if not project_name:
         return 0
     n = 0
+    if not project_name:
+        return 0
     for p in doc.paragraphs:
         full = "".join(r.text for r in p.runs)
         newtext = full
         if project_name in newtext:
             newtext = newtext.replace(project_name, "【项目名称】")
-        for old, new in (
-            (r"（项目编号：\s*）", "（项目编号：【项目编号】）"),
-            (r"从业人员\s*人", "从业人员 %s 人" % SME_SAMPLE["从业人员"]),
-            (r"营业收入为\s*万元", "营业收入为 %s 万元" % SME_SAMPLE["营业收入"]),
-            (r"资产总额为\s*万元", "资产总额为 %s 万元" % SME_SAMPLE["资产总额"]),
-            (r"属于（中型企业、小型企业、微型企业）", "属于%s" % SME_SAMPLE["企业类型"]),
-        ):
+        for old, new in SME_PH_PATTERNS:
             if re.search(old, newtext):
                 newtext = re.sub(old, new, newtext)
         if newtext != full:

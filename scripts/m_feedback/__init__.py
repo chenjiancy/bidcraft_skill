@@ -110,7 +110,7 @@ def register_parser(sub):
     sp.add_argument("--path", required=True, help="相对企业目录的产物路径，如 项目级/X/项目模板/开标一览表.docx")
     sp.add_argument("--level", choices=["企业级", "项目级"], default="项目级")
     sp.add_argument("--project", default="", help="项目名（项目级时）")
-    sp.add_argument("--type", default="", help="产物类型（项目模板/投标要点/素材清单/格式契约/模板文件/商务标…）")
+    sp.add_argument("--type", default="", help="产物类型（项目模板/投标要点/素材清单/内容契约/模板文件/商务标…）")
     sp.add_argument("--generator", default="", help="生成器标识，如 m5-project-gen")
     sp.add_argument("--version", default=None, help="显式版本号（缺省自动 bump）")
     sp.add_argument("--note", default="", help="备注")

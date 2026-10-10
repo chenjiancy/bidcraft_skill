@@ -5,6 +5,7 @@ RULES 表（agent 维护，可增行）——契约项 → 项目模板文件 �
 kind: build=生成 / skip=不生成（原因见 skip_reason）。
 """
 import copy  # noqa: F401  (gen_text/gen_tables 复用风格)
+import re
 
 GEN_ID = "m5-project-gen"
 GEN_VERSION = "v1.1"
@@ -20,6 +21,19 @@ except Exception:                                    # pragma: no cover - 环境
 
 class GenError(RuntimeError):
     pass
+
+
+def skip_chapter_head(blocks, lo):
+    """M5 重设计公共规则：内容契约 F01 起点=「第X章 投标/响应文件格式」章节标题段，
+    该标题段**不拷贝**（用户规则：仅章节标题不要，后续全部投标格式内容都需要）。
+    生成器与代码硬校验共用本函数（单一权威，防止两处漂移）。"""
+    if not blocks or lo < 0 or lo >= len(blocks) or blocks[lo].get("type") != "para":
+        return lo
+    import re as _re
+    t = _re.sub(r"\s+", "", "".join(n.text or "" for n in blocks[lo]["node"].iter(qn("w:t"))))
+    if _re.search(r"第[一二三四五六七八九十百]+章\s*(投标文件格式|响应文件格式)", t):
+        return lo + 1
+    return lo
 
 
 # 生成文件 → 字体映射（与模板库基础模板保持一致，2026-10-03 实测模板库 10 文件字体分布）
@@ -155,6 +169,26 @@ DATE_PH_FILES = {
     "封面.docx", "投标函.docx", "法定代表人身份证明.docx", "授权委托书.docx",
     "承诺函_项目总监到岗.docx", "基本账户开户许可证承诺函.docx", "中小企业声明函.docx",
 }
+# 日期行整段匹配（gen_text._apply_date_ph 与 verify_text 共用，单一权威）
+DATE_PH_PAT = re.compile(r"^\s*(?:20\d{2}\s*)?年\s+月\s+日\s*$")
+
+# 中小企业声明函占位化（gen_text._apply_f13_sme 与 verify_text 共用，单一权威；
+# v1.5 起不写企业模板示例值，占位填充源=素材清单）
+SME_PH_PATTERNS = [
+    (r"（项目编号：\s*）", "（项目编号：【项目编号】）"),
+    (r"从业人员\s*[\d，,.]*\s*人", "从业人员【从业人员】人"),
+    (r"营业收入为\s*[\d，,.]*\s*万元", "营业收入为【营业收入】万元"),
+    (r"资产总额为\s*[\d，,.]*\s*万元", "资产总额为【资产总额】万元"),
+    (r"属于\s*(?:中型企业|小型企业|微型企业|大型企业)", "属于【企业类型】"),
+]
+
+# 封面占位化模式（gen_text._fix_cover_title 与 verify_text 共用，单一权威）
+COVER_NAME_PAT = re.compile(r"(项目名称\s*[：:]\s*)(.+?)(?=\s*$)")
+COVER_NO_PAT = re.compile(r"(项目编号\s*[：:]\s*)([^\s]+)")
+
+# 孤立「*」段（招标文件格式残留，用户范本已删；gen_text._remove_stray_star 与
+# verify_text 共用判断，单一权威）
+STRAY_STAR_TEXT = "*"
 
 # 图片占位：指定表格（按表前文关键词，去空格匹配）之后插入【图片：xxx】带边框占位段
 # 范本 v1.1（2026-10-03 按项目范本回写）：
