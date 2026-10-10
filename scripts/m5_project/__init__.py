@@ -254,6 +254,18 @@ def cmd_proj_config_check(args):
 
 
 def register_parser(sub):
+    sp = sub.add_parser("proj-gen", help="M5（v5）：招标原文投标格式深拷贝 + 通用格式配置 + 素材清单动态图片占位生成项目模板")
+    sp.add_argument("--project", required=True, help="项目名（项目级/<项目>）")
+    sp.add_argument("--contract", default="", help="内容契约 JSON 路径（默认 招标解析/内容契约/内容契约.json）")
+    sp.add_argument("--material", default="", help="素材清单 JSON 路径（默认 招标解析/素材清单_<项目>.json）")
+    sp.add_argument("--source", default="", help="招标文件 docx 路径（默认 招标解析/招标文件-*.docx）")
+    sp.add_argument("--out", default="", help="项目模板输出目录（默认 项目级/<项目>/项目模板）")
+    sp.add_argument("--base-dir", default="", help="保留兼容参数（V5 不使用）")
+    sp.add_argument("--format-config", default="", help="通用格式配置 JSON 路径（默认 scripts/m5_project/format_config.json）")
+    sp.add_argument("--no-baseline", action="store_true", help="跳过产物基线登记")
+    sp.add_argument("--skip-verify", action="store_true", help="跳过生成后代码硬校验（一般不用）")
+    sp.set_defaults(func=cmd_proj_gen)
+
     sp = sub.add_parser("proj-mat", help="M5：v5.1 素材清单表组装为生成器结构素材清单 JSON")
     sp.add_argument("--project", required=True, help="项目名（项目级/<项目>）")
     sp.add_argument("--xlsm", default="", help="素材清单表路径（默认 招标解析/素材清单_空白表_v5*.xlsm 最新）")
@@ -280,3 +292,10 @@ def register_parser(sub):
     sp.add_argument("--project", required=True, help="项目名（项目级/<项目>）")
     sp.add_argument("--tpl", default="", help="项目模板目录（默认 项目级/<项目>/项目模板）")
     sp.set_defaults(func=cmd_proj_check)
+
+    sp = sub.add_parser("proj-freeze", help="M5：冻结项目模板（登记fb基线+冻结清单，商务标只认冻结版）")
+    sp.add_argument("--project", required=True, help="项目名（项目级/<项目>）")
+    sp.add_argument("--tpl", default="", help="项目模板目录（默认 项目级/<项目>/项目模板）")
+    sp.add_argument("--check", action="store_true", help="冻结审计（对比基线检查是否被改动）")
+    sp.add_argument("--note", default="", help="冻结备注")
+    sp.set_defaults(func=cmd_proj_freeze)
