@@ -237,7 +237,7 @@ def check_word_open(out_dir, tpl_dir):
 
 def check_pages(out_dir, tpl_dir):
     """⑫ 页数一致性：商务标每文件页数必须与项目模板一致
-    （企业模板/项目模板一页不得跨页生成，商务标只能同页数；模板 N 页则商务标 N 页）。
+    （项目模板一页不得跨页生成，商务标只能同页数；模板 N 页则商务标 N 页）。
     无 Word 环境 → 跳过（不降级，报告注明）。"""
     if not HAVE_COM:
         return True, ["跳过：环境无 Word/pywin32，未执行页数统计"]

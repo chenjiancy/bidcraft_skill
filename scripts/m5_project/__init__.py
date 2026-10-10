@@ -5,8 +5,8 @@ bidcraft · M5 项目模板生成器 —— 命令实现 + 子命令注册
 用法总览（示例）
 ----------------
   python bidcraft.py proj-gen --project "示例化工园尾水水质提升工程（EPC总承包）监理"
-      [--contract <格式契约.json>] [--material <素材清单.json>] [--source <招标文件.docx>]
-      [--out <输出目录>] [--no-baseline]
+      [--contract <内容契约.json>] [--material <素材清单.json>] [--source <招标文件.docx>]
+      [--tpl-select <模板选择.json>] [--out <输出目录>] [--no-baseline]
 """
 
 import argparse
@@ -18,7 +18,6 @@ from pathlib import Path
 from _shared import core            # noqa: E402
 from . import generator as gen      # noqa: E402
 from . import freeze as fz          # noqa: E402
-from . import gen_diff as gd        # noqa: E402
 
 try:
     sys.stdout.reconfigure(encoding="utf-8")
@@ -45,21 +44,92 @@ def cmd_proj_gen(args):
         ent, args.project,
         contract_path=args.contract, material_path=args.material,
         source_path=args.source, out_dir=args.out, base_dir=args.base_dir,
+        format_config=args.format_config,
         register_baseline=not args.no_baseline,
+        skip_verify=getattr(args, "skip_verify", False),
     )
     if args.json:
         print(json.dumps(res, ensure_ascii=False, indent=2))
         return
-    print("项目模板已生成：%s" % res["目录"])
+    print("项目模板已生成（v5：招标原文投标文件格式深拷贝 + 通用格式配置 + 素材清单动态图片占位）：%s" % res["目录"])
     for f in res["文件"]:
-        print("  ✓ %-32s 契约项 %-24s 占位符 %d"
-              % (f["文件"], ",".join(f["契约项"]), f["占位符数"]))
+        print("  ✓ %-32s 契约项 %-24s 占位符 %d 图片占位 %d"
+              % (f["文件"], ",".join(f["契约项"]), f["占位符数"],
+                 f.get("图片占位", 0)))
     for s in res["未生成"]:
         print("  — 未生成 %-10s %s" % (s["契约项"], s["原因"]))
+    v = res.get("校验") or {}
+    if v.get("结论") == "通过":
+        print("代码硬校验：通过（文字逐字比对，%d 文件全部一致）" % len(v.get("文件", [])))
+    elif v.get("结论") == "跳过":
+        print("代码硬校验：跳过（契约未定位/无生成文件）")
+    elif v.get("结论") == "不通过":
+        print("代码硬校验：不通过（见 生成记录.json → 代码硬校验 → 问题）", file=sys.stderr)
+        for f in v.get("文件", []):
+            if f.get("结论") == "不通过":
+                prob = f.get("问题") or []
+                first = prob[0] if prob else {}
+                desc = first.get("说明", first) if isinstance(first, dict) else first
+                print("  ✗ %-32s %s" % (f["文件"], str(desc)[:120]))
+    else:
+        print("代码硬校验：%s" % v.get("结论"))
+    pg = res.get("页数校验") or {}
+    if pg.get("结论") == "通过":
+        print("页数校验：通过（独占页严禁跨页，%d 文件）" % len(pg.get("文件", [])))
+    elif pg.get("结论") == "跳过":
+        print("页数校验：跳过")
+    else:
+        print("页数校验：不通过（见 生成记录.json → 页数校验 → 问题；可人工调整排版或走 agent 检查复核）",
+              file=sys.stderr)
+        for f in pg.get("文件", []):
+            if f.get("结论") == "不通过":
+                print("  ✗ %-32s %s" % (f.get("文件", ""), str(f.get("说明", ""))[:120]))
     if args.no_baseline:
         print("已跳过产物基线登记（--no-baseline）")
     else:
         print("已登记产物基线（fb）")
+
+
+def cmd_proj_check(args):
+    """M5：生成『项目模板检查指令』（固化提示词 + 硬校验结果 + 输出 schema）。
+    agent 检查必须读取并遵循该指令执行（不得自由发挥），结果人工确认。"""
+    ent = get_ent(args)
+    proj = ent / "项目级" / args.project
+    if not proj.is_dir():
+        print("错误：项目目录不存在：%s" % proj, file=sys.stderr)
+        raise SystemExit(1)
+    tpl = args.tpl or str(proj / "项目模板")
+    if not Path(tpl).is_dir():
+        print("错误：项目模板目录不存在：%s（先运行 proj-gen）" % tpl, file=sys.stderr)
+        raise SystemExit(1)
+    prompt_md = Path(__file__).resolve().parents[2] / "references" / "M5-项目模板检查-提示词.md"
+    if not prompt_md.is_file():
+        print("错误：固化提示词不存在：%s" % prompt_md, file=sys.stderr)
+        raise SystemExit(1)
+    fixed_prompt = prompt_md.read_text(encoding="utf-8")
+    record = core.read_json(Path(tpl) / "生成记录.json", {}) or {}
+    instr = {
+        "指令版本": "M5-check-v1.0",
+        "项目": args.project,
+        "生成时间": record.get("生成时间", ""),
+        "模板目录": str(Path(tpl).resolve()),
+        "生成记录": str((Path(tpl) / "生成记录.json").resolve()),
+        "代码硬校验结果": record.get("代码硬校验", {}),
+        "页数校验结果": record.get("页数校验", {}),
+        "占位符清单": str((Path(tpl) / "项目占位符清单.md").resolve()),
+        "固化提示词（必须遵循，不得自由发挥）": fixed_prompt,
+        "输出": "检查报告写入 %s（严格 JSON，8 项固定清单逐项 通过/不通过/跳过 + 问题描述 + 建议），结果由人工确认。"
+                % str((Path(tpl) / "检查报告.json").resolve()),
+    }
+    out_json = Path(tpl) / "检查指令.json"
+    out_json.write_text(json.dumps(instr, ensure_ascii=False, indent=2), encoding="utf-8")
+    if args.json:
+        print(json.dumps(instr, ensure_ascii=False, indent=2))
+        return
+    print("项目模板检查指令已生成：%s" % out_json)
+    print("- 调用 agent 检查时必须读取并遵循该指令（含固化提示词），不得自由发挥；")
+    print("- agent 按指令执行只读检查（不改动模板），检查报告写入 项目模板/检查报告.json；")
+    print("- 检查结果由人工确认；确认通过后再进入商务标生成（唯一模板来源=项目模板）。")
 
 
 def cmd_proj_freeze(args):
@@ -92,98 +162,8 @@ def cmd_proj_freeze(args):
     print("冻结清单：%s" % fz.freeze_manifest_path(tpl))
 
 
-def cmd_proj_diff(args):
-    """内容校验差异清单：企业模板 vs 招标解析内容契约（D16–D20）。
-
-    默认列出差异（md+json 落盘到 招标解析/差异清单.*）；
-    --apply 读取用户已决策的差异清单（keep/update），把 keep 项文本
-    写回项目模板生成稿（update 项默认已满足：生成稿文字 100% 契约）。
-    """
-    ent = get_ent(args)
-    proj = ent / "项目级" / args.project
-    if not proj.is_dir():
-        print("错误：项目目录不存在：%s" % proj, file=sys.stderr)
-        raise SystemExit(1)
-    # 差异清单：默认读 招标解析/差异清单.json，可 --diff 指定
-    diff_json = Path(args.diff) if args.diff else proj / "招标解析" / "差异清单.json"
-    if args.apply:
-        if not diff_json.is_file():
-            print("错误：无差异清单可应用：%s（先运行 proj-diff 生成）" % diff_json, file=sys.stderr)
-            raise SystemExit(1)
-        keep, update = gd.load_decisions(diff_json)
-        out = proj / "项目模板"
-        if not out.is_dir():
-            print("错误：项目模板目录不存在：%s（先运行 proj-gen）" % out, file=sys.stderr)
-            raise SystemExit(1)
-        applied_total, missing_total = 0, []
-        for f in sorted({d.get("文件", "") for d in keep}):
-            docx_path = out / f
-            if not docx_path.is_file():
-                missing_total.append("%s（文件缺失）" % f)
-                continue
-            items = [d for d in keep if d.get("文件") == f]
-            n, miss = gd.apply_keep_to_docx(docx_path, items)
-            applied_total += n
-            missing_total.extend(miss)
-        if args.json:
-            print(json.dumps({"应用keep": applied_total, "update项": len(update),
-                              "锚点未命中": missing_total},
-                             ensure_ascii=False, indent=2))
-            return
-        print("已应用 keep 决策：%d 处写回模板文本 ｜ update 项 %d 处（生成稿默认契约文本，天然满足）"
-              % (applied_total, len(update)))
-        for x in missing_total:
-            print("  — 锚点未命中（人工核对）：%s" % x)
-        return
-    # 默认：生成差异清单
-    contract_path = Path(args.contract or gen._default_contract_path(proj))
-    material_path = Path(args.material or gen._default_material_path(proj))
-    source_path = Path(args.source or gen._default_source_docx(proj))
-    contract = core.read_json(contract_path, None)
-    if not contract or "格式文件" not in contract:
-        print("错误：格式契约 JSON 无『格式文件』清单：%s" % contract_path, file=sys.stderr)
-        raise SystemExit(1)
-    material = core.read_json(material_path, None)
-    if not material:
-        print("错误：素材清单 JSON 为空：%s" % material_path, file=sys.stderr)
-        raise SystemExit(1)
-    blocks, _ = gen._extract_blocks(source_path)
-    by_id = {it.get("id"): it for it in contract["格式文件"]}
-    # 企业模板目录：--base-dir 或 素材清单代理机构+采购方式 定位
-    base_dir = Path(args.base_dir) if args.base_dir else None
-    if base_dir is None:
-        agency = material.get("招标代理机构", "")
-        mode = material.get("采购方式", "投标") or "投标"
-        if agency:
-            base_dir = Path(ent) / "企业级" / "模板库" / agency / mode
-    diffs = []
-    for m in gen.FILE_MAP:
-        if m.get("kind") != "build":
-            continue
-        it = by_id.get(m["id"])
-        if not it or not base_dir or not base_dir.is_dir():
-            continue
-        tpl_path = base_dir / m["file"]
-        if not tpl_path.is_file():
-            continue
-        span = it.get("块范围") or [0, 0]
-        try:
-            diffs += gd.diff_template_vs_contract(tpl_path, blocks, span,
-                                                  m["id"], m["file"])
-        except Exception as ex:
-            print("  — %s 差异提取失败：%s" % (m["file"], ex), file=sys.stderr)
-    md, js = gd.write_diff_manifest(diffs, args.project, proj / "招标解析")
-    if args.json:
-        print(json.dumps({"差异": diffs, "清单md": str(md), "清单json": str(js)},
-                         ensure_ascii=False, indent=2))
-        return
-    print("差异清单已生成：%s（%d 项）" % (md, len(diffs)))
-    print("下一步：审阅 %s 后，编辑 %s 中『建议』字段（update/keep），"
-          "再运行 proj-diff --apply --diff <该json> 应用。" % (md, js))
-
-
 def cmd_proj_contract(args):
-    """M5 前置①：从招标文件 docx 自动生成格式契约 JSON（块范围定位）。"""
+    """M5 前置①：从招标文件 docx 自动生成内容契约 JSON（块范围定位，文字更新源）。"""
     ent = get_ent(args)
     from . import contract_gen as cg
     src = Path(args.source) if args.source else None
@@ -201,28 +181,12 @@ def cmd_proj_contract(args):
     if args.json:
         print(json.dumps(contract, ensure_ascii=False, indent=2))
         return
-    print("格式契约已生成：%s" % out)
+    print("内容契约已生成（招标解析投标文件格式，文字更新源）：%s" % out)
     print("格式章节：%s" % contract["格式章节"])
     for it in contract["格式文件"]:
         span = it["块范围"]
         mark = "  ✓ " if span else "  —  "
         print("%s%s  块 %s  %s" % (mark, it["id"], span if span else "（未定位，proj-gen 将跳过）", it["标题"]))
-
-
-def cmd_proj_tpl_import(args):
-    """M5 前置③：把格式契约空白格式提炼为企业级模板（企业级/模板库/<代理>/投标/）。"""
-    ent = get_ent(args)
-    from . import tpl_import as ti
-    res = ti.import_templates(ent, args.project, args.agent,
-                              source=args.source, out_dir=args.out)
-    if args.json:
-        print(json.dumps(res, ensure_ascii=False, indent=2))
-        return
-    print("企业模板已入库：%s" % res["模板目录"])
-    for f in res["文件"]:
-        print("  ✓ %-32s 契约项 %s  块 %s" % (f["模板"], f["契约项"], f["块范围"]))
-    for s in res["跳过"]:
-        print("  — 跳过 %-28s %s" % (s["模板"], s["原因"]))
 
 
 def cmd_proj_material(args):
@@ -250,13 +214,57 @@ def cmd_proj_material(args):
         print("  %-24s %d 项（已解析路径 %d/%d）" % (sec, len(items), n_path, len(items)))
 
 
+def cmd_proj_config_check(args):
+    """M5（v5）：生成『格式配置校验指令』（固化提示词 + 输入路径 + 输出 schema）。
+    agent 读取该指令，生成前校验 format_config.json 与招标文件投标格式要求是否
+    冲突/缺失（只读检查），报告写入 招标解析/检查报告_格式配置.json，结果人工确认；
+    确认通过前不得执行 proj-gen。"""
+    ent = get_ent(args)
+    proj = ent / "项目级" / args.project
+    if not proj.is_dir():
+        print("错误：项目目录不存在：%s" % proj, file=sys.stderr)
+        raise SystemExit(1)
+    prompt_md = Path(__file__).resolve().parents[2] / "references" / "M5-格式配置校验-提示词.md"
+    if not prompt_md.is_file():
+        print("错误：固化提示词不存在：%s" % prompt_md, file=sys.stderr)
+        raise SystemExit(1)
+    fixed_prompt = prompt_md.read_text(encoding="utf-8")
+    cfg_path = Path(args.format_config) if args.format_config \
+        else Path(__file__).resolve().parent / "format_config.json"
+    contract_path = Path(args.contract) if args.contract else gen._default_contract_path(proj)
+    instr = {
+        "指令版本": "M5-config-check-v1.0",
+        "项目": args.project,
+        "格式配置": str(cfg_path.resolve()),
+        "内容契约": str(contract_path.resolve()),
+        "招标文件源": str((Path(args.source) if args.source else gen._default_source_docx(proj)).resolve()),
+        "固化提示词（必须遵循，不得自由发挥）": fixed_prompt,
+        "输出": "检查报告写入 %s（严格 JSON，8 项固定清单逐项 通过/不通过/待补充 + 问题 + 建议），结果由人工确认；确认通过前不得执行 proj-gen。"
+                % str((proj / "招标解析" / "检查报告_格式配置.json").resolve()),
+    }
+    out_json = proj / "招标解析" / "格式配置校验指令.json"
+    out_json.write_text(json.dumps(instr, ensure_ascii=False, indent=2), encoding="utf-8")
+    if args.json:
+        print(json.dumps(instr, ensure_ascii=False, indent=2))
+        return
+    print("格式配置校验指令已生成：%s" % out_json)
+    print("- 调用 agent 执行生成前校验（只读，8 项检查清单，固化提示词，不得自由发挥）；")
+    print("- 检查报告写入 招标解析/检查报告_格式配置.json；")
+    print("- 结果由人工确认；确认通过后再执行 proj-gen 生成项目模板。")
+
+
 def register_parser(sub):
-    sp = sub.add_parser("proj-tpl-import", help="M5：格式契约空白格式提炼为企业级模板入库")
+    sp = sub.add_parser("proj-gen", help="M5（v5）：招标原文投标格式深拷贝 + 通用格式配置 + 素材清单动态图片占位生成项目模板")
     sp.add_argument("--project", required=True, help="项目名（项目级/<项目>）")
-    sp.add_argument("--agent", required=True, help="代理机构名（企业级/模板库/<代理>/投标/）")
+    sp.add_argument("--contract", default="", help="内容契约 JSON 路径（默认 招标解析/内容契约/内容契约.json）")
+    sp.add_argument("--material", default="", help="素材清单 JSON 路径（默认 招标解析/素材清单_<项目>.json）")
     sp.add_argument("--source", default="", help="招标文件 docx 路径（默认 招标解析/招标文件-*.docx）")
-    sp.add_argument("--out", default="", help="模板输出目录（默认 企业级/模板库/<代理>/投标/）")
-    sp.set_defaults(func=cmd_proj_tpl_import)
+    sp.add_argument("--out", default="", help="项目模板输出目录（默认 项目级/<项目>/项目模板）")
+    sp.add_argument("--base-dir", default="", help="保留兼容参数（V5 不使用）")
+    sp.add_argument("--format-config", default="", help="通用格式配置 JSON 路径（默认 scripts/m5_project/format_config.json）")
+    sp.add_argument("--no-baseline", action="store_true", help="跳过产物基线登记")
+    sp.add_argument("--skip-verify", action="store_true", help="跳过生成后代码硬校验（一般不用）")
+    sp.set_defaults(func=cmd_proj_gen)
 
     sp = sub.add_parser("proj-mat", help="M5：v5.1 素材清单表组装为生成器结构素材清单 JSON")
     sp.add_argument("--project", required=True, help="项目名（项目级/<项目>）")
@@ -267,35 +275,27 @@ def register_parser(sub):
     sp.set_defaults(func=cmd_proj_material)
 
 
-    sp = sub.add_parser("proj-contract", help="M5：从招标文件 docx 生成格式契约 JSON（块范围定位）")
+    sp = sub.add_parser("proj-content-contract", help="M5：从招标文件 docx 生成内容契约 JSON（块范围定位）")
     sp.add_argument("--project", required=True, help="项目名（项目级/<项目>）")
     sp.add_argument("--source", default="", help="招标文件 docx 路径（默认 招标解析/招标文件-*.docx）")
-    sp.add_argument("--out", default="", help="契约 JSON 输出路径（默认 招标解析/格式契约/格式契约.json）")
+    sp.add_argument("--out", default="", help="契约 JSON 输出路径（默认 招标解析/内容契约/内容契约.json）")
     sp.set_defaults(func=cmd_proj_contract)
 
-    sp = sub.add_parser("proj-gen", help="M5：按格式契约+素材清单动态生成项目模板（docx+占位符）")
+    sp = sub.add_parser("proj-config-check", help="M5（v5）：生成『格式配置校验指令』（固化提示词，生成前 agent 校验格式配置 vs 招标要求，结果人工确认）")
     sp.add_argument("--project", required=True, help="项目名（项目级/<项目>）")
-    sp.add_argument("--contract", default="", help="格式契约 JSON 路径（默认 招标解析/格式契约/…json）")
-    sp.add_argument("--material", default="", help="素材清单 JSON 路径（默认 招标解析/素材清单.json）")
+    sp.add_argument("--format-config", default="", help="通用格式配置 JSON 路径（默认 scripts/m5_project/format_config.json）")
+    sp.add_argument("--contract", default="", help="内容契约 JSON 路径（默认 招标解析/内容契约/内容契约.json）")
     sp.add_argument("--source", default="", help="招标文件 docx 路径（默认 招标解析/招标文件-*.docx）")
-    sp.add_argument("--out", default="", help="输出目录（默认 项目级/<项目>/项目模板）")
-    sp.add_argument("--base-dir", default="", help="基础模板目录（企业级/模板库/<代理>/<方式>/，样式参考）")
-    sp.add_argument("--no-baseline", action="store_true", help="跳过产物基线登记")
-    sp.set_defaults(func=cmd_proj_gen)
+    sp.set_defaults(func=cmd_proj_config_check)
 
-    sp = sub.add_parser("proj-diff", help="M5：内容校验差异清单（企业模板 vs 招标解析契约，D16–D20）")
+    sp = sub.add_parser("proj-check", help="M5：生成项目模板检查指令（固化提示词+硬校验结果+输出schema，agent 检查必须遵循）")
     sp.add_argument("--project", required=True, help="项目名（项目级/<项目>）")
-    sp.add_argument("--contract", default="", help="格式契约 JSON 路径（默认 招标解析/格式契约/…json）")
-    sp.add_argument("--material", default="", help="素材清单 JSON 路径（默认 招标解析/素材清单.json）")
-    sp.add_argument("--source", default="", help="招标文件 docx 路径（默认 招标解析/招标文件-*.docx）")
-    sp.add_argument("--base-dir", default="", help="企业模板库目录（默认 素材清单代理机构+采购方式 定位）")
-    sp.add_argument("--diff", default="", help="差异清单 JSON 路径（默认 招标解析/差异清单.json）")
-    sp.add_argument("--apply", action="store_true", help="应用差异清单决策（keep 写回模板文本）")
-    sp.set_defaults(func=cmd_proj_diff)
+    sp.add_argument("--tpl", default="", help="项目模板目录（默认 项目级/<项目>/项目模板）")
+    sp.set_defaults(func=cmd_proj_check)
 
     sp = sub.add_parser("proj-freeze", help="M5：冻结项目模板（登记fb基线+冻结清单，商务标只认冻结版）")
     sp.add_argument("--project", required=True, help="项目名（项目级/<项目>）")
     sp.add_argument("--tpl", default="", help="项目模板目录（默认 项目级/<项目>/项目模板）")
-    sp.add_argument("--check", action="store_true", help="仅审计冻结后是否被改动（不重新冻结）")
+    sp.add_argument("--check", action="store_true", help="冻结审计（对比基线检查是否被改动）")
     sp.add_argument("--note", default="", help="冻结备注")
     sp.set_defaults(func=cmd_proj_freeze)

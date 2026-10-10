@@ -35,12 +35,14 @@ class TestProjGenReal(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.tmp = tempfile.mkdtemp(prefix="bid_m5_int_")
-        # ⑫ 数据前置细化：generate 需要招标解析（格式契约+素材清单+招标文件）作为输入，
+        # ⑫ 数据前置细化：generate 需要招标解析（内容契约+素材清单+招标文件）作为输入，
         # 仅检查企业根目录不够——数据被清除/未生成时应跳过而非在生成器里报错。
+        # V5：模板选择.json 已废弃（企业模板清除），格式配置为默认内置，无需数据前置。
         proj = Path(REAL_ENT) / "项目级" / REAL_PROJECT
-        contract = proj / "招标解析" / "格式契约" / "格式契约_第五章_投标文件格式.json"
+        contract = proj / "招标解析" / "内容契约" / "内容契约.json"
         if not (contract.is_file() and (proj / "招标解析" / "素材清单.json").is_file()):
-            raise unittest.SkipTest("真实项目数据不存在（格式契约/素材清单缺失），跳过真实数据生成测试")
+            raise unittest.SkipTest(
+                "真实项目数据不存在（内容契约/素材清单缺失），跳过真实数据生成测试")
         cls.res = gen.generate(
             Path(REAL_ENT), REAL_PROJECT,
             out_dir=Path(cls.tmp) / "项目模板", register_baseline=False,

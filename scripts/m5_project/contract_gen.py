@@ -1,12 +1,18 @@
 # -*- coding: utf-8 -*-
-"""⑦ generator · 格式契约 JSON 生成规则（M5 前置输入①，2026-10-10）。
+"""⑦ generator · 内容契约 JSON 生成规则（M5 前置输入①，2026-10-10，v1.2 纠正）。
 
 从招标文件 docx（已转换）自动定位「第X章 投标/响应文件格式」章节，
 按契约锚点序列（封面→开标一览表→投标函→附录→法代→授权→监理大纲→
 资格证明附表1-10→承诺函→声明函）确定每个契约项 id 的块范围，生成：
 
-    招标解析/格式契约/格式契约.json
+    招标解析/内容契约/内容契约.json
     {"项目": <项目名>, "格式章节": <章节标题>, "格式文件": [{"id", "块范围", "标题"}, ...]}
+
+**术语（用户 2026-10-10 纠正，见 references/固化提示词.md v1.1）**：
+本产物是**内容契约**（招标文件解析出的投标文件格式——内容地基/文字更新源）；
+**格式与排版契约 = 企业模板库中的模板文件**（项目模板的基底，图片位置/大小
+由模板承载）。proj-gen 以企业模板为基底深拷贝，用本内容契约做文字更新
+（模板占位或模板已有内容除外，差异清单→用户决定，铁律 D25）。
 
 设计要点：
 - 锚点匹配对段落文本做「去空白」归一（兼容全角空格/竖排换行），锚点取
@@ -14,8 +20,8 @@
 - 块范围 = 上一锚点块 → 当前锚点块-1（左闭右开）；章节尾为最后锚点后。
 - 未定位的锚点（如本项目无中小企业声明函）对应契约项块范围留空 → proj-gen
   按「契约中无此项」跳过，不阻断生成。
-- 三分工艺：脚本只做确定性定位；边界确认归 agent/用户（proj-contract 输出
-  定位结果供核对，可 --edit 后重跑）。
+- 三分工艺：脚本只做确定性定位；边界确认归 agent/用户（proj-content-contract
+  输出定位结果供核对，可 --edit 后重跑）。
 """
 import re
 from pathlib import Path
@@ -25,8 +31,8 @@ from .gen_text import _para_text
 
 __all__ = ["build_contract", "locate_anchors", "CONTRACT_DEFAULT_RELPATH"]
 
-# 默认落盘位置（去掉历史「第五章」硬编码，章节号自适应，2026-10-10）
-CONTRACT_DEFAULT_RELPATH = "格式契约/格式契约.json"
+# 默认落盘位置：招标解析/内容契约/内容契约.json（v1.2 改名，语义=内容契约）
+CONTRACT_DEFAULT_RELPATH = "内容契约/内容契约.json"
 
 
 def _clean(text):
@@ -148,7 +154,7 @@ def locate_anchors(blocks):
 
 
 def build_contract(blocks, project, chapter_end_extra=0):
-    """生成格式契约 dict：{项目, 格式章节, 格式文件:[{id, 块范围, 标题}]}。
+    """生成内容契约 dict：{项目, 格式章节, 格式文件:[{id, 块范围, 标题}]}。
 
     chapter_end_extra：章节尾额外扩展块数（默认 0；一般无需）。
     """
@@ -212,7 +218,7 @@ def build_contract_from_docx(src_docx, project):
 
 
 def write_contract(ent, project, contract, out_path=None):
-    """落盘契约 JSON 到 招标解析/格式契约/格式契约.json（默认）。返回路径。"""
+    """落盘内容契约 JSON 到 招标解析/内容契约/内容契约.json（默认）。返回路径。"""
     import json
     from _shared import core
     proj_dir = Path(ent) / "项目级" / project

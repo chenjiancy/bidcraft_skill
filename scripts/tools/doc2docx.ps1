@@ -1,7 +1,7 @@
 # doc2docx converter channel (M5 prerequisite #2, 2026-10-10)
 #
 # Legacy .doc tender files cannot be parsed by python-docx; proj-gen /
-# proj-contract require a .docx source. This tool uses local Word COM to
+# proj-content-contract require a .docx source. This tool uses local Word COM to
 # save .doc as .docx (wdFormatXMLDocument=12).
 #
 # Usage:

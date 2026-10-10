@@ -1,6 +1,15 @@
 # -*- coding: utf-8 -*-
-"""⑦ generator 拆包 · 块抽取与单文件构建（build_docx）。"""
+"""⑦ generator 拆包 · 块抽取与单文件构建（build_docx）。
+
+v1.2（2026-10-10，M5 纠正）：
+- **基底模式（默认）**：以企业模板 docx 为基底（格式与排版契约，图片位置/大小
+  由模板承载），在其副本上执行占位/动态语义后处理——符合用户规则
+  「格式契约=企业模板文件、招标解析投标文件格式=内容契约」。
+- 兼容模式（blocks 路径）：从招标文件原文块 [s,e] 深拷贝构建（旧实现，保留
+  供测试与参考；proj-gen 一律走基底模式）。
+"""
 import copy
+import re
 
 from .gen_common import (GenError, HAVE_DOCX, Document, qn)
 from .gen_images import (_insert_image_ph_after_para, _insert_image_ph_after_table)
@@ -11,7 +20,8 @@ from .gen_text import (_apply_date_ph, _apply_f13_sme, _apply_file_font,
                        _fix_cover_title, _para_text, _remove_stray_star,
                        _split_authorize_info, _strip_shading_and_highlight)
 
-__all__ = ["_extract_blocks", "_item_id_for_block", "_sanitize_copy", "build_docx"]
+__all__ = ["_extract_blocks", "_item_id_for_block", "_sanitize_copy",
+           "_build_tbl_meta_from_doc", "build_docx"]
 
 _RNS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
 
@@ -68,45 +78,80 @@ def _sanitize_copy(node):
     return node
 
 
-def build_docx(blocks, span, items, out_path, material, font=None, rules=None, equip_rows=None,
-               assets_map=None):
+def _build_tbl_meta_from_doc(doc):
+    """企业模板基底模式：重建 ctx_map（表格→前文）与 tbl_meta（表格→契约项）。
+
+    按表前文标题路由契约项（模板中附表标题在表外段落）：
+    - 附表3 已完成工程情况表 → F06d（按业绩数复制）；
+    - 附表8 监理人员简历表 → F06i（按人员数复制）。
     """
-    从招标文件原文块 [s,e] 深拷贝构建项目模板 docx：
-      1) 段落/表格逐块深拷贝（文字 100% 契约）；
-      2) 契约项驱动的份数复制（附表3/附表8 动态语义②，简历表份数按监理人员配置口径）；
-      3) 段落级全局占位 + 范本专属处理（封面标题/授权拆行/中小企业声明函示例值）
-         + 段落标签填充 + 落款日期 + 行路由 + 列表/标签值型占位（占位键名参照模板库登记清单）；
-      4) 图片占位【图片：xxx】（表格后/锚点段后，模板库同款带边框样式）；
-         assets_map {占位文案: [(素材绝对路径, 口径key, 换页), ...]} → 预览框 v2
-         直接绘制将填充的真实素材缩略图（素材清单白名单解析，见 gen_main.generate）；
-      5) 附表9 仪器设备表：数据行替换为模板库范本数据行（企业固定设备，equip_rows）；
-      6) 后处理：去除文字底纹/高亮 + 统一文件字体（与模板库基础模板一致）。
-    返回 {"占位符数", "段落占位", "表格占位", "图片占位", "去底纹", "统一字体"}。
+    ctx_map = {}
+    tbl_meta = []
+    last_para = ""
+    for child in doc.element.body.iterchildren():
+        if child.tag == qn("w:p"):
+            t = _para_text(child).strip()
+            if t:
+                last_para = t
+        elif child.tag == qn("w:tbl"):
+            ctx = last_para
+            ctx_map[child] = ctx
+            c = re.sub(r"\s+", "", ctx or "")
+            item_id = None
+            if "已完成工程情况表" in c or ("已完成工程" in c and "情况表" in c):
+                item_id = "F06d"
+            elif "监理人员简历" in c:
+                item_id = "F06i"
+            tbl_meta.append((child, item_id))
+    return ctx_map, tbl_meta
+
+
+def build_docx(blocks, span, items, out_path, material, font=None, rules=None,
+               equip_rows=None, assets_map=None, tpl_doc=None, style=None):
+    """
+    构建项目模板 docx（v2.0，M5 重设计：内容=招标原文深度拷贝，格式=企业模板）。
+
+    **内容契约模式（默认，tpl_doc=None + style 提供）**：
+      1) 从招标文件原文块 [s,e] **深度拷贝**段落/表格（文字一字不改，章节标题段
+         由调用方跳过）；格式由企业模板决定（**格式契约**）——见 tpl_style.py；
+      2) 契约项驱动的份数复制（附表3 按业绩数 / 附表8 按人员数，动态语义②）；
+      3) 段落级占位（【】文字占位）+ 范本专属处理 + 段落标签 + 落款日期 + 行路由；
+      4) 图片占位【图片：xxx】（表格后/锚点段后）+ 预览框 v2（assets_map）；
+      5) 附表9 仪器设备数据行从模板库范本带入（equip_rows）；
+      6) 套用企业模板格式契约（style）：字体/字号/对齐/分页符；
+      7) 后处理：去除文字底纹/高亮 + 统一字体。
+    基底模式（tpl_doc 提供，旧实现，保留兼容测试）：
+      以企业模板 docx 为基底（格式排版契约）在其副本上执行占位/动态语义。
+    返回 {"占位符数", "段落占位", "表格占位", "图片占位", "去底纹", "统一字体", ...}。
     """
     if not HAVE_DOCX:
         raise GenError("生成器依赖 python-docx，当前环境未安装")
-    doc = Document()
-    s, e = span
     rules = rules or {}
-    ctx_map = {}                       # 表格节点 → 表格前最近非空段落文本
-    tbl_meta = []                      # [(表格节点, 契约项id)] 用于份数复制
-    last_para = ""
-    for i in range(s, e + 1):
-        blk = blocks[i]
-        if blk["type"] == "para":
-            t = _para_text(blk["node"]).strip()
-            if t:
-                last_para = t
-            doc.element.body.append(_sanitize_copy(blk["node"]))
-        else:
-            new_node = _sanitize_copy(blk["node"])
-            ctx_map[new_node] = last_para
-            tbl_meta.append((new_node, _item_id_for_block(i, items)))
-            doc.element.body.append(new_node)
+    if tpl_doc is not None:
+        doc = tpl_doc                        # 企业模板基底（旧模式，保留兼容）
+        ctx_map, tbl_meta = _build_tbl_meta_from_doc(doc)
+    else:
+        doc = Document()
+        s, e = span
+        ctx_map = {}                       # 表格节点 → 表格前最近非空段落文本
+        tbl_meta = []                      # [(表格节点, 契约项id)] 用于份数复制
+        last_para = ""
+        for i in range(s, e + 1):
+            blk = blocks[i]
+            if blk["type"] == "para":
+                t = _para_text(blk["node"]).strip()
+                if t:
+                    last_para = t
+                doc.element.body.append(_sanitize_copy(blk["node"]))
+            else:
+                new_node = _sanitize_copy(blk["node"])
+                ctx_map[new_node] = last_para
+                tbl_meta.append((new_node, _item_id_for_block(i, items)))
+                doc.element.body.append(new_node)
     _duplicate_tables_by_contract(doc, tbl_meta, material, ctx_map)
     ph_para = _apply_global_ph(doc)
     if rules.get("cover_title"):
-        ph_para += _fix_cover_title(doc)
+        ph_para += _fix_cover_title(doc, material)
     if rules.get("split_authorize"):
         ph_para += _split_authorize_info(doc)
     ph_para += _apply_para_label_rules(doc, rules.get("para_label", []))
@@ -123,6 +168,8 @@ def build_docx(blocks, span, items, out_path, material, font=None, rules=None, e
     n_img2, n_prev2 = _insert_image_ph_after_para(doc, rules.get("img_after_para", []), font or "宋体", assets_map)
     n_img += n_img2
     n_prev += n_prev2
+    # V5：格式由 format_applier 按 format_config.json 统一应用（企业模板废弃，无 tpl_style）
+    style_stats = {}
     # 规范化 body：w:sectPr 必须是 body 最后一个子元素。
     # python-docx 1.2.0 空 Document() 的 body 仅含 sectPr，正文 append 后会跑到内容前，
     # Word 打开会报「文件可能已经损坏」；保存前移回末尾（旧模板经 Word 修订保存时被自动修复）。
@@ -141,4 +188,6 @@ def build_docx(blocks, span, items, out_path, material, font=None, rules=None, e
         info["去底纹"] = n_shade
     if n_font:
         info["统一字体"] = font
+    if style_stats:
+        info["格式套用"] = style_stats
     return info
