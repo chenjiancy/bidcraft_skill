@@ -264,21 +264,14 @@ def _split_authorize_info(doc):
 
 
 def _apply_f13_sme(doc, project_name):
-    """中小企业声明函（v2.0，M5 重设计）：原文具体项目名 → 【项目名称】；
-    从业人员/营业收入/资产总额/企业类型 → 占位符【从业人员】【营业收入】
-    【资产总额】【企业类型】（v1.5 起不再写入企业模板示例值——占位填充源=
-    素材清单，不得用企业模板内置内容）。
-    原文为固定招标条款，其余一字不改。"""
-    if not project_name:
-        return 0
+    """中小企业声明函（v2.1，2026-10-11 V5 真实验证）：整段按 SME_PH_PATTERNS
+    确定性占位化（项目名称/编号/招标人/企业名称/从业人员/营业收入/资产总额/
+    企业类型 → 【占位】）；支持空白招标格式与**已填写的企业自有样本**（如牛屯河
+    项目完整实例）两种来源；固定招标条款其余一字不改。占位填充源=素材清单。"""
     n = 0
-    if not project_name:
-        return 0
     for p in doc.paragraphs:
         full = "".join(r.text for r in p.runs)
         newtext = full
-        if project_name in newtext:
-            newtext = newtext.replace(project_name, "【项目名称】")
         for old, new in SME_PH_PATTERNS:
             if re.search(old, newtext):
                 newtext = re.sub(old, new, newtext)
