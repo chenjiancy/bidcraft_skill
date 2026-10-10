@@ -225,6 +225,31 @@ def cmd_proj_tpl_import(args):
         print("  — 跳过 %-28s %s" % (s["模板"], s["原因"]))
 
 
+def cmd_proj_material(args):
+    """M5 前置④：把用户已填的 v5.1 素材清单表组装为生成器结构素材清单 JSON。"""
+    ent = get_ent(args)
+    from . import mat_export as me
+    social = Path(args.social) if args.social else None
+    if social is None:
+        # 默认：项目资料/社保*.png（R08 社保，用户上传至项目资料）
+        cands = sorted((ent / "项目级" / args.project / "项目资料").glob("社保*"))
+        if cands:
+            social = cands[0]
+    material = me.export_material(ent, args.project, xlsm_path=args.xlsm,
+                                  ledger=args.ledger, social_path=str(social) if social else "")
+    out = me.write_material(ent, args.project, material, out_path=args.out)
+    if args.json:
+        print(json.dumps(material, ensure_ascii=False, indent=2))
+        return
+    print("生成器结构素材清单已组装：%s" % out)
+    print("personnel：%s" % "、".join(p["name"] for p in material["personnel"]))
+    for sec in ("qualification_required", "iso_certificates", "honors",
+                "performance", "social_security_required"):
+        items = material.get(sec, [])
+        n_path = sum(1 for it in items if it.get("path"))
+        print("  %-24s %d 项（已解析路径 %d/%d）" % (sec, len(items), n_path, len(items)))
+
+
 def register_parser(sub):
     sp = sub.add_parser("proj-tpl-import", help="M5：格式契约空白格式提炼为企业级模板入库")
     sp.add_argument("--project", required=True, help="项目名（项目级/<项目>）")
@@ -232,6 +257,15 @@ def register_parser(sub):
     sp.add_argument("--source", default="", help="招标文件 docx 路径（默认 招标解析/招标文件-*.docx）")
     sp.add_argument("--out", default="", help="模板输出目录（默认 企业级/模板库/<代理>/投标/）")
     sp.set_defaults(func=cmd_proj_tpl_import)
+
+    sp = sub.add_parser("proj-mat", help="M5：v5.1 素材清单表组装为生成器结构素材清单 JSON")
+    sp.add_argument("--project", required=True, help="项目名（项目级/<项目>）")
+    sp.add_argument("--xlsm", default="", help="素材清单表路径（默认 招标解析/素材清单_空白表_v5*.xlsm 最新）")
+    sp.add_argument("--ledger", default="", help="素材台账 JSON 路径（默认 企业级/素材库/素材台账.json）")
+    sp.add_argument("--social", default="", help="社保素材路径（默认 项目资料/社保* 自动定位）")
+    sp.add_argument("--out", default="", help="输出 JSON 路径（默认 招标解析/素材清单_<项目>.json）")
+    sp.set_defaults(func=cmd_proj_material)
+
 
     sp = sub.add_parser("proj-contract", help="M5：从招标文件 docx 生成格式契约 JSON（块范围定位）")
     sp.add_argument("--project", required=True, help="项目名（项目级/<项目>）")
