@@ -21,9 +21,9 @@ def _resolve_project_dir(ent, project):
 
 
 def _default_contract_path(proj_dir):
-    p = proj_dir / "招标解析" / "格式契约" / "格式契约_第五章_投标文件格式.json"
+    p = proj_dir / "招标解析" / "格式契约" / "格式契约.json"
     if not p.is_file():
-        raise GenError("找不到格式契约：%s" % p)
+        raise GenError("找不到格式契约：%s（先运行 proj-contract 生成）" % p)
     return p
 
 
@@ -35,7 +35,9 @@ def _default_material_path(proj_dir):
 
 
 def _default_source_docx(proj_dir):
-    cands = sorted(glob.glob(str(proj_dir / "招标解析" / "招标文件-*.docx")))
+    # 兼容「招标文件-*.docx」与「招标文件_<项目>.docx」两种命名
+    cands = sorted(glob.glob(str(proj_dir / "招标解析" / "招标文件-*.docx"))
+                   + glob.glob(str(proj_dir / "招标解析" / "招标文件_*.docx")))
     if not cands:
         raise GenError("找不到招标文件 docx（招标解析/招标文件-*.docx）")
     return Path(cands[0])
