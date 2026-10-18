@@ -165,12 +165,11 @@ def render_report(project, standard, objective, quote, qa, summary, out_path, su
         qsec = (
             "<h3>报价分分析（反推基准价区间）</h3>"
             "<p style='font-size:13px;color:#555'>%s</p>"
-            "%s"
             "<p style='font-size:13px;'><b>保住各档得分所需基准价区间：</b></p>"
             "<table style='border-collapse:collapse;width:100%%;font-size:13px'>"
             "<tr style='background:#f1f3f4'><th style='padding:6px;border:1px solid #ddd'>目标得分</th>"
             "<th style='padding:6px;border:1px solid #ddd'>所需基准价区间（元）</th></tr>"
-        )
+        ) % _esc(qa.get("note", ""))
         for b in qa["bands"]:
             qsec += "<tr><td style='padding:6px;border:1px solid #ddd'>%.1f 分</td><td style='padding:6px;border:1px solid #ddd'>[%s, %s]</td></tr>" % (
                 b["target"], _fmt_amt(b["range"][0]), _fmt_amt(b["range"][1]))

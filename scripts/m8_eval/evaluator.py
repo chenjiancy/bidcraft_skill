@@ -216,8 +216,8 @@ def quote_analysis(quote, cap, params):
         "curve": curve,
         "bands": bands,
         "risks": risks,
-        "note": "基准价=有效投标报价算术平均值（%s）；得分=满分 - 偏高1%%扣%s分 - 偏低1%%扣%s分，扣完为止"
-                % (params.get("base_desc") or "按招标文件", hi, lo),
+        "note": "基准价=%s；得分=满分 - 偏高1%%扣%s分 - 偏低1%%扣%s分，扣完为止"
+                % ((params.get("base_desc") or "按招标文件"), hi, lo),
     }
 
 
