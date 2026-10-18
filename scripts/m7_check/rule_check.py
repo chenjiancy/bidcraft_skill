@@ -21,7 +21,7 @@ v2.0 双通道检查 · 通道A：在 checker.py 6 项硬检查（格式/占位/
 import re
 from pathlib import Path
 
-from _shared import core
+from _shared import core, com_util
 from m4_tender import rules as t_rules      # M4 产物命名规范（单一事实来源）
 from . import checker, rules as m7rules
 
@@ -352,14 +352,79 @@ def check_material(out_dir, tpl_dir, material, points):
 
 
 # --------------------------------------------------------------------------
+# 上传标书 .doc 自动转换 + 数据源项目内校验
+# --------------------------------------------------------------------------
+def _docx_merge_dir(out, tmp_root=None):
+    """把被检查对象归一为「全 docx 目录」或单 docx 路径。
+
+    目录：*.docx 复制 + *.doc 经 Word COM 转换为同名 .docx，合并到临时目录；
+          无 Word 环境时 .doc 无法读取（注明，不降级 ok）。
+    单文件：.doc → 转换单文件；.docx → 原样。
+    返回 (目标路径, 说明/警告列表)；调用方负责清理返回的临时目录。"""
+    p = Path(out)
+    warns = []
+    if p.is_file() and p.suffix.lower() == ".docx":
+        return p, warns
+    if p.is_file() and p.suffix.lower() == ".doc":
+        if not com_util.HAVE_COM:
+            return p, ["存在 .doc 文件但环境无 Word/pywin32，无法自动转换读取（跳过）：%s" % p.name]
+        import tempfile
+        tmp = Path(tempfile.mkdtemp(prefix="bidcraft_docconv_"))
+        dst = tmp / (p.stem + ".docx")
+        try:
+            with com_util.WordCOM() as w:
+                w.convert_to_docx(p, dst)
+        except Exception as e:
+            warns.append("%s：.doc 转换失败（跳过）：%s" % (p.name, e))
+            return p, warns
+        return dst, warns
+    if not p.is_dir():
+        raise core.LibraryError("被检查标书必须为目录（含 *.doc/*.docx）或单个 doc/docx 文件：%s" % out)
+
+    docs = sorted(p.glob("*.doc"))
+    if not docs:
+        return p, warns
+    if not com_util.HAVE_COM:
+        return p, ["存在 %d 个 .doc 文件但环境无 Word/pywin32，无法自动转换读取（跳过）：%s 等"
+                   % (len(docs), docs[0].name)]
+    import tempfile
+    import shutil
+    tmp = Path(tempfile.mkdtemp(prefix="bidcraft_docconv_"))
+    for d in p.glob("*.docx"):
+        shutil.copy2(str(d), str(tmp / d.name))
+    fail = []
+    with com_util.WordCOM() as w:
+        for d in docs:
+            try:
+                w.convert_to_docx(d, tmp / (d.stem + ".docx"))
+            except Exception as e:
+                fail.append("%s：%s" % (d.name, e))
+    if fail:
+        warns.append("以下 .doc 转换失败（跳过）：%s" % "；".join(fail[:5]))
+    return tmp, warns
+
+
+def _ensure_inside(label, p, proj_dir):
+    """数据源项目内硬校验：--tdir/--tpl 显式指向必须位于 项目级/<项目>/ 内，
+    防止人为指向其他项目目录造成数据污染（项目数据隔离）。"""
+    rp = Path(p).resolve()
+    rj = Path(proj_dir).resolve()
+    if not (rp == rj or rj in rp.parents):
+        raise core.LibraryError(
+            "数据源越界（项目数据隔离）：%s=%s 不在项目目录 %s 内；"
+            "--tdir/--tpl 仅允许指向本项目（项目级/<项目>/招标解析、项目模板）" % (label, p, proj_dir))
+
+
+# --------------------------------------------------------------------------
 # 统一执行入口
 # --------------------------------------------------------------------------
 def run_rule_checks(ent, proj_dir, out_dir=None, tpl_dir=None, tdir=None, tag=""):
     """
     通道A 全量检查：checker.py 6 项硬检查 + CHECK_RULES 4 项确定性核对。
-    out_dir 可为：目录（项目生成商务标默认）/ 单个 docx（上传标书，仅执行
-    CHECK_RULES 语义核对；硬检查中 format/pages/frozen 需项目模板对照，
-    单文件场景自动跳过并注明）。
+    out_dir 可为：目录（项目生成商务标 / 上传标书原始目录，含 .doc 自动转换）/
+    单个 doc/docx 文件（上传标书）。硬检查中 format/pages/frozen 需项目模板对照，
+    单文件场景或模板目录无 docx（上传标书无模板基准）时自动跳过并注明。
+    --tdir/--tpl 显式指向须位于项目内（数据隔离硬校验）。
     返回 {ok, 目录, 检查: [...]}；落盘 标书检查/机器检查_<项目>[_<tag>].json/.md。
     """
     proj_dir = Path(proj_dir)
@@ -369,62 +434,90 @@ def run_rule_checks(ent, proj_dir, out_dir=None, tpl_dir=None, tdir=None, tag=""
     project = proj_dir.name
     single_file = out.is_file()
     if not (out.is_dir() or single_file):
-        raise core.LibraryError("被检查标书不存在（须为目录或 docx 文件）：%s" % out)
+        raise core.LibraryError("被检查标书不存在（须为目录或 doc/docx 文件）：%s" % out)
 
-    # 1) 读取 M4 产物（标准来源）
-    material = _load_tender_json(tdir, project, t_rules.list_base, "素材清单")
-    points = _load_tender_json(tdir, project, t_rules.points_base, "投标要点")
+    # 数据源项目内硬校验（显式传入的 tdir/tpl；默认值天然在项目内）
+    if tdir != Path(proj_dir) / "招标解析":
+        _ensure_inside("--tdir", tdir, proj_dir)
+    if tpl != Path(proj_dir) / "项目模板":
+        _ensure_inside("--tpl", tpl, proj_dir)
 
-    # 2) 硬检查（checker.py 6 项；单文件上传场景：format/pages/frozen 需模板对照→跳过注明）
-    results = []
-    for item in checker.CHECKS:
-        fn = getattr(checker, item["fn"], None)
-        if not fn:
+    # .doc 自动转换（上传标书场景）：归一为全 docx，检查后清理临时目录
+    conv_tmp = None
+    try:
+        out_work, conv_warns = _docx_merge_dir(out)
+        if isinstance(out_work, Path) and out_work.is_dir() and \
+                out_work != out and out_work.name.startswith("bidcraft_docconv_"):
+            conv_tmp = out_work
+        single_file = out_work.is_file()
+
+        # 1) 读取 M4 产物（标准来源）
+        material = _load_tender_json(tdir, project, t_rules.list_base, "素材清单")
+        points = _load_tender_json(tdir, project, t_rules.points_base, "投标要点")
+
+        # 2) 硬检查（checker.py 6 项；单文件上传场景或无项目模板基准→跳过注明）
+        has_tpl = tpl.is_dir() and any(tpl.glob("*.docx"))
+        skip_reason = None
+        if single_file:
+            skip_reason = "单文件上传场景无项目模板对照"
+        elif not has_tpl:
+            skip_reason = "无项目模板基准（上传标书目录场景，跳过模板对照类检查）"
+        results = []
+        for item in checker.CHECKS:
+            fn = getattr(checker, item["fn"], None)
+            if not fn:
+                results.append({"id": item["id"], "name": item["name"], "level": item["level"],
+                                "category": "格式", "ok": False,
+                                "issues": ["检查实现缺失: %s" % item["fn"]]})
+                continue
+            if skip_reason and item["id"] in ("format", "pages", "frozen"):
+                results.append({"id": item["id"], "name": item["name"], "level": item["level"],
+                                "category": "格式", "ok": True,
+                                "issues": ["跳过：%s（%s）" % (skip_reason, item["name"])]})
+                continue
+            ok, issues = fn(out_work, tpl)
             results.append({"id": item["id"], "name": item["name"], "level": item["level"],
-                            "category": "格式", "ok": False,
-                            "issues": ["检查实现缺失: %s" % item["fn"]]})
-            continue
-        if single_file and item["id"] in ("format", "pages", "frozen"):
-            results.append({"id": item["id"], "name": item["name"], "level": item["level"],
-                            "category": "格式", "ok": True,
-                            "issues": ["跳过：单文件上传场景无项目模板对照（%s）" % item["name"]]})
-            continue
-        ok, issues = fn(out, tpl)
-        results.append({"id": item["id"], "name": item["name"], "level": item["level"],
-                        "category": "格式", "ok": ok, "issues": issues})
+                            "category": "格式", "ok": ok, "issues": issues})
 
-    # 3) 确定性核对（CHECK_RULES）
-    for item in CHECK_RULES:
-        fn = globals().get(item["fn"])
-        if not fn:
+        # 3) 确定性核对（CHECK_RULES）
+        for item in CHECK_RULES:
+            fn = globals().get(item["fn"])
+            if not fn:
+                results.append({"id": item["id"], "name": item["name"],
+                                "category": item["category"], "level": item["level"],
+                                "ok": False, "issues": ["检查实现缺失: %s" % item["fn"]]})
+                continue
+            ok, issues = fn(out_work, tpl, material, points)
             results.append({"id": item["id"], "name": item["name"],
                             "category": item["category"], "level": item["level"],
-                            "ok": False, "issues": ["检查实现缺失: %s" % item["fn"]]})
-            continue
-        ok, issues = fn(out, tpl, material, points)
-        results.append({"id": item["id"], "name": item["name"],
-                        "category": item["category"], "level": item["level"],
-                        "ok": ok, "issues": issues})
+                            "ok": ok, "issues": issues})
+        for w in conv_warns:
+            results.append({"id": "doc_conv", "name": ".doc 自动转换", "level": "警告",
+                            "category": "格式", "ok": True, "issues": [w]})
 
-    ok_all = all(r["ok"] for r in results)
-    doc = {"project": project, "channel": "A", "tag": tag or "项目生成商务标",
-           "note": "通道A 机器检查（checker 硬检查 + 确定性核对，标准=M4 解析产物）",
-           "结论": "全部通过" if ok_all else "存在未通过项",
-           "检查": results, "generated": core.now_iso()}
+        ok_all = all(r["ok"] for r in results)
+        doc = {"project": project, "channel": "A", "tag": tag or "项目生成商务标",
+               "note": "通道A 机器检查（checker 硬检查 + 确定性核对，标准=M4 解析产物）",
+               "结论": "全部通过" if ok_all else "存在未通过项",
+               "检查": results, "generated": core.now_iso()}
 
-    # 4) 落盘 标书检查/机器检查_<项目>[_<tag>].json/.md + 回读
-    cdir = Path(proj_dir) / m7rules.check_subdir()
-    cdir.mkdir(parents=True, exist_ok=True)
-    base = m7rules.machine_base(project, tag)
-    json_path = cdir / ("%s.json" % base)
-    md_path = cdir / ("%s.md" % base)
-    json_path.write_text(__import__("json").dumps(doc, ensure_ascii=False, indent=2),
-                         encoding="utf-8")
-    md_path.write_text(_render_md(doc), encoding="utf-8")
-    core.readback.verify_json(json_path, required_fields=("project", "检查"), label="机器检查 json")
-    core.readback.verify_file(md_path, label="机器检查 md")
-    return {"ok": ok_all, "目录": str(cdir), "tag": tag or "项目生成商务标",
-            "检查": results, "json": str(json_path), "md": str(md_path)}
+        # 4) 落盘 标书检查/机器检查_<项目>[_<tag>].json/.md + 回读
+        cdir = Path(proj_dir) / m7rules.check_subdir()
+        cdir.mkdir(parents=True, exist_ok=True)
+        base = m7rules.machine_base(project, tag)
+        json_path = cdir / ("%s.json" % base)
+        md_path = cdir / ("%s.md" % base)
+        json_path.write_text(__import__("json").dumps(doc, ensure_ascii=False, indent=2),
+                             encoding="utf-8")
+        md_path.write_text(_render_md(doc), encoding="utf-8")
+        core.readback.verify_json(json_path, required_fields=("project", "检查"), label="机器检查 json")
+        core.readback.verify_file(md_path, label="机器检查 md")
+        return {"ok": ok_all, "目录": str(cdir), "tag": tag or "项目生成商务标",
+                "检查": results, "json": str(json_path), "md": str(md_path)}
+    finally:
+        if conv_tmp is not None:
+            import shutil
+            shutil.rmtree(str(conv_tmp), ignore_errors=True)
 
 
 def _render_md(doc):

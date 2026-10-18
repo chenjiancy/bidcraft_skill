@@ -10,6 +10,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 
 from m7_check import rules as m7rules       # noqa: E402
 from m7_check import rule_check             # noqa: E402
+from _shared import core                    # noqa: E402
 
 
 def _mk_docx(path, paras=("正文",), table_cells=None):
@@ -211,25 +212,30 @@ class TestNamingTag(unittest.TestCase):
 
 
 class TestRuleCheckSingleFile(unittest.TestCase):
+    def _mk_m4(self, proj):
+        """项目内 M4 产物（空素材/要点，保证标准可读）。"""
+        tdir = proj / "招标解析"
+        tdir.mkdir()
+        (tdir / ("素材清单_%s.json" % "P")).write_text(
+            '{"投标截止日期": "2026-08-10 14:00", "personnel": [], "honors": [],'
+            ' "qualification_required": [], "iso_certificates": [],'
+            ' "performance": [], "social_security_required": []}',
+            encoding="utf-8")
+        (tdir / ("投标要点_%s.json" % "P")).write_text(
+            '{"modules": []}', encoding="utf-8")
+        return tdir
+
     def test_single_docx_out_runs_placeholder_and_skips_template(self):
         """单文件上传场景：占位/敏感真实执行；format/pages/frozen 跳过（无模板对照）。"""
         with tempfile.TemporaryDirectory() as td:
-            tdir = Path(td) / "tender"
-            tdir.mkdir()
-            out = Path(td) / "upload.docx"
-            _mk_docx(out, ["投标函【招标人】、【项目名称】", "正文"])
-            # M4 产物（空素材/要点，保证标准可读）
-            (tdir / ("素材清单_%s.json" % "P")).write_text(
-                '{"投标截止日期": "2026-08-10 14:00", "personnel": [], "honors": [],'
-                ' "qualification_required": [], "iso_certificates": [],'
-                ' "performance": [], "social_security_required": []}',
-                encoding="utf-8")
-            (tdir / ("投标要点_%s.json" % "P")).write_text(
-                '{"modules": []}', encoding="utf-8")
             proj = Path(td) / "P"
             proj.mkdir()
             (proj / "商务标").mkdir()
-            res = rule_check.run_rule_checks("ent", proj, out_dir=str(out), tdir=str(tdir), tag="上传版")
+            self._mk_m4(proj)
+            out = Path(td) / "upload.docx"
+            _mk_docx(out, ["投标函【招标人】、【项目名称】", "正文"])
+            res = rule_check.run_rule_checks("ent", proj, out_dir=str(out),
+                                             tag="上传版")
             self.assertEqual(res["tag"], "上传版")
             self.assertTrue((proj / "标书检查" / "机器检查_P_上传版.json").is_file())
             by_id = {c["id"]: c for c in res["检查"]}
@@ -240,6 +246,56 @@ class TestRuleCheckSingleFile(unittest.TestCase):
             for cid in ("format", "pages", "frozen"):
                 self.assertTrue(by_id[cid]["ok"], cid)
                 self.assertTrue(any("跳过" in i for i in by_id[cid]["issues"]))
+
+    def test_dir_upload_without_tpl_skips_template_check(self):
+        """目录上传场景：无项目模板基准时 format/pages/frozen 跳过，不误报「多余输出文件」。"""
+        with tempfile.TemporaryDirectory() as td:
+            proj = Path(td) / "P"
+            proj.mkdir()
+            self._mk_m4(proj)
+            outdir = Path(td) / "upload_bid"
+            outdir.mkdir()
+            _mk_docx(outdir / "封面.docx", ["封面文本"])
+            _mk_docx(outdir / "投标函.docx", ["投标函正文"])
+            res = rule_check.run_rule_checks("ent", proj, out_dir=str(outdir),
+                                             tag="上传版")
+            by_id = {c["id"]: c for c in res["检查"]}
+            for cid in ("format", "pages", "frozen"):
+                self.assertTrue(by_id[cid]["ok"], cid)
+                self.assertTrue(any("跳过" in i for i in by_id[cid]["issues"]),
+                                "%s 应注明跳过原因" % cid)
+            self.assertFalse(any("多余输出文件" in i for r in res["检查"]
+                                 for i in r.get("issues", [])))
+
+    def test_tdir_outside_project_rejected(self):
+        """数据源项目内硬校验：--tdir 指向项目外 → LibraryError。"""
+        with tempfile.TemporaryDirectory() as td:
+            proj = Path(td) / "P"
+            proj.mkdir()
+            (proj / "商务标").mkdir()
+            outside = Path(td) / "other_tender"
+            outside.mkdir()
+            out = Path(td) / "upload.docx"
+            _mk_docx(out, ["正文"])
+            with self.assertRaises(core.LibraryError) as cm:
+                rule_check.run_rule_checks("ent", proj, out_dir=str(out),
+                                           tdir=str(outside), tag="t")
+            self.assertIn("数据源越界", str(cm.exception))
+
+    def test_tpl_outside_project_rejected(self):
+        """数据源项目内硬校验：--tpl 指向项目外 → LibraryError。"""
+        with tempfile.TemporaryDirectory() as td:
+            proj = Path(td) / "P"
+            proj.mkdir()
+            self._mk_m4(proj)
+            out = Path(td) / "upload.docx"
+            _mk_docx(out, ["正文"])
+            outside_tpl = Path(td) / "other_tpl"
+            outside_tpl.mkdir()
+            with self.assertRaises(core.LibraryError) as cm:
+                rule_check.run_rule_checks("ent", proj, out_dir=str(out),
+                                           tpl_dir=str(outside_tpl), tag="t")
+            self.assertIn("数据源越界", str(cm.exception))
 
 
 if __name__ == "__main__":

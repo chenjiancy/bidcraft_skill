@@ -1,0 +1,21 @@
+{
+  "project": "马鞍山和县化工园尾水水质提升工程（EPC总承包）监理",
+  "items": [
+    {"category": "资质", "subtype": "企业资质证书", "required": true, "purpose": "监理资质等级要求（综合资质或市政公用工程专业丙级及以上），资格条件+初步评审", "source": "招标公告十.1 / 评标办法2.1.2", "keywords": ["资质", "监理资质", "综合资质", "市政公用"], "suggestion": "查企业素材库资质目录"},
+    {"category": "资质", "subtype": "企业法人营业执照", "required": true, "purpose": "资格条件（投标文件须含，否则资格审查不通过）", "source": "前附表1.6 / 评标办法2.1.2", "keywords": ["营业执照"], "suggestion": "查企业素材库资质目录"},
+    {"category": "资质", "subtype": "企业税务登记证", "required": true, "purpose": "资格条件（三证合一无需单独提供）", "source": "前附表1.6", "keywords": ["税务登记证"], "suggestion": "三证合一则免"},
+    {"category": "人员", "subtype": "总监注册证书", "required": true, "purpose": "拟派总监市政公用工程全国注册监理工程师且在投标人单位注册；投标文件中须提供证书扫描件，否则资格审查不通过", "source": "招标公告十.2 / 附表6 / 评标办法2.1.2", "keywords": ["注册监理工程师", "总监", "注册证书"], "suggestion": "查企业素材库人员目录"},
+    {"category": "人员", "subtype": "专业监理工程师证书", "required": true, "purpose": "人员配备2名（全国注册/省监证，投标文件中仅承诺，证书合同签订前核查）", "source": "附表6", "keywords": ["专业监理工程师"], "suggestion": "承诺即可，证书备查"},
+    {"category": "人员", "subtype": "监理员证书", "required": true, "purpose": "人员配备3名（投标文件中仅承诺）", "source": "附表6", "keywords": ["监理员"], "suggestion": "承诺即可"},
+    {"category": "人员", "subtype": "总监职称证书", "required": false, "purpose": "评分项1分：市政工程相关专业中级以上工程师职称（附职称证书扫描件）", "source": "评标办法2.2.2", "keywords": ["职称", "中级"], "suggestion": "查企业素材库人员目录"},
+    {"category": "人员", "subtype": "监理人员职称证书", "required": false, "purpose": "评分项每人1分最多3分（不含总监，以附表7评审）", "source": "评标办法2.2.2", "keywords": ["职称", "中级"], "suggestion": "查企业素材库人员目录"},
+    {"category": "人员", "subtype": "社保缴纳证明材料", "required": true, "purpose": "项目与管理机构评审人员2026年1月以来任意一个月社保缴纳证明材料（否则评审不予计分）", "source": "评标办法2.2.2注", "keywords": ["社保", "缴纳证明"], "suggestion": "须提供扫描件/缴费记录截图"},
+    {"category": "体系认证", "subtype": "ISO三体系认证证书", "required": false, "purpose": "评分项质量/环境/职业健康安全管理体系各1分共3分（须附证书且在有效期内）", "source": "评标办法2.2.2", "keywords": ["ISO", "质量管理体系", "环境管理体系", "职业健康"], "suggestion": "查企业素材库，核有效期"},
+    {"category": "业绩", "subtype": "市政公用工程监理业绩合同", "required": false, "purpose": "评分项每个4分满分8分：2021.1.1以来单份合同工程投资估算价（或建安费）6000万元以上市政公用工程监理业绩；认定以合同签订时间为准；须提供合同扫描件（内容不体现须合同甲方盖章证明）", "source": "评标办法2.2.2", "keywords": ["市政公用", "监理合同", "业绩"], "suggestion": "查企业素材库业绩目录，逐份核验金额/时间/类型"},
+    {"category": "荣誉", "subtype": "先进示范优秀监理企业表彰证书", "required": false, "purpose": "评分项1个3分另1个2分满分5分：2021.1.1（含）以来地级市以上建设行政主管部门或民政登记行业协会颁发；认定以落款日期", "source": "评标办法2.2.2", "keywords": ["先进监理", "示范", "优秀监理企业", "表彰"], "suggestion": "查企业素材库荣誉目录，核落款日期/颁发单位"},
+    {"category": "财务", "subtype": "中小企业声明函", "required": true, "purpose": "专门面向中小企业采购，必须提供（数据：从业人员/营业收入/资产总额/企业类型，填报上一年度）", "source": "重要提示4 / 声明函格式", "keywords": ["中小企业", "声明函"], "suggestion": "数据由用户提供，按格式填写"},
+    {"category": "保证金", "subtype": "投标保证金材料", "required": true, "purpose": "投标保证金壹万元递交证明（网银/电汇/转账凭证、电子保函、基本账户开户许可证三选一）", "source": "前附表3.5 / 投标文件格式附件", "keywords": ["投标保证金", "保函", "转账"], "suggestion": "按采用形式提供"},
+    {"category": "其他", "subtype": "法定代表人身份证明及授权委托书", "required": true, "purpose": "资格审查材料：法定代表人身份证明+身份证；或授权委托书+委托人身份证（无授权代理人则不需授权委托书）", "source": "前附表1.6", "keywords": ["法定代表人", "授权委托书", "身份证明"], "suggestion": "无授权代理人则免授权委托书"},
+    {"category": "承诺", "subtype": "项目总监到岗履约承诺函", "required": true, "purpose": "总监已在其他项目任职且达到兼任数量限制时，须承诺中标后合同签订前变更至本项目并出具承诺函（格式见第五章）", "source": "附表10后（行1800-1815）", "keywords": ["到岗履约", "承诺函"], "suggestion": "按总监实际任职情况判断是否需要"}
+  ]
+}

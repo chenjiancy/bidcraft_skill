@@ -151,6 +151,12 @@ def check_format(out_dir, tpl_dir):
     issues = []
     outs, tpls = _docx_paths(out_dir), _docx_paths(tpl_dir)
     out_names = {f.name for f in outs}
+    if not tpls:
+        # 无项目模板基准（目录上传/未生成项目模板）：对照无意义，只查悬空引用
+        for o in outs:
+            for bad in _dangling_refs(o):
+                issues.append("%s：悬空引用 %s" % (o.name, bad))
+        return (not issues, issues)
     for t in tpls:
         if t.name not in out_names:
             issues.append("缺输出文件（模板有、商务标无）：%s" % t.name)

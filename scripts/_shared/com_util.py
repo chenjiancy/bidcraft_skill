@@ -59,6 +59,25 @@ class WordCOM:
         self._docs.append(doc)
         return doc
 
+    def convert_to_docx(self, src, dst):
+        """把 .doc（旧格式）另存为 .docx（wdFormatXMLDocument=12）。
+
+        独立打开→SaveAs2→Close(False)，不登记 _docs（自身收口关闭）。
+        供 M7 check-rule 上传标书场景 .doc 自动转换使用。"""
+        word = self._ensure()
+        doc = word.Documents.Open(str(src), ReadOnly=False)
+        try:
+            doc.SaveAs2(str(dst), FileFormat=12)   # wdFormatXMLDocument → .docx
+        finally:
+            try:
+                doc.Close(False)
+            except Exception:
+                pass
+            try:
+                del doc
+            except Exception:
+                pass
+
     def pages_of(self, path):
         """打开→强制重排→统计页数→释放文档引用。返回页数。"""
         doc = self.open_readonly(path)
