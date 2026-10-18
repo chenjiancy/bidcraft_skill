@@ -10,6 +10,7 @@ from pathlib import Path
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "scripts"))
 
 from m8_eval import eval_std, evaluator   # noqa: E402
+from m8_eval import rules as m8rules       # noqa: E402
 import m8_eval as m8cli                   # noqa: E402  （包即 __init__）
 from m4_tender import rules as t_rules                       # noqa: E402
 from _shared import core                                     # noqa: E402
@@ -217,6 +218,107 @@ class TestEvalRunE2E(unittest.TestCase):
                                       tdir=str(other), mat="", bid="")
             with self.assertRaises(core.LibraryError):
                 m8cli.cmd_eval_run(args)
+
+
+def _valid_subjective():
+    return {
+        "project": "P", "channel": "B", "审查日期": "2026-10-18", "对象": "监理大纲",
+        "主观评分": [
+            {"子项": "质量保证措施", "满分": 5,
+             "预估分": {"min": 3, "max": 4, "建议": 4}, "档次": "较齐全",
+             "证据锚点": "监理大纲 第3章 第2节（摘录）", "失分原因": "深度一般",
+             "补强建议": "补充针对性论证", "风险": "🟠"}
+        ],
+        "主观合计": {"min": 30, "max": 40, "建议": 36, "满分": 50},
+        "失分诊断": [{"子项": "质量保证措施", "失分": 1, "优先级": "中", "说明": "x"}],
+        "与通道A协作": "客观分已由通道A 评", "结论": "主观分预估 [30,40]",
+    }
+
+
+class TestValidateSubjectiveJson(unittest.TestCase):
+    def test_valid_passes(self):
+        ok, issues = m8rules.validate_subjective_json(_valid_subjective())
+        self.assertTrue(ok, issues)
+
+    def test_channel_must_be_b(self):
+        doc = _valid_subjective()
+        doc["channel"] = "A"
+        ok, _ = m8rules.validate_subjective_json(doc)
+        self.assertFalse(ok)
+
+    def test_missing_keys_rejected(self):
+        doc = _valid_subjective()
+        del doc["主观合计"]
+        ok, issues = m8rules.validate_subjective_json(doc)
+        self.assertFalse(ok)
+        self.assertTrue(any("主观合计" in x for x in issues))
+
+    def test_bad_risk_rejected(self):
+        doc = _valid_subjective()
+        doc["主观评分"][0]["风险"] = "🟣"
+        ok, _ = m8rules.validate_subjective_json(doc)
+        self.assertFalse(ok)
+
+    def test_min_over_max_rejected(self):
+        doc = _valid_subjective()
+        doc["主观评分"][0]["预估分"] = {"min": 5, "max": 3, "建议": 4}
+        ok, _ = m8rules.validate_subjective_json(doc)
+        self.assertFalse(ok)
+
+    def test_bad_priority_rejected(self):
+        doc = _valid_subjective()
+        doc["失分诊断"][0]["优先级"] = "极高"
+        ok, _ = m8rules.validate_subjective_json(doc)
+        self.assertFalse(ok)
+
+
+class TestEvalParseAndReport(unittest.TestCase):
+    def _mk_project(self, root):
+        ent = root / "企业X" / "项目级" / "P"
+        tdir = ent / "招标解析"
+        tdir.mkdir(parents=True)
+        core.write_json(str(tdir / ("%s.json" % t_rules.points_base("P"))),
+                        _points(_SCORE_ITEMS, {"报价上限（废标线）": {"value": "最高投标限价101.36万元"}}))
+        core.write_json(str(tdir / ("%s.json" % t_rules.list_base("P"))),
+                        _mat([{"category": "体系认证", "subtype": "ISO三体系认证证书",
+                               "purpose": "质量/环境/职业健康"},
+                              {"category": "业绩", "subtype": "市政公用工程监理业绩合同", "purpose": "x"}]))
+        return ent
+
+    def test_eval_parse_and_report(self):
+        import argparse
+        with tempfile.TemporaryDirectory() as td:
+            ent = self._mk_project(Path(td))
+            common = dict(root=str(Path(td)), enterprise="企业X", project="P")
+            m8cli.cmd_eval_run(argparse.Namespace(quote="156800", tdir="", mat="", bid="", **common))
+            # 通道B 落盘
+            sub = _valid_subjective()
+            md_src = Path(td) / "sub.md"
+            json_src = Path(td) / "sub.json"
+            md_src.write_text("# 主观评审\n", encoding="utf-8")
+            core.write_json(str(json_src), sub)
+            m8cli.cmd_eval_parse(argparse.Namespace(md=str(md_src), json_file=str(json_src), **common))
+            out = ent / m8cli.OUT_DIR_NAME
+            self.assertTrue((out / ("%s.json" % m8cli.subjective_base("P"))).is_file())
+            self.assertTrue((out / ("%s.md" % m8cli.subjective_base("P"))).is_file())
+            # 合并渲染
+            m8cli.cmd_eval_report(argparse.Namespace(**common))
+            html = out / ("%s.html" % m8cli.report_base("P"))
+            self.assertTrue(html.is_file())
+            content = html.read_text(encoding="utf-8")
+            self.assertIn("主观分明细", content)
+            self.assertIn("质量保证措施", content)
+
+    def test_eval_report_without_subjective(self):
+        import argparse
+        with tempfile.TemporaryDirectory() as td:
+            ent = self._mk_project(Path(td))
+            common = dict(root=str(Path(td)), enterprise="企业X", project="P")
+            m8cli.cmd_eval_run(argparse.Namespace(quote="156800", tdir="", mat="", bid="", **common))
+            m8cli.cmd_eval_report(argparse.Namespace(**common))
+            html = ent / m8cli.OUT_DIR_NAME / ("%s.html" % m8cli.report_base("P"))
+            self.assertTrue(html.is_file())
+            self.assertIn("主观分未评", html.read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":
