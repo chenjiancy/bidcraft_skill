@@ -129,13 +129,35 @@ class GenTasksTest(unittest.TestCase):
 
 class ToMdTest(unittest.TestCase):
     def test_md_contains_ids_and_priority(self):
-        doc = remedy.gen_tasks(_mk_eval(issues=[_mk_issue("perf", 4.0, per=4.0)]),
+        doc = remedy.gen_tasks(_mk_eval(issues=[_mk_issue("perf", 4.0, per=4.0)],
+                                        standard_items=_std_items(("perf", {"max": 8.0, "per": 4.0, "require_type": 6000.0, "year_start": "2021-01-01"}))),
                                subjective_doc={"主观合计": {"min": 47, "max": 50, "满分": 50}, "失分诊断": []})
         md = remedy.to_md(doc)
         self.assertIn("# 失分补救任务单", md)
         self.assertIn("R01", md)
         self.assertIn("可追分合计", md)
         self.assertIn("素材补齐", md)
+
+    def test_html_render_contains_kpi_cards_and_flow(self):
+        import tempfile
+        from pathlib import Path
+        from m10_remedy import remedy_report
+        doc = remedy.gen_tasks(_mk_eval(
+            issues=[_mk_issue("perf", 4.0, per=4.0),
+                    _mk_issue("staff_title", 2.0, per=1.0, max_=3.0)],
+            standard_items=_std_items(("perf", {"max": 8.0, "per": 4.0, "require_type": 6000.0, "year_start": "2021-01-01"}),
+                                      ("staff_title", {"max": 3.0, "per": 1.0})),
+            risks=["低于成本审查"]),
+            subjective_doc={"主观合计": {"min": 47, "max": 50, "满分": 50}, "失分诊断": []})
+        tmp = Path(tempfile.mkdtemp()) / "task.html"
+        remedy_report.render_task_html("测试项目", doc, tmp)
+        t = tmp.read_text(encoding="utf-8")
+        self.assertIn("<title>失分补救任务单", t)
+        self.assertIn("可追分合计", t)
+        self.assertIn("R01", t)
+        self.assertIn("评标→补救→重评", t)
+        self.assertIn("任务详情", t)
+        self.assertIn("素材补齐", t)
 
 
 if __name__ == "__main__":
