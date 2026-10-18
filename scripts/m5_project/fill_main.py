@@ -62,7 +62,7 @@ def fill_project(ent, proj_dir, out_dir=None, lib_root=None, register=True):
                 for cell in row.cells:
                     ct = cell.text.strip()
                     if ct.startswith("【图片：") and "组织机构框图" in ct:
-                        src = Path(lib_root) / "企业介绍/组织机构图_20261001.png"
+                        src = Path(lib_root) / "企业介绍/组织机构_20261018.png"
                         if src.is_file():
                             _fill_cell_image(cell, str(src), 15, 8.5)
                         else:
