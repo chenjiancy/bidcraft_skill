@@ -196,5 +196,51 @@ class TestRuleCheckDeadline(unittest.TestCase):
             self.assertTrue(all("信息" in x for x in issues))
 
 
+class TestNamingTag(unittest.TestCase):
+    def test_default_no_tag(self):
+        self.assertEqual(m7rules.machine_base("P"), "机器检查_P")
+        self.assertEqual(m7rules.points_base("P"), "检查要点_P")
+        self.assertEqual(m7rules.diff_base("P"), "双通道检查差异_P")
+        self.assertEqual(m7rules.report_base("P"), "标书检查报告_P")
+
+    def test_with_tag_appends(self):
+        self.assertEqual(m7rules.machine_base("P", "上传版"), "机器检查_P_上传版")
+        self.assertEqual(m7rules.points_base("P", "v2"), "检查要点_P_v2")
+        self.assertEqual(m7rules.diff_base("P", "上传版"), "双通道检查差异_P_上传版")
+        self.assertEqual(m7rules.report_base("P", "上传版"), "标书检查报告_P_上传版")
+
+
+class TestRuleCheckSingleFile(unittest.TestCase):
+    def test_single_docx_out_runs_placeholder_and_skips_template(self):
+        """单文件上传场景：占位/敏感真实执行；format/pages/frozen 跳过（无模板对照）。"""
+        with tempfile.TemporaryDirectory() as td:
+            tdir = Path(td) / "tender"
+            tdir.mkdir()
+            out = Path(td) / "upload.docx"
+            _mk_docx(out, ["投标函【招标人】、【项目名称】", "正文"])
+            # M4 产物（空素材/要点，保证标准可读）
+            (tdir / ("素材清单_%s.json" % "P")).write_text(
+                '{"投标截止日期": "2026-08-10 14:00", "personnel": [], "honors": [],'
+                ' "qualification_required": [], "iso_certificates": [],'
+                ' "performance": [], "social_security_required": []}',
+                encoding="utf-8")
+            (tdir / ("投标要点_%s.json" % "P")).write_text(
+                '{"modules": []}', encoding="utf-8")
+            proj = Path(td) / "P"
+            proj.mkdir()
+            (proj / "商务标").mkdir()
+            res = rule_check.run_rule_checks("ent", proj, out_dir=str(out), tdir=str(tdir), tag="上传版")
+            self.assertEqual(res["tag"], "上传版")
+            self.assertTrue((proj / "标书检查" / "机器检查_P_上传版.json").is_file())
+            by_id = {c["id"]: c for c in res["检查"]}
+            # 占位符真实检查出残留
+            self.assertFalse(by_id["placeholder"]["ok"])
+            self.assertTrue(any("【招标人】" in i for i in by_id["placeholder"]["issues"]))
+            # 模板对照类跳过
+            for cid in ("format", "pages", "frozen"):
+                self.assertTrue(by_id[cid]["ok"], cid)
+                self.assertTrue(any("跳过" in i for i in by_id[cid]["issues"]))
+
+
 if __name__ == "__main__":
     unittest.main()

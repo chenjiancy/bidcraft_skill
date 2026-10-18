@@ -64,7 +64,11 @@ SENSITIVE_PATTERNS = [
 # 基础扫描工具
 # ---------------------------------------------------------------------------
 def _docx_paths(d):
-    return sorted(Path(d).glob("*.docx")) if Path(d).is_dir() else []
+    """被检查 docx 集合：目录（扫描 *.docx）或单个 docx 文件（上传标书场景）。"""
+    p = Path(d)
+    if p.is_file() and p.suffix.lower() == ".docx":
+        return [p]
+    return sorted(p.glob("*.docx")) if p.is_dir() else []
 
 
 def _iter_doc_text(doc):

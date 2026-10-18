@@ -90,10 +90,21 @@ def _field(points, mid, key):
 # 检查实现（每个返回 (ok, issues)）
 # --------------------------------------------------------------------------
 def _docx_iter(out_dir):
-    """遍历商务标 docx → [(文件名, 段落文本list, 表格文本list)]。"""
+    """遍历被检查标书 docx（目录或单 docx 文件）→ [(文件名, 段落文本list, 表格文本list)]。
+
+    支持两种输入形态：目录（项目生成商务标 / 上传解压目录）；单 docx 文件
+    （用户上传的单个投标文件，--out 直接传文件路径）。"""
     from docx import Document
     out = []
-    for f in sorted(Path(out_dir).glob("*.docx")):
+    targets = []
+    p = Path(out_dir)
+    if p.is_dir():
+        targets = sorted(p.glob("*.docx"))
+    elif p.is_file() and p.suffix.lower() == ".docx":
+        targets = [p]
+    else:
+        raise core.LibraryError("被检查标书必须为目录（含 *.docx）或单个 docx 文件：%s" % out_dir)
+    for f in targets:
         try:
             doc = Document(str(f))
         except Exception as e:
@@ -343,24 +354,28 @@ def check_material(out_dir, tpl_dir, material, points):
 # --------------------------------------------------------------------------
 # 统一执行入口
 # --------------------------------------------------------------------------
-def run_rule_checks(ent, proj_dir, out_dir=None, tpl_dir=None, tdir=None):
+def run_rule_checks(ent, proj_dir, out_dir=None, tpl_dir=None, tdir=None, tag=""):
     """
     通道A 全量检查：checker.py 6 项硬检查 + CHECK_RULES 4 项确定性核对。
-    返回 {ok, 目录, 检查: [...]}；落盘 标书检查/机器检查_<项目>.json/.md。
+    out_dir 可为：目录（项目生成商务标默认）/ 单个 docx（上传标书，仅执行
+    CHECK_RULES 语义核对；硬检查中 format/pages/frozen 需项目模板对照，
+    单文件场景自动跳过并注明）。
+    返回 {ok, 目录, 检查: [...]}；落盘 标书检查/机器检查_<项目>[_<tag>].json/.md。
     """
     proj_dir = Path(proj_dir)
     out = Path(out_dir) if out_dir else proj_dir / "商务标"
     tpl = Path(tpl_dir) if tpl_dir else proj_dir / "项目模板"
     tdir = _tender_dir(proj_dir, tdir)
     project = proj_dir.name
-    if not out.is_dir():
-        raise core.LibraryError("商务标目录不存在：%s" % out)
+    single_file = out.is_file()
+    if not (out.is_dir() or single_file):
+        raise core.LibraryError("被检查标书不存在（须为目录或 docx 文件）：%s" % out)
 
     # 1) 读取 M4 产物（标准来源）
     material = _load_tender_json(tdir, project, t_rules.list_base, "素材清单")
     points = _load_tender_json(tdir, project, t_rules.points_base, "投标要点")
 
-    # 2) 硬检查（checker.py 6 项，含报告写入商务标目录）
+    # 2) 硬检查（checker.py 6 项；单文件上传场景：format/pages/frozen 需模板对照→跳过注明）
     results = []
     for item in checker.CHECKS:
         fn = getattr(checker, item["fn"], None)
@@ -368,6 +383,11 @@ def run_rule_checks(ent, proj_dir, out_dir=None, tpl_dir=None, tdir=None):
             results.append({"id": item["id"], "name": item["name"], "level": item["level"],
                             "category": "格式", "ok": False,
                             "issues": ["检查实现缺失: %s" % item["fn"]]})
+            continue
+        if single_file and item["id"] in ("format", "pages", "frozen"):
+            results.append({"id": item["id"], "name": item["name"], "level": item["level"],
+                            "category": "格式", "ok": True,
+                            "issues": ["跳过：单文件上传场景无项目模板对照（%s）" % item["name"]]})
             continue
         ok, issues = fn(out, tpl)
         results.append({"id": item["id"], "name": item["name"], "level": item["level"],
@@ -387,24 +407,24 @@ def run_rule_checks(ent, proj_dir, out_dir=None, tpl_dir=None, tdir=None):
                         "ok": ok, "issues": issues})
 
     ok_all = all(r["ok"] for r in results)
-    doc = {"project": project, "channel": "A",
+    doc = {"project": project, "channel": "A", "tag": tag or "项目生成商务标",
            "note": "通道A 机器检查（checker 硬检查 + 确定性核对，标准=M4 解析产物）",
            "结论": "全部通过" if ok_all else "存在未通过项",
            "检查": results, "generated": core.now_iso()}
 
-    # 4) 落盘 标书检查/机器检查_<项目>.json/.md + 回读
+    # 4) 落盘 标书检查/机器检查_<项目>[_<tag>].json/.md + 回读
     cdir = Path(proj_dir) / m7rules.check_subdir()
     cdir.mkdir(parents=True, exist_ok=True)
-    base = m7rules.machine_base(project)
+    base = m7rules.machine_base(project, tag)
     json_path = cdir / ("%s.json" % base)
     md_path = cdir / ("%s.md" % base)
-    json_path.write_text(core.dumps(doc) if hasattr(core, "dumps")
-                         else __import__("json").dumps(doc, ensure_ascii=False, indent=2),
+    json_path.write_text(__import__("json").dumps(doc, ensure_ascii=False, indent=2),
                          encoding="utf-8")
     md_path.write_text(_render_md(doc), encoding="utf-8")
     core.readback.verify_json(json_path, required_fields=("project", "检查"), label="机器检查 json")
     core.readback.verify_file(md_path, label="机器检查 md")
-    return {"ok": ok_all, "目录": str(cdir), "检查": results, "json": str(json_path), "md": str(md_path)}
+    return {"ok": ok_all, "目录": str(cdir), "tag": tag or "项目生成商务标",
+            "检查": results, "json": str(json_path), "md": str(md_path)}
 
 
 def _render_md(doc):

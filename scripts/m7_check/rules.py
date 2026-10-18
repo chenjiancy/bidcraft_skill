@@ -48,24 +48,30 @@ def check_subdir():
     return "标书检查"
 
 
-def machine_base(project):
-    """通道A 机器检查文件名基：机器检查_<项目>"""
-    return "机器检查_%s" % project
+def _obj(base, project, tag):
+    """产物基名：无 tag（默认=项目生成商务标）不带后缀；有 tag 加后缀区分检查对象。
+    tag 用于同一项目检查多份标书（生成版 / 上传版 / 不同来源）不互相覆盖。"""
+    return "%s_%s" % (base, project) if not tag else "%s_%s_%s" % (base, project, tag)
 
 
-def points_base(project):
-    """通道B agent 检查要点文件名基：检查要点_<项目>"""
-    return "检查要点_%s" % project
+def machine_base(project, tag=""):
+    """通道A 机器检查文件名基：机器检查_<项目>（或 _<项目>_<tag>）"""
+    return _obj("机器检查", project, tag)
 
 
-def diff_base(project):
-    """双通道检查差异文件名基：双通道检查差异_<项目>"""
-    return "双通道检查差异_%s" % project
+def points_base(project, tag=""):
+    """通道B agent 检查要点文件名基：检查要点_<项目>（或 _<项目>_<tag>）"""
+    return _obj("检查要点", project, tag)
 
 
-def report_base(project):
-    """标书检查 HTML 报告文件名基：标书检查报告_<项目>"""
-    return "标书检查报告_%s" % project
+def diff_base(project, tag=""):
+    """双通道检查差异文件名基：双通道检查差异_<项目>（或 _<项目>_<tag>）"""
+    return _obj("双通道检查差异", project, tag)
+
+
+def report_base(project, tag=""):
+    """标书检查 HTML 报告文件名基：标书检查报告_<项目>（或 _<项目>_<tag>）"""
+    return _obj("标书检查报告", project, tag)
 
 
 # --------------------------------------------------------------------------
