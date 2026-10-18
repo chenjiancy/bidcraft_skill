@@ -37,3 +37,11 @@ references/module-contracts.md
 references/M2-模板库-需求对齐.md
 references/产物反馈机制-需求对齐.md
 tests/run_local_regression.bat
+
+# Word 锁文件
+~$*
+
+# 上传标书转换/提取临时目录（不入库）
+dev/manual_conv/
+dev/manual_txt/
+
