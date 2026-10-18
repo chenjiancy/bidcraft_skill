@@ -251,8 +251,68 @@ def _duplicate_tables_by_contract(doc, tbl_meta, material, ctx_map):
             continue
         ctx = ctx_map.get(node, "")
         anchor = node
+        # L4 修复（2026-10-18）：附表8 简历表每份须独占一面且带标题（人工标书 P35-58
+        # 每人简历表独立成页）；复制时连表格前的标题段一起复制，标题段加 pageBreakBefore。
+        # F06d 附表3 每份业绩表同样独占一面且带标题（复制表前插分页符段，否则复制
+        # 的业绩表会与前一业绩监理合同图占位挤在同一页；复制份无标题读者不知表归属）。
+        title_el = None
+        if item_id == "F06i":
+            title_el = _find_preceding_title(node, ("拟投入监理人员简历表", "简历表"))
+        elif item_id == "F06d":
+            title_el = _find_preceding_title(node, ("已完类似工程监理项目情况表", "已完类似工程"))
         for _ in range(n - 1):
+            if title_el is not None:
+                new_title = copy.deepcopy(title_el)
+                _set_page_break_before(new_title)
+                anchor.addnext(new_title)
+                anchor = new_title
             new_tbl = copy.deepcopy(node)
+            if item_id == "F06d" and title_el is None:
+                anchor.addnext(_make_page_break_para())
             anchor.addnext(new_tbl)
             anchor = new_tbl
             ctx_map[new_tbl] = ctx
+
+
+def _find_preceding_title(tbl_node, keywords):
+    """表格节点前最近的兄弟段落（文本含任一关键词）——表格标题段。
+    L4 修复（2026-10-18）：原文标题可能带字间空格（如「已 完 类 似 工 程 监 理
+    项 目 情 况 表」），匹配前去空格/全角空格，避免复制份漏标题。"""
+    from docx.oxml.ns import qn as _qn
+    prev = tbl_node.getprevious()
+    while prev is not None:
+        if prev.tag == _qn("w:p"):
+            texts = "".join(t.text or "" for t in prev.iter() if t.tag == _qn("w:t"))
+            texts = texts.replace(" ", "").replace("\u3000", "")
+            if any(k.replace(" ", "") in texts for k in keywords):
+                return prev
+        prev = prev.getprevious()
+    return None
+
+
+def _set_page_break_before(p_el):
+    """给段落加 pageBreakBefore（独占一面：该段所在页从新页开始）。"""
+    from docx.oxml import OxmlElement as _OE
+    from docx.oxml.ns import qn as _qn
+    pPr = p_el.find(_qn("w:pPr"))
+    if pPr is None:
+        pPr = _OE("w:pPr")
+        p_el.insert(0, pPr)
+    old = pPr.find(_qn("w:pageBreakBefore"))
+    if old is not None:
+        pPr.remove(old)
+    el = _OE("w:pageBreakBefore")
+    pPr.append(el)
+
+
+def _make_page_break_para():
+    """构造分页符段（w:br type=page）——插在表格/段前实现独占一面。"""
+    from docx.oxml import OxmlElement as _OE
+    from docx.oxml.ns import qn as _qn
+    p = _OE("w:p")
+    r = _OE("w:r")
+    br = _OE("w:br")
+    br.set(_qn("w:type"), "page")
+    r.append(br)
+    p.append(r)
+    return p

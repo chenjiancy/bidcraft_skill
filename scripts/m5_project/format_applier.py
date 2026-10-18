@@ -211,7 +211,10 @@ def _apply_cover(p, config):
 
 
 def _apply_table(tbl, config):
-    """表格：表头行（首行）仿宋12 加粗 + 底纹 D9D9D9；其余行仿宋12；边框单线 0.5pt。"""
+    """表格：表头行（首行）仿宋12 加粗 + 底纹 D9D9D9；其余行仿宋12；边框单线 0.5pt。
+    L4 修复（2026-10-18）：单元格段落行距收敛为单倍行距——原文表格段落继承
+    大行距（固定 28 磅），表格行超高导致附表8 简历表跨页（用户验收反馈"跨页"）。
+    收敛后简历表表格可一页放下（对齐 format_config「独占面收敛规则②」）。"""
     fonts = config.get("字体", {})
     tbl_font = fonts.get("表格文字", {}).get("中文字体") or "仿宋"
     tbl_sz = int(fonts.get("表格文字", {}).get("字号") or 12)
@@ -225,6 +228,10 @@ def _apply_table(tbl, config):
         is_hdr = (ri == 0)
         for cell in row.cells:
             for p in cell.paragraphs:
+                pf = p.paragraph_format
+                pf.line_spacing_rule = WD_LINE_SPACING.SINGLE   # 表格行距收敛
+                pf.space_before = Pt(0)
+                pf.space_after = Pt(0)
                 for r in p.runs:
                     _set_run_font(r, hdr_font if is_hdr else tbl_font,
                                   hdr_sz if is_hdr else tbl_sz,
@@ -308,10 +315,19 @@ def ensure_own_page(doc, fname, config):
     if fname in file_own:
         n += _insert_page_break_first(doc)
     # 内容级：资格证明及辅助资料表 附表1 组织机构 / 附表8 简历表 / 附表3 业绩表
+    # L4 修复（2026-10-18）：原文标题为「附表 8：」（编号与冒号间有空格），
+    # 原 regex ^附表[138][：:] 匹配不到 → 首份简历表标题未分页（标题落在附表7页尾）。
     if fname == "资格证明及辅助资料表.docx":
         for p in list(doc.paragraphs):
             t = p.text.strip()
-            if re.match(r"^附表[138][：:]", t) or "组 织 机 构" in t or "组织机构" in t:
+            # L4 修复（2026-10-18）：原文标题为「附表 8：」（编号与冒号间有空格），
+            # 原 regex ^附表[138][：:] 匹配不到 → 首份简历表标题未分页（标题落在附表7页尾）。
+            # 扩展为全部附表独立成页（对齐人工标书：附表2/4/5/6/7/9/10 每表一页）。
+            if re.match(r"^附表\s*\d+\s*[：:]", t) or "组 织 机 构" in t or "组织机构" in t:
+                n += _insert_page_break_before(doc, p)
+            # L4 修复（2026-10-18）：业绩监理合同图占位独立成页
+            # （对齐人工标书「业绩表独占一面→业绩图独占一面→下一业绩表」结构）。
+            elif t.startswith("【图片：") and "监理合同" in t:
                 n += _insert_page_break_before(doc, p)
     return n
 

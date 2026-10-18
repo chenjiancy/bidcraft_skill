@@ -1,0 +1,16 @@
+---- 命中 ----
+scii="Times New Roman" w:hAnsi="Times New Roman" w:cs="宋体" w:eastAsia="仿宋"/>
+<w:snapToGrid w:val="0"/>
+<w:color w:val="000000"/>
+<w:kern w:val="0"/>
+<w:sz w:val="24"/>
+<w:szCs w:val="24"/>
+</w:rPr>
+<w:t>【图片：组织机构框图（含结构、领导成员、主要技术人员、管理人员及数量）】</w:t>
+</w:r>
+</w:p>
+<w:p w14:paraId="02F010CD" w14:textId="77777777" w:rsidR="00000000" w:rsidRDefault="00F15429">
+<w:pPr>
+<w:widowControl/>
+<w:kinsoku w:val="0"/>
+<w:autoSpaceDE w

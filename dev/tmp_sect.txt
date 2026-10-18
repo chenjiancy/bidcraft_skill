@@ -1,0 +1,8 @@
+﻿开标一览表.docx | sections: 1 | br总数: 1 | 分页符: 1 | lastRendered: 0
+   body元素数: 5 | 类型: ['p', 'tbl', 'p', 'p', 'sectPr']
+投标函附录.docx | sections: 1 | br总数: 1 | 分页符: 1 | lastRendered: 0
+   body元素数: 3 | 类型: ['p', 'tbl', 'sectPr']
+封面.docx | sections: 1 | br总数: 0 | 分页符: 0 | lastRendered: 0
+   body元素数: 9 | 类型: ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'sectPr']
+授权委托书.docx | sections: 1 | br总数: 0 | 分页符: 0 | lastRendered: 0
+   body元素数: 20 | 类型: ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'sectPr']

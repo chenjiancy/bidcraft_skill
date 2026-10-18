@@ -81,10 +81,13 @@ def _make_ph_preview_para(doc, ph_text, assets=None):
 
 
 def _insert_ph_preview_after(doc, anchor_el, ph_text, assets=None):
-    """把预览框段移动到锚点元素（占位文字段）之后；返回是否成功。"""
+    """把预览框段移动到锚点元素（占位文字段）之后；返回是否成功。
+    L4 修复（2026-10-18）：锚点可能是 lxml 元素（资格表 _make_image_ph_para）或
+    python-docx Paragraph（F16 独立文件 doc.add_paragraph）——统一取 _p 再 addnext。"""
     try:
         p = _make_ph_preview_para(doc, ph_text, assets=assets)
-        anchor_el.addnext(p._p)
+        anchor = getattr(anchor_el, "_p", anchor_el)
+        anchor.addnext(p._p)
         return True
     except Exception:
         return False
@@ -92,35 +95,57 @@ def _insert_ph_preview_after(doc, anchor_el, ph_text, assets=None):
 
 def _insert_image_ph_after_table(doc, ctx_map, rules, font, assets_map=None):
     """在指定表格（按表前文关键词，去空格匹配）之后插入图片占位段 + 预览框。
-    返回 (占位段数, 预览框数)。"""
+    返回 (占位段数, 预览框数)。
+    L4 修复（2026-10-18）：
+      - 锚点匹配表格实例数 == 该组占位数（且 >1）→ 按实例逐表分配（附表8 简历表
+        每人一份：第 i 份简历表后插第 i 人员图组，对齐人工标书 P35-58）；
+      - 否则整组插第一个匹配表格后（原 L3 break 行为，防锚点多命中重复）。"""
     n = n_prev = 0
     assets_map = assets_map or {}
-    for table in doc.tables:
-        ctx = ctx_map.get(table._tbl, "").replace(" ", "").replace("\u3000", "")
-        for kw, phs in rules:
-            if kw in ctx:
-                for text in phs:
-                    el = _make_image_ph_para(text, font)
-                    table._tbl.addnext(el)
-                    n += 1
-                    if _insert_ph_preview_after(doc, el, text, assets_map.get(text)):
-                        n_prev += 1
+    for kw, phs in rules:
+        instances = [t for t in doc.tables
+                     if kw in ctx_map.get(t._tbl, "").replace(" ", "").replace("\u3000", "")]
+        if not instances:
+            continue
+        if len(phs) > 1 and len(instances) == len(phs):
+            # 实例分配：第 i 个表格后插 phs[i]
+            for tbl, text in zip(instances, phs):
+                el = _make_image_ph_para(text, font)
+                tbl._tbl.addnext(el)
+                n += 1
+                if _insert_ph_preview_after(doc, el, text, assets_map.get(text)):
+                    n_prev += 1
+        else:
+            # 整组插第一个匹配表格后
+            prev = instances[0]._tbl
+            for text in phs:
+                el = _make_image_ph_para(text, font)
+                prev.addnext(el)          # 正序插入
+                prev = el
+                n += 1
+                if _insert_ph_preview_after(doc, el, text, assets_map.get(text)):
+                    n_prev += 1
     return n, n_prev
 
 
 def _insert_image_ph_after_para(doc, rules, font, assets_map=None):
     """在锚点段落（含关键词）之后插入图片占位段 + 预览框。
-    返回 (占位段数, 预览框数)。"""
+    返回 (占位段数, 预览框数)。
+    L3 修复（2026-10-18）：每组规则只对**第一个匹配段落**插入一次——
+    原实现对每个匹配段都插一组，锚点关键词（如「具体按招标公告…」）命中
+    多个段落时占位重复（实测 12→25 处）。"""
     n = n_prev = 0
     assets_map = assets_map or {}
-    for p in doc.paragraphs:
-        full = p.text
-        for kw, phs in rules:
-            if kw in full:
+    for kw, phs in rules:
+        for p in doc.paragraphs:
+            if kw in p.text:
+                prev = p._p
                 for text in phs:
                     el = _make_image_ph_para(text, font)
-                    p._p.addnext(el)
+                    prev.addnext(el)          # 正序插入
+                    prev = el
                     n += 1
                     if _insert_ph_preview_after(doc, el, text, assets_map.get(text)):
                         n_prev += 1
+                break                          # 只插第一处匹配
     return n, n_prev

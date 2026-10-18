@@ -200,7 +200,14 @@ def export_material(ent, project, xlsm_path=None, ledger=None, social_path=""):
                     lv = "甲级" if "甲级" in gv else ("乙级" if "乙级" in gv else "资质")
                     name = "企业资质（房屋建筑工程监理%s）" % lv
                 sections[sec].append({"name": name, "path": path or ""})
-    # R08 社保：项目资料（用户上传）
+    # R08 社保：项目资料（用户上传）；未显式传参时自动定位 项目资料/社保*（L2 修复，
+    # 2026-10-17：此前直接调用 export_material 不传 social_path 导致社保字段丢失）
+    if not social_path:
+        _sd = proj_dir / "项目资料"
+        if _sd.is_dir():
+            cands = sorted(p for p in _sd.iterdir() if p.name.startswith("社保"))
+            if cands:
+                social_path = str(cands[0])
     if social_path:
         sections["social_security_required"].append(
             {"name": "社保单位参保证明", "path": social_path})
@@ -251,6 +258,13 @@ def export_material(ent, project, xlsm_path=None, ledger=None, social_path=""):
                 biz["委托代理人手机"] = h
             elif "邮箱" in g and h:
                 biz["委托代理人邮箱"] = h
+    # L2a（2026-10-17）：法代/代理身份证自动定位（素材库 人员/<姓名>/身份证/，P0/P1 正反面）
+    for k, nm in (("法定代表人身份证", biz.get("法定代表人姓名", "")),
+                  ("委托代理人身份证", biz.get("委托代理人姓名", ""))):
+        id_dir = lib_root / "人员" / nm / "身份证"
+        if id_dir.is_dir():
+            biz[k] = [str(p) for p in sorted(id_dir.iterdir())
+                      if p.suffix.lower() in (".png", ".jpg", ".jpeg")]
 
     # 5) 项目元数据（招标解析 basic 模块可核，agent 维护）
     meta = {

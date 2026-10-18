@@ -185,12 +185,21 @@ def _trim_empty_after(body, anchor_el):
         nxt = nxt2
 
 
-def _fill_image_placeholders(doc, lib_root, proj_dir, material, missing):
+def _fill_image_placeholders(doc, lib_root, proj_dir, material, missing, rules=None):
     """段落级【图片：xxx】：取图插入（按口径），删除占位段；缺图删除占位 + missing。
-    返回 (移除的预览框数, 清单外素材相对路径列表)（③白名单：组合构建只允许清单素材）。"""
+    返回 (移除的预览框数, 清单外素材相对路径列表)（③白名单：组合构建只允许清单素材）。
+
+    L1（2026-10-17）解析顺序：
+      1) rules（image_ph_rules.build_ph_rules 素材清单驱动，占位文案即索引键）——
+         清单列明的素材直接插入，清单没有的不生成占位（先进证书等不再 glob 猜测）；
+      2) 回退 FILL_IMG_MAP（旧硬编码映射，兼容历史占位文案，不破坏存量测试）。
+    """
     from .ph_preview import PH_PREVIEW_PREFIX
+    from . import image_ph_rules as ipr
     persons = material.get("personnel", []) or []
     whitelist = _build_whitelist(material)
+    if rules is None:
+        rules = ipr.build_ph_rules(material)
     n_prev = 0
     outside = []
     for p in list(doc.paragraphs):
@@ -198,6 +207,14 @@ def _fill_image_placeholders(doc, lib_root, proj_dir, material, missing):
         if not (t.startswith("【图片：") and t.endswith("】")):
             continue
         n_prev += _remove_ph_preview_by_marker(doc, t)
+        hit = ipr.resolve_ph(t, rules)
+        if hit is not None:
+            _fname, _anchor, items, _group = hit
+            if items:
+                _insert_images_before(doc, p, items)
+            _trim_empty_after(doc.element.body, p._p)
+            p._p.getparent().remove(p._p)
+            continue
         mapped = FILL_IMG_MAP.get(t)
         if not mapped:
             missing.append((t, "无填充规则"))

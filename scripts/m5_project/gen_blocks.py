@@ -71,6 +71,14 @@ def _sanitize_copy(node):
             parent = el.getparent()
             if parent is not None:
                 parent.remove(el)
+    # L4 修复（2026-10-18）：移除深拷贝段落/表格内的 w:sectPr 分节符——
+    # 招标原文每张表间带分节符（sectPr），深拷贝后残留 10+ 处，LibreOffice/Word
+    # 按节强制分页，产生空白页（用户验收反馈"空白页"）；节设置统一由
+    # format_applier 页面级配置（页边距/纸张）接管，body 末尾唯一 sectPr 不受影响。
+    for el in list(node.iter(qn("w:sectPr"))):
+        parent = el.getparent()
+        if parent is not None:
+            parent.remove(el)
     for el in node.iter():
         for attr in ("{%s}embed" % _RNS, "{%s}id" % _RNS, "{%s}link" % _RNS):
             if attr in el.attrib:
