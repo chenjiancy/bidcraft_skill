@@ -44,4 +44,7 @@ tests/run_local_regression.bat
 # 上传标书转换/提取临时目录（不入库）
 dev/manual_conv/
 dev/manual_txt/
+dev/manual_outline_txt/
+dev/ext_outline.py
+dev/huagong_subjective_b.*
 
