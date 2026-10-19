@@ -192,19 +192,24 @@ def import_template(ent, agency, mode, src_path, note="", placeholders=None,
         raise core.LibraryError("不支持的模板格式：%s（支持 docx/doc/pdf/txt/md）" % src.suffix)
 
     dst_dir = mode_dir(ent, agency, mode)
-    dst_dir.mkdir(parents=True, exist_ok=True)
+    if not in_place:
+        dst_dir.mkdir(parents=True, exist_ok=True)
     fname = src.name
     dst = dst_dir / fname
 
     if in_place:
-        if src.parent.resolve() != dst_dir.resolve():
-            raise core.LibraryError("--in-place 要求源文件已在目标目录：%s" % dst_dir)
+        # 登记模板库内已存在的文件（不复制）；放宽为「模板库根内任意子目录」（如 商务标母版-招标式/），
+        # 与 _模板制作规范/商务标生成 fill-tpl 的母版目录约定一致（规则对齐 2026-10-19 用户确认）。
+        if not src.resolve().is_relative_to(template_root(ent).resolve()):
+            raise core.LibraryError("--in-place 仅登记模板库内文件：%s（模板库根 %s）"
+                                    % (src, template_root(ent)))
     else:
         if dst.exists():
             raise core.LibraryError("目标文件已存在：%s（如需覆盖/替换，请先人工确认后处理）"
                                     % core.norm_rel(str(dst)))
 
-    rel = core.norm_rel(str(dst.relative_to(Path(ent))))
+    anchor = src if in_place else dst
+    rel = core.norm_rel(str(anchor.relative_to(Path(ent))))
     if rel in ledger_index(ent):
         raise core.LibraryError("该模板已登记：%s" % rel)
 
@@ -228,7 +233,7 @@ def import_template(ent, agency, mode, src_path, note="", placeholders=None,
     save_ledger(ent, rows)
 
     # ---- 写后回读（fail fast）----
-    core.readback.verify_file(dst, label="模板目标")
+    core.readback.verify_file(anchor, label="模板目标")
     if rel not in ledger_index(ent):
         raise core.LibraryError("写后回读失败：模板未写入台账 %s" % rel)
     return row
