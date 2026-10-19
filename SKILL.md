@@ -41,7 +41,7 @@ agent_created: true
 ```
 scripts/
 ├── bidcraft.py            # 统一入口（薄壳）：只做 argparse 组装 + 调度，不写逻辑
-├── _shared/               # 跨模块共享层：core/（存储包）/ naming.py（命名）/ com_util.py（控制台）/ docx_util.py（docx 公共）
+├── _shared/               # 跨模块共享层：core/（存储包）/ naming.py（命名）/ com_util.py（控制台）/ docx_util.py（docx 公共）/ docx_tools/（docx 结构深读+审计，docx-read/docx-audit，平台无关，不占 M 序号）
 └── m<n>_<name>/           # 每个模块一个子包，包内暴露 register_parser(subparsers) 挂载子命令
 ```
 
@@ -155,7 +155,8 @@ scripts/
 ## 九、文档索引
 | 文件 | 用途 |
 |------|------|
-| `references/module-contracts.md` | 八大模块的输入/输出契约与实现状态 |
+| `references/module-contracts.md` | 八大模块的输入/输出契约与实现状态；共享工具层 `docx_tools` 条目（docx-read/docx-audit：维度 0-7 深读 + 包/结构/表格/绘图审计，能力子集、不占 M 序号，退出码 0/1/2） |
+| `dev/notes/规则对齐-docx工具移植-2026-10-19.md` | docx_tools 移植规则对齐清单（用户确认版：范围/CLI/偏离项，随代码进提交） |
 | `references/模块开发规范.md` | 模块开发套路 + scripts/ 分包结构约定（新模块必读） |
 | `references/M1-素材库-需求对齐.md` | M1 需求定稿 v1.0（决策 Q1–Q16） |
 | `references/M1-素材库-操作手册.md` | M1 用法：流程、字段、命令速查、对话检查点 |
