@@ -1,5 +1,0 @@
-﻿顶层键: ['project', '招标代理机构', '采购方式', '投标截止日期', '投标报价', '投标资格专业', '监理人员配置口径', '企业基础信息', 'personnel', 'qualification_required', 'iso_certificates', 'honors', 'performance', 'social_security_required', 'items', '素材清单来源']
---- performance 条数: 3
-  示例键: ['name', 'path']
---- personnel 条数: 5
-  示例键: ['name', 'role', '注册证书', '职称', '简历']
