@@ -26,6 +26,7 @@ try:
     from docx.shared import Cm
     from docx.oxml import OxmlElement
     from docx.oxml.ns import qn
+    from docx.text.paragraph import Paragraph
     from copy import deepcopy
 except Exception:  # pragma: no cover
     Document = None
@@ -62,6 +63,16 @@ def _fmt_date(s):
 
 
 # ==================== 占位替换 ====================
+def iter_textbox_paragraphs(doc):
+    """遍历文档中所有文本框（w:txbxContent）内的段落（python-docx doc.paragraphs 不可见）。
+    模板库母版图片占位段多为文本框内段落（2026-10-19 端到端试跑发现），
+    填充引擎必须覆盖；parent=doc 提供 part 供插图/文本替换使用。"""
+    body = doc.element.body
+    for txbx in body.iter(qn("w:txbxContent")):
+        for p_el in txbx.iter(qn("w:p")):
+            yield Paragraph(p_el, doc)
+
+
 def repl_braces(text, vmap, perf_seq_ref):
     """{{ }} 占位替换：业绩项目名称按序消费 perf_seq。"""
     def rep(m):
@@ -81,7 +92,9 @@ def fill_braces_doc(doc, vmap, perf_seq=None):
     used = 0
     for para in doc.paragraphs:
         full = para.text or ""
-        if "{{" in full:
+        # 图片占位文案（【图片占位：…】）只是给人工看的说明标记，其中的 {{ }} 不做文本替换
+        # （业绩名称/人员名等由图片填充按行列定位；缺图时保留原标记）
+        if "{{" in full and "【图片占位：" not in full:
             nt = repl_braces(full, vmap, perf_ref)
             if nt != full:
                 for r in para.runs[1:]:
@@ -94,7 +107,7 @@ def fill_braces_doc(doc, vmap, perf_seq=None):
             for cell in row.cells:
                 for para in cell.paragraphs:
                     full = para.text or ""
-                    if "{{" in full:
+                    if "{{" in full and "【图片占位：" not in full:
                         nt = repl_braces(full, vmap, perf_ref)
                         if nt != full:
                             for r in para.runs[1:]:
@@ -102,6 +115,17 @@ def fill_braces_doc(doc, vmap, perf_seq=None):
                             if para.runs:
                                 para.runs[0].text = nt
                             used += 1
+    # 文本框内段落（母版图片占位段常见于此，{{ }} 文字占位同样覆盖）
+    for para in iter_textbox_paragraphs(doc):
+        full = para.text or ""
+        if "{{" in full and "【图片占位：" not in full:
+            nt = repl_braces(full, vmap, perf_ref)
+            if nt != full:
+                for r in para.runs[1:]:
+                    r._r.getparent().remove(r._r)
+                if para.runs:
+                    para.runs[0].text = nt
+                used += 1
     return used
 
 
@@ -358,6 +382,17 @@ def build_maps(material):
 
 
 # ==================== 深拷贝模板库 → 项目模板 ====================
+def _find_master_dir(src):
+    """在代理机构目录下定位母版目录：优先『商务标母版-*』子目录；退化 src 本身。
+    模板库结构与 _模板制作规范（商务标母版-<骨架>/）一致（2026-10-19 端到端试跑发现拷贝 0 件的根因）。"""
+    if all((src / fn).is_file() for fn in TPL_FILES):
+        return src
+    for d in sorted(src.iterdir()):
+        if d.is_dir() and "商务标母版" in d.name and (d / TPL_FILES[0]).is_file():
+            return d
+    return src
+
+
 def copy_lib_to_proj(ent_dir, proj_dir, agent=None):
     """深拷贝企业级模板库对应代理机构母版到项目模板/（先备份旧版到 dev 或回收站提示）。
     返回拷贝件数。"""
@@ -371,7 +406,7 @@ def copy_lib_to_proj(ent_dir, proj_dir, agent=None):
     agent = agent.strip()
     if not agent:
         raise FillError("无法确定代理机构（素材清单缺『招标代理机构』），请用 --agent 指定")
-    src = lib_dir / agent
+    src = _find_master_dir(lib_dir / agent)
     if not src.is_dir():
         raise FillError("模板库中不存在代理机构目录：%s" % src)
     tpl_dir = proj / "项目模板"
@@ -418,27 +453,27 @@ def fill_from_tpl(ent, proj, out_dir=None, agent=None, register=True):
 
     V = {
         "project_name": material.get("project", ""),
-        "project_code": material.get("招标编号", "") or biz.get("招标编号", ""),
+        "project_code": material.get("招标编号", "") or biz.get("项目编号", ""),
         "bid_date": _fmt_date(deadline),
-        "buyer_name": material.get("招标人", "") or "",
+        "buyer_name": material.get("招标人", "") or biz.get("招标人", ""),
         "bid_bond_cn": material.get("投标保证金", "") or "",
-        "company_name": biz.get("公司名称", "") or "",
-        "company_nature": biz.get("公司性质", "") or "",
-        "company_address": biz.get("公司地址", "") or "",
+        "company_name": biz.get("投标人名称", "") or "",
+        "company_nature": biz.get("单位性质", "") or "",
+        "company_address": biz.get("企业地址", "") or "",
         "company_zip": biz.get("邮编", "") or "",
         "company_phone": biz.get("联系电话", "") or "",
         "company_fax": biz.get("传真", "") or "",
         "bank_name": biz.get("开户银行", "") or "",
-        "bank_account": biz.get("银行账号", "") or "",
-        "company_founded": biz.get("成立日期", "") or "",
-        "company_term": biz.get("营业期限", "") or "",
+        "bank_account": biz.get("开户账号", "") or "",
+        "company_founded": biz.get("成立时间", "") or "",
+        "company_term": biz.get("经营期限", "") or "",
         "industry": biz.get("所属行业", "") or "",
         "日期": _fmt_date(deadline),
-        "姓名": biz.get("法定代表人", "") or "",
-        "性别": biz.get("法定代表人性别", "") or "",
-        "年龄": str(biz.get("法定代表人年龄", "") or ""),
-        "职务": biz.get("法定代表人职务", "") or "",
-        "agent_name": biz.get("委托代理人", "") or "",
+        "姓名": biz.get("法定代表人姓名", "") or "",
+        "性别": biz.get("性别", "") or "",
+        "年龄": str(biz.get("年龄", "") or ""),
+        "职务": biz.get("职务", "") or "",
+        "agent_name": biz.get("委托代理人姓名", "") or "",
         "agent_gender": biz.get("委托代理人性别", "") or "",
         "agent_age": str(biz.get("委托代理人年龄", "") or ""),
         "agent_title": biz.get("委托代理人职务", "") or "",
@@ -446,14 +481,19 @@ def fill_from_tpl(ent, proj, out_dir=None, agent=None, register=True):
         "agent_id": biz.get("委托代理人身份证号", "") or "",
         "license_no": biz.get("统一社会信用代码", "") or "",
         "staff_count": biz.get("从业人员", "") or "",
+        "tech_count": biz.get("技术人员", "") or "",
+        "mgmt_count": biz.get("管理人员", "") or "",
         "revenue": biz.get("营业收入", "") or "",
         "assets": biz.get("资产总额", "") or "",
         "enterprise_scale": biz.get("企业规模", "") or "",
         "legal_phone": biz.get("法定代表人电话", "") or "",
-        "agent_phone": biz.get("委托代理人电话", "") or "",
+        "agent_phone": biz.get("委托代理人手机号", "") or "",
+        "项目说明": material.get("项目说明", "") or "",
     }
 
     stats = {"文件": [], "缺图": [], "待补": [], "清单外": [], "文字占位填充": 0}
+    # 业绩项目名称按序消费：素材清单 performance 的 name 列表（模板 {{ 业绩项目名称 }} 依次取用）
+    perf_names = [it.get("name", "") for it in material.get("performance", [])]
     tpl_dir = proj / "项目模板"
     for fn in TPL_FILES:
         src = tpl_dir / fn
@@ -461,7 +501,7 @@ def fill_from_tpl(ent, proj, out_dir=None, agent=None, register=True):
             continue
         doc = Document(str(src))
         # 文字占位
-        filled = fill_braces_doc(doc, V, [])
+        filled = fill_braces_doc(doc, V, perf_names)
         # 图片占位：关键词定位（法代/授权/承诺书）
         missing = []
         if fn == "法定代表人身份证明.docx":
@@ -504,10 +544,20 @@ def fill_from_tpl(ent, proj, out_dir=None, agent=None, register=True):
         stats["文件"].append({"文件": fn, "填充文字": filled, "缺图": [x[0] for x in missing]})
         stats["文字占位填充"] += filled
         stats["缺图"] += missing
+        # 残留占位披露（模板空槽/未命中图占位不静默）
+        residual = scan_residual_placeholders(doc)
+        if residual:
+            stats["待补"].append((fn, ["%s：%s" % (kind, key) for kind, key in residual]))
 
     stats["缺图"] = list(dict.fromkeys(stats["缺图"]))
-    stats["待补"] = []
-    stats["清单外"] = []
+    # 待补按文件分组（每文件至多一条，键为字符串元组可直接去重）
+    seen_todo, todo = set(), []
+    for fn, keys in stats["待补"]:
+        k = (fn, tuple(keys))
+        if k not in seen_todo:
+            seen_todo.add(k)
+            todo.append((fn, keys))
+    stats["待补"] = todo
     _write_reports(out, stats, deadline)
     if register:
         core.write_json(str(out / "生成记录.json"), {
@@ -530,8 +580,41 @@ def _q_first(material, name):
     return ""
 
 
+def scan_residual_placeholders(doc):
+    """填充后扫描残留占位：{{ }}（非图片占位文案）与【图片占位：】段，返回去重清单。
+    用于待补披露（2026-10-19：模板空槽/未命中占位曾静默残留，补披露）。"""
+    import re as _re
+    from itertools import chain
+    found, seen = [], set()
+
+    def scan_para(para):
+        t = para.text or ""
+        if not t:
+            return
+        if "【图片占位：" in t:
+            key = ("图", t.strip()[:40])
+        elif "{{" in t:
+            keys = _re.findall(r"\{\{\s*([^}]+?)\s*\}\}", t)
+            key = ("文", "、".join(sorted(set(k.strip() for k in keys))))
+        else:
+            return
+        if key not in seen:
+            seen.add(key)
+            found.append(key)
+
+    body_paras = chain(doc.paragraphs, iter_textbox_paragraphs(doc))
+    for para in body_paras:
+        scan_para(para)
+    for tbl in doc.tables:
+        for row in tbl.rows:
+            for cell in row.cells:
+                for para in cell.paragraphs:
+                    scan_para(para)
+    return found
+
+
 def _fill_kw(doc, kw, paths, spec_key, missing):
-    """按关键词匹配图占位段（段落+表格），依序填；按所在单元格适配。"""
+    """按关键词匹配图占位段（正文段落+表格+文本框段落），依序填；按所在单元格适配。"""
     ok = 0
     for para in doc.paragraphs:
         if kw in (para.text or "") and "【图片占位：" in (para.text or ""):
@@ -548,6 +631,12 @@ def _fill_kw(doc, kw, paths, spec_key, missing):
                             mw, mh = cell_box_cm(cell)
                             if insert_img_fit_cell(para, paths[ok], spec_key, mw, mh):
                                 ok += 1
+    # 文本框内段落（母版图片占位段常见于此）：按页面级上限插图（fit_size 按规格缩放）
+    for para in iter_textbox_paragraphs(doc):
+        if kw in (para.text or "") and "【图片占位：" in (para.text or ""):
+            if ok < len(paths):
+                if insert_img_fit_cell(para, paths[ok], spec_key, 16.0, 24.6):
+                    ok += 1
     for i in range(ok, len(paths)):
         missing.append(("%s 第%s张" % (kw, i + 1), "未匹配到图占位"))
 
@@ -566,7 +655,8 @@ def _write_reports(out, stats, deadline):
         lines.append("- 无")
     (out / "缺图清单.md").write_text("\n".join(lines), encoding="utf-8")
     (out / "待补字段清单.md").write_text(
-        "# 待补字段清单（商务标生成 %s）\n\n- 无（模板已脱敏占位，未命中项见缺图清单）\n" % _fmt_date(deadline),
+        "# 待补字段清单（商务标生成 %s）\n\n以下占位未命中素材/未替换，补齐或确认后重新生成：\n" % _fmt_date(deadline)
+        + "\n".join("- %s：%s" % (fn, "、".join(keys)) for fn, keys in stats["待补"]) or "- 无\n",
         encoding="utf-8")
     (out / "清单外素材.md").write_text(
         "# 清单外素材（商务标生成 %s）\n\n- 无（白名单：仅素材清单列明素材可入标）\n" % _fmt_date(deadline),
