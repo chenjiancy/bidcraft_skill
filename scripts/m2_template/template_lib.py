@@ -37,9 +37,10 @@ TEMPLATE_COLUMNS = [
     "占位符数", "图片占位符数", "登记清单", "备注", "added_at",
 ]
 
-# 占位符正则：登记清单与模板正文统一使用 【…】 包裹（D3）；图片占位为 【图片：…】
-_PH_RE = re.compile(r"【[^】]*】")
-_IMG_PH_RE = re.compile(r"【图片：[^】]*】")
+# 占位符正则：登记清单与模板正文统一使用 {{ }}（docxtpl）与 【…】 包裹（D3）；
+# 图片占位为 【图片占位：…】（fill-tpl 母版语法）或 【图片：…】（proj-gen 旧语法）。
+_PH_RE = re.compile(r"\{\{\s*[^{}]+\s*\}\}|【[^】]*】")
+_IMG_PH_RE = re.compile(r"【图片占位：[^】]*】|【图片：[^】]*】")
 
 # XML 实体
 _ENT = {"&lt;": "<", "&gt;": ">", "&quot;": '"', "&apos;": "'", "&amp;": "&"}
@@ -142,27 +143,31 @@ def mode_dir(ent, agency, mode):
 # docx 占位符扫描（标准库：zipfile + 正则）
 # --------------------------------------------------------------------------
 def _docx_text(path):
-    """提取 DOCX 全部 <w:t> 文本（按段落换行），供占位符统计。"""
+    """提取 DOCX 全部 <w:t> 文本（按段落换行），供占位符统计。
+    用标准库 xml.etree 精确遍历段落（含表格内段落），替代正则切段（相邻段落正则易吞并，实测 23 vs 43 段）。
+    实体（&lt; 等）由 ElementTree 自动解码。"""
+    import xml.etree.ElementTree as ET
+
+    W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
     with zipfile.ZipFile(path) as z:
         if "word/document.xml" not in z.namelist():
             raise core.LibraryError("无法解析 DOCX：缺少 word/document.xml（文件可能损坏或非标准 docx）")
-        xml = z.read("word/document.xml").decode("utf-8", errors="replace")
+        root = ET.fromstring(z.read("word/document.xml"))
     out = []
-    for m in re.finditer(r"<w:p[ >].*?</w:p>|<w:p/>", xml, flags=re.S):
-        seg = m.group(0)
-        parts = re.findall(r"<w:t[^>]*>(.*?)</w:t>", seg, flags=re.S)
-        if parts:
-            txt = "".join(parts)
-            for k, v in _ENT.items():
-                txt = txt.replace(k, v)
-            out.append(txt)
+    for p in root.iter(W + "p"):
+        out.append("".join(t.text or "" for t in p.iter(W + "t")))
     return "\n".join(out)
 
 
 def scan_docx_placeholders(path):
-    """统计 docx 模板正文中的占位符。返回 (总占位符数, 图片占位符数)。"""
+    """统计 docx 模板正文中的占位符。返回 (总占位符数, 图片占位符数)。
+    口径（2026-10-19 对齐 fill-tpl 母版语法）：图片占位=【图片占位：…】/【图片：…】整体计 1 个；
+    文字占位={{ }} 或非图片【…】；图片占位文案内嵌的 {{ }} 不计入文字占位（先剔除图片占位片段再数）。"""
     text = _docx_text(path)
-    return len(_PH_RE.findall(text)), len(_IMG_PH_RE.findall(text))
+    img = _IMG_PH_RE.findall(text)
+    rest = _IMG_PH_RE.sub("", text)
+    txt = _PH_RE.findall(rest)
+    return len(txt) + len(img), len(img)
 
 
 def scan_placeholders(path):
@@ -237,6 +242,31 @@ def import_template(ent, agency, mode, src_path, note="", placeholders=None,
     if rel not in ledger_index(ent):
         raise core.LibraryError("写后回读失败：模板未写入台账 %s" % rel)
     return row
+
+
+def refresh_placeholders(ent, rel=None):
+    """重新扫描已登记模板的占位符数并更新台账（模板内容变更/扫描口径变更后刷新）。
+    rel 缺省=全部；返回更新条数。"""
+    rows = load_ledger(ent)
+    n = 0
+    for r in rows:
+        rel_path = r.get("相对路径", "")
+        if rel and rel_path != rel:
+            continue
+        p = Path(ent) / rel_path
+        if not p.is_file():
+            continue
+        scanned = scan_placeholders(p)
+        if scanned is None:
+            continue
+        ph, img_ph = scanned
+        if r.get("占位符数") != str(ph) or r.get("图片占位符数") != str(img_ph):
+            r["占位符数"] = str(ph)
+            r["图片占位符数"] = str(img_ph)
+            n += 1
+    if n:
+        save_ledger(ent, rows)
+    return n
 
 
 def list_templates(ent, agency=None, mode=None):

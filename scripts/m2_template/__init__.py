@@ -170,6 +170,12 @@ def cmd_tpl_sync(args):
             print("    - %s" % r.get("相对路径", ""))
 
 
+def cmd_tpl_rescan(args):
+    ent = get_ent(args)
+    n = tl.refresh_placeholders(ent, rel=args.rel or None)
+    print("已刷新占位符数：%d 条（模板库 %s）" % (n, ent.name))
+
+
 def cmd_tpl_registry(args):
     ent = get_ent(args)
     res = tl.read_registry(ent, args.agency, args.mode, file_filter=args.file)
@@ -237,6 +243,10 @@ def register_parser(sub):
 
     sp = sub.add_parser("tpl-sync", help="M2：目录与台账对账（待登记新文件/缺失文件）")
     sp.set_defaults(func=cmd_tpl_sync)
+
+    sp = sub.add_parser("tpl-rescan", help="M2：重新扫描已登记模板占位符数并更新台账（模板内容/扫描口径变更后刷新；--rel 指定单条）")
+    sp.add_argument("--rel", default="", help="只刷新指定相对路径（默认全部）")
+    sp.set_defaults(func=cmd_tpl_rescan)
 
     sp = sub.add_parser("tpl-registry", help="M2：打印某代理机构/方式下的占位符登记清单")
     sp.add_argument("--agency", required=True, help="招标代理机构名")
