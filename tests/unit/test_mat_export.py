@@ -141,7 +141,8 @@ class ExportMaterialTest(unittest.TestCase):
 
     def test_企业基础信息与配置口径(self):
         m = me.export_material(self.ent, PROJ, social_path="")
-        self.assertEqual(m["企业基础信息"]["法定代表人姓名"], "邵章华")
+        # v2.0：法定代表人姓名不在代码硬编码（待用户确认/素材解析提供）
+        self.assertEqual(m["企业基础信息"]["法定代表人姓名"], "")
         self.assertEqual(m["企业基础信息"]["委托代理人姓名"], "测试代理人")
         self.assertEqual(m["企业基础信息"]["委托代理人手机"], "13900000000")
         self.assertEqual(m["监理人员配置口径"]["项目总监"], 1)

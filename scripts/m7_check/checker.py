@@ -34,7 +34,7 @@ CHECKS = [
     {"id": "pages", "name": "页数一致性（模板↔商务标）", "level": "致命",
      "desc": "商务标每文件页数必须与项目模板一致（一页不得跨页、模板几页商务标几页）；无 Word 环境跳过",
      "fn": "check_pages"},
-    {"id": "frozen", "name": "冻结版一致（⑥ proj-freeze）", "level": "致命",
+    {"id": "frozen", "name": "冻结版一致（⑥ 项目模板冻结）", "level": "致命",
      "desc": "有冻结清单时：模板文件 sha256 必须与冻结清单一致（已改=须重新冻结）",
      "fn": "check_frozen"},
 ]
@@ -297,7 +297,7 @@ def check_frozen(out_dir, tpl_dir):
             issues.append("冻结文件缺失：%s" % item.get("文件", ""))
             continue
         if core.sha256_of(f) != item.get("sha256"):
-            issues.append("冻结版已改动（须重新 proj-freeze）：%s（清单 %s）"
+            issues.append("冻结版已改动（须重新冻结项目模板）：%s（清单 %s）"
                           % (item.get("文件", ""), item.get("版本", "")))
     return (not issues, issues)
 
