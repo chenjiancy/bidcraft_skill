@@ -43,6 +43,33 @@ def _items_of(mat, category=None, sub_kw=()):
     return out
 
 
+def _normalize_mat(mat):
+    """素材清单结构归一：fill-tpl 版（personnel/iso_certificates/honors/performance）→
+    旧 items[].category 结构；旧结构（items 含 category）原样返回（向后兼容）。
+    M5 fill-tpl（2026-10-19）素材清单已改用人员/资质/体系/荣誉/业绩分键结构，
+    M8 evaluator 数据源须与其对齐。"""
+    items = mat.get("items") or []
+    if items and any(it.get("category") for it in items):
+        return mat
+    out = []
+    for it in mat.get("personnel") or []:
+        sub = "总监职称" if (it.get("role") or "") == "项目总监" else "监理人员职称"
+        for p in (it.get("职称") or []):
+            out.append({"category": "人员", "subtype": sub,
+                        "purpose": (it.get("name") or "") + " 职称", "path": p})
+    for it in mat.get("iso_certificates") or []:
+        out.append({"category": "体系认证", "subtype": "",
+                    "purpose": it.get("name") or "", "path": it.get("path") or ""})
+    for it in mat.get("performance") or []:
+        if it.get("paths"):
+            out.append({"category": "业绩", "subtype": "",
+                        "purpose": it.get("name") or "", "path": it.get("paths")[0]})
+    for it in mat.get("honors") or []:
+        out.append({"category": "荣誉", "subtype": "",
+                    "purpose": it.get("name") or "", "path": it.get("path") or ""})
+    return {"items": out}
+
+
 def _iso_sys_count(purpose):
     """从素材条目 purpose 命中的 ISO 体系词数（质量/环境/职业健康，上限3）。"""
     n = 0
@@ -57,6 +84,7 @@ def _iso_sys_count(purpose):
 # --------------------------------------------------------------------------
 def calc_objective(standard, mat):
     """按评分项逐条计算客观分 → [{score, max, detail, level}]。"""
+    mat = _normalize_mat(mat)
     results = []
     for p in standard["items"]:
         kind = p["kind"]
