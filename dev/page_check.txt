@@ -1,0 +1,11 @@
+封面.docx footer部件数=0
+封面.docx 边距=<w:pgMar w:top="1440" w:right="1417" w:bottom="1440" w:left="1417" w:header="720" w:footer="720" w:gutter="0"/>
+投标函.docx PAGE域=True
+投标函.docx footer部件数=1
+投标函.docx 边距=<w:pgMar w:top="1440" w:right="1417" w:bottom="1440" w:left="1417" w:header="720" w:footer="720" w:gutter="0"/>
+资格证明及辅助资料表.docx PAGE域=True
+资格证明及辅助资料表.docx footer部件数=1
+资格证明及辅助资料表.docx 边距=<w:pgMar w:top="1440" w:right="1417" w:bottom="1440" w:left="1417" w:header="0" w:footer="1027" w:gutter="0"/>
+基本账户开户许可证承诺函.docx PAGE域=True
+基本账户开户许可证承诺函.docx footer部件数=1
+基本账户开户许可证承诺函.docx 边距=<w:pgMar w:top="1440" w:right="1417" w:bottom="1440" w:left="1417" w:header="720" w:footer="720" w:gutter="0"/>

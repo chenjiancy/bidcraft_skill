@@ -1,0 +1,55 @@
+﻿warning: The `fitz` API is deprecated and will be removed in future. Use `import pymupdf` instead.
+{
+  "ok": true,
+  "tool": "render",
+  "result": {
+    "output_dir": "E:\\bidcraft_skill\\.preview\\25cf2dcd40e5",
+    "manifest": "E:\\bidcraft_skill\\.preview\\25cf2dcd40e5\\manifest.json",
+    "kind": "pdf",
+    "page_count": 30,
+    "rendered_page_count": 30,
+    "collage_count": 4,
+    "extracted_text_chars": 7082,
+    "text": "E:\\bidcraft_skill\\.preview\\25cf2dcd40e5\\text.md",
+    "thumbnail": "E:\\bidcraft_skill\\.preview\\25cf2dcd40e5\\thumb.jpg",
+    "collages": [
+      "E:\\bidcraft_skill\\.preview\\25cf2dcd40e5\\collages\\c1.jpg",
+      "E:\\bidcraft_skill\\.preview\\25cf2dcd40e5\\collages\\c2.jpg",
+      "E:\\bidcraft_skill\\.preview\\25cf2dcd40e5\\collages\\c3.jpg",
+      "E:\\bidcraft_skill\\.preview\\25cf2dcd40e5\\collages\\c4.jpg"
+    ],
+    "pages": [
+      "E:\\bidcraft_skill\\.preview\\25cf2dcd40e5\\pages\\p001.png",
+      "E:\\bidcraft_skill\\.preview\\25cf2dcd40e5\\pages\\p002.png",
+      "E:\\bidcraft_skill\\.preview\\25cf2dcd40e5\\pages\\p003.png",
+      "E:\\bidcraft_skill\\.preview\\25cf2dcd40e5\\pages\\p004.png",
+      "E:\\bidcraft_skill\\.preview\\25cf2dcd40e5\\pages\\p005.png",
+      "E:\\bidcraft_skill\\.preview\\25cf2dcd40e5\\pages\\p006.png",
+      "E:\\bidcraft_skill\\.preview\\25cf2dcd40e5\\pages\\p007.png",
+      "E:\\bidcraft_skill\\.preview\\25cf2dcd40e5\\pages\\p008.png",
+      "E:\\bidcraft_skill\\.preview\\25cf2dcd40e5\\pages\\p009.png",
+      "E:\\bidcraft_skill\\.preview\\25cf2dcd40e5\\pages\\p010.png",
+      "E:\\bidcraft_skill\\.preview\\25cf2dcd40e5\\pages\\p011.png",
+      "E:\\bidcraft_skill\\.preview\\25cf2dcd40e5\\pages\\p012.png",
+      "E:\\bidcraft_skill\\.preview\\25cf2dcd40e5\\pages\\p013.png",
+      "E:\\bidcraft_skill\\.preview\\25cf2dcd40e5\\pages\\p014.png",
+      "E:\\bidcraft_skill\\.preview\\25cf2dcd40e5\\pages\\p015.png",
+      "E:\\bidcraft_skill\\.preview\\25cf2dcd40e5\\pages\\p016.png",
+      "E:\\bidcraft_skill\\.preview\\25cf2dcd40e5\\pages\\p017.png",
+      "E:\\bidcraft_skill\\.preview\\25cf2dcd40e5\\pages\\p018.png",
+      "E:\\bidcraft_skill\\.preview\\25cf2dcd40e5\\pages\\p019.png",
+      "E:\\bidcraft_skill\\.preview\\25cf2dcd40e5\\pages\\p020.png",
+      "E:\\bidcraft_skill\\.preview\\25cf2dcd40e5\\pages\\p021.png",
+      "E:\\bidcraft_skill\\.preview\\25cf2dcd40e5\\pages\\p022.png",
+      "E:\\bidcraft_skill\\.preview\\25cf2dcd40e5\\pages\\p023.png",
+      "E:\\bidcraft_skill\\.preview\\25cf2dcd40e5\\pages\\p024.png",
+      "E:\\bidcraft_skill\\.preview\\25cf2dcd40e5\\pages\\p025.png",
+      "E:\\bidcraft_skill\\.preview\\25cf2dcd40e5\\pages\\p026.png",
+      "E:\\bidcraft_skill\\.preview\\25cf2dcd40e5\\pages\\p027.png",
+      "E:\\bidcraft_skill\\.preview\\25cf2dcd40e5\\pages\\p028.png",
+      "E:\\bidcraft_skill\\.preview\\25cf2dcd40e5\\pages\\p029.png",
+      "E:\\bidcraft_skill\\.preview\\25cf2dcd40e5\\pages\\p030.png"
+    ],
+    "warnings": []
+  }
+}

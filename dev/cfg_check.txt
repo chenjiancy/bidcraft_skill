@@ -1,0 +1,3 @@
+监理人员配置口径: {'项目总监': 1, '专业监理工程师': 2, '监理员': 2}
+personnel: 5人
+names: [None, None, None, None, None]

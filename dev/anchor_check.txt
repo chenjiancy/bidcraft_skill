@@ -1,0 +1,7 @@
+具体按招标公告和评标办法要求附相应资料: 1段
+   > <w:rPr><w:rFonts w:ascii="仿宋" w:hAnsi="仿宋" w:cs="宋体" w:eastA
+其他资料: 1段
+   > <w:rPr><w:rFonts w:ascii="仿宋" w:hAnsi="仿宋" w:cs="宋体" w:eastA
+组织机构: 2段
+   > <w:rPr><w:rFonts w:ascii="仿宋" w:hAnsi="仿宋" w:cs="宋体" w:eastA
+   > <w:rPr><w:rFonts w:ascii="仿宋" w:hAnsi="仿宋" w:cs="宋体" w:eastA

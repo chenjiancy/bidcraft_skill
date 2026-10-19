@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
-"""⑦ filler 拆包 · 主流程（fill_project / 报告输出）。"""
+"""⑦ filler 拆包 · 主流程（fill_project / 报告输出）。
+
+⚠️ 已退役（2026-10-19）：本模块对应 proj-gen 招标原文深拷贝路径。
+用户定案：商务标生成源 = 企业级模板库母版（fill_from_tpl.py，CLI: fill-tpl）。
+保留本模块仅供旧产物/回归参考，不再作为生产入口。
+"""
 import json
 from pathlib import Path
 
@@ -45,6 +50,8 @@ def fill_project(ent, proj_dir, out_dir=None, lib_root=None, register=True):
     stats = {"文件": [], "缺图": [], "待补": [], "清单外": [],
              "文字占位填充": 0, "占位框移除": 0}
     for f in sorted(tpl_dir.glob("*.docx")):
+        if f.name.startswith("~$"):      # Office 临时锁文件，跳过
+            continue
         doc = Document(str(f))
         missing, pending = [], []
         filled = _fill_text_placeholders(doc, material, biz, deadline, pending)
@@ -62,7 +69,7 @@ def fill_project(ent, proj_dir, out_dir=None, lib_root=None, register=True):
                 for cell in row.cells:
                     ct = cell.text.strip()
                     if ct.startswith("【图片：") and "组织机构框图" in ct:
-                        src = Path(lib_root) / "企业介绍/组织机构图_20261001.png"
+                        src = Path(lib_root) / "企业介绍/组织机构_20261018.png"
                         if src.is_file():
                             _fill_cell_image(cell, str(src), 15, 8.5)
                         else:

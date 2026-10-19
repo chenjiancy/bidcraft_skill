@@ -1,0 +1,17 @@
+表格数: 16
+T0 前文: <w:rPr><w:rFonts w:ascii="仿宋" w:hAnsi="仿宋" w:cs="宋体" w:eastAsia="仿宋"/><w:snapToGrid w:val="0"/><w:color w:val="000000"/>
+T1 前文: 项|目|情|况|汇|总|表|
+T2 前文: 监|理|项|目|情|况|表|
+T3 前文: <w:tcPr><w:tcW w:w="7852" w:type="dxa"/><w:gridSpan w:val="3"/><w:vAlign w:val="center"/></w:tcPr><w:p w14:paraId="187A3
+T4 前文: <w:tcPr><w:tcW w:w="7852" w:type="dxa"/><w:gridSpan w:val="3"/><w:vAlign w:val="center"/></w:tcPr><w:p w14:paraId="187A3
+T5 前文: 项|目|情|况|汇|总|表|
+T6 前文: 程|监|理|项|目|情|况|表|
+T7 前文: <w:rPr><w:rFonts w:ascii="仿宋" w:hAnsi="仿宋" w:cs="宋体" w:eastAsia="仿宋"/><w:snapToGrid w:val="0"/><w:color w:val="000000"/>
+T8 前文: 理|人|员|配|备|表|
+T9 前文: 监|理|人|员|简|历|表|
+T10 前文: <w:tcPr><w:tcW w:w="8143" w:type="dxa"/><w:gridSpan w:val="5"/><w:vAlign w:val="center"/></w:tcPr><w:p w14:paraId="0D45E
+T11 前文: <w:tcPr><w:tcW w:w="8143" w:type="dxa"/><w:gridSpan w:val="5"/><w:vAlign w:val="center"/></w:tcPr><w:p w14:paraId="0D45E
+T12 前文: <w:tcPr><w:tcW w:w="8143" w:type="dxa"/><w:gridSpan w:val="5"/><w:vAlign w:val="center"/></w:tcPr><w:p w14:paraId="0D45E
+T13 前文: <w:tcPr><w:tcW w:w="8143" w:type="dxa"/><w:gridSpan w:val="5"/><w:vAlign w:val="center"/></w:tcPr><w:p w14:paraId="0D45E
+T14 前文: 配|备|仪|器|设|备|表|
+T15 前文: 奖|励|和|处|罚|）|表|

@@ -1,0 +1,12 @@
+﻿Consider using the pymupdf_layout package for a greatly improved page layout analysis.
+python : ..................................ssssssssssss....s...................................
+所在位置 行:1 字符: 25
++ ... aft_skill"; python -X utf8 -m unittest discover -s tests\integration  ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (.................................:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+----------------------------------------------------------------------
+Ran 85 tests in 1.574s
+
+OK (skipped=13)

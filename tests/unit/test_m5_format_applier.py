@@ -98,11 +98,13 @@ class EnsureOwnPageTest(unittest.TestCase):
         self.assertIn("w:type=\"page\"", xml)
 
     def test_non_own_page_file(self):
+        # 2026-10-18：format_config 独占一面清单修正——投标函.docx 为无说明纯文件名
+        # （人工标书投标函独立页），ensure_own_page 对其插入分页符 n=1。
         doc = Document()
         doc.add_paragraph("投标函正文")
         cfg = fa.load_format_config()
         n = fa.ensure_own_page(doc, "投标函.docx", cfg)
-        self.assertEqual(n, 0)                     # 投标函带括号说明 → 非整文件独占
+        self.assertEqual(n, 1)
 
 
 if __name__ == "__main__":

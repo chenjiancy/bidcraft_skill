@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'feat/**']
   pull_request:
   # 手动触发入口（故障恢复：GitHub 偶发事件丢失时可手动补跑 CI）
   workflow_dispatch:
@@ -39,13 +39,13 @@ jobs:
       # bash + tee：输出保存为日志（上传 artifacts），PIPESTATUS 保留 python 真实退出码
       - name: L1 单元测试（命名规范引擎）
         shell: bash
-        run: python -m unittest discover -s tests/unit -t . -v 2>&1 | tee test-unit.log; exit ${PIPESTATUS[0]}
+        run: python -X utf8 -m unittest discover -s tests/unit -t . -v 2>&1 | tee test-unit.log; exit ${PIPESTATUS[0]}
       - name: L2 集成测试（存储层 core；真实数据依赖用例自动跳过）
         shell: bash
-        run: python -m unittest discover -s tests/integration -t . -v 2>&1 | tee test-integration.log; exit ${PIPESTATUS[0]}
+        run: python -X utf8 -m unittest discover -s tests/integration -t . -v 2>&1 | tee test-integration.log; exit ${PIPESTATUS[0]}
       - name: L3 端到端测试（CLI 全流程）
         shell: bash
-        run: python -m unittest discover -s tests/e2e -t . -v 2>&1 | tee test-e2e.log; exit ${PIPESTATUS[0]}
+        run: python -X utf8 -m unittest discover -s tests/e2e -t . -v 2>&1 | tee test-e2e.log; exit ${PIPESTATUS[0]}
 
       # 测试报告 artifacts：无论成败均可下载查看（--if-no-files-found 忽略日志缺失）
       - name: 上传测试日志
@@ -91,7 +91,8 @@ jobs:
         with:
           python-version: "3.11"
       - name: py_compile 全部脚本
-        # Windows runner 默认 shell 是 PowerShell，不展开 *.py 通配符 → 显式用 bash（runner 自带）
+        # 覆盖全部模块（m0_env/m1_assets/m2_template/m4_tender/m5_project/m7_check/
+        # m8_eval/m10_remedy/m_feedback/_shared 等）：compileall 递归 scripts/，
+        # 新增模块自动纳入，不再维护硬编码清单
         shell: bash
-        run: |
-          python -m py_compile scripts/bidcraft.py scripts/_shared/*.py scripts/m1_assets/*.py scripts/m2_template/*.py scripts/m4_tender/*.py scripts/m5_project/*.py scripts/m7_check/*.py scripts/m_feedback/*.py
+        run: python -m compileall -q scripts/

@@ -162,9 +162,11 @@ class TestGeneratorPure(unittest.TestCase):
 
     def test_file_map_cover_all_contract_ids(self):
         ids = {m["id"] for m in gen.FILE_MAP}
-        self.assertEqual(len(ids), 27)          # F01–F15（含 F06a–k 共 11 项）
+        # F01–F15（含 F06a–k 共 11 项）+ L2 新增 F16（投标单位业绩材料和奖项，独立生成）
+        self.assertEqual(len(ids), 28)
         self.assertIn("F06i", ids)
         self.assertIn("F15", ids)
+        self.assertIn("F16", ids)
 
     def test_scan_placeholders(self):
         p = Path(tempfile.mkdtemp(prefix="bid_fb_ph_")) / "t.docx"

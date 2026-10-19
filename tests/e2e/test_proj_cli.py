@@ -116,16 +116,21 @@ class TestProjGenCli(unittest.TestCase):
         shutil.rmtree(cls.tmp, ignore_errors=True)
 
     def test_proj_gen_cli_json(self):
-        # ⑫ 数据前置细化：proj-gen 需要招标解析的内容契约+素材清单作为输入，
+        # ⑫ 数据前置细化：proj-gen 需要招标解析的内容契约+素材清单+招标文件 docx 作为输入，
         # 数据被清除/未生成时应跳过而非在 CLI 里报错。V5：模板选择.json 已废弃。
+        # 注：proj-gen 已退役（2026-10-19，商务标生成源=模板库 fill-tpl），本测试仅保兼容。
         proj = Path(REAL_ENT) / "项目级" / REAL_PROJECT
         contract = proj / "招标解析" / "内容契约" / "内容契约.json"
-        if not (contract.is_file() and (proj / "招标解析" / "素材清单.json").is_file()):
-            self.skipTest("真实项目数据不存在（内容契约/素材清单缺失），跳过")
+        src_docx = list((proj / "招标解析").glob("招标文件-*.docx"))
+        if not (contract.is_file() and (proj / "招标解析" / "素材清单.json").is_file()
+                and src_docx):
+            self.skipTest("真实项目数据不存在（内容契约/素材清单/招标文件docx 缺失），跳过")
         out = Path(self.tmp) / "项目模板"
+        ent_name = Path(REAL_ENT).name
+        ent_root = str(Path(REAL_ENT).parent)
         r = run("proj-gen", "--project", REAL_PROJECT, "--out", str(out),
                 "--no-baseline", "--json",
-                ent="示例建设工程监理有限公司", root=r"E:\监理标书制作")
+                ent=ent_name, root=ent_root)
         self.assertEqual(r.returncode, 0, r.stderr)
         data = json.loads(r.stdout)
         self.assertIn("目录", data)
@@ -133,6 +138,23 @@ class TestProjGenCli(unittest.TestCase):
         names = {f["文件"] for f in data["文件"]}
         self.assertIn("开标一览表.docx", names)
         self.assertIn("资格证明及辅助资料表.docx", names)
+
+    def test_fill_tpl_cli(self):
+        """M5 商务标生成新路径（2026-10-19）：fill-tpl 模板库深拷贝→填充→商务标。"""
+        proj = Path(REAL_ENT) / "项目级" / REAL_PROJECT
+        if not (proj / "招标解析" / "素材清单.json").is_file() \
+                and not list((proj / "招标解析").glob("素材清单_*.json")):
+            self.skipTest("真实项目数据不存在（素材清单缺失），跳过")
+        out = Path(self.tmp) / "商务标"
+        ent_name = Path(REAL_ENT).name
+        ent_root = str(Path(REAL_ENT).parent)
+        r = run("fill-tpl", "--project", REAL_PROJECT, "--out", str(out),
+                "--json", ent=ent_name, root=ent_root)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        data = json.loads(r.stdout)
+        self.assertIn("缺图", data)
+        self.assertTrue((out / "资格证明及辅助资料表.docx").is_file())
+        self.assertTrue((out / "生成记录.json").is_file())
 
 
 if __name__ == "__main__":

@@ -1,0 +1,26 @@
+﻿warning: The `fitz` API is deprecated and will be removed in future. Use `import pymupdf` instead.
+{
+  "ok": true,
+  "tool": "render",
+  "result": {
+    "output_dir": "E:\\bidcraft_skill\\.preview\\1048115ec1af",
+    "manifest": "E:\\bidcraft_skill\\.preview\\1048115ec1af\\manifest.json",
+    "kind": "pdf",
+    "page_count": 3,
+    "rendered_page_count": 3,
+    "collage_count": 2,
+    "extracted_text_chars": 128,
+    "text": "E:\\bidcraft_skill\\.preview\\1048115ec1af\\text.md",
+    "thumbnail": "E:\\bidcraft_skill\\.preview\\1048115ec1af\\thumb.jpg",
+    "collages": [
+      "E:\\bidcraft_skill\\.preview\\1048115ec1af\\collages\\c1.jpg",
+      "E:\\bidcraft_skill\\.preview\\1048115ec1af\\collages\\c2.jpg"
+    ],
+    "pages": [
+      "E:\\bidcraft_skill\\.preview\\1048115ec1af\\pages\\p001.png",
+      "E:\\bidcraft_skill\\.preview\\1048115ec1af\\pages\\p002.png",
+      "E:\\bidcraft_skill\\.preview\\1048115ec1af\\pages\\p003.png"
+    ],
+    "warnings": []
+  }
+}
