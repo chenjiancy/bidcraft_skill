@@ -59,7 +59,7 @@ jobs:
       # 失败通知：仅 main 分支（push/合并）失败时开 Issue（PR 失败属开发中，不打扰）
       - name: 失败通知（自动开 Issue）
         if: failure() && github.ref == 'refs/heads/main'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const owner = context.repo.owner, repo = context.repo.repo;

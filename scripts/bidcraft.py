@@ -28,6 +28,7 @@ import m8_eval                      # noqa: E402
 import m10_remedy                    # noqa: E402
 from _shared import core            # noqa: E402
 from _shared import naming as nm    # noqa: E402
+from _shared import docx_tools      # noqa: E402
 
 try:  # Windows 控制台中文输出
     sys.stdout.reconfigure(encoding="utf-8")
@@ -57,6 +58,7 @@ def build_parser():
     m7_check.register_parser(sub)           # 挂载 M7 交标前质量检查
     m8_eval.register_parser(sub)            # 挂载 M8 AI模拟评标
     m10_remedy.register_parser(sub)          # 挂载 M10 失分补救指引
+    docx_tools.register_parser(sub)          # 挂载 docx-read / docx-audit 共享工具（不占 m* 序号）
     # 让全局 --json 在子命令之后也可用（如：tpl-query --keyword x --json）。
     # 必须用 default=argparse.SUPPRESS：子 parser 未出现该参数时不写 namespace，
     # 否则子 parser 的默认 False 会覆盖主 parser 已解析的 True（--json 在子命令前时）。
@@ -70,10 +72,13 @@ def main(argv=None):
     parser = build_parser()
     args = parser.parse_args(argv)
     try:
-        args.func(args)
+        status = args.func(args)
     except (core.LibraryError, nm.NamingError) as e:
         print("❌ %s" % e, file=sys.stderr)
         sys.exit(1)
+    # 子命令可返回退出码（0 通过 / 1 有错误 / 2 输入无效，如 docx-audit）
+    if isinstance(status, int) and status:
+        sys.exit(status)
 
 
 if __name__ == "__main__":
