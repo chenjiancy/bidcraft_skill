@@ -38,6 +38,8 @@ except Exception:  # pragma: no cover
     Document = Paragraph = Table = None
 
 from .image_spec import fit_size     # noqa: E402
+from . import key_alias              # noqa: E402   v2.4：键名规范表/白名单
+from .key_alias import ROW_KEYS      # noqa: E402   行级键（与键名规范表同源）
 
 # 模板库 9 件（企业级母版，文件顺序即生成顺序）
 TPL_FILES = ["封面.docx", "投标函.docx", "投标函附录.docx", "授权委托书.docx",
@@ -49,13 +51,8 @@ TPL_FILES_PH = ["封面.docx", "开标一览表.docx", "投标函.docx",
                 "法定代表人身份证明.docx", "授权委托书.docx",
                 "资格证明及辅助资料表.docx"]
 
-# 行级键（样板行/页复制后按素材对象填值，不做全局替换）
-ROW_KEYS = {
-    "人员姓名", "人员年龄", "人员出生年月", "人员学历", "人员专业", "人员职称", "人员职务", "人员身份证",
-    "人员经历时间", "人员经历项目",
-    "业绩业主单位", "业绩项目名称", "业绩合同金额", "业绩起止时间",
-    "业绩监理服务期", "业绩监理人员数量", "业绩联系人", "业绩联系电话",
-}
+# 行级键（样板行/页复制后按素材对象填值，不做全局替换）——已并入 key_alias 统一管理
+# （PERSON_ROW_KEYS ∪ PERF_ROW_KEYS；与键名规范表同源）
 # 简历表专属键（含之表格视为简历样板表）
 RESUME_ONLY_KEYS = {"人员出生年月", "人员经历时间", "人员经历项目"}
 # 业绩明细表专属键（含之表格视为业绩明细样板页）
@@ -844,7 +841,13 @@ def fill_from_tpl(ent, proj, out_dir=None, agent=None, register=True, skeleton="
         V["supervisor_major"] = st[0].get("专业", "") if st else ""
         V["bid_price_num"] = material.get("投标报价", "") or ""
 
-    stats = {"文件": [], "缺图": [], "待补": [], "清单外": [], "文字占位填充": 0}
+    # v2.4：键名规范表补中文别名条目（模板写机器键或中文别名均解析）
+    for _mk, _spec in key_alias.KEY_SPEC.items():
+        _al = _spec.get("别名")
+        if _al and _mk in V:
+            V.setdefault(_al, V[_mk])
+
+    stats = {"文件": [], "缺图": [], "待补": [], "清单外": [], "未知键": [], "文字占位填充": 0}
     tpl_dir = proj / "项目模板"
     for fn in files:
         src = tpl_dir / fn
@@ -869,6 +872,10 @@ def fill_from_tpl(ent, proj, out_dir=None, agent=None, register=True, skeleton="
         residual = scan_residual_placeholders(doc)
         if residual:
             stats["待补"].append((fn, ["%s：%s" % (kind, key) for kind, key in residual]))
+        # v2.4 键名白名单校验：未知键披露（不静默）
+        unk = scan_unknown_keys(doc, key_alias.registered_keys())
+        if unk:
+            stats["未知键"].append((fn, unk))
 
     stats["缺图"] = list(dict.fromkeys(stats["缺图"]))
     seen_todo, todo = set(), []
@@ -920,6 +927,29 @@ def scan_residual_placeholders(doc):
                 for para in cell.paragraphs:
                     scan_para(para)
     return found
+
+
+def scan_unknown_keys(doc, valid_keys):
+    """v2.4 键名白名单校验：扫描全文所有 {{ }} 键，返回不在合法键集（机器键∪别名∪行级键）的未知键。
+
+    用于防模板键拼写错误/未登记键静默残留——未知键一律披露（不静默）。"""
+    seen = set()
+
+    def scan_para(para):
+        t = para.text or ""
+        if "{{" in t:
+            for k in _BRACE_RE.findall(t):
+                seen.add(k.strip())
+
+    from itertools import chain
+    for para in chain(doc.paragraphs, iter_textbox_paragraphs(doc)):
+        scan_para(para)
+    for tbl in doc.tables:
+        for row in tbl.rows:
+            for cell in row.cells:
+                for para in cell.paragraphs:
+                    scan_para(para)
+    return sorted(k for k in seen if k not in valid_keys)
 
 
 def _write_reports(out, stats, deadline):

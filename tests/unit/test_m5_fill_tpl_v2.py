@@ -24,6 +24,7 @@ from docx.oxml import OxmlElement  # noqa: E402
 from docx.oxml.ns import qn  # noqa: E402
 
 from m5_project import fill_from_tpl as F  # noqa: E402
+from m5_project import key_alias          # noqa: E402
 
 # 1×1 PNG（最小合法）
 _PNG = base64.b64decode(
@@ -322,6 +323,35 @@ class TestGenericText(unittest.TestCase):
         self.assertIn("项目名称：测试项目", texts)
         # 行级键段保持不动
         self.assertTrue(any("{{ 人员姓名 }}" in t for t in texts))
+
+    def test_unknown_keys_reported(self):
+        """v2.4 白名单：未知键披露（不静默）。"""
+        doc = Document()
+        doc.add_paragraph("项目：{{ project_name }}")
+        doc.add_paragraph("拼错键：{{ project_name_typo }}")
+        doc.add_paragraph("行级键合法：{{ 人员姓名 }}")
+        path = os.path.join(self.tmp, "u.docx")
+        doc.save(path)
+        doc = Document(path)
+        self.assertEqual(F.scan_unknown_keys(doc, key_alias.registered_keys()),
+                         ["project_name_typo"])
+
+    def test_alias_key_resolution(self):
+        """v2.4 别名解析：模板写中文别名（{{ 企业名称 }}）也能填充。"""
+        from m5_project import key_alias
+        doc = Document()
+        doc.add_paragraph("投标人：{{ 企业名称 }}")
+        path = os.path.join(self.tmp, "a.docx")
+        doc.save(path)
+        doc = Document(path)
+        v = {"company_name": "和县建设工程监理有限公司"}
+        for mk, spec in key_alias.KEY_SPEC.items():
+            al = spec.get("别名")
+            if al and mk in v:
+                v.setdefault(al, v[mk])
+        n = F.fill_generic_text(doc, v)
+        self.assertEqual(n, 1)
+        self.assertIn("投标人：和县建设工程监理有限公司", [p.text for p in doc.paragraphs])
 
 
 if __name__ == "__main__":
