@@ -43,6 +43,14 @@ class TestParseCert(unittest.TestCase):
         self.assertEqual(F._parse_cert(""), ("", ""))
 
 
+# 下列用例断言示例企业数据（张三/示例横江片区…），真实回归（ENV 注入真实企业）时跳过；
+# 新生产路径 fill-tpl（模板库深拷贝→填充）由 tests/e2e/test_proj_cli.py::test_fill_tpl_cli 覆盖。
+_SKIP_EXAMPLE = unittest.skipIf(
+    os.environ.get("BIDCRAFT_TEST_ENT"),
+    "示例企业数据专用用例（真实回归跳过；fill-tpl 新路径由 e2e 覆盖）")
+
+
+@_SKIP_EXAMPLE
 @skip_real
 class TestOcrResume(unittest.TestCase):
     def test_ocr_resume_fields(self):
@@ -57,6 +65,7 @@ class TestOcrResume(unittest.TestCase):
         self.assertIn("主要经历", f)
 
 
+@_SKIP_EXAMPLE
 @skip_real
 class TestFillProject(unittest.TestCase):
     @classmethod
@@ -136,6 +145,7 @@ class TestFillProject(unittest.TestCase):
 
 
 @skip_real
+@_SKIP_EXAMPLE
 class TestFillPreviewPipeline(unittest.TestCase):
     """方案A 全链路：新生成模板（含预览框）→ 填充 → 预览框清零、真图插入。"""
 

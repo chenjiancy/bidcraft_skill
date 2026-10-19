@@ -63,12 +63,14 @@ class TestResolveAssets(unittest.TestCase):
 
 class TestPreviewBoxSize(unittest.TestCase):
     def test_exact_spec(self):
-        self.assertEqual(TP._preview_box_size("【图片：三体系认证证书】"), (16.0, 23.0))
+        # v2.2（2026-10-18 统一尺寸表）：三体系竖版 21×16、法代授权身份证固定框 7.5×4.5
+        self.assertEqual(TP._preview_box_size("【图片：三体系认证证书】"), (16.0, 21.0))
         self.assertEqual(TP._preview_box_size("【图片：法定代表人身份证正、反面扫描件】"), (7.5, 4.5))
 
     def test_keyword_fallback(self):
-        self.assertEqual(TP._preview_box_size("【图片：人员职称证书】"), (16.0, 23.0))
-        self.assertEqual(TP._preview_box_size("【图片：监理示范工程证书】"), (14.0, 11.0))
+        # v2.2：职称横版 10×16、监理示范横版 10×14
+        self.assertEqual(TP._preview_box_size("【图片：人员职称证书】"), (16.0, 10.0))
+        self.assertEqual(TP._preview_box_size("【图片：监理示范工程证书】"), (14.0, 10.0))
 
     def test_default_fallback(self):
         self.assertEqual(TP._preview_box_size("【图片：业绩项目一证明材料】"), (16.0, 12.0))

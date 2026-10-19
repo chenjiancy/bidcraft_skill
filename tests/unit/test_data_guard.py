@@ -76,6 +76,8 @@ class TestSkipUnlessData(DataGuardBase):
 
 
 class TestEnvPaths(unittest.TestCase):
+    @unittest.skipIf(os.environ.get("BIDCRAFT_TEST_ENT"),
+                     "已注入真实企业路径（本测试仅验证默认示例名）")
     def test_defaults(self):
         self.assertTrue(str(env_ent_root()).endswith("示例建设工程监理有限公司"))
         self.assertTrue(str(env_proj_root()).startswith(str(env_ent_root())))

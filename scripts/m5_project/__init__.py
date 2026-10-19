@@ -18,6 +18,7 @@ from pathlib import Path
 from _shared import core            # noqa: E402
 from . import generator as gen      # noqa: E402
 from . import freeze as fz          # noqa: E402
+from . import fill_from_tpl as ftpl  # noqa: E402
 
 try:
     sys.stdout.reconfigure(encoding="utf-8")
@@ -104,6 +105,32 @@ def cmd_proj_gen(args):
         print("已跳过产物基线登记（--no-baseline）")
     else:
         print("已登记产物基线（fb）")
+
+
+def cmd_fill_tpl(args):
+    """M5（v3 适配版）：企业模板库深拷贝→项目模板→填充→商务标。"""
+    ent = get_ent(args)
+    proj = ent / "项目级" / args.project
+    if not proj.is_dir():
+        print("错误：项目目录不存在：%s" % proj, file=sys.stderr)
+        raise SystemExit(1)
+    try:
+        s = ftpl.fill_from_tpl(ent, proj, out_dir=args.out or None,
+                               agent=args.agent or None)
+    except ftpl.FillError as e:
+        print("错误：%s" % e, file=sys.stderr)
+        raise SystemExit(1)
+    if args.json:
+        print(json.dumps(s, ensure_ascii=False, indent=2))
+        return
+    print("商务标已生成（深拷贝模板库→填充）：%s" % (proj / "商务标"))
+    print("  文字占位填充 %d 处" % s["文字占位填充"])
+    if s["缺图"]:
+        print("  未命中披露（缺图 %d 项，见 缺图清单.md）：" % len(s["缺图"]))
+        for ph, note in s["缺图"]:
+            print("    ✗ %s（%s）" % (ph, note))
+    else:
+        print("  缺图：无")
 
 
 def cmd_proj_check(args):
@@ -316,3 +343,9 @@ def register_parser(sub):
     sp.add_argument("--check", action="store_true", help="冻结审计（对比基线检查是否被改动）")
     sp.add_argument("--note", default="", help="冻结备注")
     sp.set_defaults(func=cmd_proj_freeze)
+
+    sp = sub.add_parser("fill-tpl", help="M5（v3 适配版）：企业级模板库深拷贝→项目模板→填充→商务标（生成源=模板库母版，已完标书逐页基准；替代 proj-gen 招标原文路径）")
+    sp.add_argument("--project", required=True, help="项目名（项目级/<项目>）")
+    sp.add_argument("--agent", default="", help="代理机构（默认从素材清单『招标代理机构』读取）")
+    sp.add_argument("--out", default="", help="商务标输出目录（默认 项目级/<项目>/商务标）")
+    sp.set_defaults(func=cmd_fill_tpl)
