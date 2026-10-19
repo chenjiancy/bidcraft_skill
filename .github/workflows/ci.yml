@@ -50,7 +50,7 @@ jobs:
       # 测试报告 artifacts：无论成败均可下载查看（--if-no-files-found 忽略日志缺失）
       - name: 上传测试日志
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-logs
           path: test-*.log
