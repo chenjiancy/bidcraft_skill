@@ -1,6 +1,8 @@
 # Dependabot 依赖漏洞告警（公开仓库免费）：
 # - pip：Python 依赖（python-docx/Pillow 等）有已知漏洞时自动开修复 PR
 # - github-actions：Actions 自身（checkout/setup-python 等）版本更新
+# 注意：github-actions 更新会 push main 并触发 CD 部署（自托管 runner 大流量同步耗时 ~15 分钟），
+#       故限制同时打开的更新 PR 数，避免部署循环；更新 PR 需人工合并。
 version: 2
 updates:
   - package-ecosystem: "pip"
@@ -12,3 +14,4 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 1
