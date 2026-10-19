@@ -28,16 +28,9 @@ from pathlib import Path
 from .fill_common import FillError as GenError
 from _shared import core
 
+# 本项目人员默认角色（v2.0：不在此处硬编码人名；角色由 R04/R06/R07 人员配备口径推导，
+# 素材清单 personnel 数据驱动，未推导到时由 agent 维护）
 __all__ = ["export_material"]
-
-# 本项目人员默认角色（由 R04/R06/R07 人员配备口径推导，agent 维护）
-PERSON_DEFAULT_ROLE = {
-    "陈云": "项目总监",
-    "黄大海": "专业监理工程师",
-    "陈阳": "专业监理工程师",
-    "裴友谊": "监理员",
-    "阮旭": "监理员",
-}
 
 # R 编号 → (生成器 section, 名称) ；personnel 类单独处理
 SECTION_RULES = [

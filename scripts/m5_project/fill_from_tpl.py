@@ -133,12 +133,15 @@ def _resolve(p, proj):
 
 
 def insert_img_fit_cell(para, img_path, spec_key, mw, mh):
-    """按 max_w/max_h 等比适配插图（水平居中）；插入成功返回 True。"""
+    """按 max_w/max_h 等比适配插图（水平居中）；插入成功返回 True。
+
+    返回三态：True=成功；False=文件不可读/路径缺失；None=image_spec 未约定该类别尺寸
+    （须披露，不得静默插入/静默不插）。"""
     if not img_path or not Path(img_path).is_file():
         return False
     size = fit_size(img_path, spec_key, max_w=mw, max_h=mh)
     if not size:
-        return False
+        return None
     w, h = size
     for r in list(para.runs):
         r._r.getparent().remove(r._r)
@@ -664,8 +667,12 @@ def fill_images_by_category(doc, idx, material, proj, missing):
         paths = [R(p, proj) for p in aggregate_category(material, cat)]
         for i, para in enumerate(paras):
             if i < len(paths):
-                if not _insert_img_at_para(doc, para, paths[i], _spec_key(cat)):
-                    missing.append((cat, "第%d张 插图失败（文件不可读/规格不匹配）" % (i + 1)))
+                r = _insert_img_at_para(doc, para, paths[i], _spec_key(cat))
+                if r is None:
+                    missing.append((cat, "第%d张 image_spec 未约定该类尺寸（已删框）" % (i + 1)))
+                    _drop_ph_para(para)
+                elif not r:
+                    missing.append((cat, "第%d张 插图失败（文件不可读/路径缺失）" % (i + 1)))
             else:
                 missing.append((cat, "第%d张 素材不足/素材清单未列（已删框）" % (i + 1)))
                 _drop_ph_para(para)
@@ -701,8 +708,12 @@ def _consume_para_images(doc, para, cat, paths, missing):
         missing.append((cat, "素材清单未列/该人员无此证书（已删框）"))
         _drop_ph_para(para)
         return
-    if not _insert_img_at_para(doc, para, paths[0], _spec_key(cat)):
-        missing.append((cat, "插图失败"))
+    r = _insert_img_at_para(doc, para, paths[0], _spec_key(cat))
+    if r is None:
+        missing.append((cat, "image_spec 未约定该类尺寸（已删框）"))
+        _drop_ph_para(para)
+    elif not r:
+        missing.append((cat, "插图失败（文件不可读/路径缺失）"))
         _drop_ph_para(para)
     else:
         _drop_ph_text(para)

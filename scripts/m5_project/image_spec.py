@@ -25,7 +25,7 @@ RULES = {
 }
 
 # 各图片占位（高 × 宽 cm）：
-#   - 「高」仅用于预览框/描述（box_size_for、template_preview）；实际填充
+#   - 「高」仅用于预览框/描述（box_size_for）；实际填充
 #     除身份证外一律「宽=可用宽、高按原图等比」（见 fit_size）。
 #   - 身份证为小图特例，保留固定框 contain。
 IMG_SPEC = {
