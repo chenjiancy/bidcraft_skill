@@ -1,19 +1,25 @@
 # -*- coding: utf-8 -*-
 """
-M5（v3 适配版）商务标生成引擎：企业级模板库深拷贝 → 项目模板 → 占位填充。
+M5（v2.0 布局样板范式）商务标生成引擎：企业母版（布局样板）深拷贝 → 项目模板 → 类别聚合填充。
 
-用户 2026-10-19 定案流程（替代 proj-gen 招标原文深拷贝路径）：
-  1) 深拷贝 企业级模板库/<代理机构>/商务标母版-招标式/ 9 件 → 项目模板/
-  2) 按素材清单填充：文字占位（{{ }}）+ 图片占位（表格图框）
-  3) 图片一律按模板单元格宽×行高等比适配（fit inside cell box）
-  4) 一页两张图片的，两图之间插入 1cm 间距行（trHeight exact + 段落 line exact 双保险）
-  5) 未命中不兜底：缺图/待补/清单外逐项披露到报告，交用户处理
+用户 2026-10-19 定案（取代 V5 / CELL_MAP 坐标+人名硬编码）：
+  1) 深拷贝 企业级模板库/<代理机构>/商务标母版-<骨架>/ → 项目模板/
+  2) 模板=版面样板：固定条款照抄、可变文字 {{ 键名 }}、图片【图片占位：类别】、人员/业绩只做样板行/页
+  3) 素材清单=数据：personnel/performance/qualification_required/honors/iso_certificates/
+     social_security_required 决定放哪些人/证书/多少/顺序；**素材清单未列出的素材商务标不生成**
+  4) fill 四步引擎：①占位索引扫描 → ②样板复制（按素材数量深拷贝 XML，保留格式/合并单元格）
+     → ③类别聚合填充（图片按类别依序消费；简历组内按人员对象取数、组间不串）
+     → ④未列不生成 + 缺图披露
+  5) 总监识别=职务字段含「总监」/「总监理工程师」，personnel[0] 仅兜底；
+     专业监理工程师/监理员为数据（{{ 人员职务 }} 直填），不参与图片类别识别；
+     某人无某类证书 → 该类自动少一张。
 
 模块契约：脚本平台无关（不依赖豆包私有能力）；素材一旦归档受保护，本模块只读。
 """
 import json
 import re
 import shutil
+from copy import deepcopy
 from pathlib import Path
 
 from _shared import core            # noqa: E402
@@ -27,9 +33,9 @@ try:
     from docx.oxml import OxmlElement
     from docx.oxml.ns import qn
     from docx.text.paragraph import Paragraph
-    from copy import deepcopy
+    from docx.table import Table
 except Exception:  # pragma: no cover
-    Document = None
+    Document = Paragraph = Table = None
 
 from .image_spec import fit_size     # noqa: E402
 
@@ -43,6 +49,27 @@ TPL_FILES_PH = ["封面.docx", "开标一览表.docx", "投标函.docx",
                 "法定代表人身份证明.docx", "授权委托书.docx",
                 "资格证明及辅助资料表.docx"]
 
+# 行级键（样板行/页复制后按素材对象填值，不做全局替换）
+ROW_KEYS = {
+    "人员姓名", "人员年龄", "人员出生年月", "人员学历", "人员专业", "人员职称", "人员职务", "人员身份证",
+    "人员经历时间", "人员经历项目",
+    "业绩业主单位", "业绩项目名称", "业绩合同金额", "业绩起止时间",
+    "业绩监理服务期", "业绩监理人员数量", "业绩联系人", "业绩联系电话",
+}
+# 简历表专属键（含之表格视为简历样板表）
+RESUME_ONLY_KEYS = {"人员出生年月", "人员经历时间", "人员经历项目"}
+# 业绩明细表专属键（含之表格视为业绩明细样板页）
+PERF_DETAIL_KEYS = {"业绩监理服务期", "业绩监理人员数量", "业绩联系人", "业绩联系电话"}
+
+# 简历组内图片类别 → 人员对象字段（组内按人员取数，不参与全局依序消费）
+STAFF_IMG_KINDS = {
+    "总监注册监理工程师证书": ["注册证书"],
+    "高级工程师职称证书": ["职称证书", "职称"],
+    "职称证书": ["职称证书", "职称"],
+    "岗位证书": ["岗位证书"],
+    "身份证": ["身份证"],
+}
+
 
 def _load_material(proj_dir):
     """读素材清单：优先 素材清单.json，回退 素材清单_<项目>.json。"""
@@ -51,7 +78,6 @@ def _load_material(proj_dir):
         f = p / name
         if f.is_file():
             return core.read_json(str(f), None) or {}
-    # 回退带项目名前缀
     cands = sorted(p.glob("素材清单_*.json"))
     if cands:
         return core.read_json(str(cands[0]), None) or {}
@@ -67,74 +93,15 @@ def _fmt_date(s):
     return str(s)
 
 
-# ==================== 占位替换 ====================
+# ==================== 文本框 / 单元格 基础工具 ====================
 def iter_textbox_paragraphs(doc):
-    """遍历文档中所有文本框（w:txbxContent）内的段落（python-docx doc.paragraphs 不可见）。
-    模板库母版图片占位段多为文本框内段落（2026-10-19 端到端试跑发现），
-    填充引擎必须覆盖；parent=doc 提供 part 供插图/文本替换使用。"""
+    """遍历文档中所有文本框（w:txbxContent）内的段落（python-docx doc.paragraphs 不可见）。"""
     body = doc.element.body
     for txbx in body.iter(qn("w:txbxContent")):
         for p_el in txbx.iter(qn("w:p")):
             yield Paragraph(p_el, doc)
 
 
-def repl_braces(text, vmap, perf_seq_ref):
-    """{{ }} 占位替换：业绩项目名称按序消费 perf_seq。"""
-    def rep(m):
-        k = m.group(1).strip()
-        if k == "业绩项目名称":
-            if perf_seq_ref[0] < len(perf_seq_ref[1]):
-                v = perf_seq_ref[1][perf_seq_ref[0]]
-                perf_seq_ref[0] += 1
-                return v
-            return m.group(0)
-        return vmap.get(k, m.group(0))
-    return re.sub(r"\{\{\s*([^}]+?)\s*\}\}", rep, text)
-
-
-def fill_braces_doc(doc, vmap, perf_seq=None):
-    perf_ref = [0, perf_seq or []]
-    used = 0
-    for para in doc.paragraphs:
-        full = para.text or ""
-        # 图片占位文案（【图片占位：…】）只是给人工看的说明标记，其中的 {{ }} 不做文本替换
-        # （业绩名称/人员名等由图片填充按行列定位；缺图时保留原标记）
-        if "{{" in full and "【图片占位：" not in full:
-            nt = repl_braces(full, vmap, perf_ref)
-            if nt != full:
-                for r in para.runs[1:]:
-                    r._r.getparent().remove(r._r)
-                if para.runs:
-                    para.runs[0].text = nt
-                used += 1
-    for tbl in doc.tables:
-        for row in tbl.rows:
-            for cell in row.cells:
-                for para in cell.paragraphs:
-                    full = para.text or ""
-                    if "{{" in full and "【图片占位：" not in full:
-                        nt = repl_braces(full, vmap, perf_ref)
-                        if nt != full:
-                            for r in para.runs[1:]:
-                                r._r.getparent().remove(r._r)
-                            if para.runs:
-                                para.runs[0].text = nt
-                            used += 1
-    # 文本框内段落（母版图片占位段常见于此，{{ }} 文字占位同样覆盖）
-    for para in iter_textbox_paragraphs(doc):
-        full = para.text or ""
-        if "{{" in full and "【图片占位：" not in full:
-            nt = repl_braces(full, vmap, perf_ref)
-            if nt != full:
-                for r in para.runs[1:]:
-                    r._r.getparent().remove(r._r)
-                if para.runs:
-                    para.runs[0].text = nt
-                used += 1
-    return used
-
-
-# ==================== 图片填充（按单元格宽×行高适配） ====================
 def cell_box_cm(cell):
     """返回 (max_w_cm, max_h_cm)：单元格宽 + 行高（exact/atLeast，twips/567=cm）。"""
     mw = cell.width / 360000.0 if cell.width else 16.0
@@ -157,7 +124,6 @@ def _resolve(p, proj):
     if not p:
         return ""
     p = str(p)
-    # 纠偏：企业级\项目级\... → 项目级\...（素材清单历史数据缺陷）
     p = re.sub(r"企业级[\\/]+项目级", "项目级", p)
     p = Path(p)
     if p.is_absolute() and p.is_file():
@@ -167,7 +133,7 @@ def _resolve(p, proj):
 
 
 def insert_img_fit_cell(para, img_path, spec_key, mw, mh):
-    """按单元格 max_w/max_h 等比适配插图（水平居中）。"""
+    """按 max_w/max_h 等比适配插图（水平居中）；插入成功返回 True。"""
     if not img_path or not Path(img_path).is_file():
         return False
     size = fit_size(img_path, spec_key, max_w=mw, max_h=mh)
@@ -181,92 +147,31 @@ def insert_img_fit_cell(para, img_path, spec_key, mw, mh):
     return True
 
 
-def fill_img_table_cell(doc, ti, ri, ci, img_path, spec_key):
-    try:
-        cell = doc.tables[ti].rows[ri].cells[ci]
-    except Exception:
-        return False
-    for para in cell.paragraphs:
-        if "【图片占位：" in (para.text or ""):
+def _insert_img_at_para(doc, para, img_path, spec_key):
+    """段落级插图：段落位于表格单元格 → 按单元格适配；否则按页面级上限（文本框内段落常见）。"""
+    tc = para._p.getparent() if para._p.getparent() is not None else None
+    cell_found = False
+    while tc is not None and tc.tag != qn("w:tc"):
+        tc = tc.getparent()
+    if tc is not None and tc.tag == qn("w:tc"):
+        try:
+            cell = None
+            for tbl in doc.tables:
+                for row in tbl.rows:
+                    for c in row.cells:
+                        if c._tc is tc:
+                            cell = c
+                            break
+        except Exception:
+            cell = None
+        if cell is not None:
             mw, mh = cell_box_cm(cell)
             return insert_img_fit_cell(para, img_path, spec_key, mw, mh)
-    return False
-
-
-def insert_gap_row_after(tbl, row_idx, gap_cm=1.0):
-    """在 row_idx 行后插入 gap 空行（trHeight exact + 段落 line exact 双保险）。"""
-    src_tr = tbl.rows[row_idx]._tr
-    new_tr = deepcopy(src_tr)
-    for tc in new_tr.findall(qn("w:tc")):
-        for p in tc.findall(qn("w:p")):
-            for node in list(p):
-                if node.tag != qn("w:pPr"):
-                    p.remove(node)
-            pPr = p.find(qn("w:pPr"))
-            if pPr is None:
-                pPr = OxmlElement("w:pPr")
-                p.insert(0, pPr)
-            for old in pPr.findall(qn("w:spacing")):
-                pPr.remove(old)
-            sp = OxmlElement("w:spacing")
-            sp.set(qn("w:line"), str(int(gap_cm * 567)))
-            sp.set(qn("w:lineRule"), "exact")
-            pPr.append(sp)
-    trPr = new_tr.find(qn("w:trPr"))
-    if trPr is None:
-        trPr = OxmlElement("w:trPr")
-        new_tr.insert(0, trPr)
-    for trH in trPr.findall(qn("w:trHeight")):
-        trPr.remove(trH)
-    trH = OxmlElement("w:trHeight")
-    trH.set(qn("w:val"), str(int(gap_cm * 567)))
-    trH.set(qn("w:hRule"), "exact")
-    trPr.append(trH)
-    src_tr.addnext(new_tr)
-
-
-def add_gap_between_two_img_rows(doc, ti, gap_cm=1.0):
-    """双图框表格（已知索引）行 0/行 1 之间插 gap。fill 后占位文字已消失，
-    故按「行内含图片」检测 + 已有 gap 行跳过。"""
-    try:
-        tbl = doc.tables[ti]
-    except IndexError:
-        return False
-    if len(tbl.rows) < 2:
-        return False
-
-    def has_img(row):
-        for cell in row.cells:
-            for para in cell.paragraphs:
-                if para._p.find(".//" + qn("w:drawing")) is not None:
-                    return True
-        return False
-
-    if not (has_img(tbl.rows[0]) and has_img(tbl.rows[1])):
-        return False
-    if len(tbl.rows) > 2:
-        return False
-    insert_gap_row_after(tbl, 0, gap_cm)
-    return True
-
-
-# ==================== 采购式资格证明行/表级填充（2026-10-19 重配） ====================
-def _repl_cell_keys(cell, mapping):
-    """单元格内 {{ }} 键替换（保留格式：只改首 run，清空其余 run）。"""
-    for para in cell.paragraphs:
-        t = para.text or ""
-        nt = t
-        for k, v in mapping.items():
-            nt = nt.replace("{{ " + k + " }}", v).replace("{{" + k + "}}", v)
-        if nt != t:
-            for r in list(para.runs[1:]):
-                r._r.getparent().remove(r._r)
-            if para.runs:
-                para.runs[0].text = nt
+    return insert_img_fit_cell(para, img_path, spec_key, 16.0, 24.6)
 
 
 def _repl_para_keys(para, mapping):
-    """单段 {{ }} 键替换（简历经历段按段独立消费）。"""
+    """单段 {{ }} 键替换（保留格式：只改首个 w:t，清空其余 w:t）。"""
     t = para.text or ""
     nt = t
     for k, v in mapping.items():
@@ -278,102 +183,211 @@ def _repl_para_keys(para, mapping):
             para.runs[0].text = nt
 
 
-def fill_cgys_qual_rows(doc, material):
-    """采购式资格证明行/表级填充：表1业绩汇总(行1-4)、表2-5业绩明细(每表1条)、
-    表9人员配备(行1-4)、表10-13简历(每表1人，含经历段按段消费)。
-    先行级替换表格键，fill_braces_doc 只处理正文残余——键已消费不再被全局覆盖。"""
-    perf = material.get("performance") or []
-    staff = material.get("personnel") or []
-    # 表1 业绩汇总：行1..N 按 perf（列：业主名称1/项目名称2/合同金额4/起止时间5）
-    try:
-        t = doc.tables[1]
-        for i, row in enumerate(t.rows[1:1 + len(perf)]):
-            mapping = {
-                "业绩业主单位": perf[i].get("业主单位") or "",
-                "业绩项目名称": perf[i].get("name") or "",
-                "业绩合同金额": perf[i].get("合同金额") or "",
-                "业绩起止时间": perf[i].get("起止时间") or "",
-            }
-            for c in row.cells:
-                _repl_cell_keys(c, mapping)
-    except Exception:
-        pass
-    # 表2-5 业绩明细：每表 1 条
-    for ti in range(2, 2 + min(4, len(perf))):
-        try:
-            tbl = doc.tables[ti]
-        except Exception:
-            continue
-        it = perf[ti - 2]
-        mapping = {
-            "业绩业主单位": it.get("业主单位") or "",
-            "业绩项目名称": it.get("name") or "",
-            "业绩合同金额": it.get("合同金额") or "",
-            "业绩起止时间": it.get("起止时间") or "",
-            "业绩监理服务期": it.get("监理服务期") or "",
-            "姓名": staff[0].get("name") if staff else "",
-        }
-        for row in tbl.rows:
-            for c in row.cells:
-                _repl_cell_keys(c, mapping)
-    # 表9 人员配备：行1..N 按 staff（列：姓名1/年龄2/学历3/专业4/职称5/职务6）
-    try:
-        t = doc.tables[9]
-        for i, row in enumerate(t.rows[1:1 + len(staff)]):
-            mapping = {
-                "人员姓名": staff[i].get("name") or "",
-                "人员年龄": staff[i].get("年龄") or "",
-                "人员学历": staff[i].get("学历") or "",
-                "人员专业": staff[i].get("专业") or "",
-                "人员职称": staff[i].get("职称") or "",
-                "人员职务": staff[i].get("职务") or "",
-            }
-            for c in row.cells:
-                _repl_cell_keys(c, mapping)
-    except Exception:
-        pass
-    # 表10-13 简历：每表 1 人（姓名/性别/出生/学历/专业/职称/职务 + 经历段按段消费）
-    for ti in range(10, 10 + min(4, len(staff))):
-        try:
-            tbl = doc.tables[ti]
-        except Exception:
-            continue
-        p0 = staff[ti - 10]
-        exp = p0.get("经历") or []
-        mapping = {
-            "人员姓名": p0.get("name") or "",
-            "人员出生年月": p0.get("出生年月") or "",
-            "人员学历": p0.get("学历") or "",
-            "人员专业": p0.get("专业") or "",
-            "人员职称": p0.get("职称") or "",
-            "人员职务": p0.get("职务") or "",
-        }
-        cnt_t, cnt_p = 0, 0
-        for row in tbl.rows:
-            for c in row.cells:
-                for para in c.paragraphs:
-                    t = para.text or ""
-                    has_t = "人员经历时间" in t
-                    has_p = "人员经历项目" in t
-                    if not (has_t or has_p):
-                        _repl_cell_keys(c, mapping)
-                        continue
-                    # 经历段：同段非经历键（姓名/职务/职称等）+ 经历键一并替换；
-                    # 经历素材缺失时经历键保留 → scan_residual 披露待补（不静默删）
-                    m2 = dict(mapping)
-                    if has_t and cnt_t < len(exp):
-                        m2["人员经历时间"] = exp[cnt_t].get("时间") or ""
-                    if has_p and cnt_p < len(exp):
-                        m2["人员经历项目"] = exp[cnt_p].get("项目") or ""
-                    _repl_para_keys(para, m2)
-                    if has_t:
-                        cnt_t += 1
-                    if has_p:
-                        cnt_p += 1
+def _repl_tr_text(tr, mapping):
+    """表格行级 {{ }} 替换（物理 w:tr 内所有段落；只替换 mapping 中键）。"""
+    for p_el in tr.iter(qn("w:p")):
+        t = "".join(node.text or "" for node in p_el.iter(qn("w:t")))
+        nt = t
+        for k, v in mapping.items():
+            nt = nt.replace("{{ " + k + " }}", v).replace("{{" + k + "}}", v)
+        if nt != t:
+            texts = list(p_el.iter(qn("w:t")))
+            if texts:
+                texts[0].text = nt
+                for node in texts[1:]:
+                    node.text = ""
 
 
+# ==================== ① 占位索引扫描 ====================
+_BRACE_RE = re.compile(r"\{\{\s*([^}]+?)\s*\}\}")
+_IMGPH_RE = re.compile(r"【图片占位：([^】]+)】")
+
+
+def _para_braces(para):
+    return set(k.strip() for k in _BRACE_RE.findall(para.text or ""))
+
+
+def _para_imgph(para):
+    return [c.strip() for c in _IMGPH_RE.findall(para.text or "")]
+
+
+def scan_placeholder_index(doc):
+    """扫描母版占位，返回 dict：
+    - generic_keys: {键: count}           通用键（非行级键）
+    - row_paras:    {键: [paragraph]}     含行级键的段落（简历锚点等，不做全局替换）
+    - img_ph:       [(类别, paragraph)]   全局图片占位序列（出现顺序；不含简历/业绩组内框）
+    - row_tables:   {键: [(table, row_idx)]} 行级样板行（人员配备/业绩汇总）
+    - detail_tables: [(table, kind)]      整表样板：resume=简历表 / perf=业绩明细表
+    """
+    idx = {"generic_keys": {}, "row_paras": {}, "img_ph": [], "row_tables": {}, "detail_tables": []}
+    excluded = set()  # 组内 body 元素（存元素对象；id() 会因 GC 复用产生假阳性）
+
+    # 先判整表样板（简历/业绩明细），收集其组内段落
+    for tbl in doc.tables:
+        full = "".join(c.text for c in (c2 for r in tbl.rows for c2 in r.cells))
+        if any(k in full for k in RESUME_ONLY_KEYS):
+            idx["detail_tables"].append((tbl, "resume"))
+            for el in _detail_group_elements(doc, tbl):
+                excluded.add(el)
+            continue
+        if any(k in full for k in PERF_DETAIL_KEYS):
+            idx["detail_tables"].append((tbl, "perf"))
+            for el in _detail_group_elements(doc, tbl):
+                excluded.add(el)
+            continue
+        for ri, row in enumerate(tbl.rows):
+            rowkeys = set()
+            for cell in row.cells:
+                for para in cell.paragraphs:
+                    rowkeys |= collect_para(idx, para)
+            if "人员姓名" in rowkeys:
+                idx["row_tables"].setdefault("人员配备", []).append((tbl, ri))
+            if "业绩业主单位" in rowkeys or "业绩项目名称" in rowkeys:
+                idx["row_tables"].setdefault("业绩汇总", []).append((tbl, ri))
+
+    def in_group(para):
+        node = para._p
+        while node is not None:
+            if node in excluded:
+                return True
+            node = node.getparent()
+        return False
+
+    for para in doc.paragraphs:
+        collect_para(idx, para, in_group=in_group(para))
+    for para in iter_textbox_paragraphs(doc):
+        collect_para(idx, para, in_group=in_group(para))
+    return idx
+
+
+def collect_para(idx, para, in_group=False):
+    """单段收集：{{ }} 键分类 + 【图片占位：类别】序列。组内段图框不入全局。"""
+    keys = _para_braces(para)
+    row_keys = keys & ROW_KEYS
+    if keys:
+        for k in keys:
+            if k in ROW_KEYS:
+                idx["row_paras"].setdefault(k, []).append(para)
+            else:
+                idx["generic_keys"][k] = idx["generic_keys"].get(k, 0) + 1
+    if not in_group:
+        for c in _para_imgph(para):
+            idx["img_ph"].append((c, para))
+    return keys
+
+
+def _detail_group_elements(doc, tbl):
+    """整表样板组：body 级元素列表 = [可选前锚点段（含 {{ 人员姓名 }}）] + 表 + 表后组员段。"""
+    elems = []
+    prev = tbl._tbl.getprevious()
+    if prev is not None and prev.tag == qn("w:p"):
+        pp = Paragraph(prev, doc)
+        if "人员姓名" in _para_braces(pp):
+            elems.append(prev)
+    elems.append(tbl._tbl)
+    elems += [m._tbl if isinstance(m, Table) else m._p for m in _iter_group_elements(doc, tbl._tbl)]
+    return elems
+
+
+# ==================== ② 样板复制 ====================
+def _fit_row_template(doc, tbl, row_idx, n, fill_fn):
+    """行样板数量适配：样板行保留，其后同结构行删除；按 n 复制补齐；逐行 fill_fn(i) 填值。
+    复制源=原始占位行（deepcopy 于填充前），避免复制已填充行。返回 True=已处理（含 n=0 删除样板行）。"""
+    rows = list(tbl.rows)
+    total = len(rows)
+    for ri in range(total - 1, row_idx, -1):
+        tr = rows[ri]._tr
+        tr.getparent().remove(tr)
+    tmpl_tr = tbl.rows[row_idx]._tr
+    if n <= 0:
+        tmpl_tr.getparent().remove(tmpl_tr)
+        return True
+    src_tr = deepcopy(tmpl_tr)      # 原始占位行（未填）
+    fill_fn(0, tmpl_tr)             # 样板行填第 1 条
+    for i in range(1, n):
+        new_tr = deepcopy(src_tr)
+        tmpl_tr.addnext(new_tr)
+        fill_fn(i, new_tr)
+        tmpl_tr = new_tr
+    return True
+
+
+def _fit_table_group(doc, anchor, members, n, fill_fn):
+    """整表/整组样板复制：anchor=锚点元素（段落/表格），members=其后组员元素（body 级）。
+    n=复制份数；fill_fn(i, el) 对第 i 份逐元素填值。复制源=原始占位副本（填充前深拷贝）。
+    n=0 → 删除整组。"""
+    if n <= 0:
+        for el in [anchor] + list(members):
+            el.getparent().remove(el)
+        return
+    anchor_src = deepcopy(anchor)
+    members_src = [deepcopy(m) for m in members]
+    fill_fn(0, anchor)
+    for el in members:
+        fill_fn(0, el)
+    # 副本整体追加到原始组之后（last 从组尾开始），保持 组1…组N 顺序
+    last = members[-1] if members else anchor
+    for i in range(1, n):
+        for el in [anchor_src] + members_src:
+            new_el = deepcopy(el)
+            last.addnext(new_el)
+            last = new_el
+            fill_fn(i, new_el)
+
+
+def _iter_group_elements(doc, anchor):
+    """返回锚点后的 body 级兄弟元素（段落/表格），直到『组终止点』并停：
+    ① 下一个人员锚点（含 {{ 人员姓名 }}）；② 分页符段（w:br type=page / pageBreakBefore）——
+    v2.0 约定：简历表后到下一分页符前的图框段归该人。只收图框段（正文/文本框/表格内图框占位）。"""
+    members = []
+    body = doc.element.body
+    node = anchor.getnext()
+    while node is not None:
+        if node.tag == qn("w:p"):
+            para = Paragraph(node, doc)
+            if "人员姓名" in _para_braces(para):
+                break
+            if _has_page_break(para):
+                break
+            if _para_imgph(para) or _has_textbox_imgph(para):
+                members.append(para)
+        elif node.tag == qn("w:tbl"):
+            full = "".join(c.text for row in Table(node, doc).rows for c in row.cells)
+            if "【图片占位：" in full:
+                members.append(Table(node, doc))
+        node = node.getnext()
+    return members
+
+
+def _has_page_break(para):
+    """段首分页（w:br type=page 或 pageBreakBefore）判定——组边界。"""
+    if para.paragraph_format.page_break_before:
+        return True
+    for br in para._p.iter(qn("w:br")):
+        if br.get(qn("w:type")) == "page":
+            return True
+    return False
+
+
+def _has_textbox_imgph(para):
+    """段落内嵌文本框（w:txbxContent）是否含图片占位文案。"""
+    for txbx in para._p.iter(qn("w:txbxContent")):
+        for p_el in txbx.iter(qn("w:p")):
+            if _para_imgph(Paragraph(p_el, para.part)):
+                return True
+    return False
+
+
+def _find_person_anchor(doc):
+    """人员锚点段：含 {{ 人员姓名 }} 的段落（正文/文本框）；返回首段。"""
+    for para in doc.paragraphs:
+        if "人员姓名" in _para_braces(para):
+            return para
+    return None
+
+
+# ==================== ③ 类别聚合 ====================
 def _flat_paths(items):
-    """素材对象展平路径：path 字段 + paths 列表（去空）。"""
     out = []
     for it in items or []:
         if isinstance(it, dict):
@@ -385,176 +399,335 @@ def _flat_paths(items):
     return out
 
 
-def fill_cgys_images(doc, material, missing):
-    """采购式资格证明图占位：按图占位文案关键词分类填充（_fill_kw 依序消费素材路径）。
-    素材缺/空不兜底，逐项披露到缺图清单。"""
-    iso = _flat_paths(material.get("iso_certificates"))
-    ss = []
-    for it in material.get("social_security_required") or []:
-        ss += [str(p) for p in it.get("paths") or [] if p]
-    perf_paths = [str(p) for it in material.get("performance") or [] for p in (it.get("paths") or [])]
-    qual = [it.get("path") for it in material.get("qualification_required") or [] if it.get("path")]
+def _find_director(staff):
+    """总监识别：职务字段含「总监」/「总监理工程师」→ 总监；personnel[0] 仅兜底。"""
+    for p in staff:
+        z = str(p.get("职务") or "")
+        if "总监" in z or "总监理工程师" in z:
+            return p
+    return staff[0] if staff else None
+
+
+def _staff_paths(person, cat):
+    for k in STAFF_IMG_KINDS.get(cat, []):
+        v = person.get(k) or []
+        if v:
+            return [str(x) for x in v if x]
+    return []
+
+
+def _q_paths(material, kw):
+    """qualification_required 按名称关键词匹配（支持多个关键词，任一命中）。"""
+    out = []
+    for it in material.get("qualification_required") or []:
+        nm = str(it.get("name") or "")
+        if kw and any(k in nm for k in (kw if isinstance(kw, (list, tuple)) else [kw])):
+            p = it.get("path") or ""
+            if p:
+                out.append(str(p))
+    return out
+
+
+def aggregate_category(material, cat):
+    """按类别聚合素材路径（v2.0 规范 3.3）。类别素材数=0 表示未列 → 不生成。"""
     staff = material.get("personnel") or []
+    director = _find_director(staff)
+    non_dir = [p for p in staff if p is not director]
+    if cat == "总监注册监理工程师证书":
+        return _staff_paths(director, cat) if director else []
+    if cat == "高级工程师职称证书":
+        return _staff_paths(director, cat) if director else []
+    if cat == "职称证书":
+        out = []
+        for p in non_dir:
+            out += _staff_paths(p, cat)
+        return out
+    if cat == "岗位证书":
+        out = []
+        for p in non_dir:
+            out += _staff_paths(p, "岗位证书")
+        return out
+    if cat == "身份证":
+        out = []
+        for p in staff:
+            out += _staff_paths(p, "身份证")
+        return out
+    if cat == "社保证明":
+        out = []
+        for it in material.get("social_security_required") or []:
+            for p in it.get("paths") or []:
+                if p:
+                    out.append(str(p))
+        return out
+    if cat == "业绩材料":
+        out = []
+        for it in material.get("performance") or []:
+            for p in it.get("paths") or []:
+                if p:
+                    out.append(str(p))
+        return out
+    if cat == "企业资质证书":
+        return _q_paths(material, "资质")
+    if cat == "企业法人营业执照":
+        return _q_paths(material, "营业执照")
+    if cat == "开户许可证":
+        return _q_paths(material, "开户许可")
+    if cat == "三体系认证证书":
+        return _flat_paths(material.get("iso_certificates"))
+    if cat == "先进监理企业证书":
+        return _honor_paths(material, ("先进监理企业", "优秀监理企业", "优秀企业"))
+    if cat == "监理示范工程":
+        return _honor_paths(material, ("监理示范", "示范工程", "安全生产标准化", "黄山杯"))
+    if cat == "优秀总监证书":
+        return _honor_paths(material, "优秀总监")
+    if cat == "法定代表人身份证":
+        return _flat_paths(material.get("企业基础信息", {}).get("法定代表人身份证"))
+    if cat == "委托代理人身份证":
+        return _flat_paths(material.get("企业基础信息", {}).get("委托代理人身份证"))
+    return []
 
-    def per_paths(idx, kind):
-        if idx < len(staff):
-            return [str(x) for x in (staff[idx].get(kind) or []) if x]
-        return []
 
-    honors = material.get("honors") or []
-    honor_paths = [h.get("path", "") for h in honors if h.get("path", "")]
-    _fill_kw(doc, "三体系认证证书", iso, "三体系认证证书", missing)
-    _fill_kw(doc, "社保证明", ss, "社保证明", missing)
-    _fill_kw(doc, "业绩材料", perf_paths, "业绩合同验收报告", missing)
-    _fill_kw(doc, "企业资质证书", qual, "企业资质证书", missing)
-    _fill_kw(doc, "总监理工程师注册执业证书", per_paths(0, "注册证书"), "注册监理工程师证书", missing)
-    _fill_kw(doc, "总监一级造价师证书", per_paths(0, "一级造价师证书"), "一级造价工程师证书", missing)
-    _fill_kw(doc, "专业监理工程师中级职称", per_paths(1, "职称证书") or per_paths(1, "职称"), "职称证书", missing)
-    _fill_kw(doc, "拟派项目总监的优秀总监证书", honor_paths, "优秀总监证书", missing)
-    _fill_kw(doc, "先进（优秀）监理企业证书", honor_paths, "先进监理企业证书", missing)
-    _fill_kw(doc, "证明材料", [], "证明材料", missing)
+def _honor_paths(material, kws):
+    out = []
+    for it in material.get("honors") or []:
+        nm = str(it.get("name") or "")
+        if isinstance(kws, (list, tuple)):
+            hit = any(k in nm for k in kws)
+        else:
+            hit = kws in nm
+        if hit:
+            p = it.get("path") or ""
+            if p:
+                out.append(str(p))
+    return out
 
 
-# ==================== 素材索引（从素材清单动态取路径） ====================
-def build_maps(material):
-    biz = material.get("企业基础信息", {}) or {}
-    persons = {p["name"]: p for p in material.get("personnel", [])}
-    Q = {it["name"]: it for it in material.get("qualification_required", [])}
+def _person_map(person):
+    return {
+        "人员姓名": person.get("name") or "",
+        "人员年龄": person.get("年龄") or "",
+        "人员出生年月": person.get("出生年月") or "",
+        "人员学历": person.get("学历") or "",
+        "人员专业": person.get("专业") or "",
+        "人员职称": person.get("职称") or "",
+        "人员职务": person.get("职务") or "",
+        "人员身份证": person.get("身份证号") or person.get("身份证") or "",
+    }
 
-    def q(name):
-        it = Q.get(name)
-        return (it.get("path") or "") if it else ""
 
-    def p(name, kind, idx=0):
-        per = persons.get(name)
-        if not per:
-            return ""
-        lst = per.get(kind) or []
-        return lst[idx] if idx < len(lst) else ""
+def _perf_map(perf):
+    return {
+        "业绩业主单位": perf.get("业主单位") or "",
+        "业绩项目名称": perf.get("name") or "",
+        "业绩合同金额": perf.get("合同金额") or "",
+        "业绩起止时间": perf.get("起止时间") or "",
+        "业绩监理服务期": perf.get("监理服务期") or "",
+        "业绩监理人员数量": perf.get("监理人员数量") or "",
+        "业绩联系人": perf.get("联系人") or "",
+        "业绩联系电话": perf.get("联系电话") or "",
+    }
 
-    def honor(kw):
-        for h in material.get("honors", []):
-            if kw in h.get("name", ""):
-                return h.get("path", "") or ""
-        return ""
 
-    PERF = {}
-    for it in material.get("performance", []):
-        nm = it.get("name", "")
-        key = "横江" if "横江" in nm else ("南北" if ("南北" in nm or "北部" in nm) else nm)
-        PERF[key] = it.get("paths") or []
+# ==================== 填充引擎 ====================
+def fill_generic_text(doc, vmap):
+    """通用键直填：跳过含行级键的段落（由样板引擎处理）；含【图片占位：】的段落不做文本替换。"""
+    used = 0
+    for para in doc.paragraphs:
+        full = para.text or ""
+        if "{{" in full and "【图片占位：" not in full and not (_para_braces(para) & ROW_KEYS):
+            nt = _repl_braces(full, vmap)
+            if nt != full:
+                _set_para_text(para, nt)
+                used += 1
+    for tbl in doc.tables:
+        for row in tbl.rows:
+            for cell in row.cells:
+                for para in cell.paragraphs:
+                    full = para.text or ""
+                    if "{{" in full and "【图片占位：" not in full and not (_para_braces(para) & ROW_KEYS):
+                        nt = _repl_braces(full, vmap)
+                        if nt != full:
+                            _set_para_text(para, nt)
+                            used += 1
+    for para in iter_textbox_paragraphs(doc):
+        full = para.text or ""
+        if "{{" in full and "【图片占位：" not in full and not (_para_braces(para) & ROW_KEYS):
+            nt = _repl_braces(full, vmap)
+            if nt != full:
+                _set_para_text(para, nt)
+                used += 1
+    return used
 
-    ss = [str(Path(pth).as_posix()) for pth in
-          (material.get("social_security_required") or [{}])[0].get("paths", [])]
 
-    # 资格表 65 图框（索引依赖大成资格表模板结构）
-    CELL_MAP = [
-        ((1, 0, 0), q("企业资质证书（房屋建筑工程监理甲级）"), "资质证书_房屋建筑工程甲级"),
-        ((2, 0, 0), q("企业资质证书（市政公用工程监理乙级）"), "资质证书_市政公用工程乙级"),
-        ((3, 0, 0), q("企业法人营业执照（副本）"), "营业执照扫描件"),
-        ((4, 0, 0), p("陈云", "注册证书", 0), "注册监理工程师证书"),
-        ((5, 0, 0), q("企业基本账户开户许可证"), "开户许可证扫描件"),
-        ((5, 1, 0), "", "存款信息"),                       # 保证金回单（项目资料）填充时补
-        ((10, 0, 0), PERF.get("横江", [""])[0], "业绩合同验收报告_竖版"),
-        ((11, 0, 0), PERF.get("横江", [""])[1], "业绩合同验收报告_竖版"),
-        ((12, 0, 0), PERF.get("横江", [""])[2], "业绩合同验收报告_竖版"),
-        ((13, 0, 0), PERF.get("横江", [""])[3], "业绩合同验收报告_竖版"),
-        ((15, 0, 0), PERF.get("南北", [""])[0], "业绩合同验收报告_竖版"),
-        ((16, 0, 0), PERF.get("南北", [""])[1], "业绩合同验收报告_竖版"),
-        ((17, 0, 0), PERF.get("南北", [""])[2], "业绩合同验收报告_竖版"),
-        ((18, 0, 0), PERF.get("南北", [""])[3], "业绩合同验收报告_竖版"),
-        ((19, 0, 0), PERF.get("南北", [""])[4], "业绩合同验收报告_竖版"),
-        ((20, 0, 0), PERF.get("南北", [""])[5], "业绩合同验收报告_竖版"),
-        ((24, 0, 0), p("陈云", "注册证书", 0), "注册监理工程师证书"),
-        ((25, 0, 0), p("陈云", "职称", 0), "职称证"),
-        ((25, 1, 0), p("陈云", "职称", 1), "职称证"),
-        ((26, 0, 0), p("陈云", "身份证", 0), "身份证"),
-        ((26, 2, 0), p("陈云", "身份证", 1), "身份证"),
-        ((28, 0, 0), p("陈友龙", "注册证书", 0), "注册监理工程师证书"),
-        ((29, 0, 0), p("陈友龙", "职称", 0), "职称证"),
-        ((29, 1, 0), p("陈友龙", "职称", 1), "职称证"),
-        ((30, 0, 0), p("陈友龙", "身份证", 0), "身份证"),
-        ((30, 2, 0), p("陈友龙", "身份证", 1), "身份证"),
-        ((32, 0, 0), p("吴志水", "岗位证书", 0), "岗位证书"),
-        ((33, 0, 0), p("吴志水", "职称", 0), "职称证"),
-        ((33, 1, 0), p("吴志水", "职称", 1), "职称证"),
-        ((34, 0, 0), p("吴志水", "身份证", 0), "身份证"),
-        ((34, 2, 0), p("吴志水", "身份证", 1), "身份证"),
-        ((36, 0, 0), p("裴友谊", "岗位证书", 0), "岗位证书"),
-        ((37, 0, 0), p("裴友谊", "职称", 0), "职称证"),
-        ((37, 1, 0), p("裴友谊", "职称", 1), "职称证"),
-        ((38, 0, 0), p("裴友谊", "身份证", 0), "身份证"),
-        ((38, 2, 0), p("裴友谊", "身份证", 1), "身份证"),
-        ((40, 0, 0), p("阮旭", "岗位证书", 0), "岗位证书"),
-        ((41, 0, 0), p("阮旭", "身份证", 0), "身份证"),
-        ((41, 2, 0), p("阮旭", "身份证", 1), "身份证"),
-        ((43, 0, 0), p("黄诚", "岗位证书", 0), "岗位证书"),
-        ((44, 0, 0), p("黄诚", "身份证", 0), "身份证"),
-        ((44, 2, 0), p("黄诚", "身份证", 1), "身份证"),
-        ((45, 0, 0), ss[0] if ss else "", "社保证明"),
-        ((46, 0, 0), ss[1] if ss else "", "社保证明"),
-        ((49, 0, 0), material.get("iso_certificates", [{}])[0].get("path", ""), "三体系认证证书"),
-        ((50, 0, 0), material.get("iso_certificates", [{}])[1].get("path", ""), "三体系认证证书"),
-        ((51, 0, 0), material.get("iso_certificates", [{}])[2].get("path", ""), "三体系认证证书"),
-        ((52, 0, 0), p("陈云", "职称", 0), "总监高级工程师职称证书"),
-        ((52, 1, 0), p("陈云", "职称", 1), "总监高级工程师职称证书"),
-        ((53, 0, 0), p("陈友龙", "职称", 0), "小型职称证书"),
-        ((54, 0, 0), p("陈友龙", "职称", 1), "小型职称证书"),
-        ((55, 0, 0), p("吴志水", "职称", 2), "小型职称证书"),
-        ((55, 1, 0), p("吴志水", "职称", 1), "小型职称证书"),
-        ((56, 0, 0), p("裴友谊", "职称", 0), "小型职称证书"),
-        ((56, 1, 0), p("裴友谊", "职称", 1), "小型职称证书"),
-        ((57, 0, 0), honor("优秀监理企业_20230201") or honor("2021"), "先进优秀监理企业证书"),
-        ((57, 1, 0), honor("优秀监理企业_20240301") or honor("2022"), "先进优秀监理企业证书"),
-        ((58, 0, 0), honor("优秀监理企业_20250101") or honor("2023"), "先进优秀监理企业证书"),
-        ((58, 1, 0), honor("先进监理企业"), "先进优秀监理企业证书"),
-        ((59, 0, 0), honor("监理示范工程_20241201") or honor("2024"), "监理示范优质工程"),
-        ((59, 1, 0), honor("监理示范工程_20251201") or honor("2025"), "监理示范优质工程"),
-        ((60, 0, 0), honor("安全生产标准化示范工地"), "监理示范优质工程"),
-        ((60, 1, 0), honor("黄山杯"), "监理示范优质工程"),
-        ((61, 0, 0), q("企业基本账户开户许可证"), "存款信息"),
-        ((62, 0, 0), q("企业基本账户开户许可证"), "存款信息"),
-    ]
+def _repl_braces(text, vmap):
+    def rep(m):
+        k = m.group(1).strip()
+        return vmap.get(k, m.group(0))
+    return _BRACE_RE.sub(rep, text)
 
-    # 业绩奖项 32 图框（T13/T14 项目说明 3 图框未命中时跳过）
-    YJ_MAP = [
-        ((0, 0), material.get("iso_certificates", [{}])[0].get("path", ""), "三体系认证证书"),
-        ((1, 0), material.get("iso_certificates", [{}])[1].get("path", ""), "三体系认证证书"),
-        ((2, 0), material.get("iso_certificates", [{}])[2].get("path", ""), "三体系认证证书"),
-        ((3, 0), PERF.get("横江", [""])[0], "业绩合同验收报告_竖版"),
-        ((4, 0), PERF.get("横江", [""])[1], "业绩合同验收报告_竖版"),
-        ((5, 0), PERF.get("横江", [""])[2], "业绩合同验收报告_竖版"),
-        ((6, 0), PERF.get("横江", [""])[3], "业绩合同验收报告_竖版"),
-        ((7, 0), PERF.get("南北", [""])[0], "业绩合同验收报告_竖版"),
-        ((8, 0), PERF.get("南北", [""])[1], "业绩合同验收报告_竖版"),
-        ((9, 0), PERF.get("南北", [""])[2], "业绩合同验收报告_竖版"),
-        ((10, 0), PERF.get("南北", [""])[3], "业绩合同验收报告_竖版"),
-        ((11, 0), PERF.get("南北", [""])[4], "业绩合同验收报告_竖版"),
-        ((12, 0), PERF.get("南北", [""])[5], "业绩合同验收报告_竖版"),
-        ((15, 0), p("陈云", "职称", 0), "总监高级工程师职称证书"),
-        ((15, 1), p("陈云", "职称", 1), "总监高级工程师职称证书"),
-        ((16, 0), p("陈友龙", "职称", 0), "小型职称证书"),
-        ((16, 1), p("陈友龙", "职称", 1), "小型职称证书"),
-        ((17, 0), p("吴志水", "职称", 0), "小型职称证书"),
-        ((17, 1), p("吴志水", "职称", 1), "小型职称证书"),
-        ((18, 0), p("裴友谊", "职称", 0), "小型职称证书"),
-        ((18, 1), p("裴友谊", "职称", 1), "小型职称证书"),
-        ((19, 0), honor("优秀监理企业_20230201") or honor("2021"), "先进优秀监理企业证书"),
-        ((19, 1), honor("优秀监理企业_20240301") or honor("2022"), "先进优秀监理企业证书"),
-        ((20, 0), honor("优秀监理企业_20250101") or honor("2023"), "先进优秀监理企业证书"),
-        ((20, 1), honor("先进监理企业"), "先进优秀监理企业证书"),
-        ((21, 0), honor("监理示范工程_20241201") or honor("2024"), "监理示范优质工程"),
-        ((21, 1), honor("监理示范工程_20251201") or honor("2025"), "监理示范优质工程"),
-        ((22, 0), honor("安全生产标准化示范工地"), "监理示范优质工程"),
-        ((22, 1), honor("黄山杯"), "监理示范优质工程"),
-    ]
-    return biz, persons, CELL_MAP, YJ_MAP
+
+def _set_para_text(para, nt):
+    for r in list(para.runs[1:]):
+        r._r.getparent().remove(r._r)
+    if para.runs:
+        para.runs[0].text = nt
+
+
+def fill_row_templates(doc, idx, material, proj):
+    """行样板复制+填：人员配备（按 personnel）、业绩汇总（按 performance）。"""
+    staff = material.get("personnel") or []
+    perf = material.get("performance") or []
+    handled = {"人员配备": False, "业绩汇总": False}
+
+    for key, rows in idx.get("row_tables", {}).items():
+        if not rows:
+            continue
+        tbl, row_idx = rows[0]
+        if key == "人员配备":
+            fill_fn = lambda i, tr: _repl_tr_text(tr, _person_map(staff[i])) if i < len(staff) else None
+            if _fit_row_template(doc, tbl, row_idx, len(staff), fill_fn):
+                handled["人员配备"] = True
+        elif key == "业绩汇总":
+            fill_fn = lambda i, tr: _repl_tr_text(tr, _perf_map(perf[i])) if i < len(perf) else None
+            if _fit_row_template(doc, tbl, row_idx, len(perf), fill_fn):
+                handled["业绩汇总"] = True
+    return handled
+
+
+def fill_detail_tables(doc, idx, material, proj, missing):
+    """整表样板复制+填：简历表（按 personnel 复制，组内文字/图框按人员对象取数）、
+    业绩明细表（按 performance 复制，含其后图框段组）。未列（人数/条数为 0）→ 整组删除+披露。"""
+    staff = material.get("personnel") or []
+    perf = material.get("performance") or []
+
+    def fill_para_group(el, person, cat_paths):
+        """组内段落：段落文本键 + 段内文本框图框，全部按 person 取数。"""
+        para = Paragraph(el, doc)
+        for cat in _para_imgph(para):
+            _consume_para_images(doc, para, cat, cat_paths(cat), missing)
+        for txbx in para._p.iter(qn("w:txbxContent")):
+            for p_el in txbx.iter(qn("w:p")):
+                sub = Paragraph(p_el, doc)
+                for cat in _para_imgph(sub):
+                    _consume_para_images(doc, sub, cat, cat_paths(cat), missing)
+
+    for tbl, kind in idx.get("detail_tables", []):
+        elems = _detail_group_elements(doc, tbl)
+        if kind == "resume":
+            n = len(staff)
+
+            def fn(i, el):
+                if el.tag == qn("w:tbl"):
+                    t = Table(el, doc)
+                    person = staff[i]
+                    for tr in t.rows:
+                        _repl_tr_text(tr._tr, _person_map(person))
+                    exp = person.get("经历") or []
+                    cnt_t = cnt_p = 0
+                    for tr in t.rows:
+                        for p_el in list(tr._tr.iter(qn("w:p"))):
+                            txt = "".join(node.text or "" for node in p_el.iter(qn("w:t")))
+                            if "人员经历时间" in txt and cnt_t < len(exp):
+                                _repl_tr_text(tr._tr, {"人员经历时间": exp[cnt_t].get("时间") or ""})
+                                cnt_t += 1
+                            if "人员经历项目" in txt and cnt_p < len(exp):
+                                _repl_tr_text(tr._tr, {"人员经历项目": exp[cnt_p].get("项目") or ""})
+                                cnt_p += 1
+                else:
+                    if "人员姓名" in _para_braces(Paragraph(el, doc)):
+                        _repl_tr_text(el, {"人员姓名": staff[i].get("name") or ""})
+                    fill_para_group(el, staff[i], lambda cat: _staff_paths(staff[i], cat))
+
+            _fit_table_group(doc, elems[0], elems[1:], n, fn)
+        elif kind == "perf":
+            n = len(perf)
+
+            def fn(i, el):
+                if el.tag == qn("w:tbl"):
+                    t = Table(el, doc)
+                    for tr in t.rows:
+                        _repl_tr_text(tr._tr, _perf_map(perf[i]))
+                else:
+                    if "业绩项目名称" in _para_braces(Paragraph(el, doc)):
+                        _repl_tr_text(el, {"业绩项目名称": perf[i].get("name") or ""})
+                    fill_para_group(el, perf[i], lambda cat: [str(p) for p in (perf[i].get("paths") or []) if p])
+
+            _fit_table_group(doc, elems[0], elems[1:], n, fn)
+
+
+def fill_images_by_category(doc, idx, material, proj, missing):
+    """全局图框类别聚合填充：同类别按占位出现顺序依序消费；素材数=0 → 未列不生成（删框+披露）。"""
+    by_cat = {}
+    for cat, para in idx.get("img_ph", []):
+        by_cat.setdefault(cat, []).append(para)
+    for cat, paras in by_cat.items():
+        paths = [R(p, proj) for p in aggregate_category(material, cat)]
+        for i, para in enumerate(paras):
+            if i < len(paths):
+                if not _insert_img_at_para(doc, para, paths[i], _spec_key(cat)):
+                    missing.append((cat, "第%d张 插图失败（文件不可读/规格不匹配）" % (i + 1)))
+            else:
+                missing.append((cat, "第%d张 素材不足/素材清单未列（已删框）" % (i + 1)))
+                _drop_ph_para(para)
+        for i in range(len(paras), len(paths)):
+            missing.append((cat, "第%d张 模板无对应图框（素材未用）" % (i + 1)))
+
+
+def _spec_key(cat):
+    # 尺寸规格键：与 image_spec 对齐
+    return {
+        "企业法人营业执照": "营业执照扫描件",
+        "开户许可证": "开户许可证扫描件",
+        "三体系认证证书": "三体系认证证书",
+        "企业资质证书": "资质证书",
+        "社保证明": "社保证明",
+        "身份证": "身份证",
+        "职称证书": "职称证",
+        "岗位证书": "岗位证书",
+        "总监注册监理工程师证书": "注册监理工程师证书",
+        "高级工程师职称证书": "总监高级工程师职称证书",
+        "业绩材料": "业绩合同验收报告_竖版",
+        "先进监理企业证书": "先进优秀监理企业证书",
+        "监理示范工程": "监理示范优质工程",
+        "优秀总监证书": "优秀总监证书",
+        "法定代表人身份证": "身份证_法代授权",
+        "委托代理人身份证": "身份证_法代授权",
+    }.get(cat, "通用图片")
+
+
+def _consume_para_images(doc, para, cat, paths, missing):
+    """组内图框：单段多框逐个消费。"""
+    if not paths:
+        missing.append((cat, "素材清单未列/该人员无此证书（已删框）"))
+        _drop_ph_para(para)
+        return
+    if not _insert_img_at_para(doc, para, paths[0], _spec_key(cat)):
+        missing.append((cat, "插图失败"))
+        _drop_ph_para(para)
+    else:
+        _drop_ph_text(para)
+
+
+def _drop_ph_para(para):
+    """删除图片占位段落（未列不生成：图框段落整体移除）。"""
+    p_el = para._p
+    p_el.getparent().remove(p_el)
+
+
+def _drop_ph_text(para):
+    """清除占位文案：仅删除不含 drawing 的 run（保留已插入图片的 run）。"""
+    for r in list(para.runs):
+        if len(list(r._r.iter(qn("w:drawing")))) == 0:
+            r._r.getparent().remove(r._r)
+
+
+def R(p, proj):
+    return _resolve(p, proj)
 
 
 # ==================== 深拷贝模板库 → 项目模板 ====================
 def _find_master_dir(src, want="招标式"):
-    """在代理机构目录下定位母版目录：优先『商务标母版-<want>』子目录；退化 src 本身。
-    模板库结构与 _模板制作规范（商务标母版-<骨架>/）一致（2026-10-19 端到端试跑发现拷贝 0 件的根因）。"""
+    """在代理机构目录下定位母版目录：优先『商务标母版-<want>』子目录；退化 src 本身。"""
     files = TPL_FILES_PH if want == "采购式" else TPL_FILES
     if all((src / fn).is_file() for fn in files):
         return src
@@ -565,12 +738,10 @@ def _find_master_dir(src, want="招标式"):
 
 
 def copy_lib_to_proj(ent_dir, proj_dir, agent=None, want="招标式"):
-    """深拷贝企业级模板库对应代理机构母版到项目模板/（先备份旧版到 dev 或回收站提示）。
-    返回拷贝件数。"""
+    """深拷贝企业级模板库对应代理机构母版到项目模板/。返回拷贝件数。"""
     ent = Path(ent_dir)
     proj = Path(proj_dir)
     lib_dir = ent / "企业级" / "模板库"
-    # 代理机构：参数优先，否则从素材清单读
     if not agent:
         material = _load_material(proj)
         agent = material.get("招标代理机构", "") or ""
@@ -593,6 +764,11 @@ def copy_lib_to_proj(ent_dir, proj_dir, agent=None, want="招标式"):
     return copied, str(src)
 
 
+def copy_lib_to_tpl(ent, proj, agent=None, want="招标式"):
+    """兼容别名：copy_lib_to_proj。"""
+    return copy_lib_to_proj(ent, proj, agent, want=want)
+
+
 # ==================== 主流程 ====================
 def fill_from_tpl(ent, proj, out_dir=None, agent=None, register=True, skeleton="招标式"):
     if not HAVE_DOCX or Document is None:
@@ -606,23 +782,11 @@ def fill_from_tpl(ent, proj, out_dir=None, agent=None, register=True, skeleton="
     # 1) 深拷贝模板库 → 项目模板
     copied, src_lib = copy_lib_to_tpl(ent, proj, agent, want=skeleton)
 
-    # 2) 素材清单
+    # 2) 素材清单 + 通用键字典
     material = _load_material(proj)
     biz = material.get("企业基础信息", {}) or {}
     deadline = material.get("投标截止日期", "") or "2026-10-09"
     agent = material.get("招标代理机构", "") or agent or ""
-    _, _, CELL_MAP, YJ_MAP = build_maps(material) if skeleton == "招标式" else (None, None, [], [])
-
-    # 素材路径统一按项目目录解析
-    def R(p):
-        return _resolve(p, proj)
-
-    CELL_MAP = [(idx, R(img), sk) for idx, img, sk in CELL_MAP]
-    YJ_MAP = [(idx, R(img), sk) for idx, img, sk in YJ_MAP]
-    # 保证金回单：项目资料固定件（素材清单未列，存在即填）
-    rcd = str(proj / "项目资料" / "保证金回单.png")
-    CELL_MAP = [(idx, (rcd if (idx == (5, 1, 0)) else img), sk)
-                for idx, img, sk in CELL_MAP]
 
     V = {
         "project_name": material.get("project", ""),
@@ -664,15 +828,12 @@ def fill_from_tpl(ent, proj, out_dir=None, agent=None, register=True, skeleton="
         "项目说明": material.get("项目说明", "") or "",
     }
     if skeleton == "采购式":
-        # 采购式专属键：开标一览表总监/报价；法代/授权已由 biz 覆盖
         st = material.get("personnel") or []
         V["supervisor_name"] = st[0].get("name", "") if st else ""
         V["supervisor_major"] = st[0].get("专业", "") if st else ""
         V["bid_price_num"] = material.get("投标报价", "") or ""
 
     stats = {"文件": [], "缺图": [], "待补": [], "清单外": [], "文字占位填充": 0}
-    # 业绩项目名称按序消费：素材清单 performance 的 name 列表（模板 {{ 业绩项目名称 }} 依次取用）
-    perf_names = [it.get("name", "") for it in material.get("performance", [])]
     tpl_dir = proj / "项目模板"
     for fn in files:
         src = tpl_dir / fn
@@ -680,68 +841,25 @@ def fill_from_tpl(ent, proj, out_dir=None, agent=None, register=True, skeleton="
             continue
         doc = Document(str(src))
         missing = []
-        if skeleton == "采购式":
-            # 资格证明：先行级表格填充（业绩/人员/简历行级消费），再文字占位（只处理正文残余），最后图占位关键词填充
-            if fn == "资格证明及辅助资料表.docx":
-                fill_cgys_qual_rows(doc, material)
-            filled = fill_braces_doc(doc, V, perf_names)
-            if fn == "法定代表人身份证明.docx":
-                _fill_kw(doc, "法定代表人有效期内居民身份证", biz.get("法定代表人身份证") or [], "身份证_法代授权", missing)
-            elif fn == "授权委托书.docx":
-                _fill_kw(doc, "委托代理人有效期内居民身份证", biz.get("委托代理人身份证") or [], "身份证_法代授权", missing)
-            elif fn == "资格证明及辅助资料表.docx":
-                fill_cgys_images(doc, material, missing)
-        else:
-            # 文字占位
-            filled = fill_braces_doc(doc, V, perf_names)
-            # 图片占位：关键词定位（法代/授权/承诺书）
-            if fn == "法定代表人身份证明.docx":
-                _fill_kw(doc, "法定代表人有效期内居民身份证", biz.get("法定代表人身份证") or [], "身份证_法代授权", missing)
-            elif fn == "授权委托书.docx":
-                _fill_kw(doc, "委托代理人有效期内居民身份证", biz.get("委托代理人身份证") or [], "身份证_法代授权", missing)
-            elif fn == "承诺书.docx":
-                _fill_kw(doc, "账户开户许可证", [_q_first(material, "企业基本账户开户许可证")], "开户许可证扫描件", missing)
-            elif fn == "投标单位业绩材料和奖项.docx":
-                for (ri, ci), img, skey in YJ_MAP:
-                    if img and not fill_img_table_cell(doc, ri, ci, 0, img, skey):
-                        missing.append(("业绩T%s" % ri, skey))
-                    elif not img:
-                        missing.append(("业绩T%s" % ri, "素材清单未指定（披露）"))
-                for ti in [15, 16, 17, 18, 19, 20, 21, 22]:
-                    add_gap_between_two_img_rows(doc, ti)
-            elif fn == "资格证明及辅助资料表.docx":
-                # 附表7 姓名按行
-                staff = [p0.get("name", "") for p0 in material.get("personnel", [])]
-                for tbl in doc.tables:
-                    hdr = [c.text.strip() for c in tbl.rows[0].cells]
-                    if "项目职务" in hdr and any("姓" in h for h in hdr):
-                        sc = next(i for i, h in enumerate(hdr) if "姓" in h)
-                        for ri, row in enumerate(tbl.rows[1:]):
-                            if ri < len(staff):
-                                cell = row.cells[sc]
-                                if cell.text.strip() not in staff:
-                                    for r in list(cell.paragraphs[0].runs):
-                                        r._r.getparent().remove(r._r)
-                                    cell.paragraphs[0].add_run(staff[ri])
-                        break
-                for (ti, ri, ci), img, skey in CELL_MAP:
-                    if img and not fill_img_table_cell(doc, ti, ri, ci, img, skey):
-                        missing.append(("资格T%s_%s" % (ti, ri), skey))
-                    elif not img:
-                        missing.append(("资格T%s_%s" % (ti, ri), "素材清单未指定（披露）"))
-                for ti in [25, 29, 33, 37, 52, 55, 56, 57, 58, 59, 60]:
-                    add_gap_between_two_img_rows(doc, ti)
+        # ① 占位索引
+        idx = scan_placeholder_index(doc)
+        # 通用键直填
+        filled = fill_generic_text(doc, V)
+        # ② 样板复制：行样板（人员配备/业绩汇总）
+        fill_row_templates(doc, idx, material, proj)
+        # ② 整表样板：简历表/业绩明细表（含其后组内图框段）
+        fill_detail_tables(doc, idx, material, proj, missing)
+        # ③ 全局图框类别聚合
+        fill_images_by_category(doc, idx, material, proj, missing)
         doc.save(str(out / fn))
         stats["文件"].append({"文件": fn, "填充文字": filled, "缺图": [x[0] for x in missing]})
         stats["文字占位填充"] += filled
         stats["缺图"] += missing
-        # 残留占位披露（模板空槽/未命中图占位不静默）
         residual = scan_residual_placeholders(doc)
         if residual:
             stats["待补"].append((fn, ["%s：%s" % (kind, key) for kind, key in residual]))
 
     stats["缺图"] = list(dict.fromkeys(stats["缺图"]))
-    # 待补按文件分组（每文件至多一条，键为字符串元组可直接去重）
     seen_todo, todo = set(), []
     for fn, keys in stats["待补"]:
         k = (fn, tuple(keys))
@@ -752,11 +870,10 @@ def fill_from_tpl(ent, proj, out_dir=None, agent=None, register=True, skeleton="
     _write_reports(out, stats, deadline)
     if register:
         core.write_json(str(out / "生成记录.json"), {
-            "id": FILL_ID, "version": FILL_VERSION + "-tpl-v3", "日期": deadline,
+            "id": FILL_ID, "version": FILL_VERSION + "-tpl-v2", "日期": deadline,
             "项目": material.get("project", ""), "模板库": str(src_lib),
             "统计": {k: v for k, v in stats.items() if k != "文件"},
         })
-    # 回读
     for f in stats["文件"]:
         core.readback.verify_docx_nonempty(out / f["文件"], label="商务标 docx")
     if register:
@@ -764,18 +881,8 @@ def fill_from_tpl(ent, proj, out_dir=None, agent=None, register=True, skeleton="
     return stats
 
 
-def _q_first(material, name):
-    for it in material.get("qualification_required", []):
-        if it.get("name") == name:
-            return it.get("path") or ""
-    return ""
-
-
 def scan_residual_placeholders(doc):
-    """填充后扫描残留占位：{{ }}（非图片占位文案）与【图片占位：】段，返回去重清单。
-    用于待补披露（2026-10-19：模板空槽/未命中占位曾静默残留，补披露）。"""
-    import re as _re
-    from itertools import chain
+    """填充后扫描残留占位：{{ }}（非图片占位文案）与【图片占位：】段，返回去重清单。"""
     found, seen = [], set()
 
     def scan_para(para):
@@ -785,7 +892,7 @@ def scan_residual_placeholders(doc):
         if "【图片占位：" in t:
             key = ("图", t.strip()[:40])
         elif "{{" in t:
-            keys = _re.findall(r"\{\{\s*([^}]+?)\s*\}\}", t)
+            keys = _BRACE_RE.findall(t)
             key = ("文", "、".join(sorted(set(k.strip() for k in keys))))
         else:
             return
@@ -793,8 +900,8 @@ def scan_residual_placeholders(doc):
             seen.add(key)
             found.append(key)
 
-    body_paras = chain(doc.paragraphs, iter_textbox_paragraphs(doc))
-    for para in body_paras:
+    from itertools import chain
+    for para in chain(doc.paragraphs, iter_textbox_paragraphs(doc)):
         scan_para(para)
     for tbl in doc.tables:
         for row in tbl.rows:
@@ -802,39 +909,6 @@ def scan_residual_placeholders(doc):
                 for para in cell.paragraphs:
                     scan_para(para)
     return found
-
-
-def _fill_kw(doc, kw, paths, spec_key, missing):
-    """按关键词匹配图占位段（正文段落+表格+文本框段落），依序填；按所在单元格适配。"""
-    ok = 0
-    for para in doc.paragraphs:
-        if kw in (para.text or "") and "【图片占位：" in (para.text or ""):
-            if ok < len(paths):
-                mw, mh = 16.0, 24.6
-                if insert_img_fit_cell(para, paths[ok], spec_key, mw, mh):
-                    ok += 1
-    for tbl in doc.tables:
-        for row in tbl.rows:
-            for cell in row.cells:
-                for para in cell.paragraphs:
-                    if kw in (para.text or "") and "【图片占位：" in (para.text or ""):
-                        if ok < len(paths):
-                            mw, mh = cell_box_cm(cell)
-                            if insert_img_fit_cell(para, paths[ok], spec_key, mw, mh):
-                                ok += 1
-    # 文本框内段落（母版图片占位段常见于此）：按页面级上限插图（fit_size 按规格缩放）
-    for para in iter_textbox_paragraphs(doc):
-        if kw in (para.text or "") and "【图片占位：" in (para.text or ""):
-            if ok < len(paths):
-                if insert_img_fit_cell(para, paths[ok], spec_key, 16.0, 24.6):
-                    ok += 1
-    for i in range(ok, len(paths)):
-        missing.append(("%s 第%s张" % (kw, i + 1), "未匹配到图占位"))
-
-
-def copy_lib_to_tpl(ent, proj, agent=None, want="招标式"):
-    """兼容别名：copy_lib_to_proj。"""
-    return copy_lib_to_proj(ent, proj, agent, want=want)
 
 
 def _write_reports(out, stats, deadline):
@@ -856,7 +930,7 @@ def _write_reports(out, stats, deadline):
 
 if __name__ == "__main__":
     import argparse
-    ap = argparse.ArgumentParser(description="M5 商务标生成：企业模板库深拷贝 → 项目模板 → 填充")
+    ap = argparse.ArgumentParser(description="M5 商务标生成（v2.0 布局样板范式）：企业母版 → 项目模板 → 类别聚合填充")
     ap.add_argument("--ent", default=r"E:\监理标书制作\和县建设工程监理有限公司")
     ap.add_argument("--proj", default=r"E:\监理标书制作\和县建设工程监理有限公司\项目级\马鞍山和县化工园尾水水质提升工程（EPC总承包）监理")
     ap.add_argument("--agent", default=None)
