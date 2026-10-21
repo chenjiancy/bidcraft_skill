@@ -104,6 +104,11 @@ def fit_size(img_path, key, max_w=None, max_h=None):
         # 固定框特例（8×5 通用 / 7.5×4.5 法代·授权）：contain 等比置框内
         box_w = float(spec.get("宽", 8))
         box_h = float(spec.get("高", 5))
+        # v2.4：容器收紧（如模板身份证并排表格单元格），框与容器取 min，防页面溢出
+        if max_w:
+            box_w = min(box_w, float(max_w))
+        if max_h:
+            box_h = min(box_h, float(max_h))
         scale = min(box_w / iw, box_h / ih)
         return (round(iw * scale, 1), round(ih * scale, 1))
     w = float(PAGE["可用宽_cm"])

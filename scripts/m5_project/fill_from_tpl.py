@@ -735,12 +735,16 @@ def R(p, proj):
 
 # ==================== 深拷贝模板库 → 项目模板 ====================
 def _find_master_dir(src, want="招标式"):
-    """在代理机构目录下定位母版目录：优先『商务标母版-<want>』子目录；退化 src 本身。"""
+    """在代理机构目录下定位母版目录：优先『商务标母版-<want>』子目录；退化 src 本身。
+
+    v2.4 分批制作：母版目录按批次逐步补齐，定位门槛为「目录内至少存在 1 件
+    TPL 文件」而非要求首件（封面）必须存在，避免分批期间模板库无法被 fill 定位。
+    """
     files = TPL_FILES_PH if want == "采购式" else TPL_FILES
-    if all((src / fn).is_file() for fn in files):
+    if any((src / fn).is_file() for fn in files):
         return src
     for d in sorted(src.iterdir()):
-        if d.is_dir() and "商务标母版" in d.name and want in d.name and (d / files[0]).is_file():
+        if d.is_dir() and "商务标母版" in d.name and want in d.name and any((d / fn).is_file() for fn in files):
             return d
     return src
 

@@ -72,6 +72,16 @@ class TestFitSize(unittest.TestCase):
         self.assertEqual(imgsp.spec_for("【图片：委托代理人身份证正、反面扫描件】"),
                          "身份证_法代授权")
 
+    def test_id_card_legal_agent_box_container_tighten(self):
+        """v2.4：身份证 contain 受容器收紧（模板并排表格单元格防溢出）——min(框, 容器)。"""
+        w, h = imgsp.fit_size(str(self.idc), "身份证_法代授权", max_w=7.0, max_h=4.5)
+        # 960×600，容器 7.0×4.5 → 按宽限缩：7.0×4.38
+        self.assertAlmostEqual(w, 7.0, delta=0.1)
+        self.assertAlmostEqual(h, 4.4, delta=0.1)
+        w2, h2 = imgsp.fit_size(str(self.idc), "身份证", max_w=7.0, max_h=None)
+        self.assertAlmostEqual(w2, 7.0, delta=0.1)
+        self.assertAlmostEqual(h2, 4.4, delta=0.1)
+
     def test_max_w_and_max_h(self):
         """max_w/max_h 收紧：可用宽 16 超 max_h 时按 max_h 定高、宽随比例收缩。"""
         w, h = imgsp.fit_size(str(self.vert), "营业执照扫描件", max_w=15, max_h=None)
