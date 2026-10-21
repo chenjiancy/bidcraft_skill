@@ -10,12 +10,14 @@ bidcraft · M6 技术标制作 —— CLI 首批（T5，契约 §7）
   tech-parse    正文校验 → 自述块拆出 → 落盘回读 → WRITTEN
   tech-check    通道A 六项检查 → 覆盖矩阵 json/md；通过 → CHECKED
   tech-report   闸门② HTML 报告；--confirm 记 confirmLog → CONFIRMED
+  tech-layout   列出排版预设（T13；--preview 样张依赖 T10）
 
-其余命令（tech-layout/export/rewrite/diff）不在本批注册。
+其余命令（tech-export/rewrite/diff）不在本批注册。
 
 拆分（500 行红线）：
   sources.py  M4 读取 / 设置推导 / 路径硬校验
   ctxpack.py  上下文包组装（m6.ctx/v1）
+  layout.py   排版预设读取与 tech-layout（T13）
 """
 import json
 import math
@@ -26,6 +28,7 @@ from m8_eval import eval_std
 from . import rules as m6rules
 from . import store
 from . import sources
+from . import layout
 from .ctxpack import build_context, fill_score_items
 from .report import cmd_tech_check, cmd_tech_report
 from .writer import cmd_tech_parse
@@ -49,6 +52,9 @@ def cmd_tech_init(args):
     settings = sources.build_settings(args.project, points, tdir,
                                       bid_mode=getattr(args, "bid_mode", None),
                                       pages=getattr(args, "pages", None))
+    presets_doc = layout.load_presets(args)
+    if presets_doc is not None:
+        settings["layout"] = layout.default_entry(presets_doc)
     tree_exists = store.tree_path(tech).is_file()
     if tree_exists:
         settings["notes"].append("已存在章节树，设置.json 未覆写（章节树为权威）")
@@ -153,9 +159,10 @@ def cmd_tech_outline(args):
     if getattr(args, "confirm", False) and blockers:
         raise core.LibraryError("拒绝确认闸门①：\n%s" % "\n".join(blockers))
 
-    store.write_tree(tech, tree)
+    presets = layout.load_presets(args)
+    store.write_tree(tech, tree, presets)
     if getattr(args, "confirm", False):
-        store.confirm_gate(tech, "outline", note="tech-outline --confirm")
+        store.confirm_gate(tech, "outline", note="tech-outline --confirm", presets=presets)
 
     if getattr(args, "json", False):
         _print_json({"tree": tree, "coverage": coverage, "issues": issues,
@@ -204,6 +211,7 @@ def cmd_tech_ctx(args):
     material = sources.load_material(tdir, args.project) or {}
 
     rows, skipped = [], []
+    presets = layout.load_presets(args)
     for ch in chapters:
         if ch.get("status") == "CONFIRMED":
             skipped.append({"id": ch.get("id"), "reason": "CONFIRMED 章不再重建上下文包"})
@@ -213,7 +221,7 @@ def cmd_tech_ctx(args):
         cur = ch.get("status") or "PENDING"
         advanced = cur in ("PENDING", "FAILED")
         if advanced:
-            store.advance_chapter(tech, ch["id"], "CONTEXT_READY")
+            store.advance_chapter(tech, ch["id"], "CONTEXT_READY", presets)
         rows.append({"id": ch["id"], "status": "CONTEXT_READY" if advanced else cur,
                      "pack": "章节/.meta/%s.json" % ch["id"], "advanced": advanced})
 
@@ -326,3 +334,8 @@ def register_parser(sub):
     sp.add_argument("--force", action="store_true", help="存在 error 仍确认（记入备注）")
     sp.add_argument("--note", default="", help="闸门②确认备注（写入 confirmLog）")
     sp.set_defaults(func=cmd_tech_report)
+
+    sp = sub.add_parser("tech-layout", help="M6：列出排版预设（版面/配色/封面/装饰）；--preview 样张依赖 T10")
+    sp.add_argument("--list", action="store_true", help="列出全部预设（默认行为）")
+    sp.add_argument("--preview", default="", help="生成样张 docx（依赖 T10 导出引擎，未实现）")
+    sp.set_defaults(func=layout.cmd_tech_layout)

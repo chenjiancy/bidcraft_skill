@@ -1,0 +1,181 @@
+# -*- coding: utf-8 -*-
+"""M6 技术标制作 · 排版预设（T13）单测：预设文件 / 读取 / F11 校验 / tech-layout。"""
+import io
+import json
+import os
+import sys
+import tempfile
+import unittest
+from contextlib import redirect_stderr, redirect_stdout
+from pathlib import Path
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "scripts"))
+
+import bidcraft                     # noqa: E402
+from m6_tech import layout, rules   # noqa: E402
+
+REPO = Path(__file__).resolve().parents[2]
+PRESETS = REPO / "共享资源" / "技术标风格" / "layout-presets.json"
+HEX = ("primary", "accent", "heading", "tableFill", "coverBg")
+
+
+def _doc():
+    return json.loads(PRESETS.read_text(encoding="utf-8"))
+
+
+class PresetFileTest(unittest.TestCase):
+    """共享级预设文件是 T13 的交付物，结构须与契约 §3.2 对齐。"""
+
+    def test_file_exists(self):
+        self.assertTrue(PRESETS.is_file(), "缺共享级 %s" % PRESETS)
+
+    def test_schema_and_counts(self):
+        doc = _doc()
+        self.assertEqual(doc.get("schema"), layout.PRESETS_SCHEMA)
+        self.assertEqual(len(layout.entries(doc, "preset")), 7)
+        self.assertEqual(len(layout.entries(doc, "palette")), 11)
+        self.assertEqual(len(layout.entries(doc, "cover")), 4)
+        self.assertEqual(len(layout.entries(doc, "decoration")), 3)
+
+    def test_ids_match_builtin(self):
+        doc = _doc()
+        for group in ("preset", "palette", "cover", "decoration"):
+            got = [r["id"] for r in layout.entries(doc, group)]
+            self.assertEqual(got, list(rules.DEFAULT_LAYOUT[group]), group)
+
+    def test_default_layout(self):
+        doc = _doc()
+        default = layout.default_entry(doc)
+        self.assertEqual(default, {"preset": "single-column", "palette": "deep-indigo",
+                                   "cover": "full-block", "decoration": "standard"})
+
+    def test_every_palette_has_five_colors(self):
+        doc = _doc()
+        for row in layout.entries(doc, "palette"):
+            for k in HEX:
+                v = row.get(k)
+                self.assertTrue(isinstance(v, str) and v.startswith("#") and len(v) == 7,
+                                "%s.%s=%r" % (row["id"], k, v))
+            self.assertTrue(row.get("name"))
+
+    def test_gradient_palette_has_end_color(self):
+        row = layout.palette_colors(_doc(), "gradient-blue-cyan")
+        self.assertIsNotNone(row)
+        self.assertTrue(row.get("coverBgEnd", "").startswith("#"))
+
+    def test_image_underlay_disabled_for_dark(self):
+        doc = _doc()
+        cover = next(r for r in layout.entries(doc, "cover") if r["id"] == "image-underlay")
+        self.assertFalse(cover.get("darkOk"))
+
+
+class LoadAndValidateTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self.tmp.name) / "素材库"
+        self.root.mkdir()
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _args(self):
+        return type("A", (), {"root": str(self.root)})()
+
+    def _install(self, doc=None):
+        d = self.root / "共享资源" / "技术标风格"
+        d.mkdir(parents=True)
+        p = d / layout.PRESETS_FILE
+        p.write_text(json.dumps(doc if doc is not None else _doc(), ensure_ascii=False),
+                     encoding="utf-8")
+        return p
+
+    def test_missing_returns_none(self):
+        self.assertIsNone(layout.find_presets(self._args()))
+        self.assertIsNone(layout.load_presets(self._args()))
+
+    def test_find_and_load(self):
+        p = self._install()
+        self.assertEqual(layout.find_presets(self._args()), p)
+        doc = layout.load_presets(self._args())
+        self.assertEqual(len(layout.entries(doc, "palette")), 11)
+
+    def test_bad_json_raises(self):
+        p = self._install()
+        p.write_text("[1,2]", encoding="utf-8")
+        with self.assertRaises(Exception):
+            layout.load_presets(self._args())
+
+    def test_validate_layout_accepts_presets(self):
+        self._install()
+        doc = layout.load_presets(self._args())
+        ok, issues = rules.validate_layout(layout.default_entry(doc), doc)
+        self.assertTrue(ok, issues)
+
+    def test_unknown_palette_rejected(self):
+        self._install()
+        doc = layout.load_presets(self._args())
+        bad = dict(layout.default_entry(doc), palette="no-such-palette")
+        ok, issues = rules.validate_layout(bad, doc)
+        self.assertFalse(ok)
+        self.assertIn("layout.unknown", [i["code"] for i in issues])
+
+    def test_dark_mode_rejects_image_underlay(self):
+        self._install()
+        doc = layout.load_presets(self._args())
+        bad = dict(layout.default_entry(doc), cover="image-underlay")
+        ok, issues = rules.validate_layout(bad, doc, "暗标")
+        self.assertFalse(ok)
+        self.assertIn("layout.mixcover", [i["code"] for i in issues])
+
+
+class CommandTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self.tmp.name) / "素材库"
+        self.root.mkdir()
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _run(self, *argv):
+        out, err, code = io.StringIO(), io.StringIO(), 0
+        with redirect_stdout(out), redirect_stderr(err):
+            try:
+                bidcraft.main(["--root", str(self.root)] + list(argv))
+            except SystemExit as e:
+                code = e.code or 0
+        return code, out.getvalue(), err.getvalue()
+
+    def test_list_without_file_falls_back(self):
+        code, out, _ = self._run("tech-layout", "--list")
+        self.assertEqual(code, 0)
+        self.assertIn("已回退内置清单", out)
+        self.assertIn("deep-indigo", out)
+
+    def test_list_reads_shared_file(self):
+        d = self.root / "共享资源" / "技术标风格"
+        d.mkdir(parents=True)
+        (d / layout.PRESETS_FILE).write_text(
+            json.dumps(_doc(), ensure_ascii=False), encoding="utf-8")
+        code, out, _ = self._run("tech-layout", "--list")
+        self.assertEqual(code, 0)
+        self.assertIn("配色方案 · 11 种", out)
+        self.assertIn("深靛蓝", out)
+        self.assertIn("[默认]", out)
+        self.assertIn("暗标禁用", out)
+
+    def test_list_json(self):
+        code, out, _ = self._run("tech-layout", "--list", "--json")
+        self.assertEqual(code, 0)
+        payload = json.loads(out)
+        self.assertEqual(payload["default"]["palette"], "deep-indigo")
+        self.assertEqual(len(payload["groups"]["palette"]), 11)
+
+    def test_preview_not_implemented(self):
+        code, _, err = self._run("tech-layout", "--preview", "single-column")
+        self.assertEqual(code, 1)
+        self.assertIn("依赖 T10", err)
+
+
+if __name__ == "__main__":
+    unittest.main()

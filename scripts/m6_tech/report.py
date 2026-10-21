@@ -24,7 +24,7 @@ from pathlib import Path
 from _shared import core
 from m8_eval import eval_std
 
-from . import rules, store, sources
+from . import rules, store, sources, layout
 
 CHECK_SCHEMA = "m6.check/v1"
 JSON_BASE = "检查/覆盖矩阵_%s.json"
@@ -289,6 +289,7 @@ def cmd_tech_check(args):
     mp = store.write_text_inside(tech, MD_BASE % args.project, render_md(doc))
 
     advanced = []
+    presets = layout.load_presets(args)
     if getattr(args, "chapter", ""):
         cid = args.chapter
         ch = store.find_chapter(tree, cid)
@@ -297,12 +298,12 @@ def cmd_tech_check(args):
         cov_err = any(r.get("level") == "error" and cid in (r.get("chapters") or [])
                       for r in doc["coverage"]["rows"])
         if ch.get("status") == "WRITTEN" and not own_err and not cov_err:
-            store.advance_chapter(tech, cid, "CHECKED")
+            store.advance_chapter(tech, cid, "CHECKED", presets)
             advanced.append(cid)
     elif doc["ok"]:
         for ch in store.list_chapters(store.read_tree(tech)):
             if ch.get("status") == "WRITTEN" and (doc["chapters"].get(ch.get("id")) or {}).get("body"):
-                store.advance_chapter(tech, ch["id"], "CHECKED")
+                store.advance_chapter(tech, ch["id"], "CHECKED", presets)
                 advanced.append(ch["id"])
 
     if getattr(args, "json", False):
@@ -341,6 +342,7 @@ def cmd_tech_report(args):
         raise core.LibraryError("检查结论无法读取：%s（%s）" % (jp, e))
 
     confirmed, advanced = False, []
+    presets = layout.load_presets(args)
     if getattr(args, "confirm", False):
         if not doc.get("ok") and not getattr(args, "force", False):
             raise core.LibraryError(
@@ -349,11 +351,11 @@ def cmd_tech_report(args):
         note = getattr(args, "note", "") or "tech-report --confirm"
         if not doc.get("ok"):
             note += "（--force，存在 error）"
-        store.confirm_gate(tech, "write", note=note)
+        store.confirm_gate(tech, "write", note=note, presets=presets)
         confirmed = True
         for ch in store.list_chapters(store.read_tree(tech)):
             if ch.get("status") == "CHECKED":
-                store.advance_chapter(tech, ch["id"], "CONFIRMED")
+                store.advance_chapter(tech, ch["id"], "CONFIRMED", presets)
                 advanced.append(ch["id"])
 
     tree = store.read_tree(tech)

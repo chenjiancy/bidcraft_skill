@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>M6 技术标 · 11 套配色色卡（T13 待确认）</title>
+<style>
+:root{
+  --bg:#f3f1ec; --card:#fff; --ink:#26231e; --muted:#6f6a61; --line:#ded9cf;
+}
+*{box-sizing:border-box}
+body{margin:0;padding:30px 22px;background:var(--bg);color:var(--ink);
+     font-family:"FangSong","仿宋","SimSun",serif;font-size:15px;line-height:1.75}
+.wrap{max-width:1240px;margin:0 auto}
+h1,h2,h3,h4,h5{font-family:"Microsoft YaHei","微软雅黑",sans-serif;margin:0}
+header h1{font-size:26px;color:#243b6b;letter-spacing:.5px}
+header .sub{color:var(--muted);margin:8px 0 0}
+.notice{background:#fff8e8;border:1px solid #ead6a6;border-radius:8px;
+        padding:12px 16px;margin:18px 0 24px;font-size:14px}
+.notice b{color:#8a5a00}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(470px,1fr));gap:20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;
+      box-shadow:0 2px 10px rgba(0,0,0,.04);break-inside:avoid}
+.cover{background:var(--c);color:#fff;padding:18px 20px 16px;position:relative;min-height:108px;
+       display:flex;flex-direction:column;justify-content:flex-end}
+.cover .no{position:absolute;right:16px;top:10px;font-size:34px;font-weight:700;opacity:.22;
+           font-family:"Microsoft YaHei",sans-serif}
+.cover h2{font-size:20px;font-weight:600;letter-spacing:.5px}
+.cover p{margin:4px 0 0;font-size:13px;color:rgba(255,255,255,.82)}
+.pad{padding:16px 20px 18px}
+.head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.head h3{font-size:16px;color:var(--h)}
+.head code{background:#f2f0ea;border:1px solid var(--line);border-radius:4px;
+           padding:1px 5px;font-size:12px;color:#555;font-family:Consolas,monospace}
+.mark{background:var(--p);color:#fff;border-radius:20px;padding:1px 9px;font-size:11px}
+.h1{font-size:16px;color:var(--h);border-left:4px solid var(--a);padding-left:8px;margin:8px 0 6px}
+.h2{font-size:14px;color:var(--h);margin:0 0 6px;opacity:.9}
+.sample{margin:0 0 10px;font-size:14px;color:#3a3630}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:2px 0 12px}
+th,td{border:1px solid var(--line);padding:5px 7px;text-align:left}
+th{background:var(--t);color:var(--h);font-family:"Microsoft YaHei",sans-serif;font-weight:600}
+.sw{display:flex;border-radius:5px;overflow:hidden;border:1px solid var(--line)}
+.sw i{display:block;height:28px;flex:1}
+.hex{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-top:6px;font-size:10.5px;
+     color:var(--muted);font-family:Consolas,monospace}
+.hex b{display:block;font-family:"Microsoft YaHei",sans-serif;font-size:10.5px;color:#4a453d}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:12px}
+.notes{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:16px 22px;margin-top:24px}
+.notes h2{font-size:17px;color:#243b6b;margin-bottom:8px}
+.notes ol{margin:6px 0 0 20px;padding:0}
+.notes li{margin:4px 0}
+.notes code{background:#f2f0ea;border:1px solid var(--line);border-radius:4px;padding:0 4px;
+            font-family:Consolas,monospace;font-size:12.5px}
+.grad{background:linear-gradient(135deg,#123e52 0%,#123e52 46%,#2a8ba8 46%,#2a8ba8 100%)}
+footer{margin:28px 0 8px;color:var(--muted);font-size:12px;text-align:center}
+@media print{body{background:#fff;padding:0}.grid{grid-template-columns:1fr 1fr}.notice{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>M6 技术标 · 11 套配色色卡</h1>
+  <p class="sub">T13 视觉确认稿 · 每套含 primary / accent / heading / tableFill / coverBg 五组色值</p>
+  <div class="legend">
+    <span>■ 主色 primary：标题线、强调块</span>
+    <span>■ 点缀 accent：分隔线、次级强调</span>
+    <span>■ 标题 heading：正文标题文字</span>
+    <span>■ 表头 tableFill：表格首行底纹</span>
+    <span>■ 封面 coverBg：封面色块</span>
+  </div>
+  <div class="notice">
+    <b>当前为提案，尚未固化。</b>
+    请确认“全部通过”，或按 <code>palette id + 字段 + 目标色值</code> 的格式提出调整；
+    确认后写入 <code>共享资源/技术标风格/layout-presets.json</code>，并用于 <code>tech-export</code>。
+  </div>
+</header>
+
+<section class="grid">
+
+<article class="card" style="--p:#243B6B;--a:#B08A4B;--h:#1B2C52;--t:#E8ECF4;--c:#1B2C52">
+  <div class="cover"><span class="no">01</span><h2>工程概况与监理范围</h2>
+    <p>项目名称 · 技术标（监理大纲）</p></div>
+  <div class="pad">
+    <div class="head"><h3>深靛蓝</h3><code>deep-indigo</code><span class="mark">默认</span></div>
+    <h4 class="h1">1. 工程概况</h4><h5 class="h2">1.1 监理工作范围</h5>
+    <p class="sample">本工程监理覆盖施工准备、施工、竣工验收及缺陷责任期全过程，重点控制质量、进度、投资与安全。</p>
+    <table><thead><tr><th>控制项</th><th>目标值</th><th>备注</th></tr></thead>
+      <tbody><tr><td>质量</td><td>一次验收合格</td><td>全过程</td></tr></tbody></table>
+    <div class="sw"><i style="background:#243B6B"></i><i style="background:#B08A4B"></i>
+      <i style="background:#1B2C52"></i><i style="background:#E8ECF4"></i><i style="background:#1B2C52"></i></div>
+    <div class="hex"><span><b>primary</b>#243B6B</span><span><b>accent</b>#B08A4B</span>
+      <span><b>heading</b>#1B2C52</span><span><b>tableFill</b>#E8ECF4</span><span><b>coverBg</b>#1B2C52</span></div>
+  </div>
+</article>
+
+<article class="card" style="--p:#7A4E2D;--a:#C9A227;--h:#5E3A20;--t:#F4ECE3;--c:#4E3320">
+  <div class="cover"><span class="no">02</span><h2>工程概况与监理范围</h2>
+    <p>项目名称 · 技术标（监理大纲）</p></div>
+  <div class="pad">
+    <div class="head"><h3>暖棕金</h3><code>warm-bronze</code></div>
+    <h4 class="h1">1. 工程概况</h4><h5 class="h2">1.1 监理工作范围</h5>
+    <p class="sample">本工程监理覆盖施工准备、施工、竣工验收及缺陷责任期全过程，重点控制质量、进度、投资与安全。</p>
+    <table><thead><tr><th>控制项</th><th>目标值</th><th>备注</th></tr></thead>
+      <tbody><tr><td>质量</td><td>一次验收合格</td><td>全过程</td></tr></tbody></table>
+    <div class="sw"><i style="background:#7A4E2D"></i><i style="background:#C9A227"></i>
+      <i style="background:#5E3A20"></i><i style="background:#F4ECE3"></i><i style="background:#4E3320"></i></div>
+    <div class="hex"><span><b>primary</b>#7A4E2D</span><span><b>accent</b>#C9A227</span>
+      <span><b>heading</b>#5E3A20</span><span><b>tableFill</b>#F4ECE3</span><span><b>coverBg</b>#4E3320</span></div>
+  </div>
+</article>
+
+<article class="card" style="--p:#2F5D50;--a:#A3B18A;--h:#23453C;--t:#E7EFEA;--c:#1F3D34">
+  <div class="cover"><span class="no">03</span><h2>工程概况与监理范围</h2>
+    <p>项目名称 · 技术标（监理大纲）</p></div>
+  <div class="pad">
+    <div class="head"><h3>松绿</h3><code>pine-green</code></div>
+    <h4 class="h1">1. 工程概况</h4><h5 class="h2">1.1 监理工作范围</h5>
+    <p class="sample">本工程监理覆盖施工准备、施工、竣工验收及缺陷责任期全过程，重点控制质量、进度、投资与安全。</p>
+    <table><thead><tr><th>控制项</th><th>目标值</th><th>备注</th></tr></thead>
+      <tbody><tr><td>质量</td><td>一次验收合格</td><td>全过程</td></tr></tbody></table>
+    <div class="sw"><i style="background:#2F5D50"></i><i style="background:#A3B18A"></i>
+      <i style="background:#23453C"></i><i style="background:#E7EFEA"></i><i style="background:#1F3D34"></i></div>
+    <div class="hex"><span><b>primary</b>#2F5D50</span><span><b>accent</b>#A3B18A</span>
+      <span><b>heading</b>#23453C</span><span><b>tableFill</b>#E7EFEA</span><span><b>coverBg</b>#1F3D34</span></div>
+  </div>
+</article>
+
+<article class="card" style="--p:#8C3B32;--a:#C98B6B;--h:#6E2C26;--t:#F5E8E4;--c:#5C2621">
+  <div class="cover"><span class="no">04</span><h2>工程概况与监理范围</h2>
+    <p>项目名称 · 技术标（监理大纲）</p></div>
+  <div class="pad">
+    <div class="head"><h3>砖红</h3><code>brick-red</code></div>
+    <h4 class="h1">1. 工程概况</h4><h5 class="h2">1.1 监理工作范围</h5>
+    <p class="sample">本工程监理覆盖施工准备、施工、竣工验收及缺陷责任期全过程，重点控制质量、进度、投资与安全。</p>
+    <table><thead><tr><th>控制项</th><th>目标值</th><th>备注</th></tr></thead>
+      <tbody><tr><td>质量</td><td>一次验收合格</td><td>全过程</td></tr></tbody></table>
+    <div class="sw"><i style="background:#8C3B32"></i><i style="background:#C98B6B"></i>
+      <i style="background:#6E2C26"></i><i style="background:#F5E8E4"></i><i style="background:#5C2621"></i></div>
+    <div class="hex"><span><b>primary</b>#8C3B32</span><span><b>accent</b>#C98B6B</span>
+      <span><b>heading</b>#6E2C26</span><span><b>tableFill</b>#F5E8E4</span><span><b>coverBg</b>#5C2621</span></div>
+  </div>
+</article>
+
+<article class="card" style="--p:#2E5F73;--a:#79A7B8;--h:#234A5A;--t:#E6EEF1;--c:#1C3A47">
+  <div class="cover"><span class="no">05</span><h2>工程概况与监理范围</h2>
+    <p>项目名称 · 技术标（监理大纲）</p></div>
+  <div class="pad">
+    <div class="head"><h3>钢青</h3><code>steel-cyan</code><span class="mark" style="background:#2E5F73">暗标推荐</span></div>
+    <h4 class="h1">1. 工程概况</h4><h5 class="h2">1.1 监理工作范围</h5>
+    <p class="sample">本工程监理覆盖施工准备、施工、竣工验收及缺陷责任期全过程，重点控制质量、进度、投资与安全。</p>
+    <table><thead><tr><th>控制项</th><th>目标值</th><th>备注</th></tr></thead>
+      <tbody><tr><td>质量</td><td>一次验收合格</td><td>全过程</td></tr></tbody></table>
+    <div class="sw"><i style="background:#2E5F73"></i><i style="background:#79A7B8"></i>
+      <i style="background:#234A5A"></i><i style="background:#E6EEF1"></i><i style="background:#1C3A47"></i></div>
+    <div class="hex"><span><b>primary</b>#2E5F73</span><span><b>accent</b>#79A7B8</span>
+      <span><b>heading</b>#234A5A</span><span><b>tableFill</b>#E6EEF1</span><span><b>coverBg</b>#1C3A47</span></div>
+  </div>
+</article>
+
+<article class="card" style="--p:#333333;--a:#8C8C8C;--h:#1F1F1F;--t:#ECECEC;--c:#262626">
+  <div class="cover"><span class="no">06</span><h2>工程概况与监理范围</h2>
+    <p>项目名称 · 技术标（监理大纲）</p></div>
+  <div class="pad">
+    <div class="head"><h3>炭灰极简</h3><code>charcoal</code><span class="mark" style="background:#333333">暗标推荐</span></div>
+    <h4 class="h1">1. 工程概况</h4><h5 class="h2">1.1 监理工作范围</h5>
+    <p class="sample">本工程监理覆盖施工准备、施工、竣工验收及缺陷责任期全过程，重点控制质量、进度、投资与安全。</p>
+    <table><thead><tr><th>控制项</th><th>目标值</th><th>备注</th></tr></thead>
+      <tbody><tr><td>质量</td><td>一次验收合格</td><td>全过程</td></tr></tbody></table>
+    <div class="sw"><i style="background:#333333"></i><i style="background:#8C8C8C"></i>
+      <i style="background:#1F1F1F"></i><i style="background:#ECECEC"></i><i style="background:#262626"></i></div>
+    <div class="hex"><span><b>primary</b>#333333</span><span><b>accent</b>#8C8C8C</span>
+      <span><b>heading</b>#1F1F1F</span><span><b>tableFill</b>#ECECEC</span><span><b>coverBg</b>#262626</span></div>
+  </div>
+</article>
+
+<article class="card" style="--p:#17375E;--a:#C8A24A;--h:#102844;--t:#E6EBF2;--c:#0F2540">
+  <div class="cover"><span class="no">07</span><h2>工程概况与监理范围</h2>
+    <p>项目名称 · 技术标（监理大纲）</p></div>
+  <div class="pad">
+    <div class="head"><h3>深海蓝金</h3><code>deep-blue-gold</code></div>
+    <h4 class="h1">1. 工程概况</h4><h5 class="h2">1.1 监理工作范围</h5>
+    <p class="sample">本工程监理覆盖施工准备、施工、竣工验收及缺陷责任期全过程，重点控制质量、进度、投资与安全。</p>
+    <table><thead><tr><th>控制项</th><th>目标值</th><th>备注</th></tr></thead>
+      <tbody><tr><td>质量</td><td>一次验收合格</td><td>全过程</td></tr></tbody></table>
+    <div class="sw"><i style="background:#17375E"></i><i style="background:#C8A24A"></i>
+      <i style="background:#102844"></i><i style="background:#E6EBF2"></i><i style="background:#0F2540"></i></div>
+    <div class="hex"><span><b>primary</b>#17375E</span><span><b>accent</b>#C8A24A</span>
+      <span><b>heading</b>#102844</span><span><b>tableFill</b>#E6EBF2</span><span><b>coverBg</b>#0F2540</span></div>
+  </div>
+</article>
+
+<article class="card" style="--p:#21473B;--a:#D07A3A;--h:#17352C;--t:#E8EFEA;--c:#14302A">
+  <div class="cover"><span class="no">08</span><h2>工程概况与监理范围</h2>
+    <p>项目名称 · 技术标（监理大纲）</p></div>
+  <div class="pad">
+    <div class="head"><h3>墨绿暖橙</h3><code>ink-green-orange</code></div>
+    <h4 class="h1">1. 工程概况</h4><h5 class="h2">1.1 监理工作范围</h5>
+    <p class="sample">本工程监理覆盖施工准备、施工、竣工验收及缺陷责任期全过程，重点控制质量、进度、投资与安全。</p>
+    <table><thead><tr><th>控制项</th><th>目标值</th><th>备注</th></tr></thead>
+      <tbody><tr><td>质量</td><td>一次验收合格</td><td>全过程</td></tr></tbody></table>
+    <div class="sw"><i style="background:#21473B"></i><i style="background:#D07A3A"></i>
+      <i style="background:#17352C"></i><i style="background:#E8EFEA"></i><i style="background:#14302A"></i></div>
+    <div class="hex"><span><b>primary</b>#21473B</span><span><b>accent</b>#D07A3A</span>
+      <span><b>heading</b>#17352C</span><span><b>tableFill</b>#E8EFEA</span><span><b>coverBg</b>#14302A</span></div>
+  </div>
+</article>
+
+<article class="card" style="--p:#4B3A5A;--a:#A7A9AC;--h:#362A42;--t:#EDE9F0;--c:#2E2437">
+  <div class="cover"><span class="no">09</span><h2>工程概况与监理范围</h2>
+    <p>项目名称 · 技术标（监理大纲）</p></div>
+  <div class="pad">
+    <div class="head"><h3>茄子紫银灰</h3><code>eggplant-silver</code></div>
+    <h4 class="h1">1. 工程概况</h4><h5 class="h2">1.1 监理工作范围</h5>
+    <p class="sample">本工程监理覆盖施工准备、施工、竣工验收及缺陷责任期全过程，重点控制质量、进度、投资与安全。</p>
+    <table><thead><tr><th>控制项</th><th>目标值</th><th>备注</th></tr></thead>
+      <tbody><tr><td>质量</td><td>一次验收合格</td><td>全过程</td></tr></tbody></table>
+    <div class="sw"><i style="background:#4B3A5A"></i><i style="background:#A7A9AC"></i>
+      <i style="background:#362A42"></i><i style="background:#EDE9F0"></i><i style="background:#2E2437"></i></div>
+    <div class="hex"><span><b>primary</b>#4B3A5A</span><span><b>accent</b>#A7A9AC</span>
+      <span><b>heading</b>#362A42</span><span><b>tableFill</b>#EDE9F0</span><span><b>coverBg</b>#2E2437</span></div>
+  </div>
+</article>
+
+<article class="card" style="--p:#2B2B2B;--a:#B3261E;--h:#1A1A1A;--t:#F0EEEE;--c:#1C1C1C">
+  <div class="cover"><span class="no">10</span><h2>工程概况与监理范围</h2>
+    <p>项目名称 · 技术标（监理大纲）</p></div>
+  <div class="pad">
+    <div class="head"><h3>黑白灰一点红</h3><code>mono-red</code><span class="mark" style="background:#2B2B2B">暗标推荐</span></div>
+    <h4 class="h1">1. 工程概况</h4><h5 class="h2">1.1 监理工作范围</h5>
+    <p class="sample">本工程监理覆盖施工准备、施工、竣工验收及缺陷责任期全过程，重点控制质量、进度、投资与安全。</p>
+    <table><thead><tr><th>控制项</th><th>目标值</th><th>备注</th></tr></thead>
+      <tbody><tr><td>质量</td><td>一次验收合格</td><td>全过程</td></tr></tbody></table>
+    <div class="sw"><i style="background:#2B2B2B"></i><i style="background:#B3261E"></i>
+      <i style="background:#1A1A1A"></i><i style="background:#F0EEEE"></i><i style="background:#1C1C1C"></i></div>
+    <div class="hex"><span><b>primary</b>#2B2B2B</span><span><b>accent</b>#B3261E</span>
+      <span><b>heading</b>#1A1A1A</span><span><b>tableFill</b>#F0EEEE</span><span><b>coverBg</b>#1C1C1C</span></div>
+  </div>
+</article>
+
+<article class="card" style="--p:#1F5C78;--a:#3FA9C9;--h:#164A61;--t:#E4F1F5;--c:#123E52">
+  <div class="cover grad"><span class="no">11</span><h2>工程概况与监理范围</h2>
+    <p>项目名称 · 技术标（监理大纲）</p></div>
+  <div class="pad">
+    <div class="head"><h3>渐变蓝青</h3><code>gradient-blue-cyan</code><span class="mark" style="background:#1F5C78">docx 两段近似</span></div>
+    <h4 class="h1">1. 工程概况</h4><h5 class="h2">1.1 监理工作范围</h5>
+    <p class="sample">本工程监理覆盖施工准备、施工、竣工验收及缺陷责任期全过程，重点控制质量、进度、投资与安全。</p>
+    <table><thead><tr><th>控制项</th><th>目标值</th><th>备注</th></tr></thead>
+      <tbody><tr><td>质量</td><td>一次验收合格</td><td>全过程</td></tr></tbody></table>
+    <div class="sw"><i style="background:#1F5C78"></i><i style="background:#3FA9C9"></i>
+      <i style="background:#164A61"></i><i style="background:#E4F1F5"></i>
+      <i class="grad"></i></div>
+    <div class="hex"><span><b>primary</b>#1F5C78</span><span><b>accent</b>#3FA9C9</span>
+      <span><b>heading</b>#164A61</span><span><b>tableFill</b>#E4F1F5</span><span><b>coverBg</b>#123E52→#2A8BA8</span></div>
+  </div>
+</article>
+
+</section>
+
+<section class="notes">
+  <h2>确认与固化说明</h2>
+  <ol>
+    <li><b>暗标</b>：全部配色均为中性色，不含企业标识；封面强制禁用 <code>image-underlay</code>，默认用 <code>full-block</code>。暗标场景建议 <code>charcoal</code> / <code>steel-cyan</code> / <code>mono-red</code>。</li>
+    <li><b>明标</b>：默认 <code>deep-indigo</code>；偏稳重可选 <code>deep-blue-gold</code> / <code>pine-green</code>；偏现代可选 <code>gradient-blue-cyan</code>。</li>
+    <li><b>渐变</b>：python-docx 不支持原生渐变，<code>gradient-blue-cyan</code> 的封面在 docx 中用左右两段色块（#123E52 → #2A8BA8）近似。</li>
+    <li><b>确认方式</b>：回复“全部通过”，或指出 <code>palette id</code>、字段（primary/accent/heading/tableFill/coverBg）与目标色值；我按确认结果写入
+      <code>layout-presets.json</code> 并实现 <code>tech-layout --list</code>。</li>
+    <li><b>字体</b>：正文与标题默认仿宋（可在章节树 <code>layout.overrides</code> 改）；色卡中的黑体仅用于界面标注。</li>
+  </ol>
+</section>
+
+<footer>bidcraft · M6 技术标制作 · T13 色卡确认稿（未固化）</footer>
+</div>
+</body>
+</html>

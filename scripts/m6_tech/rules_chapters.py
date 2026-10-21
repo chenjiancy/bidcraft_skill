@@ -333,13 +333,21 @@ def build_coverage(score_items, chapters):
 # F11：排版预设校验（D8）
 # ---------------------------------------------------------------------------
 def _preset_ids(presets, group):
+    """预设清单 → id 列表；兼容字符串数组 / 对象数组({id:...}) / dict 三写法。"""
     src = presets if isinstance(presets, dict) else {}
     for key in LAYOUT_ALIAS_KEYS[group]:
         val = src.get(key)
+        ids = []
         if isinstance(val, list):
-            return [v for v in val if isinstance(v, str)]
-        if isinstance(val, dict):
-            return [k for k in val.keys() if isinstance(k, str)]
+            for v in val:
+                if isinstance(v, str):
+                    ids.append(v)
+                elif isinstance(v, dict) and isinstance(v.get("id"), str) and v["id"]:
+                    ids.append(v["id"])
+        elif isinstance(val, dict):
+            ids = [k for k in val.keys() if isinstance(k, str)]
+        if ids:
+            return ids
     return list(DEFAULT_LAYOUT[group])
 
 

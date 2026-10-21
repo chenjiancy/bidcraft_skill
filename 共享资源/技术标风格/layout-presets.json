@@ -1,0 +1,242 @@
+{
+  "schema": "m6.layout-presets/v1",
+  "version": "1.0",
+  "updated": "2026-10-21",
+  "note": "共享级排版预设（四组均为数组，可增行表）。色值经 T13 色卡预览确认（2026-10-21）。预设只影响 tech-export，不改变正文 md 内容。",
+  "default": {
+    "preset": "single-column",
+    "palette": "deep-indigo",
+    "cover": "full-block",
+    "decoration": "standard"
+  },
+  "fonts": {
+    "heading": "仿宋",
+    "body": "仿宋"
+  },
+  "presets": [
+    {
+      "id": "single-column",
+      "name": "单栏流式",
+      "docx": "标题层级 + 段落流（默认）",
+      "degrade": ""
+    },
+    {
+      "id": "tabular",
+      "name": "表格化布局",
+      "docx": "人员/进度/设备/指标强制转表格；正文段落保留",
+      "degrade": ""
+    },
+    {
+      "id": "two-column",
+      "name": "双栏分栏",
+      "docx": "section sectPr 设 w:cols；仅正文段分栏，标题跨栏",
+      "degrade": "表格过宽或图占位过大时降级单栏"
+    },
+    {
+      "id": "card",
+      "name": "卡片式布局",
+      "docx": "单元格底纹 + 边框模拟卡片（docx 无圆角）；每卡一个要点",
+      "degrade": "圆角不可用，以直角卡片呈现"
+    },
+    {
+      "id": "image-left",
+      "name": "左图右文",
+      "docx": "两列表格：左图占位 + 右文",
+      "degrade": "图缺失时降级 single-column 并披露"
+    },
+    {
+      "id": "divider",
+      "name": "章节分隔页",
+      "docx": "每章前分页 + 大号章号/章名页；页眉不显示章名",
+      "degrade": ""
+    },
+    {
+      "id": "data-row",
+      "name": "数据行布局",
+      "docx": "指标横排（KPI 行）表格化，适合工期/人数/面积等数据章",
+      "degrade": "指标超过 6 项时改两行"
+    }
+  ],
+  "palettes": [
+    {
+      "id": "deep-indigo",
+      "name": "深靛蓝",
+      "primary": "#243B6B",
+      "accent": "#B08A4B",
+      "heading": "#1B2C52",
+      "tableFill": "#E8ECF4",
+      "coverBg": "#1B2C52",
+      "onPrimary": "#FFFFFF",
+      "darkOk": true,
+      "note": "默认方案，稳重通用"
+    },
+    {
+      "id": "warm-bronze",
+      "name": "暖棕金",
+      "primary": "#7A4E2D",
+      "accent": "#C9A227",
+      "heading": "#5E3A20",
+      "tableFill": "#F4ECE3",
+      "coverBg": "#4E3320",
+      "onPrimary": "#FFFFFF",
+      "darkOk": true,
+      "note": "偏传统工程气质"
+    },
+    {
+      "id": "pine-green",
+      "name": "松绿",
+      "primary": "#2F5D50",
+      "accent": "#A3B18A",
+      "heading": "#23453C",
+      "tableFill": "#E7EFEA",
+      "coverBg": "#1F3D34",
+      "onPrimary": "#FFFFFF",
+      "darkOk": true,
+      "note": "环保/园林/水利类项目适用"
+    },
+    {
+      "id": "brick-red",
+      "name": "砖红",
+      "primary": "#8C3B32",
+      "accent": "#C98B6B",
+      "heading": "#6E2C26",
+      "tableFill": "#F5E8E4",
+      "coverBg": "#5C2621",
+      "onPrimary": "#FFFFFF",
+      "darkOk": true,
+      "note": "偏建筑/市政气质"
+    },
+    {
+      "id": "steel-cyan",
+      "name": "钢青",
+      "primary": "#2E5F73",
+      "accent": "#79A7B8",
+      "heading": "#234A5A",
+      "tableFill": "#E6EEF1",
+      "coverBg": "#1C3A47",
+      "onPrimary": "#FFFFFF",
+      "darkOk": true,
+      "recommendedFor": ["暗标"],
+      "note": "冷色低辨识度，暗标推荐"
+    },
+    {
+      "id": "charcoal",
+      "name": "炭灰极简",
+      "primary": "#333333",
+      "accent": "#8C8C8C",
+      "heading": "#1F1F1F",
+      "tableFill": "#ECECEC",
+      "coverBg": "#262626",
+      "onPrimary": "#FFFFFF",
+      "darkOk": true,
+      "recommendedFor": ["暗标"],
+      "note": "无彩色，暗标最稳妥"
+    },
+    {
+      "id": "deep-blue-gold",
+      "name": "深海蓝金",
+      "primary": "#17375E",
+      "accent": "#C8A24A",
+      "heading": "#102844",
+      "tableFill": "#E6EBF2",
+      "coverBg": "#0F2540",
+      "onPrimary": "#FFFFFF",
+      "darkOk": true,
+      "note": "比深靛蓝更正式、对比更强"
+    },
+    {
+      "id": "ink-green-orange",
+      "name": "墨绿暖橙",
+      "primary": "#21473B",
+      "accent": "#D07A3A",
+      "heading": "#17352C",
+      "tableFill": "#E8EFEA",
+      "coverBg": "#14302A",
+      "onPrimary": "#FFFFFF",
+      "darkOk": true,
+      "note": "冷暖对比明显，适合重点标注"
+    },
+    {
+      "id": "eggplant-silver",
+      "name": "茄子紫银灰",
+      "primary": "#4B3A5A",
+      "accent": "#A7A9AC",
+      "heading": "#362A42",
+      "tableFill": "#EDE9F0",
+      "coverBg": "#2E2437",
+      "onPrimary": "#FFFFFF",
+      "darkOk": true,
+      "note": "少见配色，适合差异化"
+    },
+    {
+      "id": "mono-red",
+      "name": "黑白灰一点红",
+      "primary": "#2B2B2B",
+      "accent": "#B3261E",
+      "heading": "#1A1A1A",
+      "tableFill": "#F0EEEE",
+      "coverBg": "#1C1C1C",
+      "onPrimary": "#FFFFFF",
+      "darkOk": true,
+      "recommendedFor": ["暗标"],
+      "note": "黑白灰主调 + 一点红强调，暗标推荐"
+    },
+    {
+      "id": "gradient-blue-cyan",
+      "name": "渐变蓝青",
+      "primary": "#1F5C78",
+      "accent": "#3FA9C9",
+      "heading": "#164A61",
+      "tableFill": "#E4F1F5",
+      "coverBg": "#123E52",
+      "coverBgEnd": "#2A8BA8",
+      "onPrimary": "#FFFFFF",
+      "darkOk": true,
+      "note": "docx 不支持原生渐变填充，以两段色块拼接近似"
+    }
+  ],
+  "covers": [
+    {
+      "id": "full-block",
+      "name": "满版色块",
+      "docx": "整页底色块 + 标题反白",
+      "darkOk": true
+    },
+    {
+      "id": "line-white",
+      "name": "留白线条",
+      "docx": "白底 + 细线框/分隔线",
+      "darkOk": true
+    },
+    {
+      "id": "image-underlay",
+      "name": "图底压字",
+      "docx": "背景图 + 标题叠压",
+      "darkOk": false,
+      "note": "图片可能泄露企业信息，暗标禁用"
+    },
+    {
+      "id": "gradient",
+      "name": "渐变",
+      "docx": "两段色块近似渐变（python-docx 无原生渐变）",
+      "darkOk": true
+    }
+  ],
+  "decorations": [
+    {
+      "id": "minimal",
+      "name": "克制",
+      "docx": "仅标题色 + 细线"
+    },
+    {
+      "id": "standard",
+      "name": "标准",
+      "docx": "标题色块 + 表头底纹"
+    },
+    {
+      "id": "rich",
+      "name": "丰富",
+      "docx": "章首装饰带 + 图标 + 强调底色"
+    }
+  ]
+}
