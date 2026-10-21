@@ -251,3 +251,15 @@ def read_settings(tech, project):
     if not isinstance(obj, dict) or obj.get("project") != project:
         return None
     return obj
+
+
+def sensitive_vocab(ent, tree):
+    """A4 词表：企业名（企业目录名）+ 素材清单人员姓名 + 暗标口径。"""
+    return {
+        "enterprise_names": [Path(ent).name],
+        "brands": [],
+        "addresses": [],
+        "persons": [p.get("name") for p in (tree.get("personnel") or [])
+                    if isinstance(p, dict) and p.get("name")],
+        "personnelWriteMode": "post-only" if tree.get("bidMode") == "暗标" else "with-name",
+    }

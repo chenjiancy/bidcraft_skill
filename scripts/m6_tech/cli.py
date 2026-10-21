@@ -2,13 +2,16 @@
 """
 bidcraft · M6 技术标制作 —— CLI 首批（T5，契约 §7）
 
-本批 4 条命令：
+本批 7 条命令：
   tech-init     建目录 + 校验 M4 就绪 + 抽取约束 → 技术标/设置.json
   tech-outline  F1 校验草案 → F3 覆盖矩阵 → 回填系统字段 → F2 落盘（--confirm 记闸门①）
   tech-ctx      闸门①未确认拒绝；逐章生成 m6.ctx/v1 → .meta → CONTEXT_READY
   tech-status   写作状态表（状态/预算字数/实际字数/估算页）
+  tech-parse    正文校验 → 自述块拆出 → 落盘回读 → WRITTEN
+  tech-check    通道A 六项检查 → 覆盖矩阵 json/md；通过 → CHECKED
+  tech-report   闸门② HTML 报告；--confirm 记 confirmLog → CONFIRMED
 
-其余命令（tech-layout/parse/check/report/export/rewrite/diff）不在本批注册。
+其余命令（tech-layout/export/rewrite/diff）不在本批注册。
 
 拆分（500 行红线）：
   sources.py  M4 读取 / 设置推导 / 路径硬校验
@@ -24,6 +27,8 @@ from . import rules as m6rules
 from . import store
 from . import sources
 from .ctxpack import build_context, fill_score_items
+from .report import cmd_tech_check, cmd_tech_report
+from .writer import cmd_tech_parse
 
 
 def _print_json(obj):
@@ -288,11 +293,13 @@ def register_parser(sub):
     sp = sub.add_parser("tech-outline", help="M6：校验 agent 章节树草案 → 回填系统字段 → 覆盖矩阵 → 落盘")
     sp.add_argument("--project", required=True, help="项目名（项目级/<项目>）")
     sp.add_argument("--file", required=True, help="章节树草案 JSON（须位于本项目目录内）")
+    sp.add_argument("--tdir", default="", help="招标解析目录（默认 项目级/<项目>/招标解析）")
     sp.add_argument("--confirm", action="store_true", help="确认闸门①（存在未覆盖/页数超限则拒绝）")
     sp.set_defaults(func=cmd_tech_outline)
 
     sp = sub.add_parser("tech-ctx", help="M6：逐章生成 m6.ctx/v1 上下文包（闸门①未确认拒绝）")
     sp.add_argument("--project", required=True, help="项目名（项目级/<项目>）")
+    sp.add_argument("--tdir", default="", help="招标解析目录（默认 项目级/<项目>/招标解析）")
     sp.add_argument("--chapter", default="", help="单章 id（如 ch-01）")
     sp.add_argument("--all", action="store_true", help="全部章节（跳过 CONFIRMED）")
     sp.set_defaults(func=cmd_tech_ctx)
@@ -300,3 +307,22 @@ def register_parser(sub):
     sp = sub.add_parser("tech-status", help="M6：写作状态表（状态/预算字数/实际字数/估算页）")
     sp.add_argument("--project", required=True, help="项目名（项目级/<项目>）")
     sp.set_defaults(func=cmd_tech_status)
+
+    sp = sub.add_parser("tech-parse", help="M6：正文校验（非空/字数/占位/敏感词）→ 自述块 → 落盘回读 → WRITTEN")
+    sp.add_argument("--project", required=True, help="项目名（项目级/<项目>）")
+    sp.add_argument("--chapter", required=True, help="章节 id（如 ch-01）")
+    sp.add_argument("--file", required=True, help="agent 产出的章节 md（须位于本项目目录内）")
+    sp.set_defaults(func=cmd_tech_parse)
+
+    sp = sub.add_parser("tech-check", help="M6：通道A 六项检查（覆盖/结构/篇幅/敏感词/一致性/占位）")
+    sp.add_argument("--project", required=True, help="项目名（项目级/<项目>）")
+    sp.add_argument("--tdir", default="", help="招标解析目录（默认 项目级/<项目>/招标解析）")
+    sp.add_argument("--chapter", default="", help="只判定并推进单章（默认全量）")
+    sp.set_defaults(func=cmd_tech_check)
+
+    sp = sub.add_parser("tech-report", help="M6：闸门② HTML 检查报告；--confirm 记 confirmLog → CONFIRMED")
+    sp.add_argument("--project", required=True, help="项目名（项目级/<项目>）")
+    sp.add_argument("--confirm", action="store_true", help="确认闸门②（有 error 时需 --force）")
+    sp.add_argument("--force", action="store_true", help="存在 error 仍确认（记入备注）")
+    sp.add_argument("--note", default="", help="闸门②确认备注（写入 confirmLog）")
+    sp.set_defaults(func=cmd_tech_report)
