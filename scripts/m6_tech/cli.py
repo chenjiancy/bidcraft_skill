@@ -1,0 +1,302 @@
+# -*- coding: utf-8 -*-
+"""
+bidcraft · M6 技术标制作 —— CLI 首批（T5，契约 §7）
+
+本批 4 条命令：
+  tech-init     建目录 + 校验 M4 就绪 + 抽取约束 → 技术标/设置.json
+  tech-outline  F1 校验草案 → F3 覆盖矩阵 → 回填系统字段 → F2 落盘（--confirm 记闸门①）
+  tech-ctx      闸门①未确认拒绝；逐章生成 m6.ctx/v1 → .meta → CONTEXT_READY
+  tech-status   写作状态表（状态/预算字数/实际字数/估算页）
+
+其余命令（tech-layout/parse/check/report/export/rewrite/diff）不在本批注册。
+
+拆分（500 行红线）：
+  sources.py  M4 读取 / 设置推导 / 路径硬校验
+  ctxpack.py  上下文包组装（m6.ctx/v1）
+"""
+import json
+import math
+
+from _shared import core
+from m8_eval import eval_std
+
+from . import rules as m6rules
+from . import store
+from . import sources
+from .ctxpack import build_context, fill_score_items
+
+
+def _print_json(obj):
+    print(json.dumps(obj, ensure_ascii=False, indent=2))
+
+
+# ---------------------------------------------------------------------------
+# tech-init
+# ---------------------------------------------------------------------------
+def cmd_tech_init(args):
+    ent = sources.get_ent(args)
+    proj = sources.proj_dir(ent, args.project)
+    tdir = sources.tdir(args, proj)
+    points = sources.load_points(tdir, args.project)      # 缺 scoring 在此硬失败
+    sources.scoring_items(points)
+    tech = store.ensure_tech_dir(ent, args.project)
+
+    settings = sources.build_settings(args.project, points, tdir,
+                                      bid_mode=getattr(args, "bid_mode", None),
+                                      pages=getattr(args, "pages", None))
+    tree_exists = store.tree_path(tech).is_file()
+    if tree_exists:
+        settings["notes"].append("已存在章节树，设置.json 未覆写（章节树为权威）")
+    else:
+        store.write_json_inside(tech, sources.SETTINGS_FILE, settings)
+
+    if getattr(args, "json", False):
+        _print_json(settings)
+        return 0
+    print("技术标目录已就绪：%s" % tech)
+    print("  bidMode：%s" % settings["bidMode"])
+    pc = settings["pageConstraint"]
+    print("  页数约束：不超过 %d 页（来源：%s）" % (pc["max"], pc["source"]))
+    print("  拟派人员：%d 人（来源：素材清单）" % len(settings["personnel"]))
+    print("  风格：%s %s；排版：%s/%s/%s/%s" % (
+        settings["style"]["id"], settings["style"]["name"],
+        settings["layout"]["preset"], settings["layout"]["palette"],
+        settings["layout"]["cover"], settings["layout"]["decoration"]))
+    for n in settings["notes"]:
+        print("  ⚠ %s" % n)
+    print("下一步：agent 按 P2 产出章节树草案 → tech-outline")
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# tech-outline
+# ---------------------------------------------------------------------------
+def _assemble_tree(project, draft, settings):
+    pc = dict(settings.get("pageConstraint") or {})
+    chapters = []
+    total = 0
+    for ch in draft["chapters"]:
+        cid = ch["id"]
+        total += ch["wordCnt"]
+        chapters.append({
+            "id": cid, "no": ch["no"], "title": ch["title"].strip(),
+            "level": ch["level"],
+            "scoreRefs": ch["scoreRefs"],
+            "keyPoints": [k.strip() for k in ch["keyPoints"]],
+            "wordCnt": ch["wordCnt"],
+            "dependsOnMaterials": ch.get("dependsOnMaterials") or [],
+            "status": "PENDING",
+            "files": {"body": "章节/%s.md" % cid, "meta": "章节/.meta/%s.json" % cid},
+        })
+    cpp = int(pc.get("charsPerPage") or sources.DEFAULT_CHARS_PER_PAGE)
+    return {
+        "schema": m6rules.SCHEMA_ID,
+        "project": project,
+        "bidMode": settings["bidMode"],
+        "pageConstraint": {
+            "max": int(pc["max"]),
+            "estimate": int(math.ceil(total / float(cpp))) if total else 0,
+            "charsPerPage": cpp,
+            "source": str(pc.get("source") or ""),
+        },
+        "style": dict(settings["style"]),
+        "layout": dict(settings["layout"]),
+        "terminology": dict(settings["terminology"]),
+        "personnel": list(settings.get("personnel") or []),
+        "chapters": chapters,
+    }
+
+
+def _issue_text(issues):
+    return "\n".join("[%s] %s" % (i["code"], i["message"]) for i in issues)
+
+
+def cmd_tech_outline(args):
+    ent = sources.get_ent(args)
+    proj = sources.proj_dir(ent, args.project)
+    tech = sources.tech_dir(ent, args.project)
+    tdir = sources.tdir(args, proj)
+    points = sources.load_points(tdir, args.project)
+    raw_items = sources.scoring_items(points)
+
+    draft_path = sources.ensure_inside("章节树草案", args.file, proj)
+    draft = core.read_json(str(draft_path), None)
+    if not isinstance(draft, dict):
+        raise core.LibraryError("章节树草案无法读取或不是 JSON 对象：%s" % draft_path)
+
+    ok, issues = m6rules.validate_chapters_draft(draft, raw_items)
+    if not ok:
+        raise core.LibraryError("章节树草案校验失败，未落盘：\n%s" % _issue_text(issues))
+
+    existing = store.read_tree(tech) if store.tree_path(tech).is_file() else None
+    if existing and store.outline_confirmed(existing):
+        raise core.LibraryError("章节树已确认（闸门①已过），拒绝覆盖；如需重编请先人工归档")
+
+    settings = sources.read_settings(tech, args.project)
+    if settings is None:
+        settings = sources.build_settings(args.project, points, tdir)
+    tree = _assemble_tree(args.project, draft, settings)
+
+    parsed = [eval_std.parse_score_item(it, i) for i, it in enumerate(raw_items)]
+    coverage = m6rules.build_coverage(parsed, tree["chapters"])
+    pages = m6rules.judge_pages(tree["pageConstraint"]["estimate"], tree["pageConstraint"])
+    blockers = []
+    if not coverage["ok"]:
+        blockers.append("评分点未覆盖 idx：%s" % ", ".join(str(i) for i in coverage["missing"]))
+    if pages and pages.get("level") == "error":
+        blockers.append(pages["message"])
+    if getattr(args, "confirm", False) and blockers:
+        raise core.LibraryError("拒绝确认闸门①：\n%s" % "\n".join(blockers))
+
+    store.write_tree(tech, tree)
+    if getattr(args, "confirm", False):
+        store.confirm_gate(tech, "outline", note="tech-outline --confirm")
+
+    if getattr(args, "json", False):
+        _print_json({"tree": tree, "coverage": coverage, "issues": issues,
+                     "confirm": bool(getattr(args, "confirm", False)),
+                     "pageIssue": pages})
+    else:
+        pc = tree["pageConstraint"]
+        print("章节树已落盘：%s" % store.tree_path(tech))
+        print("  %d 章，预算 %d 字 ≈ %d 页 / 上限 %d 页" % (
+            len(tree["chapters"]), sum(c["wordCnt"] for c in tree["chapters"]),
+            pc["estimate"], pc["max"]))
+        for w in issues:
+            print("  ⚠ [%s] %s" % (w["code"], w["message"]))
+        if coverage["missing"]:
+            print("  ✗ 未覆盖评分项 idx：%s" % ", ".join(str(i) for i in coverage["missing"]))
+        if coverage["weak"]:
+            print("  ⚠ 弱覆盖评分项 idx：%s" % ", ".join(str(i) for i in coverage["weak"]))
+        if pages:
+            print("  %s %s" % ("✗" if pages["level"] == "error" else "⚠", pages["message"]))
+        print("  闸门①：%s" % ("已确认（confirmLog 已记录）"
+                              if getattr(args, "confirm", False)
+                              else "未确认（--confirm 后 tech-ctx 才可用）"))
+    return 0 if coverage["ok"] else 1
+
+
+# ---------------------------------------------------------------------------
+# tech-ctx
+# ---------------------------------------------------------------------------
+def cmd_tech_ctx(args):
+    ent = sources.get_ent(args)
+    proj = sources.proj_dir(ent, args.project)
+    tech = sources.tech_dir(ent, args.project)
+    tree = store.read_tree(tech)
+    if not store.outline_confirmed(tree):
+        raise core.LibraryError("闸门①未确认：章节树需先 tech-outline --confirm，禁止 tech-ctx")
+    if getattr(args, "all", False):
+        chapters = store.list_chapters(tree)
+    elif args.chapter:
+        chapters = [store.find_chapter(tree, args.chapter)]
+    else:
+        raise core.LibraryError("请指定 --chapter ch-01 或 --all")
+
+    tdir = sources.tdir(args, proj)
+    points = sources.load_points(tdir, args.project)
+    raw_items = sources.scoring_items(points)
+    material = sources.load_material(tdir, args.project) or {}
+
+    rows, skipped = [], []
+    for ch in chapters:
+        if ch.get("status") == "CONFIRMED":
+            skipped.append({"id": ch.get("id"), "reason": "CONFIRMED 章不再重建上下文包"})
+            continue
+        pack = fill_score_items(build_context(tree, ch, material, args, points), raw_items)
+        store.write_context_pack(tech, ch["id"], pack)
+        cur = ch.get("status") or "PENDING"
+        advanced = cur in ("PENDING", "FAILED")
+        if advanced:
+            store.advance_chapter(tech, ch["id"], "CONTEXT_READY")
+        rows.append({"id": ch["id"], "status": "CONTEXT_READY" if advanced else cur,
+                     "pack": "章节/.meta/%s.json" % ch["id"], "advanced": advanced})
+
+    if getattr(args, "json", False):
+        _print_json({"project": args.project, "chapters": rows, "skipped": skipped})
+    else:
+        for r in rows:
+            print("%s 上下文包已生成（%s）%s" % (
+                r["id"], r["status"], " → CONTEXT_READY" if r["advanced"] else ""))
+        for s in skipped:
+            print("  ⚠ %s 跳过：%s" % (s["id"], s["reason"]))
+        print("下一步：agent 按 P3 逐章写作 → tech-parse（下一批命令）")
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# tech-status
+# ---------------------------------------------------------------------------
+def cmd_tech_status(args):
+    ent = sources.get_ent(args)
+    sources.proj_dir(ent, args.project)
+    tech = sources.tech_dir(ent, args.project)
+    tree = store.read_tree(tech)
+    pc = tree.get("pageConstraint") or {}
+    cpp = int(pc.get("charsPerPage") or sources.DEFAULT_CHARS_PER_PAGE)
+    rows, total_pages = [], 0
+    for ch in store.list_chapters(tree):
+        actual, pages, body_ok = 0, 0, False
+        try:
+            text = store.read_chapter_body(tech, ch)
+            counts = m6rules.count_chars(text)
+            actual = counts["body_chars"] + counts["table_chars"]
+            pages = m6rules.estimate_pages(counts["body_chars"], counts["table_chars"],
+                                           {"charsPerPage": cpp})["pages"]
+            body_ok = True
+        except core.LibraryError:
+            pass
+        total_pages += pages
+        rows.append({"id": ch.get("id"), "no": ch.get("no"), "title": ch.get("title"),
+                     "status": ch.get("status"), "wordCnt": ch.get("wordCnt"),
+                     "actualChars": actual if body_ok else None,
+                     "pages": pages if body_ok else None})
+    summary = {"chapters": len(rows), "estimatedPages": total_pages,
+               "maxPages": pc.get("max"),
+               "overPages": bool(pc.get("max") and total_pages > pc["max"]),
+               "confirmed": store.outline_confirmed(tree)}
+    if getattr(args, "json", False):
+        _print_json({"project": args.project, "bidMode": tree.get("bidMode"),
+                     "summary": summary, "chapters": rows})
+        return 0
+    print("技术标状态 · %s（%s）" % (args.project, tree.get("bidMode")))
+    print("  %-8s %-6s %-12s %-14s %8s %8s %6s" %
+          ("id", "no", "状态", "标题", "预算字数", "实际字数", "估算页"))
+    for r in rows:
+        print("  %-8s %-6s %-12s %-14s %8s %8s %6s" % (
+            r["id"], r["no"], r["status"], (r["title"] or "")[:14],
+            r["wordCnt"], "-" if r["actualChars"] is None else r["actualChars"],
+            "-" if r["pages"] is None else r["pages"]))
+    print("  合计估算 %d 页 / 上限 %s 页%s" % (
+        total_pages, pc.get("max"), "（超限）" if summary["overPages"] else ""))
+    print("  闸门①：%s" % ("已确认" if summary["confirmed"] else "未确认"))
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# 注册
+# ---------------------------------------------------------------------------
+def register_parser(sub):
+    sp = sub.add_parser("tech-init", help="M6：建技术标目录骨架 + 校验 M4 产物 + 抽取页数/暗标并落设置")
+    sp.add_argument("--project", required=True, help="项目名（项目级/<项目>）")
+    sp.add_argument("--tdir", default="", help="招标解析目录（默认 项目级/<项目>/招标解析）")
+    sp.add_argument("--bid-mode", choices=m6rules.BID_MODES, default=None,
+                    help="标书模式（默认按投标要点文本含「暗标」判定）")
+    sp.add_argument("--pages", type=int, default=None, help="页数上限覆盖（默认从招标文件抽取）")
+    sp.set_defaults(func=cmd_tech_init)
+
+    sp = sub.add_parser("tech-outline", help="M6：校验 agent 章节树草案 → 回填系统字段 → 覆盖矩阵 → 落盘")
+    sp.add_argument("--project", required=True, help="项目名（项目级/<项目>）")
+    sp.add_argument("--file", required=True, help="章节树草案 JSON（须位于本项目目录内）")
+    sp.add_argument("--confirm", action="store_true", help="确认闸门①（存在未覆盖/页数超限则拒绝）")
+    sp.set_defaults(func=cmd_tech_outline)
+
+    sp = sub.add_parser("tech-ctx", help="M6：逐章生成 m6.ctx/v1 上下文包（闸门①未确认拒绝）")
+    sp.add_argument("--project", required=True, help="项目名（项目级/<项目>）")
+    sp.add_argument("--chapter", default="", help="单章 id（如 ch-01）")
+    sp.add_argument("--all", action="store_true", help="全部章节（跳过 CONFIRMED）")
+    sp.set_defaults(func=cmd_tech_ctx)
+
+    sp = sub.add_parser("tech-status", help="M6：写作状态表（状态/预算字数/实际字数/估算页）")
+    sp.add_argument("--project", required=True, help="项目名（项目级/<项目>）")
+    sp.set_defaults(func=cmd_tech_status)
