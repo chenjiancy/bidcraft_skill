@@ -27,7 +27,8 @@ def tree(**kw):
                            "source": "招标文件 第X章"},
         "style": {"id": "strict", "name": "严谨正式", "promptRef": "styles.json#strict"},
         "layout": {"preset": "single-column", "palette": "deep-indigo",
-                   "cover": "full-block", "decoration": "standard"},
+                   "cover": "full-block", "decoration": "standard", "font": "gov-gongwen",
+                   "imageRatio": "mid", "imageRule": "hybrid", "imageLayout": "split-h"},
         "terminology": {"招标人": "和县住建局", "项目名称": "和县2026"},
         "personnel": [{"name": "张三", "post": "总监理工程师", "source": "素材清单#personnel[0]"}],
         "chapters": [dict(ch(), status="PENDING",
@@ -344,14 +345,17 @@ class TestCompareDual(unittest.TestCase):
 
 
 class TestLayout(unittest.TestCase):
+    BASE = {"preset": "card", "palette": "pine-green",
+            "cover": "line-white", "decoration": "克制",
+            "font": "elegant-classic",
+            "imageRatio": "mid", "imageRule": "hybrid", "imageLayout": "split-h"}
+
     def test_default_valid(self):
-        ok, issues = m6.validate_layout({"preset": "card", "palette": "pine-green",
-                                         "cover": "line-white", "decoration": "克制"})
+        ok, issues = m6.validate_layout(dict(self.BASE))
         self.assertTrue(ok, issues)
 
     def test_unknown(self):
-        ok, issues = m6.validate_layout({"preset": "x", "palette": "deep-indigo",
-                                         "cover": "full-block", "decoration": "standard"})
+        ok, issues = m6.validate_layout(dict(self.BASE, preset="x"))
         self.assertFalse(ok)
         self.assertIn("layout.unknown", codes(issues))
 
@@ -359,24 +363,67 @@ class TestLayout(unittest.TestCase):
         ok, issues = m6.validate_layout({"preset": "card"})
         self.assertFalse(ok)
         self.assertIn("layout.missing", codes(issues))
+        self.assertTrue(any("layout.font" in i.get("message", "") for i in issues))
 
     def test_custom_presets(self):
-        presets = {"presets": ["only"], "palettes": ["p1"], "covers": ["c1"], "decorations": ["d1"]}
-        ok, _ = m6.validate_layout({"preset": "only", "palette": "p1", "cover": "c1", "decoration": "d1"}, presets)
+        presets = {"presets": ["only"], "palettes": ["p1"], "covers": ["c1"],
+                   "decorations": ["d1"], "fonts": ["f1"],
+                   "imageRatios": ["r1"], "imageRules": ["ru1"], "imageLayouts": ["l1"]}
+        ok, _ = m6.validate_layout({"preset": "only", "palette": "p1", "cover": "c1",
+                                    "decoration": "d1", "font": "f1",
+                                    "imageRatio": "r1", "imageRule": "ru1", "imageLayout": "l1"}, presets)
         self.assertTrue(ok)
         ok, issues = m6.validate_layout({"preset": "card", "palette": "p1", "cover": "c1",
-                                         "decoration": "d1"}, presets)
+                                         "decoration": "d1", "font": "f1",
+                                         "imageRatio": "r1", "imageRule": "ru1", "imageLayout": "l1"}, presets)
         self.assertFalse(ok)
 
     def test_dark_image_cover(self):
-        ok, issues = m6.validate_layout({"preset": "card", "palette": "deep-indigo",
-                                         "cover": "image-underlay", "decoration": "standard"}, None, "暗标")
+        ok, issues = m6.validate_layout(dict(self.BASE, cover="image-underlay", font="dark-safe"), None, "暗标")
         self.assertFalse(ok)
         self.assertIn("layout.mixcover", codes(issues))
 
+    def test_dark_font_forced(self):
+        ok, issues = m6.validate_layout(dict(self.BASE, font="gov-gongwen"), None, "暗标")
+        self.assertFalse(ok)
+        self.assertIn("layout.mixfont", codes(issues))
+
+    def test_dark_font_safe(self):
+        ok, issues = m6.validate_layout(dict(self.BASE, font="dark-safe", palette="steel-cyan",
+                                             decoration="minimal", imageRatio="none"), None, "暗标")
+        self.assertTrue(ok, issues)
+
+    def test_dark_image_zero_ok(self):
+        ok, issues = m6.validate_layout(dict(self.BASE, font="dark-safe", imageRatio="none",
+                                             imageRule="hybrid", imageLayout="split-h"), None, "暗标")
+        self.assertTrue(ok, issues)
+
+    def test_dark_image_safe_combo(self):
+        ok, issues = m6.validate_layout(dict(self.BASE, font="dark-safe", imageRatio="mid",
+                                             imageRule="dark-safe-img", imageLayout="appendix"), None, "暗标")
+        self.assertTrue(ok, issues)
+
+    def test_dark_image_mix_rejected(self):
+        ok, issues = m6.validate_layout(dict(self.BASE, font="dark-safe", imageRatio="mid",
+                                             imageRule="hybrid", imageLayout="split-h"), None, "暗标")
+        self.assertFalse(ok)
+        self.assertIn("layout.dark-image-mix", codes(issues))
+
+    def test_dark_image_high_ratio_safe_combo(self):
+        ok, issues = m6.validate_layout(dict(self.BASE, font="dark-safe", imageRatio="high",
+                                             imageRule="dark-safe-img", imageLayout="appendix"), None, "暗标")
+        self.assertTrue(ok, issues)
+
+    def test_image_ratio_chinese_alias(self):
+        ok, issues = m6.validate_layout(dict(self.BASE, imageRatio="中图比"))
+        self.assertTrue(ok, issues)
+
+    def test_font_chinese_alias(self):
+        ok, issues = m6.validate_layout(dict(self.BASE, font="政务公文风"))
+        self.assertTrue(ok, issues)
+
     def test_overrides_warn(self):
-        ok, issues = m6.validate_layout({"preset": "card", "palette": "deep-indigo", "cover": "full-block",
-                                         "decoration": "standard", "overrides": {"bodyFont": "仿宋", "x": 1}})
+        ok, issues = m6.validate_layout(dict(self.BASE, overrides={"bodyFont": "仿宋", "x": 1}))
         self.assertTrue(ok)
         self.assertIn("layout.overrides-key", codes(issues))
 

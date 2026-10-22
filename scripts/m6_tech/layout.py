@@ -3,7 +3,7 @@
 bidcraft · M6 技术标制作 —— 排版预设读取与 tech-layout 命令（T13，契约 §3.2/§7）
 
 预设文件：共享级 `<软件根>/共享资源/技术标风格/layout-presets.json`
-  四组均为数组（可增行表）：presets / palettes / covers / decorations
+  八组均为数组（可增行表）：presets / palettes / covers / decorations / fontSchemes / imageRatios / imageRules / imageLayouts
 缺失时：回退 `rules.DEFAULT_LAYOUT` 内置清单，并在输出中标注「内置兜底」
 `--preview`：样张 docx 依赖 T10 导出排版引擎，未实现前显式报错（不静默跳过）
 """
@@ -21,6 +21,10 @@ GROUPS = (
     ("palette", "配色方案"),
     ("cover", "封面版式"),
     ("decoration", "装饰强度"),
+    ("font", "字体方案"),
+    ("imageRatio", "图文比例"),
+    ("imageRule", "配图规则"),
+    ("imageLayout", "配图排版"),
 )
 
 
@@ -70,11 +74,12 @@ def entries(doc, group):
 
 
 def default_entry(doc):
-    """四组默认 id → {preset, palette, cover, decoration}。"""
+    """八组默认 id → {preset, palette, cover, decoration, font, imageRatio, imageRule, imageLayout}。"""
     out = dict(sources.DEFAULT_LAYOUT)
     src = doc.get("default") if isinstance(doc, dict) else None
     if isinstance(src, dict):
-        for g in ("preset", "palette", "cover", "decoration"):
+        for g in ("preset", "palette", "cover", "decoration", "font",
+                  "imageRatio", "imageRule", "imageLayout"):
             v = src.get(g)
             if isinstance(v, str) and v.strip():
                 out[g] = v.strip()
@@ -120,8 +125,36 @@ def _print_group(doc, group, label, default):
                 flags.append(row["note"])
             if flags:
                 print("  %-18s %s" % ("", "；".join(flags)))
+        elif group == "font":
+            parts = []
+            for k in ("heading", "body", "western"):
+                v = row.get(k)
+                if isinstance(v, str) and v:
+                    parts.append("%s=%s" % (k, v))
+            if row.get("lineSpacing"):
+                parts.append("行距%s" % row["lineSpacing"])
+            if row.get("system"):
+                parts.append(row["system"])
+            if row.get("note"):
+                parts.append(row["note"])
+            if parts:
+                print("  %-18s %s" % ("", " · ".join(parts)))
+            sizes = row.get("sizes")
+            if isinstance(sizes, dict) and sizes:
+                print("  %-18s 字号：%s" % ("", " · ".join("%s %s" % (k, v) for k, v in sizes.items())))
         elif group == "cover" and row.get("darkOk") is False:
             print("  %-18s %s" % ("", row.get("note") or "暗标禁用"))
+        elif group in ("imageRatio", "imageRule", "imageLayout"):
+            flags = []
+            if row.get("ratio"):
+                flags.append("图:文 %s" % row["ratio"])
+            if row.get("source"):
+                flags.append("来源 %s" % row["source"])
+            if row.get("darkOk") is False:
+                flags.append("暗标禁用")
+            if row.get("note"):
+                flags.append(row["note"])
+            print("  %-18s %s" % ("", "；".join(flags)))
         elif row.get("docx"):
             print("  %-18s %s" % ("", row["docx"]))
 
@@ -149,13 +182,17 @@ def cmd_tech_layout(args):
         print("⚠ 未找到共享级排版预设（%s），已回退内置清单" % PRESETS_FILE)
     else:
         print("排版预设 · %s" % path)
-    print("默认：%s %s / %s %s / %s %s / %s %s" % (
+    print("默认：%s %s / %s %s / %s %s / %s %s / 图文 %s(%s)：%s + %s + %s" % (
         default["preset"], _name(doc, "preset", default["preset"]),
         default["palette"], _name(doc, "palette", default["palette"]),
         default["cover"], _name(doc, "cover", default["cover"]),
-        default["decoration"], _name(doc, "decoration", default["decoration"])))
+        default["decoration"], _name(doc, "decoration", default["decoration"]),
+        default.get("font", "gov-gongwen"), _name(doc, "font", default.get("font", "gov-gongwen")),
+        _name(doc, "imageRatio", default.get("imageRatio", "mid")),
+        _name(doc, "imageRule", default.get("imageRule", "hybrid")),
+        _name(doc, "imageLayout", default.get("imageLayout", "split-h"))))
     for group, label in GROUPS:
         _print_group(doc, group, label, default)
     print("\n提示：暗标禁用 cover=image-underlay；渐变蓝青在 docx 中以两段色块近似。")
-    print("      章节树 layout 四组 id 须在上表内（tech-outline 落盘前校验）。")
+    print("      章节树 layout 八组 id 须在上表内（tech-outline 落盘前校验；暗标强制 font=dark-safe、图片二选一：none 或 dark-safe-img+appendix）。")
     return 0

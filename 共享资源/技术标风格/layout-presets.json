@@ -1,15 +1,19 @@
 {
   "schema": "m6.layout-presets/v1",
-  "version": "1.0",
-  "updated": "2026-10-21",
-  "note": "共享级排版预设（四组均为数组，可增行表）。色值经 T13 色卡预览确认（2026-10-21）。预设只影响 tech-export，不改变正文 md 内容。",
+  "version": "1.2",
+  "updated": "2026-10-22",
+  "note": "共享级排版预设（八组均为数组，可增行表）。色值经 T13 色卡预览确认（2026-10-21）；字体方案 5 套（2026-10-22，暗标强制 dark-safe）；配图规范三组（imageRatios/imageRules/imageLayouts，2026-10-22 用户确认，暗标二选一：none 或 dark-safe-img+appendix）。预设只影响 tech-export，不改变正文 md 内容。",
   "default": {
     "preset": "single-column",
     "palette": "deep-indigo",
     "cover": "full-block",
-    "decoration": "standard"
+    "decoration": "standard",
+    "font": "gov-gongwen",
+    "imageRatio": "mid",
+    "imageRule": "hybrid",
+    "imageLayout": "split-h"
   },
-  "fonts": {
+  "fontDefaults": {
     "heading": "仿宋",
     "body": "仿宋"
   },
@@ -237,6 +241,171 @@
       "id": "rich",
       "name": "丰富",
       "docx": "章首装饰带 + 图标 + 强调底色"
+    }
+  ],
+  "fontSchemes": [
+    {
+      "id": "gov-gongwen",
+      "name": "政务公文风",
+      "heading": "黑体",
+      "body": "仿宋",
+      "western": "Times New Roman",
+      "sizes": {"chapter": "16pt 三号 居中", "section": "14pt 四号", "item": "12pt 小四", "body": "12pt 小四", "table": "10.5pt 五号", "caption": "9pt 小五"},
+      "lineSpacing": 1.5,
+      "system": "系统自带",
+      "darkOk": false,
+      "note": "对标 GB/T 9704 公文版式，监理大纲正统首选"
+    },
+    {
+      "id": "engineering",
+      "name": "工程务实风",
+      "heading": "黑体",
+      "body": "宋体",
+      "western": "Times New Roman",
+      "sizes": {"chapter": "16pt 三号 居中", "section": "14pt 四号", "item": "12pt 小四", "body": "12pt 小四", "table": "10.5pt 五号", "caption": "9pt 小五"},
+      "lineSpacing": 1.5,
+      "system": "系统自带",
+      "darkOk": false,
+      "note": "全宋体系，与多地暗标条款（宋体四号常规）天然接近"
+    },
+    {
+      "id": "modern-business",
+      "name": "现代商务风",
+      "heading": "微软雅黑（加粗）",
+      "body": "微软雅黑",
+      "western": "Calibri / Arial",
+      "sizes": {"chapter": "16pt 居中 加粗", "section": "14pt 加粗", "item": "12pt 加粗", "body": "12pt", "table": "10.5pt", "caption": "9pt"},
+      "lineSpacing": 1.4,
+      "system": "Win8+ 自带",
+      "darkOk": false,
+      "note": "屏幕阅读友好；字重偏粗，暗标禁用"
+    },
+    {
+      "id": "elegant-classic",
+      "name": "典雅书卷风",
+      "heading": "华文中宋",
+      "body": "楷体",
+      "western": "Georgia / Times New Roman",
+      "sizes": {"chapter": "16pt 三号 居中", "section": "14pt 四号", "item": "12pt 小四 加粗", "body": "12pt 小四", "table": "10.5pt 五号", "caption": "9pt 小五"},
+      "lineSpacing": 1.5,
+      "system": "系统自带",
+      "darkOk": false,
+      "note": "差异化竞争，文化/教育/园林类；楷体篇幅约+5%"
+    },
+    {
+      "id": "dark-safe",
+      "name": "暗标安全风",
+      "heading": "宋体 四号 常规",
+      "body": "宋体 四号 常规",
+      "western": "同正文",
+      "sizes": {"chapter": "14pt 四号 常规", "section": "14pt 四号 常规", "item": "14pt 四号 常规", "body": "14pt 四号 常规", "table": "10.5pt 五号 常规", "caption": "9pt 小五 常规"},
+      "lineSpacing": 1.5,
+      "system": "系统自带",
+      "darkOk": true,
+      "note": "全黑统一，无加粗/斜体/下划线/加色；变体：招标点名仿宋_GB2312 小四时按条款切换；不设封面/页眉页脚/页码"
+    }
+  ],
+  "imageRatios": [
+    {
+      "id": "none",
+      "name": "无图",
+      "ratio": "0:10",
+      "imageShare": 0,
+      "darkOk": true,
+      "note": "零图模式：不生成/不插入任何图表，纯文字排版；暗标推荐（切断人脸/品牌/水印/版权全部图片风险）；tech-export 跳过图片、image-left 降级单栏、页数按纯文字折算"
+    },
+    {
+      "id": "low",
+      "name": "低图比",
+      "ratio": "1:9",
+      "imageShare": 0.1,
+      "darkOk": true,
+      "note": "图占版心约 10%；理论密集型章节（质量/进度/投资控制、监理程序）；近纯文字页"
+    },
+    {
+      "id": "mid",
+      "name": "中图比",
+      "ratio": "3:7",
+      "imageShare": 0.3,
+      "darkOk": true,
+      "note": "默认档；图占版心约 30%；现场照片每页≤2 张（行业口径）"
+    },
+    {
+      "id": "high",
+      "name": "高图比",
+      "ratio": "5:5",
+      "imageShare": 0.5,
+      "darkOk": false,
+      "note": "图占版心约 50%；图证型章节（现场平面布置/安全文明施工/样板引路）；流程图每页 1 张；暗标须转灰度+附图专页"
+    }
+  ],
+  "imageRules": [
+    {
+      "id": "upload-first",
+      "name": "上传优先",
+      "source": "人工上传（存量少）",
+      "darkOk": true,
+      "note": "上传图只放关键证据位（业绩/资质/人员/荣誉）；仅等比缩放+质量检查，不改内容"
+    },
+    {
+      "id": "search-supplement",
+      "name": "搜索补图",
+      "source": "联网搜索",
+      "darkOk": false,
+      "note": "搜真实工程场景图；短边≥600px、无水印优先、尽量无人脸/品牌；标注示意图；版权风险高，不用于事实陈述"
+    },
+    {
+      "id": "ai-render",
+      "name": "AI 生图",
+      "source": "AI 生成",
+      "darkOk": true,
+      "note": "工程场景示意图作主力：统一画风、无版权、可控（指定无人脸/无文字标识/无品牌）；嵌入 docx 前重编码标准 JPEG；标注示意图"
+    },
+    {
+      "id": "hybrid",
+      "name": "混合策略",
+      "source": "上传+搜索+AI",
+      "darkOk": false,
+      "note": "默认；关键证据→上传图，真实场景→搜索图，风格补全→AI 图；三源混排时边框/色调统一"
+    },
+    {
+      "id": "dark-safe-img",
+      "name": "暗标安全",
+      "source": "任一来源",
+      "darkOk": true,
+      "note": "无论来源一律过安全闸：转灰度/黑白、人脸不可辨识、招牌/品牌/文字遮盖、EXIF 与文件名清洗"
+    }
+  ],
+  "imageLayouts": [
+    {
+      "id": "split-h",
+      "name": "左右分栏",
+      "darkOk": true,
+      "note": "左图右文/左文右图，两列表格承载；图不跨栏不折行，文字对齐图顶部或中部；通用最稳"
+    },
+    {
+      "id": "split-v",
+      "name": "上下分栏",
+      "darkOk": true,
+      "note": "上图下文：横图+图注+正文段落；适合过程照片/案例展示"
+    },
+    {
+      "id": "inline",
+      "name": "图文混排",
+      "darkOk": true,
+      "note": "图嵌段落中文字环绕，小图穿插正文；图不跨栏不折行不被文字覆盖"
+    },
+    {
+      "id": "grid",
+      "name": "图组并排",
+      "darkOk": false,
+      "note": "2 张同尺寸图并排+组注；前后对照/多工序对比；暗标须附图专页"
+    },
+    {
+      "id": "appendix",
+      "name": "附图专页",
+      "darkOk": true,
+      "note": "图集中章节末/文末附表，正文用见附图 X 引用；暗标强制（青海/安庆条款：附图依次附于标书最后）"
     }
   ]
 }

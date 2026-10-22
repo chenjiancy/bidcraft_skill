@@ -23,7 +23,8 @@ DEFAULT_CHARS_PER_PAGE = 1000
 DEFAULT_STYLE = {"id": "strict", "name": "严谨正式", "promptRef": "styles.json#strict"}
 DEFAULT_LAYOUT = {
     "preset": "single-column", "palette": "deep-indigo",
-    "cover": "full-block", "decoration": "standard",
+    "cover": "full-block", "decoration": "standard", "font": "gov-gongwen",
+    "imageRatio": "mid", "imageRule": "hybrid", "imageLayout": "split-h",
 }
 
 RE_PAGES = [
@@ -228,13 +229,17 @@ def build_settings(project, points, tdir_path, bid_mode=None, pages=None):
     pc = _page_constraint(points, tdir_path, project, pages)
     if pc["source"].startswith("默认值"):
         notes.append("未抽取到页数约束，暂按 %d 页处理（可 tech-init --pages 覆盖）" % pc["max"])
+    layout = dict(DEFAULT_LAYOUT)
+    if mode == "暗标":
+        layout["font"] = "dark-safe"
+        layout["imageRatio"] = "none"
     return {
         "schema": SETTINGS_SCHEMA,
         "project": project,
         "bidMode": mode,
         "pageConstraint": pc,
         "style": dict(DEFAULT_STYLE),
-        "layout": dict(DEFAULT_LAYOUT),
+        "layout": layout,
         "terminology": term,
         "personnel": personnel,
         "personnelWriteMode": "post-only" if mode == "暗标" else "with-name",

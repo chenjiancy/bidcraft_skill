@@ -36,10 +36,15 @@ class PresetFileTest(unittest.TestCase):
         self.assertEqual(len(layout.entries(doc, "palette")), 11)
         self.assertEqual(len(layout.entries(doc, "cover")), 4)
         self.assertEqual(len(layout.entries(doc, "decoration")), 3)
+        self.assertEqual(len(layout.entries(doc, "font")), 5)
+        self.assertEqual(len(layout.entries(doc, "imageRatio")), 4)
+        self.assertEqual(len(layout.entries(doc, "imageRule")), 5)
+        self.assertEqual(len(layout.entries(doc, "imageLayout")), 5)
 
     def test_ids_match_builtin(self):
         doc = _doc()
-        for group in ("preset", "palette", "cover", "decoration"):
+        for group in ("preset", "palette", "cover", "decoration", "font",
+                      "imageRatio", "imageRule", "imageLayout"):
             got = [r["id"] for r in layout.entries(doc, group)]
             self.assertEqual(got, list(rules.DEFAULT_LAYOUT[group]), group)
 
@@ -47,7 +52,10 @@ class PresetFileTest(unittest.TestCase):
         doc = _doc()
         default = layout.default_entry(doc)
         self.assertEqual(default, {"preset": "single-column", "palette": "deep-indigo",
-                                   "cover": "full-block", "decoration": "standard"})
+                                   "cover": "full-block", "decoration": "standard",
+                                   "font": "gov-gongwen",
+                                   "imageRatio": "mid", "imageRule": "hybrid",
+                                   "imageLayout": "split-h"})
 
     def test_every_palette_has_five_colors(self):
         doc = _doc()

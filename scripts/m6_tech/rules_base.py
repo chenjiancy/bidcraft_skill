@@ -64,14 +64,37 @@ DEFAULT_LAYOUT = {
                 "deep-blue-gold", "ink-green-orange", "eggplant-silver", "mono-red", "gradient-blue-cyan"],
     "cover": ["full-block", "line-white", "image-underlay", "gradient"],
     "decoration": ["minimal", "standard", "rich"],
+    "font": ["gov-gongwen", "engineering", "modern-business", "elegant-classic", "dark-safe"],
+    "imageRatio": ["none", "low", "mid", "high"],
+    "imageRule": ["upload-first", "search-supplement", "ai-render", "hybrid", "dark-safe-img"],
+    "imageLayout": ["split-h", "split-v", "inline", "grid", "appendix"],
 }
 LAYOUT_ALIAS_KEYS = {
     "preset": ("preset", "presets", "layouts"),
     "palette": ("palette", "palettes", "colors"),
     "cover": ("cover", "covers"),
     "decoration": ("decoration", "decorations"),
+    "font": ("font", "fonts", "fontSchemes", "fontScheme"),
+    "imageRatio": ("imageRatio", "imageRatios", "imageRatioScheme"),
+    "imageRule": ("imageRule", "imageRules", "imageSourceRule"),
+    "imageLayout": ("imageLayout", "imageLayouts", "imagePlacement"),
 }
 DECORATION_ALIASES = {"克制": "minimal", "标准": "standard", "丰富": "rich"}
+FONT_ALIASES = {
+    "政务公文风": "gov-gongwen", "工程务实风": "engineering",
+    "现代商务风": "modern-business", "典雅书卷风": "elegant-classic",
+    "暗标安全风": "dark-safe",
+}
+IMAGE_RATIO_ALIASES = {"无图": "none", "低图比": "low", "中图比": "mid", "高图比": "high"}
+IMAGE_RULE_ALIASES = {
+    "上传优先": "upload-first", "搜索补图": "search-supplement",
+    "AI 生图": "ai-render", "ai生图": "ai-render",
+    "混合策略": "hybrid", "暗标安全": "dark-safe-img", "暗标安全图": "dark-safe-img",
+}
+IMAGE_LAYOUT_ALIASES = {
+    "左右分栏": "split-h", "上下分栏": "split-v", "图文混排": "inline",
+    "图组并排": "grid", "并排": "grid", "附图专页": "appendix",
+}
 
 # 暗标敏感表（Q3 完整内置表；企业名/地址/人名由 vocab 注入）
 SENSITIVE_BUILTIN = [

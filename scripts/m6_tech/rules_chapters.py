@@ -9,7 +9,8 @@ from .rules_base import (
     _err, _warn, _has_error, _is_int, _num, _norm_idx, _cjk_set,
     SCHEMA_ID, BID_MODES, STATUSES, GATES, MAX_LEVEL, NO_PATTERN, ID_PATTERN,
     KEYPOINT_MIN, KEYPOINT_MAX, CHAPTER_WORD_SPLIT, DEPENDS_ENUM,
-    DEFAULT_LAYOUT, LAYOUT_ALIAS_KEYS, DECORATION_ALIASES, COVER_RATIO,
+    DEFAULT_LAYOUT, LAYOUT_ALIAS_KEYS, DECORATION_ALIASES, FONT_ALIASES,
+    IMAGE_RATIO_ALIASES, IMAGE_RULE_ALIASES, IMAGE_LAYOUT_ALIASES, COVER_RATIO,
 )
 
 
@@ -352,25 +353,39 @@ def _preset_ids(presets, group):
 
 
 def validate_layout(layout, presets=None, bid_mode="明标"):
-    """四组预设 id 合法性 + 暗标禁用 image-underlay → (ok, issues)。"""
+    """八组预设 id 合法性 + 暗标硬约束（禁 image-underlay、强制 dark-safe 字体、图片二选一）→ (ok, issues)。"""
     if not isinstance(layout, dict):
         return False, [_err("layout.type", "layout 必须是对象")]
     issues = []
     chosen = {}
-    for group in ("preset", "palette", "cover", "decoration"):
+    alias_map = {"decoration": DECORATION_ALIASES, "font": FONT_ALIASES,
+                 "imageRatio": IMAGE_RATIO_ALIASES, "imageRule": IMAGE_RULE_ALIASES,
+                 "imageLayout": IMAGE_LAYOUT_ALIASES}
+    for group in ("preset", "palette", "cover", "decoration", "font",
+                  "imageRatio", "imageRule", "imageLayout"):
         val = layout.get(group)
         if not isinstance(val, str) or not val.strip():
             issues.append(_err("layout.missing", "layout.%s 缺失或为空" % group))
             continue
-        val = DECORATION_ALIASES.get(val, val) if group == "decoration" else val
+        val = alias_map.get(group, {}).get(val, val)
         chosen[group] = val
         allowed = _preset_ids(presets, group)
         if val not in allowed:
             issues.append(_err("layout.unknown", "layout.%s=%r 不在预设清单（允许 %s）"
-                                % (group, val, "/".join(allowed))))
+                               % (group, val, "/".join(allowed))))
     if bid_mode == "暗标":
         if chosen.get("cover") == "image-underlay":
             issues.append(_err("layout.mixcover", "暗标禁用封面 image-underlay（图底压字可能泄露企业信息）"))
+        if chosen.get("font") != "dark-safe":
+            issues.append(_err("layout.mixfont", "暗标必须使用字体方案 dark-safe（全黑统一，防止废标）；当前 %r"
+                               % chosen.get("font")))
+        ratio = chosen.get("imageRatio")
+        if ratio != "none":
+            if chosen.get("imageRule") != "dark-safe-img" or chosen.get("imageLayout") != "appendix":
+                issues.append(_err("layout.dark-image-mix",
+                                   "暗标图片二选一：imageRatio=none（零图）或 imageRatio≠none 时须同时 "
+                                   "imageRule=dark-safe-img 且 imageLayout=appendix；当前 %r/%r/%r"
+                                   % (ratio, chosen.get("imageRule"), chosen.get("imageLayout"))))
         if str(chosen.get("palette", "")).lower().startswith("enterprise"):
             issues.append(_warn("layout.enterprise-color", "暗标建议不使用企业配色：%s" % chosen["palette"]))
     overrides = layout.get("overrides")

@@ -13,7 +13,8 @@ T4（存储层）/ T5（CLI）一律只 import 本门面，不直接依赖子模
 """
 from .rules_base import (
     SCHEMA_ID, BID_MODES, STATUSES, STATUS_FLOW, GATES, DEPENDS_ENUM,
-    DEFAULT_LAYOUT, LAYOUT_ALIAS_KEYS, COVER_RATIO,
+    DEFAULT_LAYOUT, LAYOUT_ALIAS_KEYS, COVER_RATIO, FONT_ALIASES,
+    IMAGE_RATIO_ALIASES, IMAGE_RULE_ALIASES, IMAGE_LAYOUT_ALIASES,
 )
 from .rules_chapters import (
     validate_chapters_draft, validate_chapters_final, build_coverage, validate_layout,
@@ -27,7 +28,8 @@ from .rules_check import (
 __all__ = [
     # 常量
     "SCHEMA_ID", "BID_MODES", "STATUSES", "STATUS_FLOW", "GATES", "DEPENDS_ENUM",
-    "DEFAULT_LAYOUT", "LAYOUT_ALIAS_KEYS", "COVER_RATIO",
+    "DEFAULT_LAYOUT", "LAYOUT_ALIAS_KEYS", "COVER_RATIO", "FONT_ALIASES",
+    "IMAGE_RATIO_ALIASES", "IMAGE_RULE_ALIASES", "IMAGE_LAYOUT_ALIASES",
     # F1–F3 / F11
     "validate_chapters_draft", "validate_chapters_final", "build_coverage", "validate_layout",
     # F4–F10

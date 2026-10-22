@@ -55,6 +55,9 @@ def cmd_tech_init(args):
     presets_doc = layout.load_presets(args)
     if presets_doc is not None:
         settings["layout"] = layout.default_entry(presets_doc)
+        if settings["bidMode"] == "暗标":
+            settings["layout"]["font"] = "dark-safe"
+            settings["layout"]["imageRatio"] = "none"
     tree_exists = store.tree_path(tech).is_file()
     if tree_exists:
         settings["notes"].append("已存在章节树，设置.json 未覆写（章节树为权威）")
@@ -69,10 +72,14 @@ def cmd_tech_init(args):
     pc = settings["pageConstraint"]
     print("  页数约束：不超过 %d 页（来源：%s）" % (pc["max"], pc["source"]))
     print("  拟派人员：%d 人（来源：素材清单）" % len(settings["personnel"]))
-    print("  风格：%s %s；排版：%s/%s/%s/%s" % (
+    print("  风格：%s %s；排版：%s/%s/%s/%s；字体：%s；图文：%s+%s+%s" % (
         settings["style"]["id"], settings["style"]["name"],
         settings["layout"]["preset"], settings["layout"]["palette"],
-        settings["layout"]["cover"], settings["layout"]["decoration"]))
+        settings["layout"]["cover"], settings["layout"]["decoration"],
+        settings["layout"].get("font", "gov-gongwen"),
+        settings["layout"].get("imageRatio", "mid"),
+        settings["layout"].get("imageRule", "hybrid"),
+        settings["layout"].get("imageLayout", "split-h")))
     for n in settings["notes"]:
         print("  ⚠ %s" % n)
     print("下一步：agent 按 P2 产出章节树草案 → tech-outline")
