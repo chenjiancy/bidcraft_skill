@@ -1,0 +1,21 @@
+{
+  "schema": "m6.taxonomy/v1",
+  "pack": "official-tech",
+  "docType": "ENGINEERING",
+  "note": "类目 id/name/description 保留链企原文（镜像 2026-10-22）；bodyMode=two_step 与 M6 P2→P3 两步成文范式一致；illustration=true 表示该类默认配图（对齐 layout-presets imageRatio）。description 为每类写作要点，tech-ctx 时注入对应章 .meta 上下文包。",
+  "classes": [
+    { "id": "1", "name": "内容完整性及编制说明", "description": "包含总结性概述说明、编制依据、编制原则、相应承诺。", "bodyMode": "two_step", "illustration": true },
+    { "id": "2", "name": "工程概况", "description": "体现项目基本信息、工程设计概述、工程特点、技术/工程难点、施工条件等相关内容。", "bodyMode": "two_step", "illustration": true },
+    { "id": "3", "name": "施工部署", "description": "体现项目目标、施工组织架构、施工区段划分、施工顺序与流程以上模块的相关内容。", "bodyMode": "two_step", "illustration": true },
+    { "id": "4", "name": "施工进度计划", "description": "体现施工开工竣工日期、阶段性工期节点目标、施工进度计划和网络图、可能影响工期的风险及工期保证措施以上模块的相关内容。", "bodyMode": "two_step", "illustration": true },
+    { "id": "5", "name": "资源需求计划", "description": "涉及劳动力、材料、机械设备的需求预测及其进场计划、资源调配与应急方案。", "bodyMode": "two_step", "illustration": true },
+    { "id": "6", "name": "施工现场平面布置", "description": "对施工现场的临时设施、材料堆放区、施工机械位置、道路等，对其布置进行说明。", "bodyMode": "two_step", "illustration": true },
+    { "id": "7", "name": "施工技术方案", "description": "体现施工程序和施工顺序、分部分项施工方法，关键技术措施、工艺流程图以上模块的相关内容。", "bodyMode": "two_step", "illustration": true },
+    { "id": "8", "name": "质量管理体系与措施", "description": "体现质量管理目标、质量的组织管理体系和职责、质量的管理制度与措施、质量控制措施、质量监控体系、质量通病、工程质量验收以及质量应急预案以上模块的相关内容。", "bodyMode": "two_step", "illustration": true },
+    { "id": "9", "name": "安全管理体系与措施", "description": "体现安全管理目标、安全管理组织体系、安全管理制度、危险源与相关风险、安全控制措施、施工安全的技术措施以上模块的相关内容。", "bodyMode": "two_step", "illustration": true },
+    { "id": "10", "name": "环境保护与文明施工措施", "description": "提出减少污染、保护环境的具体措施以及保持现场文明施工的要求，环境保护：废水处理、固废处置、噪声控制、节能减排。", "bodyMode": "two_step", "illustration": true },
+    { "id": "11", "name": "成品保护与现场管理措施", "description": "成品保护是指为防止已施工完成的成品、半成品在工序衔接、交叉作业、竣工验收前等阶段因碰撞、腐蚀、污染、人为破坏、丢失等造成材质损伤、功能损失及质量缺陷所采取的保护措施和管理手段；现场管理措施是确保工程项目顺利实施、保障质量、安全、进度和成本的重要手段。", "bodyMode": "two_step", "illustration": true },
+    { "id": "12", "name": "施工的重难点以及保证措施", "description": "项目实施过程中的重点、难点以及详细分析说明，相应的保证措施。", "bodyMode": "two_step", "illustration": true },
+    { "id": "13", "name": "极端/季节性气候施工措施", "description": "体现在受到极端天气/季节性气候（如：高温季节施工、严寒/冬季施工、雨季/汛期施工）情况下，直接违背常规施工环境要求，需针对性调整施工工艺、资源配置。", "bodyMode": "two_step", "illustration": true }
+  ]
+}

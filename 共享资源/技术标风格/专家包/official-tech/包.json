@@ -1,0 +1,29 @@
+{
+  "schema": "m6.expert-pack/v1",
+  "id": "official-tech",
+  "name": "官方技术标专家包",
+  "description": "施工类技术标通用目录学与默认配置包：13 类章节分类体系（含每类写作要点与配图标记），来源为链企 Buddy 官方技术标专家团（id=1）taxonomy 镜像清洗。本包只提供「配置集」（目录学 + 版式组合 + 风格引用），不包含提示词正文——提示词一律归 styles.json 与 M6 提示词 P2/P3/P5。",
+  "tags": ["工程", "施工", "通用"],
+  "bidType": ["engineering"],
+  "docType": "ENGINEERING",
+  "taxonomy": "taxonomy.json",
+  "layoutCombo": {
+    "preset": "single-column",
+    "palette": "deep-indigo",
+    "cover": "full-block",
+    "decoration": "standard",
+    "font": "gov-gongwen",
+    "imageRatio": "mid",
+    "imageRule": "hybrid",
+    "imageLayout": "split-h"
+  },
+  "styleRef": "styles.json#default",
+  "source": {
+    "kind": "chainq-mirror",
+    "expertGroupId": 1,
+    "resolvedGroupId": 1,
+    "capturedAt": "2026-10-22",
+    "evidence": "e:/链企Buddy分析/expert-kit-export/taxonomy/1-ENGINEERING.json",
+    "note": "原类目的 contentPromptDataId（prompt-content-class-1..13）为服务端提示词引用，正文客户端不可得，清洗时已剔除；仅保留 name/description/bodyMode/illustration。"
+  }
+}
