@@ -29,6 +29,7 @@ from . import rules as m6rules
 from . import store
 from . import sources
 from . import layout
+from . import packs
 from .ctxpack import build_context, fill_score_items
 from .report import cmd_tech_check, cmd_tech_report
 from .writer import cmd_tech_parse
@@ -56,8 +57,9 @@ def cmd_tech_init(args):
     if presets_doc is not None:
         settings["layout"] = layout.default_entry(presets_doc)
         if settings["bidMode"] == "暗标":
-            settings["layout"]["font"] = "dark-safe"
-            settings["layout"]["imageRatio"] = "none"
+            for k, v in sources.DARK_LAYOUT_INJECT.items():
+                settings["layout"][k] = v
+            settings["notes"].append("暗标：排版预设默认被暗标条款覆盖（字体/图文/微观六组），具体以招标原文为准")
     tree_exists = store.tree_path(tech).is_file()
     if tree_exists:
         settings["notes"].append("已存在章节树，设置.json 未覆写（章节树为权威）")
@@ -72,14 +74,20 @@ def cmd_tech_init(args):
     pc = settings["pageConstraint"]
     print("  页数约束：不超过 %d 页（来源：%s）" % (pc["max"], pc["source"]))
     print("  拟派人员：%d 人（来源：素材清单）" % len(settings["personnel"]))
-    print("  风格：%s %s；排版：%s/%s/%s/%s；字体：%s；图文：%s+%s+%s" % (
+    print("  风格：%s %s；排版：%s/%s/%s/%s；字体：%s；图文：%s+%s+%s；微观：%s/%s/%s/%s/%s/%s" % (
         settings["style"]["id"], settings["style"]["name"],
         settings["layout"]["preset"], settings["layout"]["palette"],
         settings["layout"]["cover"], settings["layout"]["decoration"],
         settings["layout"].get("font", "gov-gongwen"),
         settings["layout"].get("imageRatio", "mid"),
         settings["layout"].get("imageRule", "hybrid"),
-        settings["layout"].get("imageLayout", "split-h")))
+        settings["layout"].get("imageLayout", "split-h"),
+        settings["layout"].get("pageSetup", "p1-standard-a4"),
+        settings["layout"].get("headingSystem", "h1-gbt-arabic"),
+        settings["layout"].get("tocStyle", "t1-jianyu-auto"),
+        settings["layout"].get("tableStyle", "tb1-three-line"),
+        settings["layout"].get("captionSystem", "c2-cy-chapter"),
+        settings["layout"].get("paragraphStyle", "pa7-jianyu-15")))
     for n in settings["notes"]:
         print("  ⚠ %s" % n)
     print("下一步：agent 按 P2 产出章节树草案 → tech-outline")
@@ -137,6 +145,10 @@ def cmd_tech_outline(args):
     points = sources.load_points(tdir, args.project)
     raw_items = sources.scoring_items(points)
 
+    pack = None
+    if getattr(args, "expert_pack", ""):
+        pack = packs.load_pack(args, args.expert_pack)   # 缺失/非法即报错（不静默兜底）
+
     draft_path = sources.ensure_inside("章节树草案", args.file, proj)
     draft = core.read_json(str(draft_path), None)
     if not isinstance(draft, dict):
@@ -154,6 +166,8 @@ def cmd_tech_outline(args):
     if settings is None:
         settings = sources.build_settings(args.project, points, tdir)
     tree = _assemble_tree(args.project, draft, settings)
+    if pack is not None:
+        tree["expertPack"] = packs.tree_entry(pack["manifest"])
 
     parsed = [eval_std.parse_score_item(it, i) for i, it in enumerate(raw_items)]
     coverage = m6rules.build_coverage(parsed, tree["chapters"])
@@ -181,6 +195,12 @@ def cmd_tech_outline(args):
         print("  %d 章，预算 %d 字 ≈ %d 页 / 上限 %d 页" % (
             len(tree["chapters"]), sum(c["wordCnt"] for c in tree["chapters"]),
             pc["estimate"], pc["max"]))
+        if pack is not None:
+            print("  专家包 %s「%s」已绑定（taxonomy %d 类可作兜底骨架，tech-ctx 时注入）"
+                  % (pack["manifest"]["id"], pack["manifest"].get("name") or "",
+                     len(pack["taxonomy"]["classes"])))
+            for n in pack["notes"]:
+                print("  ⚠ %s" % n)
         for w in issues:
             print("  ⚠ [%s] %s" % (w["code"], w["message"]))
         if coverage["missing"]:
@@ -219,12 +239,19 @@ def cmd_tech_ctx(args):
 
     rows, skipped = [], []
     presets = layout.load_presets(args)
+    ep = tree.get("expertPack") or None
+    ep_data = packs.load_pack(args, ep["id"]) if ep else None   # 包被删/非法即报错（不静默兜底）
+    matched, unmatched = 0, []
     for ch in chapters:
         if ch.get("status") == "CONFIRMED":
             skipped.append({"id": ch.get("id"), "reason": "CONFIRMED 章不再重建上下文包"})
             continue
-        pack = fill_score_items(build_context(tree, ch, material, args, points), raw_items)
-        store.write_context_pack(tech, ch["id"], pack)
+        ctx = fill_score_items(build_context(tree, ch, material, args, points), raw_items)
+        if ep_data is not None and packs.attach_context(ctx, ep_data["manifest"], ep_data["taxonomy"], ch):
+            matched += 1
+        else:
+            unmatched.append(ch.get("title") or ch.get("id"))
+        store.write_context_pack(tech, ch["id"], ctx)
         cur = ch.get("status") or "PENDING"
         advanced = cur in ("PENDING", "FAILED")
         if advanced:
@@ -233,13 +260,22 @@ def cmd_tech_ctx(args):
                      "pack": "章节/.meta/%s.json" % ch["id"], "advanced": advanced})
 
     if getattr(args, "json", False):
-        _print_json({"project": args.project, "chapters": rows, "skipped": skipped})
+        _print_json({"project": args.project, "chapters": rows, "skipped": skipped,
+                     "expertPack": ({"id": ep["id"], "matched": matched, "unmatched": unmatched}
+                                    if ep_data is not None else None)})
     else:
         for r in rows:
             print("%s 上下文包已生成（%s）%s" % (
                 r["id"], r["status"], " → CONTEXT_READY" if r["advanced"] else ""))
         for s in skipped:
             print("  ⚠ %s 跳过：%s" % (s["id"], s["reason"]))
+        if ep_data is not None:
+            print("  专家包 %s「%s」：%d/%d 章命中 taxonomy 类目（description 已注入 .meta）"
+                  % (ep["id"], ep.get("name") or "", matched, len(rows)))
+            for t in unmatched:
+                print("  ⚠ 未命中 taxonomy 类目（仅兜底骨架来源，不阻断）：%s" % t)
+            for n in ep_data["notes"]:
+                print("  ⚠ %s" % n)
         print("下一步：agent 按 P3 逐章写作 → tech-parse（下一批命令）")
     return 0
 
@@ -309,6 +345,9 @@ def register_parser(sub):
     sp.add_argument("--project", required=True, help="项目名（项目级/<项目>）")
     sp.add_argument("--file", required=True, help="章节树草案 JSON（须位于本项目目录内）")
     sp.add_argument("--tdir", default="", help="招标解析目录（默认 项目级/<项目>/招标解析）")
+    sp.add_argument("--expert-pack", dest="expert_pack", default="",
+                    help="绑定专家包 id（共享级 共享资源/技术标风格/专家包/<id>/；"
+                         "其 taxonomy 作 P2-R3 兜底骨架来源，tech-ctx 时注入类目要点）")
     sp.add_argument("--confirm", action="store_true", help="确认闸门①（存在未覆盖/页数超限则拒绝）")
     sp.set_defaults(func=cmd_tech_outline)
 

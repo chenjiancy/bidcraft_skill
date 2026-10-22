@@ -5,6 +5,7 @@ bidcraft · M6 技术标制作 —— 上下文包组装（`m6.ctx/v1`，T5）
 严格按 `references/M6-技术标制作-提示词.md` 的上下文包 schema：
   chapter / tocBrief / scoreItems / terminology / personnel / materials /
   style / bidMode / personnelWriteMode / kbStatus
+  expertPack（可选，R-T3 专家包注入，由 packs.attach_context 写入）
 
 素材注入遵守 `dependsOnMaterials`：未声明依赖的素材不注入（提示词 R7）。
 """
