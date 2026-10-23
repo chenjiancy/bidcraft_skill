@@ -1,0 +1,31 @@
+{
+  "schema": "m6.export/v1",
+  "project": "市政务服务中心项目",
+  "out": "E:\\bidcraft_skill\\dev\\reports\\t10-sample\\fixture\\mingbiao\\安徽安硕工程咨询有限公司\\项目级\\市政务服务中心项目\\技术标\\产出\\技术标_市政务服务中心项目.docx",
+  "dark": false,
+  "layout": {
+    "preset": "single-column",
+    "palette": "deep-indigo",
+    "cover": "full-block",
+    "decoration": "standard",
+    "font": "gov-gongwen",
+    "imageRatio": "mid",
+    "imageRule": "hybrid",
+    "imageLayout": "split-h",
+    "pageSetup": "p1-standard-a4",
+    "headingSystem": "h1-gbt-arabic",
+    "tocStyle": "t1-jianyu-auto",
+    "tableStyle": "tb1-three-line",
+    "captionSystem": "c2-cy-chapter",
+    "paragraphStyle": "pa7-jianyu-15",
+    "headerFooter": "hf1-classic-enterprise"
+  },
+  "chapters": 3,
+  "chars": 1317,
+  "pages_estimate": 2,
+  "verified": {
+    "paragraphs": 43,
+    "toc_field": true
+  },
+  "exported_at": "2026-10-23 13:30:37"
+}

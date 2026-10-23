@@ -182,8 +182,8 @@ def _print_group(doc, group, label, default):
 def cmd_tech_layout(args):
     if getattr(args, "preview", ""):
         raise core.LibraryError(
-            "tech-layout --preview=%s 依赖 T10 导出排版引擎（样张 docx），尚未实现；"
-            "当前可用 tech-layout --list" % args.preview)
+            "tech-layout --preview 样张请使用 T10 导出引擎：tech-export --project <项目> "
+            "--override 'preset=%s' [--out <目录>]" % args.preview)
     path = find_presets(args)
     doc = load_presets(args)
     fallback = doc is None

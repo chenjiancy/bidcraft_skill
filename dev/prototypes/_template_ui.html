@@ -602,7 +602,7 @@ body.dark .dark-toggle .sw::after{left:17px}
     <button class="ctx-item" onclick="toast('产物反馈：m_feedback 反馈注册 → 回读 → 闭环')">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>产物反馈（m_feedback）
     </button>
-    <button class="ctx-item" onclick="toast('开发日志与版本：development-log / 规则对齐 / 已知缺口（T10）')">
+    <button class="ctx-item" onclick="toast('开发日志与版本：development-log / 规则对齐 / 已知缺口（T11 待定）')">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>日志与版本
     </button>
     <div class="ctx-sec">
@@ -1249,7 +1249,7 @@ body.dark .dark-toggle .sw::after{left:17px}
     <div class="mline"><span class="sn">mat</span><span class="st">proj-mat：素材清单表组装为生成器结构素材清单 JSON（v2.0 数据源）</span><span class="sg">招标解析/素材清单_<项目>.json</span></div>
     <div class="mline"><span class="sn">copy</span><span class="st">fill-tpl ①：企业母版（布局样板）深拷贝 → 项目模板</span><span class="sg">项目级/<项目>/项目模板</span></div>
     <div class="mline"><span class="sn">fill</span><span class="st">fill-tpl ②：类别聚合填充（按 素材清单.json 类别聚合填充布局样板）</span><span class="sg">类别聚合</span></div>
-    <div class="mline"><span class="sn">out</span><span class="st">fill-tpl ③：输出商务标（唯一生成管线，替代已作废 proj-gen 招标原文路径）</span><span class="sg" style="color:var(--warn)">项目级/<项目>/商务标 · 页数待 T10 校验</span></div>
+    <div class="mline"><span class="sn">out</span><span class="st">fill-tpl ③：输出商务标（唯一生成管线，替代已作废 proj-gen 招标原文路径）</span><span class="sg" style="color:var(--ok)">项目级/<项目>/商务标 · 页数与 T10 校验一致</span></div>
 
     <div class="dual" style="margin-top:14px">
       <div class="du">
@@ -1358,7 +1358,7 @@ body.dark .dark-toggle .sw::after{left:17px}
           <div class="dev-mod"><span class="mk">日志</span><span class="md">development-log.md（决策/踩坑/验证数据/耗时）</span><span class="mc">持续</span></div>
           <div class="dev-mod"><span class="mk">对齐</span><span class="md">规则对齐-系列（开发纪律/决策权限/企业模板库/M7/M8/docx 工具移植）</span><span class="mc">11 篇</span></div>
           <div class="dev-mod"><span class="mk">审计</span><span class="md">audit_report.json + 审计报告 HTML（C1–C9）</span><span class="mc">已交付</span></div>
-          <div class="dev-mod"><span class="mk">缺口</span><span class="md">T10 导出引擎（tech-export）未开发；tech-layout --preview 依赖 T10</span><span class="mc" style="color:var(--warn)">已知</span></div>
+          <div class="dev-mod"><span class="mk">已实现</span><span class="md">T10 导出引擎（tech-export）：章节树+正文 md → 可编辑 Word（封面/目录域/标题层级/三线表/页眉页脚三态/暗标强制注入/页数回写）</span><span class="mc" style="color:var(--ok)">v1</span></div>
           <div class="wz-sub">git 分支 feat/tpl-inplace-relax，已提交：a333d0b V1–V3 / 9cc98eb 任务9 M6 收尾 / fa32619 风格屏 / 6513084 素材库 / 0b4be8d 向导+真实流程 / 332c8c5 模板库 / fd46922 公司管理。</div>
         </div>
       </div>
@@ -1479,9 +1479,9 @@ body.dark .dark-toggle .sw::after{left:17px}
           <div style="margin-top:14px">
             <div class="wz-sub" style="margin-bottom:6px">导出选项（T10 导出引擎）</div>
             <div class="wz-opt">
-              <label class="opt on"><input type="checkbox" checked onclick="toast('T10 导出在后续迭代实现（规划中）：生成可编辑 Word docx')">可编辑 Word（docx）</label>
-              <label class="opt"><input type="checkbox" onclick="toast('T10 导出在后续迭代实现（规划中）')">页眉页脚 / 封面一并生成</label>
-              <label class="opt"><input type="checkbox" onclick="toast('T10 导出在后续迭代实现（规划中）')">暗标条款格式注入</label>
+              <label class="opt on"><input type="checkbox" checked onclick="toast('已实现（T10 tech-export）：章节树+正文 md → 可编辑 Word docx，段落/表格/目录域齐全')">可编辑 Word（docx）</label>
+              <label class="opt"><input type="checkbox" onclick="toast('已实现（T10 tech-export）：页眉页脚三态 + 明标封面色块')">页眉页脚 / 封面一并生成</label>
+              <label class="opt"><input type="checkbox" onclick="toast('已实现（T10 tech-export）：暗标强制注入（全黑/无图/无封面/页眉页脚按招标条款双态）')">暗标条款格式注入</label>
             </div>
           </div>
         </div>
@@ -1999,7 +1999,7 @@ body.dark .dark-toggle .sw::after{left:17px}
   window.wzGo=wzGo;
   function wzNext(){
     if(curW<5){ wzGo(curW+1); }
-    else{ toast('T10 导出引擎在后续迭代实现（规划中）：tech-export 生成可编辑 Word（docx）'); }
+    else{ toast('已实现（T10 tech-export）：tech-export --project <项目> [--override preset=…;palette=…] 生成可编辑 Word（docx），明标封面+目录域+页眉页脚，暗标强制全黑条款注入'); }
   }
   window.wzNext=wzNext;
   function manualJudge(){

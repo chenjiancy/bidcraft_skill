@@ -198,10 +198,12 @@ class CommandTest(unittest.TestCase):
         self.assertEqual(len(payload["groups"]["palette"]), 10)
         self.assertEqual(len(payload["groups"]["headerFooter"]), 10)
 
-    def test_preview_not_implemented(self):
+    def test_preview_routes_to_export(self):
+        """T10 已实现：--preview 引导到 tech-export（不再报'未实现'）。"""
         code, _, err = self._run("tech-layout", "--preview", "single-column")
         self.assertEqual(code, 1)
-        self.assertIn("依赖 T10", err)
+        self.assertIn("T10 导出引擎", err)
+        self.assertIn("tech-export", err)
 
 
 if __name__ == "__main__":

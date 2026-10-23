@@ -29,6 +29,7 @@ from . import rules as m6rules
 from . import store
 from . import sources
 from . import layout
+from . import export
 from . import packs
 from .ctxpack import build_context, fill_score_items
 from .report import cmd_tech_check, cmd_tech_report
@@ -385,3 +386,5 @@ def register_parser(sub):
     sp.add_argument("--list", action="store_true", help="列出全部预设（默认行为）")
     sp.add_argument("--preview", default="", help="生成样张 docx（依赖 T10 导出引擎，未实现）")
     sp.set_defaults(func=layout.cmd_tech_layout)
+
+    export.add_sub(sub)
