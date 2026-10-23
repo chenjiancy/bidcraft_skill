@@ -201,6 +201,29 @@ body.dark .dark-toggle .sw::after{left:17px}
 .chk .dot.bad{background:#fbe7e5;color:var(--bad)}
 .chk .k{font-weight:700;margin-right:6px}
 
+/* ===== 素材库 ===== */
+.asset-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.asset-card{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:14px 15px;display:flex;flex-direction:column;gap:8px;cursor:pointer;transition:box-shadow .15s,transform .12s}
+.asset-card:hover{box-shadow:0 8px 22px rgba(30,40,80,.12);transform:translateY(-2px)}
+.asset-card.hide{display:none}
+.ac-top{display:flex;align-items:center;gap:10px}
+.ac-ico{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex:none;color:#fff}
+.ac-name{font-size:13px;font-weight:700;line-height:1.35}
+.ac-meta{font-size:11.5px;color:var(--dim)}
+.ac-tags{display:flex;gap:5px;flex-wrap:wrap}
+.ac-foot{display:flex;align-items:center;justify-content:space-between;border-top:1px dashed #eef1f7;padding-top:8px}
+.ac-act{font-size:12px;font-weight:700;color:var(--brand)}
+.ac-act:hover{color:var(--brand2)}
+.lib-note{display:flex;gap:10px;align-items:flex-start;background:#fdf6ec;border:1px solid #e5cf9d;border-radius:10px;padding:12px 14px;font-size:12.3px;color:#6b5416;margin-top:16px;line-height:1.7}
+.lib-note b{color:#8a6410}
+.act-chip{font-size:11px;padding:2px 9px;border-radius:7px;background:#eef1f7;color:#5c6478;white-space:nowrap}
+.act-chip.up{background:#e2f4ec;color:#14784f}
+.act-chip.web{background:#eef3fd;color:var(--brand2)}
+.act-chip.ai{background:#f3ecfd;color:#7a3ed6}
+.act-chip.arch{background:#e9effd;color:var(--brand)}
+.act-chip.prot{background:#fbe7e5;color:var(--bad)}
+.act-chip.recy{background:#fdf0dc;color:var(--warn)}
+
 /* toast */
 #toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:#1f2937;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;box-shadow:0 6px 22px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:all .25s;z-index:99;max-width:88vw}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -216,13 +239,14 @@ body.dark .dark-toggle .sw::after{left:17px}
 @media (max-width:1080px){
   .editor-grid{grid-template-columns:1fr}
   .style-grid{grid-template-columns:1fr}
+  .asset-grid{grid-template-columns:repeat(2,1fr)}
   .top-search{width:120px}
   .top-user .tr{display:none}
 }
 @media (max-width:860px){
   .context{display:none}
   .resizer{display:none}
-  .expert-grid,.book-grid,.act-grid{grid-template-columns:1fr}
+  .expert-grid,.book-grid,.act-grid,.asset-grid{grid-template-columns:1fr}
   .banner{flex-direction:column;align-items:flex-start;padding:20px}
   .banner h1{font-size:17px}
   .top-user .tn{display:none}
@@ -253,7 +277,7 @@ body.dark .dark-toggle .sw::after{left:17px}
     <a class="n1" href="#/style">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a9 9 0 1 0 9 9c0-1.5-.9-2-1.8-2.4-1-.5-1.4-1.6-.8-2.6.5-.9.3-2.1-.6-2.9C16.6 3.7 14.4 3 12 3z"/><circle cx="8.5" cy="10.5" r="1"/><circle cx="12" cy="15" r="1"/><circle cx="15.5" cy="10.5" r="1"/></svg>风格
     </a>
-    <a class="n1" href="javascript:void(0)" onclick="toast('素材库视图在后续迭代实现（规划中）')">
+    <a class="n1" href="#/library">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>素材库
     </a>
     <a class="n1" href="javascript:void(0)" onclick="toast('模板库视图在后续迭代实现（规划中）')">
@@ -382,6 +406,42 @@ body.dark .dark-toggle .sw::after{left:17px}
       <button class="ctx-item" onclick="applyStyle()">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>应用此组合
       </button>
+    </div>
+  </div>
+
+  <!-- 素材库上下文 -->
+  <div class="ctx-group" id="ctx-library">
+    <div class="ctx-h">素材分类</div>
+    <button class="ctx-item active" data-lib="all" onclick="filterLib('all',this)">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v18H3z"/></svg>全部素材<span class="c-b" id="libN0"></span>
+    </button>
+    <button class="ctx-item" data-lib="ent" onclick="filterLib('ent',this)">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="14" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>企业资信<span class="c-b" id="libN1"></span>
+    </button>
+    <button class="ctx-item" data-lib="honor" onclick="filterLib('honor',this)">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="9" r="6"/><path d="M8 14l-2 7 6-3 6 3-2-7"/></svg>荣誉证书<span class="c-b" id="libN2"></span>
+    </button>
+    <button class="ctx-item" data-lib="photo" onclick="filterLib('photo',this)">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5-9 9"/></svg>现场照片<span class="c-b" id="libN3"></span>
+    </button>
+    <button class="ctx-item" data-lib="draw" onclick="filterLib('draw',this)">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19L20 4M8 20h12M4 16h12"/></svg>图纸图表<span class="c-b" id="libN4"></span>
+    </button>
+    <div class="ctx-sec">
+      <div class="ctx-h">快捷操作</div>
+      <button class="ctx-item" onclick="toast('批量上传素材在后续迭代实现（规划中）：支持拖拽上传、OCR 自动归档命名')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4m0 0L8 8m4-4l4 4"/><path d="M4 20h16"/></svg>上传素材
+      </button>
+      <button class="ctx-item" onclick="toast('素材归档在后续迭代实现（规划中）：按关键字重命名 + 多页加页码')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>归档素材
+      </button>
+      <button class="ctx-item" onclick="toast('回收站在后续迭代实现（规划中）：删除先进回收站，默认保留 30 天')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>回收站
+      </button>
+    </div>
+    <div class="ctx-sec">
+      <div class="ctx-h">保护规则</div>
+      <div style="padding:4px 11px;font-size:12px;color:var(--dim);line-height:1.8">素材一经归档即受保护，任何变更须走 propose / apply 流程，不得随意改动。</div>
     </div>
   </div>
 </aside>
@@ -631,6 +691,35 @@ body.dark .dark-toggle .sw::after{left:17px}
       </div>
     </div>
   </section>
+
+  <!-- 素材库 -->
+  <section class="view" id="view-library">
+    <div class="lib-head">
+      <div>
+        <div style="font-size:17px;font-weight:800">素材库</div>
+        <div style="font-size:12.5px;color:var(--dim)">企业级共享素材 · 归档即受保护（propose / apply）· 多页素材自动加页码</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="toast('批量上传在后续迭代实现（规划中）')">上传素材</button>
+        <button class="btn btn-primary" onclick="toast('归档流程在后续迭代实现（规划中）：OCR 识别 → 关键字重命名 → 入库保护')">归档</button>
+      </div>
+    </div>
+
+    <div class="chips" id="libChips">
+      <span class="chip active" data-lib="all">全部 <span class="c-n" id="libC0"></span></span>
+      <span class="chip" data-lib="ent">企业资信 <span class="c-n" id="libC1"></span></span>
+      <span class="chip" data-lib="honor">荣誉证书 <span class="c-n" id="libC2"></span></span>
+      <span class="chip" data-lib="photo">现场照片 <span class="c-n" id="libC3"></span></span>
+      <span class="chip" data-lib="draw">图纸图表 <span class="c-n" id="libC4"></span></span>
+    </div>
+
+    <div class="asset-grid" id="assetGrid"></div>
+
+    <div class="lib-note">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex:none;margin-top:2px"><path d="M12 3l1.7 4.8L18 9.5l-4.3 1.7L12 16l-1.7-4.8L6 9.5l4.3-1.7z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>
+      <div><b>素材保护规则：</b>素材一旦归档即受保护，任何更改必须走标准流程（propose / apply / 回收站）；删除先进回收站，默认保留 30 天后清理。联网搜索素材版权风险高，不用于事实性内容；AI 生成素材统一画风、无版权问题。</div>
+    </div>
+  </section>
 </main>
 </div>
 
@@ -703,7 +792,7 @@ window.STYLE_DATA={groups:[{key:"presets",label:"版面版式",items:[{"id":"sin
   function go(v){ location.hash='#/'+v; }
   window.go=go;
 
-  var VIEW_CTX={home:'ctx-home',project:'ctx-project',editor:'ctx-editor',style:'ctx-style'};
+  var VIEW_CTX={home:'ctx-home',project:'ctx-project',editor:'ctx-editor',style:'ctx-style',library:'ctx-library'};
 
   function showView(id){
     document.querySelectorAll('.view').forEach(function(s){s.classList.remove('active')});
@@ -720,7 +809,7 @@ window.STYLE_DATA={groups:[{key:"presets",label:"版面版式",items:[{"id":"sin
 
   window.addEventListener('hashchange',function(){
     var h=(location.hash||'#/home').replace('#','').replace(/^\//,'');
-    if(['home','project','editor','style'].indexOf(h)>-1) showView(h);
+    if(['home','project','editor','style','library'].indexOf(h)>-1) showView(h);
   });
   if(!location.hash) location.hash='#/home';
 
@@ -886,6 +975,55 @@ window.STYLE_DATA={groups:[{key:"presets",label:"版面版式",items:[{"id":"sin
   }
   window.applyStyle=applyStyle;
   renderSelects(); renderStyle();
+
+  /* ---- 素材库 ---- */
+  var LIB_ICON_CLS=['#2F5D50','#8C3B32','#B7791F','#2E5F73','#7A3ED6'];
+  var LIB_DATA=[
+    {n:'安徽省社会保险单位参保证明.png',cat:'ent',catN:'企业资信',src:'up',srcN:'人工上传',st:'arch',stN:'已归档',prot:true,meta:'企业资质证明 · P1/共1页 · 1.2MB',ico:0,note:'已保护：变更须 propose / apply'},
+    {n:'企业信用评价报告.pdf',cat:'ent',catN:'企业资信',src:'up',srcN:'人工上传',st:'arch',stN:'已归档',prot:false,meta:'信用报告 · 2026 年度 · 3.8MB',ico:1,note:'引用到商务标 · 企业资信部分'},
+    {n:'获奖证书-省级优质工程.jpg',cat:'honor',catN:'荣誉证书',src:'up',srcN:'人工上传',st:'arch',stN:'已归档',prot:true,meta:'年度与颁发日期已逐字核对落款 · 2.4MB',ico:2,note:'已保护：OCR 识别后须与落款核对'},
+    {n:'现场形象进度照片-地下室.jpg',cat:'photo',catN:'现场照片',src:'ai',srcN:'AI 生成',st:'arch',stN:'已归档',prot:false,meta:'统一画风 · 无版权问题 · 4.1MB',ico:3,note:'嵌入技术标正文（占页 ≤1/3）'},
+    {n:'总平面布置图.png',cat:'draw',catN:'图纸图表',src:'web',srcN:'联网搜索',st:'draft',stN:'待归档',prot:false,meta:'版权风险高 · 仅作示意参考 · 6.7MB',ico:4,note:'待归档：不用于事实性内容'},
+    {n:'项目监理机构框图.svg',cat:'draw',catN:'图纸图表',src:'ai',srcN:'AI 生成',st:'draft',stN:'待归档',prot:false,meta:'矢量图 · 可直接引用 · 0.4MB',ico:0,note:'待归档：建议命名规范入库存档'}
+  ];
+  function renderLib(cat){
+    var grid=document.getElementById('assetGrid');
+    grid.innerHTML='';
+    LIB_DATA.forEach(function(it,i){
+      if(cat!=='all'&&it.cat!==cat) return;
+      var card=document.createElement('div'); card.className='asset-card';
+      card.innerHTML='<div class="ac-top"><span class="ac-ico" style="background:'+LIB_ICON_CLS[i%LIB_ICON_CLS.length]+'"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></span><div><div class="ac-name">'+it.n+'</div><div class="ac-meta">'+it.meta+'</div></div></div>'+
+        '<div class="ac-tags"><span class="act-chip arch">'+it.catN+'</span><span class="act-chip '+it.src+'" style="'+(it.src==='web'?'background:#eef3fd;color:var(--brand2)':it.src==='ai'?'background:#f3ecfd;color:#7a3ed6':'background:#e2f4ec;color:#14784f')+'">'+it.srcN+'</span><span class="act-chip '+(it.st==='arch'?'arch':'recy')+'">'+it.stN+'</span>'+(it.prot?'<span class="act-chip prot">受保护</span>':'')+'</div>'+
+        '<div class="ac-foot"><span style="font-size:11.5px;color:var(--dim)">'+it.note+'</span><span class="ac-act" onclick="event.stopPropagation();toast(\'素材详情与引用在后续迭代实现（规划中）\')">引用 →</span></div>';
+      card.addEventListener('click',function(){
+        toast('素材详情在后续迭代实现（规划中）：预览 / 版本 / 变更 propose / apply');
+      });
+      grid.appendChild(card);
+    });
+    var C=['libC0','libC1','libC2','libC3','libC4'];
+    var cats=['all','ent','honor','photo','draw'];
+    cats.forEach(function(c,j){
+      var el=document.getElementById(C[j]);
+      if(el) el.textContent=LIB_DATA.filter(function(x){return c==='all'||x.cat===c}).length;
+    });
+    var cls=['libN0','libN1','libN2','libN3','libN4'];
+    cats.forEach(function(c,j){
+      var el=document.getElementById(cls[j]);
+      if(el) el.textContent=LIB_DATA.filter(function(x){return c==='all'||x.cat===c}).length;
+    });
+  }
+  function filterLib(cat,el){
+    renderLib(cat);
+    var sel=el;
+    document.querySelectorAll('#libChips .chip').forEach(function(c){c.classList.toggle('active',c.getAttribute('data-lib')===cat)});
+    document.querySelectorAll('#ctx-library .ctx-item[data-lib]').forEach(function(c){c.classList.toggle('active',c.getAttribute('data-lib')===cat)});
+  }
+  window.filterLib=filterLib;
+  document.getElementById('libChips').addEventListener('click',function(e){
+    var chip=e.target.closest('.chip'); if(!chip) return;
+    filterLib(chip.getAttribute('data-lib'),chip);
+  });
+  renderLib('all');
 
   /* ---- 工作台筛选 ---- */
   document.getElementById('homeChips').addEventListener('click',function(e){
