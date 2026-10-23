@@ -169,6 +169,13 @@ def cmd_tech_outline(args):
     tree = _assemble_tree(args.project, draft, settings)
     if pack is not None:
         tree["expertPack"] = packs.tree_entry(pack["manifest"])
+        # 专家包 layoutCombo → 落盘 layout（版式组合随包切换；暗标时暗标注入覆盖微观组/页眉页脚，纪律不变）
+        combo = pack["manifest"].get("layoutCombo")
+        if isinstance(combo, dict) and combo:
+            tree["layout"] = dict(combo)
+            if tree.get("bidMode") == "暗标":
+                for k, v in sources.DARK_LAYOUT_INJECT.items():
+                    tree["layout"][k] = v
 
     parsed = [eval_std.parse_score_item(it, i) for i, it in enumerate(raw_items)]
     coverage = m6rules.build_coverage(parsed, tree["chapters"])
@@ -387,6 +394,9 @@ def register_parser(sub):
     sp.add_argument("--preview", default="", help="用 T10 导出引擎生成样张 docx（无 --project 时用内置样例正文）")
     sp.add_argument("--project", default="", help="指定项目（--preview 走真实项目导出）")
     sp.add_argument("--enterprise", default="", help="企业名（--preview 真实项目时必填）")
+    sp.add_argument("--apply-combo", default="", help="应用组合补丁 json → 生成专家包（版面设计器「存组合」闭环；默认 dry-run 不写盘）")
+    sp.add_argument("--pack-id", default="", help="新专家包 id（默认 custom-<preset>-<palette>）")
+    sp.add_argument("--confirm", action="store_true", help="配合 --apply-combo：确认落盘（写后回读校验）")
     sp.set_defaults(func=layout.cmd_tech_layout)
 
     export.add_sub(sub)

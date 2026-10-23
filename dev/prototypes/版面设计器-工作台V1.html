@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>版面设计器 · 技术标排版预设工作台 V1</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%232B5CD9'/%3E%3Crect x='7' y='8' width='18' height='13' rx='1.5' fill='none' stroke='%23fff' stroke-width='2'/%3E%3Cpath d='M11 14h10M11 17h6' stroke='%23fff' stroke-width='1.6'/%3E%3C/svg%3E">
+<style>
+:root{
+  --brand:#2B5CD9; --brand2:#1c44a8; --acc:#4C82F2; --line:#e6e9f0; --bg:#f7f8fa;
+  --card:#ffffff; --ink:#1f2330; --dim:#7a8193; --ok:#22a06b; --warn:#b7791f; --bad:#d64545;
+  --shadow:0 1px 2px rgba(30,40,80,.05),0 6px 18px rgba(30,40,80,.07);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Microsoft YaHei","PingFang SC","Noto Sans SC",system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.6;min-width:320px}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input{font-family:inherit}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:#c8cfdd;border-radius:4px}
+/* ===== 顶栏 ===== */
+.proto-banner{background:#FFF7E8;border-bottom:1px solid #F0DFC2;color:#8a6d3b;font-size:12px;line-height:1.7;padding:7px 16px;text-align:center}
+.proto-banner b{color:#7a5c2c}
+.topbar{position:sticky;top:0;z-index:60;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;padding:0 16px;height:56px;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:800;color:var(--brand2);white-space:nowrap}
+.logo svg{flex:none}
+.top-mid{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:6px;border-radius:8px;padding:7px 13px;font-size:12.5px;font-weight:600;transition:all .15s;white-space:nowrap}
+.btn-primary{background:var(--brand);color:#fff}
+.btn-primary:hover{background:var(--brand2)}
+.btn-ghost{border:1px solid var(--line);color:var(--ink);background:#fff}
+.btn-ghost:hover{border-color:var(--brand);color:var(--brand)}
+.btn-plain{color:var(--brand);padding:6px 9px}
+.btn-plain:hover{background:#eef3fd}
+.dark-toggle{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:8px;padding:5px 9px;font-size:12px;color:#4a5265;white-space:nowrap;background:#fff}
+.dark-toggle .sw{width:32px;height:17px;border-radius:9px;background:#d7dbe5;position:relative;transition:background .2s}
+.dark-toggle .sw::after{content:"";position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transition:left .2s}
+body.dark .dark-toggle .sw{background:var(--warn)}
+body.dark .dark-toggle .sw::after{left:17px}
+.st-badge{font-size:11.5px;padding:3px 10px;border-radius:8px;background:#eef1f7;color:#5c6478;white-space:nowrap}
+.st-badge.dark-b{background:#fdf0dc;color:var(--warn)}
+/* 实时化：项目能力卡片 / 轻提示 */
+.capbox{margin-top:14px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.cap-h{font-size:13px;font-weight:700;color:var(--deep);display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.cap-badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:8px}
+.cap-badge.live{background:#e6f4ea;color:#1e7e47}
+.cap-badge.off{background:#fdf0dc;color:var(--warn)}
+.cap-sec{font-size:11px;color:var(--dim);margin:8px 0 4px}
+.cap-hint{font-size:10px;color:var(--dim)}
+.cap-chips{display:flex;flex-wrap:wrap;gap:6px}
+.cap-chip{font-size:11px;padding:3px 9px;border-radius:7px;background:#eef1f7;color:#4a5265}
+.cap-chip.pk{background:#eef3fd;color:var(--brand)}
+.cap-cmd{font-size:11px;font-family:Consolas,monospace;padding:3px 9px;border-radius:7px;background:#eef1f7;color:#2b3a55;border:1px solid var(--line);cursor:pointer}
+.cap-cmd:hover{border-color:var(--brand);color:var(--brand)}
+.cap-ep{font-size:10px;padding:2px 7px;background:#f7f8fb;border:1px dashed var(--line);border-radius:6px;color:var(--dim)}
+.mini-toast{position:fixed;left:50%;bottom:34px;transform:translateX(-50%);background:#1f2330;color:#fff;font-size:12px;padding:8px 16px;border-radius:8px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:120}
+.mini-toast.show{opacity:.95}
+/* ===== 主框架 ===== */
+.shell{display:flex;align-items:stretch;min-height:calc(100vh - 56px)}
+.side{width:216px;flex:none;background:#fff;border-right:1px solid var(--line);padding:12px 10px;overflow-y:auto;position:sticky;top:56px;height:calc(100vh - 56px)}
+.nav-h{font-size:11px;color:var(--dim);padding:8px 10px 6px;letter-spacing:1px;display:flex;justify-content:space-between}
+.nav-item{display:flex;align-items:center;gap:8px;width:100%;padding:7px 10px;border-radius:8px;font-size:12.5px;color:#4a5265;text-align:left}
+.nav-item:hover{background:#f2f5fb;color:var(--brand2)}
+.nav-item.active{background:#e9effd;color:var(--brand2);font-weight:700}
+.nav-item .cur{margin-left:auto;font-size:10.5px;background:#eef1f7;color:var(--dim);padding:0 6px;border-radius:7px;max-width:86px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav-item.locked .cur{background:#fdf0dc;color:var(--warn)}
+.main{flex:1;min-width:0;padding:16px 18px 40px}
+.checks{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.ck{font-size:12px;padding:4px 10px;border-radius:8px}
+.ck.err{background:#fbe7e5;color:var(--bad)}
+.ck.warn{background:#fdf0dc;color:var(--warn)}
+.ck.ok{background:#e2f4ec;color:#14784f}
+.ck.info{background:#eef1f7;color:#5c6478}
+/* ===== 画布 ===== */
+.canvas-wrap{display:flex;justify-content:center}
+.a4{width:100%;max-width:520px;background:#fff;box-shadow:var(--shadow);border:1px solid var(--line);border-radius:6px;padding:18px 20px;position:relative}
+.a4 .a4-tag{position:absolute;top:-9px;right:12px;font-size:10.5px;color:var(--dim);background:#fff;border:1px solid var(--line);border-radius:8px;padding:0 7px}
+.ps-margin{border:1.5px dashed #c3cbd9;padding:10px;border-radius:2px;position:relative}
+.ps-margin .ps-val{font-size:10.5px;color:var(--dim);text-align:center;padding-bottom:2px}
+.hf{font-size:10px;color:#7a8193;border-bottom:1px solid var(--line);padding:2px 0 4px;display:flex;justify-content:space-between;gap:8px}
+.hf.dark-empty{color:#b9c0cd;font-style:normal}
+.cover{margin:8px 0 12px;border-radius:4px;overflow:hidden;min-height:92px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:5px;position:relative;padding:14px}
+.cover .c-title{font-size:14px;font-weight:700;text-align:center}
+.cover .c-sub{font-size:9.5px;text-align:center;opacity:.85}
+.head-sample{margin:4px 0 10px}
+.hs-1{font-weight:700;margin-bottom:5px;padding-bottom:2px}
+.hs-2{font-weight:600;margin-bottom:4px}
+.hs-3{font-weight:600;margin-bottom:6px}
+.para{font-size:12px;line-height:1.8;margin-bottom:4px;text-indent:2em}
+.para .bar{display:inline-block;width:88%;height:5px;border-radius:3px;background:#e2e6ee;vertical-align:middle}
+.para .bar.w{width:70%}
+.tbl-demo{width:100%;margin:10px 0 6px;font-size:11px}
+.tbl-demo td{padding:4px 8px;border:1px solid #cdd4e0;text-align:center}
+.tbl-demo tr.head td{font-weight:700}
+.img-zone{margin:8px 0;border-radius:4px;display:flex;align-items:center;justify-content:center;color:#9aa3b8;font-size:11px;gap:8px;padding:10px}
+.img-zone .im{width:74px;height:44px;background:repeating-linear-gradient(45deg,#eef1f6,#eef1f6 6px,#e2e7f0 6px,#e2e7f0 12px);border:1px dashed #c3cbd9;border-radius:3px}
+.footer-hint{margin-top:8px;padding-top:4px;border-top:1px solid var(--line);font-size:10px;color:#7a8193;display:flex;justify-content:space-between;gap:8px}
+.canvas-note{margin-top:12px;text-align:center;font-size:11px;color:var(--dim)}
+/* ===== 多页文档预览（V2 · 所见即所得） ===== */
+.doc-flow{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:26px}
+.page{background:#fff;box-shadow:var(--shadow);border:1px solid var(--line);border-radius:6px;padding:30px 34px 34px;position:relative;aspect-ratio:210/297;display:flex;flex-direction:column;overflow:hidden}
+.p-tag{position:absolute;top:8px;left:14px;z-index:5;font-size:10px;letter-spacing:1.5px;color:#8a93a8;cursor:default;background:none;padding:0;border-radius:0}
+.p-tag::before{content:"▍";color:#9aa3b8;margin-right:3px}
+.p-tag::after{content:attr(data-tag)}
+.p-tag.opt{color:#a0743a}
+.pg-hd{font-size:9px;color:#7a8193;border-bottom:1px solid var(--line);padding-bottom:4px;margin-bottom:10px;display:flex;justify-content:space-between;gap:8px}
+.pg-ft{position:absolute;bottom:6px;left:0;right:0;text-align:center;font-size:9px;color:#9aa3b8}
+.zhang{font-size:15px;font-weight:700;margin:2px 0 10px}
+.jie{font-size:13px;font-weight:700;margin:8px 0 6px}
+.p-text{font-size:12px;text-indent:2em;margin-bottom:6px}
+.p-tbl{width:100%;border-collapse:collapse;font-size:10.5px;margin:8px 0 4px}
+.p-tbl th,.p-tbl td{border:1px solid #cdd4e0;padding:4px 7px;text-align:center}
+.p-tbl th{font-weight:700}
+.flow-box{margin:10px 0 4px}
+.photo-box{margin:10px 0 4px}
+.photo-box img{width:100%;border:1px solid var(--line);border-radius:3px;display:block}
+.fig-cap{font-size:10px;color:#5c6478;text-align:center;margin-top:3px}
+.cover-page{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;padding:26px;z-index:2}
+.cover-page .cp-title{font-size:20px;font-weight:800;text-align:center;line-height:1.45}
+.cover-page .cp-sub{font-size:11px;text-align:center;opacity:.85}
+.cover-page .cp-info{margin-top:16px;font-size:11px;text-align:center;line-height:2.1;opacity:.92}
+.cover-svg{position:absolute;inset:0;z-index:1}
+.toc-title{font-size:16px;font-weight:800;text-align:center;margin:2px 0 14px;letter-spacing:6px}
+.toc-row{display:flex;font-size:11.5px;margin-bottom:5px;align-items:baseline}
+.toc-row .tn{flex:none}
+.toc-row .dots{flex:1;border-bottom:1px dotted #aab2c0;margin:0 4px;min-width:18px}
+.toc-row .pn{flex:none}
+.toc-row.lv2{padding-left:2em}
+/* 素材库 */
+.asset-h{font-size:11px;color:var(--dim);padding:8px 10px 6px;letter-spacing:1px;display:flex;justify-content:space-between}
+.asset-item{display:flex;align-items:center;gap:7px;width:100%;padding:6px 10px;border-radius:8px;font-size:12px;color:#4a5265;text-align:left;border:1px solid transparent}
+.asset-item:hover{background:#f2f5fb}
+.asset-item.on{background:#e9effd;color:var(--brand2);font-weight:600;border-color:var(--acc)}
+.asset-item .a-ic{width:28px;height:20px;border-radius:3px;border:1px solid var(--line);background:#f0f3fa;flex:none;display:flex;align-items:center;justify-content:center;color:#9aa3b8;overflow:hidden}
+.asset-item .a-tag{font-size:10px;color:var(--dim);margin-left:auto}
+/* structure 开关 */
+.st-chip{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:8px;padding:6px 11px;font-size:12px;color:#4a5265;background:#fff;white-space:nowrap}
+.st-chip:hover{border-color:var(--brand);color:var(--brand)}
+.st-chip.on{background:#e9effd;border-color:var(--brand);color:var(--brand2);font-weight:600}
+/* ===== 属性面板 ===== */
+.panel{width:306px;flex:none;background:#fff;border-left:1px solid var(--line);padding:14px 14px 24px;overflow-y:auto;position:sticky;top:56px;height:calc(100vh - 56px)}
+.panel .p-head{display:flex;align-items:baseline;gap:8px;margin-bottom:4px}
+.panel .p-head h3{font-size:15px;font-weight:800}
+.panel .p-head .p-key{font-size:11px;color:var(--dim)}
+.panel .p-desc{font-size:11.5px;color:var(--dim);margin-bottom:10px}
+.lock-note{font-size:11.5px;background:#fdf0dc;border:1px solid #efdcae;color:#8a5e1f;border-radius:8px;padding:7px 10px;margin-bottom:10px;line-height:1.5}
+.opt{display:flex;align-items:flex-start;gap:8px;border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:8px;cursor:pointer;transition:border-color .15s,background .15s;position:relative}
+.opt:hover{border-color:var(--acc)}
+.opt.on{background:#e9effd;border-color:var(--brand)}
+.opt.dis{opacity:.45;cursor:not-allowed;background:#f7f8fa}
+.opt.dis:hover{border-color:var(--line)}
+.opt .o-radio{width:15px;height:15px;border-radius:50%;border:1.5px solid #c3cbd9;flex:none;margin-top:2px;position:relative}
+.opt.on .o-radio{border-color:var(--brand)}
+.opt.on .o-radio::after{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--brand)}
+.opt .o-main{flex:1;min-width:0}
+.opt .o-name{font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.opt .o-meta{font-size:11px;color:var(--dim);margin-top:2px;word-break:break-all}
+.opt .o-badge{font-size:10px;padding:0 6px;border-radius:7px;white-space:nowrap}
+.ob-def{background:#fdf0dc;color:var(--warn)}
+.ob-dark{background:#e2f4ec;color:#14784f}
+.ob-ban{background:#fbe7e5;color:var(--bad)}
+.ob-lock{background:#eef1f7;color:#5c6478}
+.over-edit{margin-top:4px;border-top:1px dashed var(--line);padding-top:6px;display:none}
+.over-edit.show{display:block}
+.over-edit .oe-row{display:flex;align-items:center;gap:6px;margin-bottom:5px;font-size:11.5px}
+.over-edit .oe-row label{width:62px;color:var(--dim);flex:none}
+.over-edit input[type=color]{width:34px;height:22px;border:1px solid var(--line);border-radius:4px;padding:0;background:none;cursor:pointer}
+.over-edit .oe-val{font-size:11px;color:#5c6478;font-family:Consolas,monospace}
+.over-reset{margin-left:auto;font-size:10.5px;color:var(--acc);padding:1px 5px;border-radius:5px}
+.over-reset:hover{background:#eef3fd}
+.p-foot{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.p-foot .f-label{font-size:11px;color:var(--dim);margin-bottom:6px}
+.combo-chips{display:flex;flex-wrap:wrap;gap:6px}
+/* ===== 弹层 ===== */
+.modal-mask{position:fixed;inset:0;background:rgba(20,28,45,.35);z-index:90;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-mask.show{display:flex}
+.modal{background:#fff;border-radius:14px;max-width:680px;width:100%;padding:20px 22px;box-shadow:0 16px 44px rgba(20,28,45,.22)}
+/* ===== 样张浏览器（右侧实时联动抽屉） ===== */
+.sample-mask{position:fixed;top:56px;right:0;bottom:0;width:min(760px,64vw);background:#f2f4f8;z-index:80;display:none;flex-direction:column;box-shadow:-8px 0 24px rgba(20,28,45,.14);border-left:1px solid var(--line);overflow:auto}
+.sample-mask.show{display:flex}
+.sample-bar{position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid var(--line);padding:11px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;box-shadow:0 2px 10px rgba(20,28,45,.06)}
+.s-title{font-size:13px;font-weight:700;color:var(--ink);white-space:nowrap}
+.s-chips{display:flex;gap:6px;flex-wrap:wrap;flex:1;min-width:0}
+.s-chip{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:8px;padding:6px 11px;font-size:12px;color:#4a5265;background:#fff;white-space:nowrap;cursor:pointer}
+.s-chip:hover{border-color:var(--brand);color:var(--brand)}
+.s-chip.on{background:var(--brand);color:#fff;border-color:var(--brand);font-weight:600}
+.sample-flow{max-width:660px;margin:22px auto 0;display:flex;flex-direction:column;gap:26px;padding-bottom:6px}
+.s-note{max-width:660px;margin:14px auto 28px;font-size:11.5px;color:#7a8299;padding:10px 14px;background:#fff;border:1px dashed var(--line);border-radius:8px;line-height:1.7}
+.s-note b{color:#4a5265}
+/* 配图排版（imageLayout 预览） */
+.ph-cols{display:grid;grid-template-columns:1.15fr 1fr;gap:12px;align-items:center}
+.ph-cols img,.ph-col img{width:100%;border:1px solid var(--line);border-radius:3px;display:block}
+.ph-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ph-grid img{width:100%;border:1px solid var(--line);border-radius:3px;display:block;aspect-ratio:4/3;object-fit:cover}
+.ph-tl{display:flex;align-items:center;gap:5px;flex-wrap:nowrap}
+.ph-tl img{width:22.5%;border:1px solid var(--line);border-radius:3px;aspect-ratio:4/3;object-fit:cover;display:block;flex:none}
+.ph-tl .tl-arr{color:#9aa3b8;font-size:12px;flex:none}
+.ph-cards{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ph-card{border:1px solid var(--line);border-radius:5px;overflow:hidden;background:#fff}
+.ph-card img{width:100%;display:block;aspect-ratio:16/9;object-fit:cover;border:0}
+.ph-card .ph-card-txt{padding:5px 8px;font-size:10px;color:#4a5265;line-height:1.5}
+.ph-banner img{width:100%;border:1px solid var(--line);border-radius:3px;display:block}
+/* 版面范式/装饰强度视觉 */
+.two-cols{column-count:2;column-gap:16px}
+.two-cols .p-text{text-indent:0;margin-bottom:4px}
+.tbl-para{border:1px solid var(--line);border-radius:4px;margin:8px 0;overflow:hidden}
+.tp-row{display:flex;gap:8px;padding:6px 10px;border-bottom:1px solid var(--line);font-size:11px;line-height:1.8}
+.tp-row:last-child{border-bottom:none}
+.tp-row b{flex:none;width:66px;color:#3a4356}
+.tp-row span{color:#4a5265}
+.divider-page{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+.dv-no{font-size:64px;font-weight:800;line-height:1;opacity:.92}
+.dv-name{font-size:22px;font-weight:700;border-bottom:2px solid;padding-bottom:10px}
+.pg-clean{padding:46px 52px 50px}
+.zhang,.jie{padding:2px 4px;border-radius:3px}
+.zhang .d-ic,.jie .d-ic{width:13px;height:13px;border-radius:3px;display:inline-block;margin-right:6px;vertical-align:-1px}
+.combo-tbl{width:100%;border-collapse:collapse;font-size:11px;margin:8px 0}
+.combo-tbl th,.combo-tbl td{border:1px solid #dde3ec;padding:4px 6px;text-align:left}
+.combo-tbl th{background:#f2f5fb;color:#3a4356}
+.combo-tbl td:first-child{color:#7a8293;width:96px}
+.modal h3{font-size:16px;font-weight:800;margin-bottom:10px}
+.modal .m-body{font-size:13px;color:#3a4356;line-height:1.8}
+.modal .m-body code{background:#f2f5fb;border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:12px;font-family:Consolas,monospace;color:var(--brand2)}
+.modal .m-cmd{background:#f7f8fa;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-family:Consolas,monospace;font-size:12px;color:var(--brand2);margin:8px 0;word-break:break-all;position:relative}
+.modal .m-close{position:absolute;top:16px;right:18px;width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:16px}
+.modal .m-close:hover{background:#f2f5fb;color:var(--ink)}
+.modal .m-actions{display:flex;gap:8px;margin-top:14px;justify-content:flex-end}
+.export-pre{background:#f7f8fa;border:1px solid var(--line);border-radius:8px;padding:10px;font-family:Consolas,monospace;font-size:11px;max-height:240px;overflow:auto;white-space:pre-wrap;word-break:break-all}
+@media (max-width:960px){
+  .side{display:none}
+  .panel{width:280px}
+}
+@media (max-width:760px){
+  .shell{flex-direction:column}
+  .panel{position:static;width:100%;height:auto;border-left:none;border-top:1px solid var(--line);order:2}
+  .main{order:1}
+  .topbar{padding:8px 12px;height:auto}
+  .sample-mask{width:100%;top:0}
+}
+</style>
+</head>
+<body>
+<!-- ===== 顶栏 ===== -->
+<div class="proto-banner"><b>演示原型</b>：本页为所见即所得预览。真实生成能力在 <b>skill 对话工作流（SKILL.md §6A，无需 UI）</b>与 CLI——「存组合」导出补丁后请走 <span style="font-family:Consolas,monospace">tech-layout --apply-combo &lt;补丁&gt; --confirm</span> 生成专家包，再经 <span style="font-family:Consolas,monospace">tech-outline --expert-pack &lt;id&gt; --confirm</span> 落盘、<span style="font-family:Consolas,monospace">tech-export --confirm</span> 出 docx；本页不直接写盘。</div>
+<header class="topbar">
+  <div class="logo">
+    <svg width="22" height="22" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#2B5CD9"/><rect x="7" y="8" width="18" height="13" rx="1.5" fill="none" stroke="#fff" stroke-width="2"/><path d="M11 14h10M11 17h6" stroke="#fff" stroke-width="1.6"/></svg>
+    版面设计器 <span style="font-size:11px;color:var(--dim);font-weight:400">技术标排版预设 · V1</span>
+  </div>
+  <div class="top-mid">
+    <button class="btn btn-ghost" id="btnDefault">套用默认组合</button>
+    <button class="btn btn-ghost" id="btnSaveCombo" title="校验当前 15 组选择 → 下载组合补丁 JSON，可经 tech-layout --apply-combo 生成专家包进入生成链路">存组合</button>
+    <button class="btn btn-ghost" id="btnExport">导出 JSON</button>
+    <button class="btn btn-ghost" id="btnCopy">复制 JSON</button>
+    <button class="btn btn-primary" id="btnSample">出样张</button>
+    <span class="st-badge" id="srcBadge">layout-presets.json v1.4</span>
+  </div>
+  <div style="margin-left:auto"></div>
+  <button class="st-chip" id="tgTitle" title="扉页（封面后的标题页）：预览恒显示，真实文档是否渲染由此开关控制">扉页 开</button>
+  <button class="st-chip" id="tgClosing" title="结尾页：预览恒显示，真实文档是否渲染由此开关控制">结尾 关</button>
+  <button class="dark-toggle" id="darkToggle" title="暗标模式下按招标条款锁定/注入排版，宏组仅 darkOk 方案可选">
+    <span class="sw"></span><span id="darkLabel">明标</span>
+  </button>
+</header>
+
+<div class="shell">
+  <!-- ===== 左栏：组导航 ===== -->
+  <aside class="side">
+    <div id="assetLib"></div>
+    <div id="side"></div>
+  </aside>
+
+  <!-- ===== 中栏：画布预览 ===== -->
+  <main class="main">
+    <div class="checks" id="checks"></div>
+    <div class="doc-flow" id="docFlow"></div>
+    <div class="canvas-note">所见即所得示意：封面 · 扉页 · 目录 · 正文×3 · 结尾。扉页/结尾为「可选页」——预览恒显示，真实文档是否生成由右上角开关控制；最终以 tech-export 样张为准（并入软件后接 Word COM 渲染回显）</div>
+    <div class="capbox" id="capBox"></div>
+  </main>
+
+  <!-- ===== 右栏：属性面板 ===== -->
+  <aside class="panel" id="panel"></aside>
+</div>
+
+<!-- ===== 弹层：出样张 / 导出 ===== -->
+<div class="modal-mask" id="modalMask">
+  <div class="modal">
+    <button class="m-close" id="modalClose" aria-label="关闭"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <h3 id="modalTitle"></h3>
+    <div class="m-body" id="modalBody"></div>
+    <div class="m-actions">
+      <button class="btn btn-ghost" id="modalCancel">关闭</button>
+      <button class="btn btn-primary" id="modalAct" style="display:none">下载 JSON</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 样张浏览器：按组合实时预览整本文档 ===== -->
+<div class="sample-mask" id="sampleView">
+  <div class="sample-bar">
+    <div class="s-title">样张浏览器 · 点选组合实时预览整本文档</div>
+    <div class="s-chips" id="sampleChips"></div>
+    <button class="btn btn-primary" id="sampleClose">返回设计器</button>
+  </div>
+  <div class="sample-flow" id="sampleFlow"></div>
+  <div class="s-note"><b>说明：</b>样张为 CSS/SVG 示意（Q2 兜底 C），覆盖封面→扉页→目录→正文×3→结尾，含流程图与图片素材；正式 docx 由 <code>tech-export --project &lt;项目&gt; --override preset=…</code> 生成，并入软件后接 Word COM 渲染真实 PNG 回显。</div>
+</div>
+
+  <!-- 静态素材：现场照片（src 必须静态声明，JS 以 outerHTML 引用） -->
+  <img id="photoAsset" src="assets/现场施工照片.jpg" alt="施工现场照片（预设素材）" style="display:none" aria-hidden="true">
+  <img id="photoAsset2" src="assets/施工照片-混凝土泵车.jpg" alt="混凝土泵车（预设素材）" style="display:none" aria-hidden="true">
+  <img id="photoAsset3" src="assets/施工照片-挖掘机.jpg" alt="挖掘机（预设素材）" style="display:none" aria-hidden="true">
+  <img id="photoAsset4" src="assets/施工照片-钢筋绑扎.jpg" alt="钢筋绑扎（预设素材）" style="display:none" aria-hidden="true">
+<script>
+"use strict";
+/* ================= 数据（由 _gen_designer_data.py 从 layout-presets.json v1.4 提取） ================= */
+const RAW = {"schema":"m6.layout-presets/v1","version":"1.4","default":{"preset":"single-column","palette":"deep-indigo","cover":"full-block","decoration":"standard","font":"gov-gongwen","imageRatio":"mid","imageRule":"hybrid","imageLayout":"split-h","pageSetup":"p1-standard-a4","headingSystem":"h1-gbt-arabic","tocStyle":"t1-jianyu-auto","tableStyle":"tb1-three-line","captionSystem":"c2-cy-chapter","paragraphStyle":"pa7-jianyu-15","headerFooter":"hf1-classic-enterprise"},"fontDefaults":{"heading":"仿宋","body":"仿宋"},"darkInject":{"font":"dark-safe","imageRatio":"none","pageSetup":"p7-hb-25-20","headingSystem":"h2-tender-arabic","tocStyle":"t3-qinghai-nopage","tableStyle":"tb7-dark-0.5","captionSystem":"c9-dark-appendix","paragraphStyle":"pa3-hebei-30","headerFooter":"hf9-dark-none"},"groups":[{"key":"preset","arr":"presets","label":"版面范式","items":[{"id":"single-column","name":"单栏流式","docx":"标题层级 + 段落流（默认）"},{"id":"tabular","name":"表格化布局","docx":"人员/进度/设备/指标强制转表格；正文段落保留"},{"id":"two-column","name":"双栏分栏","docx":"section sectPr 设 w:cols；仅正文段分栏，标题跨栏"},{"id":"card","name":"卡片式布局","docx":"单元格底纹 + 边框模拟卡片（docx 无圆角）；每卡一个要点"},{"id":"image-left","name":"左图右文","docx":"两列表格：左图占位 + 右文"},{"id":"divider","name":"章节分隔页","docx":"每章前分页 + 大号章号/章名页；页眉不显示章名"},{"id":"data-row","name":"数据行布局","docx":"指标横排（KPI 行）表格化，适合工期/人数/面积等数据章"},{"id":"image-right","name":"右图左文","docx":"两列表格：右图占位 + 左文（image-left 镜像）"},{"id":"hybrid-flow","name":"混合流式","docx":"段落+表格+图片按内容自由混排，标题层级贯穿"},{"id":"minimal-clean","name":"极简留白","docx":"宽页边距、轻网格、无装饰，正文信息密度低"}]},{"key":"palette","arr":"palettes","label":"配色方案","items":[{"id":"deep-indigo","name":"深靛蓝","primary":"#243B6B","accent":"#B08A4B","heading":"#1B2C52","tableFill":"#E8ECF4","coverBg":"#1B2C52","darkOk":true},{"id":"warm-bronze","name":"暖棕金","primary":"#7A4E2D","accent":"#C9A227","heading":"#5E3A20","tableFill":"#F4ECE3","coverBg":"#4E3320","darkOk":true},{"id":"pine-green","name":"松绿","primary":"#2F5D50","accent":"#A3B18A","heading":"#23453C","tableFill":"#E7EFEA","coverBg":"#1F3D34","darkOk":true},{"id":"brick-red","name":"砖红","primary":"#8C3B32","accent":"#C98B6B","heading":"#6E2C26","tableFill":"#F5E8E4","coverBg":"#5C2621","darkOk":true},{"id":"steel-cyan","name":"钢青","primary":"#2E5F73","accent":"#79A7B8","heading":"#234A5A","tableFill":"#E6EEF1","coverBg":"#1C3A47","darkOk":true,"recommendedFor":["暗标"]},{"id":"charcoal","name":"炭灰极简","primary":"#333333","accent":"#8C8C8C","heading":"#1F1F1F","tableFill":"#ECECEC","coverBg":"#262626","darkOk":true,"recommendedFor":["暗标"]},{"id":"deep-blue-gold","name":"深海蓝金","primary":"#17375E","accent":"#C8A24A","heading":"#102844","tableFill":"#E6EBF2","coverBg":"#0F2540","darkOk":true},{"id":"ink-green-orange","name":"墨绿暖橙","primary":"#21473B","accent":"#D07A3A","heading":"#17352C","tableFill":"#E8EFEA","coverBg":"#14302A","darkOk":true},{"id":"mono-red","name":"黑白灰一点红","primary":"#2B2B2B","accent":"#B3261E","heading":"#1A1A1A","tableFill":"#F0EEEE","coverBg":"#1C1C1C","darkOk":true,"recommendedFor":["暗标"]},{"id":"gradient-blue-cyan","name":"渐变蓝青","primary":"#1F5C78","accent":"#3FA9C9","heading":"#164A61","tableFill":"#E4F1F5","coverBg":"#123E52","coverBgEnd":"#2A8BA8","darkOk":true}]},{"key":"cover","arr":"covers","label":"封面版式","items":[{"id":"full-block","name":"满版色块","docx":"整页底色块 + 标题反白","darkOk":true},{"id":"line-white","name":"留白线条","docx":"白底 + 细线框/分隔线","darkOk":true},{"id":"image-underlay","name":"图底压字","docx":"背景图 + 标题叠压","darkOk":false},{"id":"gradient","name":"渐变","docx":"两段色块近似渐变（python-docx 无原生渐变）","darkOk":true},{"id":"frame-corners","name":"四角框线","docx":"白底 + 四角细线框 + 中部标题/单位/日期","darkOk":true},{"id":"top-banner","name":"顶部通栏色带","docx":"页首通栏色块 + 下方留白标题区","darkOk":true},{"id":"split-diagonal","name":"对角分割","docx":"斜向两色块分割 + 文字置于浅色区","darkOk":true},{"id":"minimal-type","name":"纯文字极简","docx":"无图形元素，仅标题/单位/日期三行文字","darkOk":true},{"id":"emblem-center","name":"徽标居中","docx":"企业 LOGO 居中 + 下方标题/单位（明标）","darkOk":false},{"id":"ribbon-bottom","name":"底部色带","docx":"白底 + 底部色带 + 右上竖排标题","darkOk":true}]},{"key":"decoration","arr":"decorations","label":"装饰强度","items":[{"id":"minimal","name":"克制","docx":"仅标题色 + 细线"},{"id":"standard","name":"标准","docx":"标题色块 + 表头底纹"},{"id":"rich","name":"丰富","docx":"章首装饰带 + 图标 + 强调底色"},{"id":"none","name":"无装饰","docx":"无任何装饰元素，纯文本+表格","darkOk":true},{"id":"heading-rule","name":"仅标题线","docx":"各级标题下方细横线，正文无装饰"},{"id":"sidebar-tab","name":"侧边页签","docx":"页面外侧色块页签导航（章号）"},{"id":"corner-dots","name":"四角圆点","docx":"页四角小圆点/圆角符号点缀"},{"id":"section-band","name":"章首色带","docx":"仅章节首页顶部装饰带，内页无装饰"},{"id":"icon-accent","name":"图标点缀","docx":"章节标题前小图标，无底纹无色带"},{"id":"table-fill","name":"仅表头底纹","docx":"只对表格表头使用配色底纹，其余零装饰","darkOk":false}]},{"key":"font","arr":"fontSchemes","label":"字体方案","items":[{"id":"gov-gongwen","name":"政务公文风","heading":"黑体","body":"仿宋","sizes":{"chapter":"16pt 三号 居中","section":"14pt 四号","item":"12pt 小四","body":"12pt 小四","table":"10.5pt 五号","caption":"9pt 小五"},"lineSpacing":1.5,"darkOk":false},{"id":"engineering","name":"工程务实风","heading":"黑体","body":"宋体","sizes":{"chapter":"16pt 三号 居中","section":"14pt 四号","item":"12pt 小四","body":"12pt 小四","table":"10.5pt 五号","caption":"9pt 小五"},"lineSpacing":1.5,"darkOk":false},{"id":"modern-business","name":"现代商务风","heading":"微软雅黑（加粗）","body":"微软雅黑","sizes":{"chapter":"16pt 居中 加粗","section":"14pt 加粗","item":"12pt 加粗","body":"12pt","table":"10.5pt","caption":"9pt"},"lineSpacing":1.4,"darkOk":false},{"id":"elegant-classic","name":"典雅书卷风","heading":"华文中宋","body":"楷体","sizes":{"chapter":"16pt 三号 居中","section":"14pt 四号","item":"12pt 小四 加粗","body":"12pt 小四","table":"10.5pt 五号","caption":"9pt 小五"},"lineSpacing":1.5,"darkOk":false},{"id":"dark-safe","name":"暗标安全风","heading":"宋体 四号 常规","body":"宋体 四号 常规","sizes":{"chapter":"14pt 四号 常规","section":"14pt 四号 常规","item":"14pt 四号 常规","body":"14pt 四号 常规","table":"10.5pt 五号 常规","caption":"9pt 小五 常规"},"lineSpacing":1.5,"darkOk":true},{"id":"gb2312-classic","name":"仿宋GB2312风","heading":"仿宋_GB2312","body":"仿宋_GB2312","sizes":{"chapter":"18pt 小四 常规","section":"18pt 小四 常规","item":"18pt 小四 常规","body":"18pt 小四 常规","table":"10.5pt 五号","caption":"9pt 小五"},"lineSpacing":1.5,"darkOk":false},{"id":"hei-song-simplified","name":"黑宋简约风","heading":"黑体","body":"宋体","sizes":{"chapter":"16pt 三号 居中","section":"14pt 四号","item":"12pt 小四","body":"12pt 小四","table":"10.5pt 五号","caption":"9pt 小五"},"lineSpacing":1.5,"darkOk":false},{"id":"kai-literary","name":"楷体书卷风","heading":"黑体","body":"楷体","sizes":{"chapter":"16pt 三号 居中","section":"14pt 四号","item":"12pt 小四","body":"12pt 小四","table":"10.5pt 五号","caption":"9pt 小五"},"lineSpacing":1.5,"darkOk":false},{"id":"fangsong-official","name":"全仿宋公文风","heading":"仿宋","body":"仿宋","sizes":{"chapter":"22pt 二号 居中","section":"16pt 三号","item":"16pt 三号","body":"16pt 三号","table":"12pt 四号","caption":"10.5pt 五号"},"lineSpacing":1.5,"darkOk":false},{"id":"mixed-safe","name":"混排安全风","heading":"黑体","body":"宋体","sizes":{"chapter":"16pt 三号 居中","section":"14pt 四号","item":"12pt 小四","body":"12pt 小四","table":"10.5pt 五号","caption":"9pt 小五"},"lineSpacing":1.5,"darkOk":false}]},{"key":"imageRatio","arr":"imageRatios","label":"图文比例","items":[{"id":"none","name":"无图","ratio":"0:10","darkOk":true},{"id":"low","name":"低图比","ratio":"1:9","darkOk":true},{"id":"mid","name":"中图比","ratio":"3:7","darkOk":true},{"id":"high","name":"高图比","ratio":"5:5","darkOk":false},{"id":"ultra-low","name":"极低图比","ratio":"1:19","darkOk":true},{"id":"low-mid","name":"偏低图比","ratio":"2:8","darkOk":true},{"id":"mid-high","name":"偏高图比","ratio":"4:6","darkOk":false},{"id":"very-high","name":"高强图比","ratio":"6:4","darkOk":false},{"id":"full","name":"整页图版","ratio":"7:3","darkOk":false},{"id":"appendix-only","name":"仅附表","ratio":"0:10(正文)","darkOk":true}]},{"key":"imageRule","arr":"imageRules","label":"配图规则","items":[{"id":"upload-first","name":"上传优先","source":"人工上传（存量少）","darkOk":true},{"id":"search-supplement","name":"搜索补图","source":"联网搜索","darkOk":false},{"id":"ai-render","name":"AI 生图","source":"AI 生成","darkOk":true},{"id":"hybrid","name":"混合策略","source":"上传+搜索+AI","darkOk":false},{"id":"dark-safe-img","name":"暗标安全","source":"任一来源","darkOk":true},{"id":"plan-only","name":"仅平面图","source":"CAD 图纸转图片","darkOk":true},{"id":"photo-only","name":"仅现场照片","source":"现场/搜索实景照","darkOk":false},{"id":"chart-only","name":"仅图表","source":"流程图/曲线/表格化图","darkOk":true},{"id":"search-verify","name":"搜索+人工核验","source":"联网搜索后人工确认","darkOk":false},{"id":"no-source","name":"无图源","source":"不配图","darkOk":true}]},{"key":"imageLayout","arr":"imageLayouts","label":"配图排版","items":[{"id":"split-h","name":"左右分栏","darkOk":true},{"id":"split-v","name":"上下分栏","darkOk":true},{"id":"inline","name":"图文混排","darkOk":true},{"id":"grid","name":"图组并排","darkOk":false},{"id":"appendix","name":"附图专页","darkOk":true},{"id":"side-note","name":"侧注式","darkOk":true},{"id":"banner","name":"通栏横幅","darkOk":false},{"id":"timeline","name":"时间轴图","darkOk":false},{"id":"card-mix","name":"卡片混排","darkOk":false},{"id":"none","name":"无排版","darkOk":true}]},{"key":"pageSetup","arr":"pageSetups","label":"页面设置","items":[{"id":"p1-standard-a4","name":"标准公文 A4","margin":"上2.54 下2.54 左3.18 右3.18cm","darkOk":true},{"id":"p2-haikou-25","name":"海南盲评 2.0/2.5","margin":"上2.0 下2.5 左2.5 右2.5cm","darkOk":true},{"id":"p3-jianyu-商务","name":"剑鱼商务 25/26/22","margin":"左25 右25 上26 下22mm","darkOk":false},{"id":"p4-tongliao-317","name":"通辽 3.17/2.54","margin":"左3.17 右2.54 上2.54 下2.54cm","darkOk":true},{"id":"p5-nanyang-32","name":"南阳 3/3/2/2","margin":"上3.0 下3.0 左2.0 右2.0cm","darkOk":true},{"id":"p6-guangxi-215","name":"广西 EPC 2.15","margin":"上2.15 下2.15 左2.15 右2.15cm","darkOk":false},{"id":"p7-hb-25-20","name":"河北 2.5/2.0","margin":"上2.5 下2.0 左2.0 右2.0cm","darkOk":true},{"id":"p8-nenu-学位","name":"东师学位 2/2.5","margin":"上2.0 下2.0 左2.5 右2.5cm","darkOk":false},{"id":"p9-gbt-学位","name":"国标学位 3.8/3.2","margin":"上3.8 下3.8 左3.2 右3.2cm","darkOk":false},{"id":"p10-symmetric-紧凑","name":"对称紧凑 2.2","margin":"上2.0 下2.0 左2.2 右2.2cm","darkOk":false}]},{"key":"headingSystem","arr":"headingSystems","label":"标题体系","items":[{"id":"h1-gbt-arabic","name":"GB/T 阿拉伯分级","levels":"章小4黑体 节5号黑体 正文5号宋体","numbering":"1 / 2.1 / 3.2.1 顶格+空1字，≤4级（GB/T 7713.2-2022 + CY/T 35）","darkOk":false},{"id":"h2-tender-arabic","name":"招标全阿拉伯","levels":"标题正文宋体四号常规 图表内五号宋体","numbering":"1 / 1.1 / 1.1.1 逐级顺延（济南/海南盲评条款）","darkOk":true},{"id":"h3-qinghai-hybrid","name":"青海中数混排","levels":"一级三号黑体非斜 二级及以下四号宋体 图表内五号宋体","numbering":"一、/ 1.1 / 1.1.1（一级中文+顿号，以下阿拉伯）","darkOk":true},{"id":"h4-nanyang-7level","name":"南阳七级混排","levels":"各级黑字宋体常规","numbering":"一、/（一）/ 1. /（1）/ 1）/ a. / a）最多7级（南阳暗标）","darkOk":true},{"id":"h5-jianyu-bold","name":"剑鱼标书加粗","levels":"章三号加粗黑体 节1.1小三加粗宋体 段1.1.2小四加粗宋体 正文小四宋体","numbering":"一、/ 1.1 / 1.1.2；英文数字 Arial","darkOk":false},{"id":"h6-sci-report","name":"科技报告式","levels":"章五号黑体（印刷） 节同章 正文五号宋体","numbering":"CY/T 35 阿拉伯分级，≤4级，编号后空1字","darkOk":false},{"id":"h7-pku-template","name":"北大教学模板","levels":"一、小四黑体 1.五号黑体 (1)三级","numbering":"一、/ 1. / (1) 混合（北京大学教学发展中心模板）","darkOk":false},{"id":"h8-nenu-academic","name":"东师学术式","levels":"章黑体三号居中段前48段后24磅 节黑体小四顶左","numbering":"1 / 1.1 / 1.1.1（章另起页）","darkOk":false},{"id":"h9-cas-academic","name":"中科院学术式","levels":"章黑体四号加粗居中 节黑体小四顶左 正文宋体小四","numbering":"1 / 1.1 / 1.1.1 段前12-24磅","darkOk":false},{"id":"h10-tongliao-tender","name":"通辽暗标式","levels":"一级宋体三号黑字 二级及以下宋体四号常规","numbering":"1、/ 1.1 / 1.1.1（阿拉伯后加顿号）","darkOk":true}]},{"key":"tocStyle","arr":"tocStyles","label":"目录版式","items":[{"id":"t1-jianyu-auto","name":"剑鱼自动目录","leading":"点线页码右对齐 自动生成可更新","darkOk":false},{"id":"t2-zol-standard","name":"ZOL 标准目录","leading":"显示页码+页码右对齐+超链接","darkOk":false},{"id":"t3-qinghai-nopage","name":"青海无页码目录","leading":"无页码 无页眉页脚","darkOk":true},{"id":"t4-guangxi-pointline","name":"广西点线目录","leading":"章点名称与页数间点划线，页数放末列","darkOk":false},{"id":"t5-nenu-indent","name":"东师缩进目录","leading":"一级缩进0 二级缩1字 三级缩2字；1.5倍行距","darkOk":false},{"id":"t6-cas-rightalign","name":"中科院右对齐目录","leading":"页码右对齐 单倍行距 段前6磅","darkOk":false},{"id":"t7-xinong-compact","name":"西农紧凑目录","leading":"1.15倍行距；独立大写罗马页码","darkOk":false},{"id":"t8-dual-index","name":"图文双目录","leading":"图表目录含图序/图题/表序/表题+页码","darkOk":false},{"id":"t9-wps-tabstop","name":"WPS 制表位目录","leading":"点线/虚线/实线前导符 页码右对齐或居中","darkOk":false},{"id":"t10-minimal-2level","name":"两级紧凑目录","leading":"1.5倍行距 页码右对齐","darkOk":false}]},{"key":"tableStyle","arr":"tableStyles","label":"表格样式","items":[{"id":"tb1-three-line","name":"三线表（学术）","lines":"顶线底线1.5磅 表头线1磅 无竖线（CY/T 170-2019）","headerFill":"无底纹","darkOk":true},{"id":"tb2-full-line","name":"全线表","lines":"表框线+行线+栏线（CY/T 170 正式表）","headerFill":"无底纹","darkOk":true},{"id":"tb3-saving-line","name":"省线表","lines":"省略墙线或部分行/栏线","headerFill":"无底纹","darkOk":true},{"id":"tb4-header-fill","name":"表头底纹+全边框","lines":"全框0.5pt 表头 palette.tableFill 底纹","headerFill":"配色表头底纹","darkOk":false},{"id":"tb5-grid-fine","name":"网格细线","lines":"全框0.5pt 单实线 表头加粗","headerFill":"无底纹 表头加粗","darkOk":false},{"id":"tb6-no-line","name":"无线表","lines":"无框线 无线表/栏线（非正式）","headerFill":"无","darkOk":false},{"id":"tb7-dark-0.5","name":"暗标细线表","lines":"边框0.5磅黑色单实直线","headerFill":"无底纹","darkOk":true},{"id":"tb8-center-vh","name":"上下左右居中表","lines":"随内容选线型","headerFill":"可选","darkOk":false},{"id":"tb9-kpi-row","name":"数据行/KPI 卡","lines":"横排指标行 首列加粗 表头底纹","headerFill":"配色表头底纹","darkOk":false},{"id":"tb10-split-continue","name":"续表重复表头","lines":"转页接排 重复表头+（续）","headerFill":"随基表","darkOk":false}]},{"key":"captionSystem","arr":"captionSystems","label":"图表编号","items":[{"id":"c1-gbt-seq","name":"GB/T 全文依序","numbering":"图1/表1/式(1) 全文连续（GB/T 7713.2-2022）","darkOk":false},{"id":"c2-cy-chapter","name":"CY/T 分章编号","numbering":"表1-1 或 表1.1，与插图/公式编号方式一致（CY/T 170）","darkOk":false},{"id":"c3-jianyu-neighbor","name":"剑鱼就近编号","numbering":"图3-1 紧邻对应段落（四面环绕）","darkOk":false},{"id":"c4-nenu-pos","name":"东师位置规范","numbering":"图1.1/图1-1（.或-全文统一）","darkOk":false},{"id":"c5-xinong-chapter","name":"西农分章编号","numbering":"图3-1/表4-2 按一级标题连续编号","darkOk":false},{"id":"c6-appendix-letter","name":"附录字母编号","numbering":"附录A/B；图A-1、表B-2、式(C-3)","darkOk":false},{"id":"c7-cas-chapter","name":"中科院分章编号","numbering":"图1.1 分章依序编码","darkOk":false},{"id":"c8-dual-index","name":"图文双目录联动","numbering":"正文目录+插图目录+附表目录独立成页","darkOk":false},{"id":"c9-dark-appendix","name":"暗标附图专页","numbering":"附表一/附图一；正文'见附表X'","darkOk":true},{"id":"c10-note-pos","name":"图注表注规范","numbering":"表注底线下方左齐 图注图题下方","darkOk":false}]},{"key":"paragraphStyle","arr":"paragraphStyles","label":"段落样式","items":[{"id":"pa1-qinghai-26","name":"青海固定26磅","lineSpacing":"固定值26磅","align":"两端对齐","darkOk":true},{"id":"pa2-haikou-25","name":"海南固定25磅","lineSpacing":"固定值25磅","align":"左对齐","darkOk":true},{"id":"pa3-hebei-30","name":"河北固定30磅","lineSpacing":"固定值30磅","align":"左对齐","darkOk":true},{"id":"pa4-guangxi-15","name":"广西1.5倍行距","lineSpacing":"1.5倍","align":"两端对齐","darkOk":false},{"id":"pa5-tongliao-30","name":"通辽固定30磅","lineSpacing":"固定值30磅","align":"两端对齐","darkOk":true},{"id":"pa6-ximeng-28","name":"锡盟固定28磅","lineSpacing":"固定值28磅","align":"两端对齐","darkOk":true},{"id":"pa7-jianyu-15","name":"剑鱼1.5倍行距","lineSpacing":"1.5倍","align":"两端对齐","darkOk":false},{"id":"pa8-xinong-20","name":"西农固定20磅","lineSpacing":"固定值20磅","align":"两端对齐","darkOk":false},{"id":"pa9-degree-15","name":"学位1.5倍行距","lineSpacing":"1.5倍 段前后0","align":"两端对齐","darkOk":false},{"id":"pa10-compact-115","name":"紧凑1.15倍","lineSpacing":"1.15倍 段前后0","align":"两端对齐","darkOk":false}]},{"key":"headerFooter","arr":"headerFooters","label":"页眉页脚","items":[{"id":"hf1-classic-enterprise","name":"经典企业版","header":"左 LOGO+企业名，右章节名，0.5pt 分隔线","footer":"页脚居中 -N-","pageMode":"with-page","darkOk":false},{"id":"hf2-centered-solemn","name":"居中庄重","header":"页眉居中企业名（小五）","footer":"页脚居中页码","pageMode":"with-page","darkOk":false},{"id":"hf3-project-oriented","name":"项目导向","header":"左企业名，右项目名","footer":"页脚居中 -N-","pageMode":"with-page","darkOk":false},{"id":"hf4-consulting-page","name":"咨询商务","header":"页眉右页码，下细线","footer":"页脚第 N 页 共 M 页","pageMode":"with-page","darkOk":false},{"id":"hf5-minimal-clean","name":"极简留白","header":"无页眉","footer":"页脚居中 -N-","pageMode":"with-page","darkOk":false},{"id":"hf6-chapter-nav","name":"章节导航","header":"左 LOGO+企业名，右完整章名","footer":"页脚居中 -N-","pageMode":"with-page","darkOk":false},{"id":"hf7-dual-footer","name":"双栏页脚","header":"页眉企业名+项目名","footer":"页脚左项目简称，右页码","pageMode":"with-page","darkOk":false},{"id":"hf8-full-info-3col","name":"全信息三栏","header":"LOGO+企业名｜项目名｜章节名","footer":"页脚居中 -N-","pageMode":"with-page","darkOk":false},{"id":"hf9-dark-none","name":"暗标无页眉页脚","header":"无页眉","footer":"无页码无页脚","pageMode":"none","darkOk":true},{"id":"hf10-dark-page-only","name":"暗标仅页码","header":"页眉必须空","footer":"页脚纯页码，全文连续","pageMode":"page-only","darkOk":true}]}],"combos":[{"id":"official-engineering-default","name":"工程标·默认稳健","bidType":"engineering","why":"链企官方团默认搭配；宋体12pt 主流+默认封面+深靛蓝稳健配色；工程监理/施工/设计类通用首选","layoutCombo":{"preset":"single-column","palette":"deep-indigo","cover":"full-block","decoration":"standard","font":"engineering","imageRatio":"mid","imageRule":"hybrid","imageLayout":"split-h","pageSetup":"p1-standard-a4","headingSystem":"h1-gbt-arabic","tocStyle":"t1-jianyu-auto","tableStyle":"tb1-three-line","captionSystem":"c2-cy-chapter","paragraphStyle":"pa7-jianyu-15","headerFooter":"hf1-classic-enterprise"}},{"id":"engineering-premium-flow","name":"工程标·精品图文","bidType":"engineering","why":"链企'精品版式A/B+宋体'系列；图文增强适合施工/监理大纲现场照片密集型章节；高分标书视觉层级更清晰","layoutCombo":{"preset":"hybrid-flow","palette":"deep-indigo","cover":"full-block","decoration":"rich","font":"engineering","imageRatio":"high","imageRule":"hybrid","imageLayout":"split-h","pageSetup":"p1-standard-a4","headingSystem":"h5-jianyu-bold","tocStyle":"t1-jianyu-auto","tableStyle":"tb4-header-fill","captionSystem":"c3-jianyu-neighbor","paragraphStyle":"pa7-jianyu-15","headerFooter":"hf6-chapter-nav"}},{"id":"service-general-graphic","name":"服务标·通用图文","bidType":"service","why":"链企'通用服务图文排版-粉蓝色'系列；服务类项目（物业/绿化/保安）主流；表格化布局适配服务承诺清单","layoutCombo":{"preset":"tabular","palette":"gradient-blue-cyan","cover":"full-block","decoration":"standard","font":"engineering","imageRatio":"mid","imageRule":"hybrid","imageLayout":"split-v","pageSetup":"p1-standard-a4","headingSystem":"h1-gbt-arabic","tocStyle":"t1-jianyu-auto","tableStyle":"tb9-kpi-row","captionSystem":"c2-cy-chapter","paragraphStyle":"pa7-jianyu-15","headerFooter":"hf4-consulting-page"}},{"id":"service-full-chart","name":"服务标·全文图表化","bidType":"service","why":"链企'通用服务高级全文图表-粉蓝色'系列；食堂/配送/设备清单类表格密集型服务标；指标横排+全线表","layoutCombo":{"preset":"data-row","palette":"gradient-blue-cyan","cover":"line-white","decoration":"rich","font":"engineering","imageRatio":"low","imageRule":"hybrid","imageLayout":"inline","pageSetup":"p1-standard-a4","headingSystem":"h1-gbt-arabic","tocStyle":"t1-jianyu-auto","tableStyle":"tb2-full-line","captionSystem":"c1-gbt-seq","paragraphStyle":"pa7-jianyu-15","headerFooter":"hf4-consulting-page"}},{"id":"dark-safe-minimal","name":"暗标·极简安全","bidType":"dark","why":"链企内蒙古暗标专家团原型；零配图零装饰纯文字宋体；覆盖青海/海南/济南/通辽盲评条款；palette 炭灰最稳妥","layoutCombo":{"preset":"single-column","palette":"charcoal","cover":"minimal-type","decoration":"none","font":"dark-safe","imageRatio":"none","imageRule":"no-source","imageLayout":"none","pageSetup":"p1-standard-a4","headingSystem":"h2-tender-arabic","tocStyle":"t3-qinghai-nopage","tableStyle":"tb7-dark-0.5","captionSystem":"c9-dark-appendix","paragraphStyle":"pa1-qinghai-26","headerFooter":"hf9-dark-none"}}]};
+let GROUPS = RAW.groups, COMBOS = RAW.combos, DEFAULT = RAW.default, DARK_INJECT = RAW.darkInject;
+let DEFAULT_ID = {};
+function buildDefaultId(){ DEFAULT_ID = {}; GROUPS.forEach(g => DEFAULT_ID[g.key] = (DEFAULT[g.key] || "")); }
+buildDefaultId();
+const state = { dark:false, layout:Object.assign({}, DEFAULT_ID), overrides:{}, sel:GROUPS[0].key, structure:{titlePage:true, closing:false}, photoIdx:0 };
+const findItem = (g,id)=>g.items.find(x=>x.id===id)||g.items[0];
+const grp = k=>GROUPS.find(g=>g.key===k);
+/* ================= 暗标规则 ================= */
+const LOCK_KEYS = ["font","pageSetup","headingSystem","tocStyle","tableStyle","captionSystem","paragraphStyle"];
+function injectDark(){
+  Object.keys(DARK_INJECT).forEach(k=>{ state.layout[k]=DARK_INJECT[k]; });
+  state.layout.preset = "single-column";
+  state.layout.palette = "charcoal";
+  state.layout.cover = "minimal-type";
+  state.layout.decoration = "none";
+  state.layout.imageRule = "no-source";
+  state.layout.imageLayout = "none";
+}
+function fixForDark(){
+  GROUPS.forEach(g=>{
+    if(LOCK_KEYS.indexOf(g.key)>=0 || g.key==="imageRatio" || g.key==="headerFooter") return;
+    if(!findItem(g, state.layout[g.key]).darkOk){
+      const ok = g.items.find(x=>x.darkOk) || g.items[0];
+      state.layout[g.key]=ok.id;
+    }
+  });
+}
+function setDark(v){
+  state.dark=v;
+  if(v){ injectDark(); fixForDark(); }
+  else{
+    Object.keys(DEFAULT_ID).forEach(k=>{ state.layout[k]=DEFAULT_ID[k]; });
+  }
+  renderAll();
+}
+/* ================= 校验 ================= */
+function runChecks(){
+  const c=[], L=state.layout;
+  if(state.dark){
+    if(L.font!=="dark-safe") c.push(["err","暗标：字体必须为 dark-safe（当前 "+findItem(grp("font"),L.font).name+"）"]);
+    if(L.cover==="image-underlay"||L.cover==="emblem-center") c.push(["err","暗标：封面禁用 图底压字/徽标居中"]);
+    if(L.imageRatio==="none"){ c.push(["ok","图片策略 A：零图（imageRatio=none）——暗标推荐"]); }
+    else if(L.imageRule==="dark-safe-img" && L.imageLayout==="appendix"){ c.push(["ok","图片策略 B：暗标安全图 + 附图专页"]); }
+    else{ c.push(["warn","暗标图片须二选一：imageRatio=none 或 imageRule=dark-safe-img + imageLayout=appendix"]); }
+    if(L.headerFooter!=="hf9-dark-none" && L.headerFooter!=="hf10-dark-page-only") c.push(["err","暗标页眉页脚须二选一：hf9 无页眉页脚 / hf10 仅页码"]);
+    LOCK_KEYS.forEach(k=>{
+      if(L[k]!==DARK_INJECT[k]) c.push(["warn","微观组 "+grp(k).label+" 已被暗标条款锁定注入（占位默认，以招标原文为准）"]);
+    });
+  }else{
+    if(L.font==="modern-business") c.push(["info","现代商务风字重偏粗，若后续转暗标将自动禁用"]);
+  }
+  if(L.imageRatio==="none" && L.imageLayout!=="none" && L.imageLayout!=="appendix") c.push(["warn","图文比例=无图，建议配图排版同步为 无排版 或 附图专页"]);
+  if(L.imageRatio!=="none" && L.imageRule==="no-source") c.push(["warn","配图规则=无图源 与图文比例不一致（有图但无来源）"]);
+  if(!c.length) c.push(["ok","组合校验通过"]);
+  return c;
+}
+/* ================= 渲染 ================= */
+const esc = s => String(s==null?"":s).replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
+const nameOf = (k)=>findItem(grp(k),state.layout[k]).name;
+function renderNav(){
+  const box=document.getElementById("side");
+  box.innerHTML = '<div class="nav-h"><span>'+GROUPS.length+' 组 × '+ (GROUPS[0]?GROUPS[0].items.length:'—') +' 套</span><span>'+GROUPS.reduce((s,g)=>s*g.items.length,1)+' 方案</span></div>' +
+    GROUPS.map(g=>{
+      const locked = state.dark && LOCK_KEYS.indexOf(g.key)>=0;
+      return '<button class="nav-item'+(state.sel===g.key?" active":"")+(locked?" locked":"")+'" data-k="'+g.key+'">'+
+        '<span>'+esc(g.label)+'</span><span class="cur">'+esc(nameOf(g.key))+'</span></button>';
+    }).join("");
+  box.querySelectorAll(".nav-item").forEach(b=>b.addEventListener("click",()=>{ state.sel=b.dataset.k; renderPanel(); renderNav(); }));
+}
+function badgeFor(g,it){
+  let h="";
+  if(it.id===DEFAULT_ID[g.key] && !state.dark) h+='<span class="o-badge ob-def">默认</span>';
+  if(state.dark){
+    if(it.darkOk===false) h+='<span class="o-badge ob-ban">暗标禁用</span>';
+    else if(it.recommendedFor&&it.recommendedFor.indexOf("暗标")>=0) h+='<span class="o-badge ob-dark">暗标推荐</span>';
+    else if(it.id==="dark-safe"||it.id==="hf9-dark-none"||it.id==="hf10-dark-page-only"||it.id==="minimal-type"||it.id==="none"||it.id==="no-source"||it.id==="appendix"||it.id==="dark-safe-img") h+='<span class="o-badge ob-dark">暗标可用</span>';
+  }
+  return h;
+}
+function metaFor(g,it){
+  const parts=[];
+  if(g.key==="palette"&&it.primary) parts.push(it.primary+" / "+it.accent);
+  if(g.key==="font") parts.push((it.heading||"")+"+"+(it.body||"")+(it.lineSpacing?" · 行距"+it.lineSpacing:""));
+  if(g.key==="imageRatio"&&it.ratio) parts.push("图:文 "+it.ratio);
+  if(g.key==="imageRule"&&it.source) parts.push(it.source);
+  if(g.key==="pageSetup"&&it.margin) parts.push(it.margin);
+  if(g.key==="headingSystem"){ parts.push(it.levels||""); parts.push(it.numbering||""); }
+  if(g.key==="tocStyle"&&it.leading) parts.push(it.leading);
+  if(g.key==="tableStyle"){ parts.push(it.lines||""); if(it.headerFill) parts.push("表头:"+it.headerFill); }
+  if(g.key==="captionSystem"&&it.numbering) parts.push(it.numbering);
+  if(g.key==="paragraphStyle"){ parts.push(it.lineSpacing||""); if(it.align) parts.push(it.align); }
+  if(g.key==="headerFooter"){ parts.push(it.header||""); if(it.footer) parts.push(it.footer); if(it.pageMode) parts.push("pageMode="+it.pageMode); }
+  if(g.key==="preset"&&it.docx) parts.push(it.docx);
+  if(g.key==="cover"&&it.docx) parts.push(it.docx);
+  if(g.key==="decoration"&&it.docx) parts.push(it.docx);
+  if(g.key==="imageLayout"&&it.docx) parts.push(it.docx);
+  return parts.filter(Boolean).join(" ｜ ");
+}
+function renderPanel(){
+  const box=document.getElementById("panel"), g=grp(state.sel);
+  const locked = state.dark && LOCK_KEYS.indexOf(g.key)>=0;
+  const twoWay = state.dark && (g.key==="imageRatio"||g.key==="headerFooter");
+  let h='<div class="p-head"><h3>'+esc(g.label)+'</h3><span class="p-key">'+g.key+' · 10 套</span></div>';
+  h+='<div class="p-desc">'+esc(g.arr)+" · "+RAW.schema+" v"+RAW.version+"</div>";
+  if(locked){ const dk=DARK_INJECT[g.key]; h+='<div class="lock-note">暗标：本组不开放选择，已按招标条款自动注入 <b>'+esc(dk)+'</b>（占位默认 '+esc(findItem(g,dk).name)+'，<b>以招标原文为准</b>，tech-parse 解析后覆盖）。</div>'; }
+  if(twoWay && g.key==="imageRatio"){ h+='<div class="lock-note">暗标图片二选一：A 零图（none）或 B 暗标安全图（dark-safe-img + 附图专页）。当前：<b>'+esc(state.layout.imageRatio==="none"?"A · 零图":"B · 安全图+附图专页")+'</b></div>'; }
+  if(twoWay && g.key==="headerFooter"){ h+='<div class="lock-note">暗标页眉页脚二选一：<b>hf9</b> 无页眉页脚（默认注入）或 <b>hf10</b> 仅页码（通辽/雄县条款）。</div>'; }
+  g.items.forEach(it=>{
+    const on=state.layout[g.key]===it.id;
+    const dis=state.dark && it.darkOk===false && !twoWay;
+    h+='<div class="opt'+(on?" on":"")+(dis?" dis":"")+'" data-id="'+it.id+'"'+(dis?" title=\"暗标禁用\"":"")+'>'+
+      '<div class="o-radio"></div><div class="o-main">'+
+      '<div class="o-name">'+esc(it.name)+badgeFor(g,it)+'</div>'+
+      '<div class="o-meta">'+esc(metaFor(g,it))+'</div>'+
+      (g.key==="palette" && on ? overEdit(it) : "")+
+      '</div></div>';
+  });
+  h+='<div class="p-foot"><div class="f-label">快捷套用 · 推荐套餐（recommendedCombos）</div><div class="combo-chips">'+
+    COMBOS.map(c=>'<button class="btn btn-ghost combo" data-id="'+c.id+'" style="font-size:11.5px;padding:4px 10px" title="'+esc(c.why)+'">'+esc(c.name)+'</button>').join("")+
+    '</div></div>';
+  box.innerHTML=h;
+  box.querySelectorAll(".opt:not(.dis)").forEach(o=>o.addEventListener("click",()=>{
+    if(state.dark && twoWay && g.key==="imageRatio"){
+      applyImageStrategy(o.dataset.id);
+    }else if(state.dark && twoWay && g.key==="headerFooter"){
+      state.layout.headerFooter=o.dataset.id;
+    }else{
+      state.layout[g.key]=o.dataset.id;
+    }
+    renderAll();
+  }));
+  box.querySelectorAll(".combo").forEach(b=>b.addEventListener("click",()=>applyCombo(b.dataset.id)));
+  bindOverEdits();
+}
+function overEdit(it){
+  const ov=state.overrides["palette:"+it.id]||{};
+  const keys=["primary","accent","heading","tableFill","coverBg","coverBgEnd"];
+  const row=k=>{ const v=ov[k]||it[k]||""; if(!v) return ""; return '<div class="oe-row"><label>'+k+'</label><input type="color" data-pk="'+k+'" value="'+v+'"><span class="oe-val">'+v+'</span></div>'; };
+  const hasOv=Object.keys(ov).length>0;
+  return '<div class="over-edit show" data-ov="palette:'+it.id+'"><div style="font-size:11px;color:var(--dim);margin-bottom:4px">参数覆盖（overrides，作用于 tech-export）'+(hasOv?'<button class="over-reset" data-reset="1">重置</button>':'')+'</div>'+keys.map(row).join("")+'</div>';
+}
+function bindOverEdits(){
+  document.querySelectorAll('input[type=color][data-pk]').forEach(inp=>{
+    inp.addEventListener("input",()=>{
+      const pid=inp.closest("[data-ov]").dataset.ov; // palette:xxx
+      state.overrides[pid]=state.overrides[pid]||{};
+      state.overrides[pid][inp.dataset.pk]=inp.value.toUpperCase();
+      inp.parentElement.querySelector(".oe-val").textContent=inp.value.toUpperCase();
+      renderDoc();
+    });
+  });
+  document.querySelectorAll(".over-reset").forEach(b=>b.addEventListener("click",()=>{
+    const pid=b.closest("[data-ov]").dataset.ov;
+    delete state.overrides[pid]; renderAll();
+  }));
+}
+function applyImageStrategy(ratioId){
+  if(ratioId==="none"){
+    state.layout.imageRatio="none"; state.layout.imageRule="no-source"; state.layout.imageLayout="none";
+  }else{
+    state.layout.imageRatio="mid"; state.layout.imageRule="dark-safe-img"; state.layout.imageLayout="appendix";
+  }
+}
+function applyCombo(id){
+  const c=COMBOS.find(x=>x.id===id); if(!c) return;
+  Object.keys(c.layoutCombo).forEach(k=>{ state.layout[k]=c.layoutCombo[k]; });
+  if(state.dark){ injectDark(); fixForDark(); }
+  renderAll();
+}
+/* ================= 画布 ================= */
+const pal=()=>{ const it=findItem(grp("palette"),state.layout.palette); const ov=state.overrides["palette:"+it.id]||{}; const v=k=>ov[k]||it[k]||""; return {primary:v("primary"),accent:v("accent"),heading:v("heading"),tableFill:v("tableFill"),coverBg:v("coverBg"),coverBgEnd:v("coverBgEnd")}; };
+/* ================= 样例文档内容（示例文字，非真实项目数据） ================= */
+const SAMPLE = {
+  title:"XX 工程项目施工监理大纲",
+  unit:"XX 建设监理有限公司",
+  date:"2026 年 10 月",
+  toc:[
+    ["第一章  工程概况","3",false],["1.1  编制依据","3",true],["1.2  工程范围及特点","4",true],
+    ["第二章  项目组织机构","5",false],["2.1  组织架构及职责","5",true],["2.2  监理人员配置","6",true],
+    ["第三章  施工总体部署","7",false],["3.1  施工总体流程","7",true],["3.2  施工现场平面布置","8",true],
+    ["第四章  质量保证措施","9",false],["4.1  三检制落实","9",true],["4.2  样板引路","10",true]
+  ],
+  p1a:"本工程为（示例）房建工程施工项目，监理工作范围覆盖施工全过程的质量、进度、安全与合同信息管理。监理部依据现行规范、招标文件与设计文件编制本监理大纲，作为开展监理服务的纲领性文件。",
+  p1b:"监理工作坚持“事前控制为主、事中控制为辅、事后控制为补”的原则，严格执行报审报验制度，确保各项控制目标受控。",
+  p2:"依据总体部署划分施工区段，流水作业组织施工；关键线路实行周报跟踪与偏差分析，确保工期目标受控。",
+  p3:"现场平面按功能分区布置办公区、加工区与材料堆场，实行标准化围挡与实名制管理；总平面布置随施工阶段动态调整。"
+};
+/* ================= 预设流程图素材（SVG） ================= */
+const FLOWS = {
+  A:{name:"施工总体流程", nodes:["施工准备","测量放线","基础工程","主体结构","装饰装修","设备安装","竣工验收"]},
+  B:{name:"质量控制流程", nodes:["工序报验","自检合格","监理平行检验","合格签认","下道工序"], branch:"不合格 → 整改返工后重新报验"},
+  C:{name:"进度管理流程", nodes:["计划编制","资源调配","过程跟踪","偏差分析","纠偏措施"]}
+};
+let flowKey = "A";
+function svgFlow(){
+  const F=FLOWS[flowKey], n=F.nodes.length;
+  const P=pal(); const col=state.dark?"#333333":P.primary;
+  const W=560,H=104,pad=16; const gap=(W-pad*2)/(n*2); const bw=Math.min(gap*1.5,64);
+  let s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto" role="img" aria-label="'+esc(F.name)+'">';
+  for(let i=0;i<n;i++){
+    const x=pad+gap*2*i+(gap-bw)/2, y=H/2-15;
+    s+='<rect x="'+x.toFixed(1)+'" y="'+y+'" width="'+bw+'" height="30" rx="4" fill="'+(state.dark?"#fff":"#f0f3fa")+'" stroke="'+col+'" stroke-width="1.2"/>';
+    s+='<text x="'+(x+bw/2).toFixed(1)+'" y="'+(y+19)+'" text-anchor="middle" font-size="11" fill="'+col+'">'+F.nodes[i]+'</text>';
+    if(i<n-1){ const ax=x+bw+2, ay=y+15, tx=x+gap*2-bw/2; s+='<line x1="'+ax+'" y1="'+ay+'" x2="'+tx.toFixed(1)+'" y2="'+ay+'" stroke="'+col+'" stroke-width="1.2"/><path d="M'+(tx-7).toFixed(1)+','+(ay-4)+' l7,4 l-7,4" fill="'+col+'"/>'; }
+  }
+  if(F.branch){ s+='<text x="'+pad+'" y="'+(H-4)+'" font-size="10" fill="#a83232">'+F.branch+'</text>'; }
+  s+='</svg>';
+  return s;
+}
+function corner(W,H,L,c){ return '<path d="M28,'+(28+L)+' V28 H'+(28+L)+'" fill="none" stroke="'+c+'" stroke-width="2"/>'+
+ '<path d="M'+(W-28-L)+',28 H'+(W-28)+' V'+(28+L)+'" fill="none" stroke="'+c+'" stroke-width="2"/>'+
+ '<path d="M'+(W-28)+','+(H-28-L)+' V'+(H-28)+' H'+(W-28-L)+'" fill="none" stroke="'+c+'" stroke-width="2"/>'+
+ '<path d="M'+(28+L)+','+(H-28)+' H28 V'+(H-28-L)+'" fill="none" stroke="'+c+'" stroke-width="2"/>'; }
+function svgCover(cv){
+  const P=pal(); const bg=P.coverBg, bg2=P.coverBgEnd||P.coverBg, ac=P.accent;
+  const W=560,H=792;
+  let defs="", body="";
+  if(cv.id==="image-underlay"){ defs='<defs><pattern id="u1" width="34" height="34" patternUnits="userSpaceOnUse"><path d="M0 0L34 34M34 0L0 34" stroke="#8b94a9" stroke-width="1.4"/></pattern></defs>'; body='<rect width="'+W+'" height="'+H+'" fill="url(#u1)"/><rect width="'+W+'" height="'+H+'" fill="rgba(24,32,48,.55)"/>'; }
+  else if(cv.id==="gradient"){ defs='<defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="'+bg+'"/><stop offset="1" stop-color="'+bg2+'"/></linearGradient></defs>'; body='<rect width="'+W+'" height="'+H+'" fill="url(#g1)"/>'; }
+  else if(cv.id==="full-block"){ body='<rect width="'+W+'" height="'+H+'" fill="'+bg+'"/><rect x="0" y="30" width="'+W+'" height="2" fill="'+ac+'" opacity=".55"/><rect x="0" y="34" width="'+W+'" height="1" fill="#fff" opacity=".35"/>'; }
+  else if(cv.id==="line-white"){ body='<rect width="'+W+'" height="'+H+'" fill="#fff"/><rect x="28" y="28" width="'+(W-56)+'" height="'+(H-56)+'" fill="none" stroke="'+ac+'" stroke-width="1.4"/>'; }
+  else if(cv.id==="frame-corners"){ body='<rect width="'+W+'" height="'+H+'" fill="#fff"/>'+corner(W,H,58,ac); }
+  else if(cv.id==="top-banner"){ body='<rect width="'+W+'" height="96" fill="'+bg+'"/><rect x="0" y="96" width="'+W+'" height="2" fill="'+ac+'" opacity=".6"/><rect width="'+W+'" height="'+(H-98)+'" y="98" fill="#fff"/>'; }
+  else if(cv.id==="split-diagonal"){ body='<polygon points="0,0 '+W+',0 0,'+H+'" fill="'+bg+'"/><polygon points="'+W+',0 '+W+','+H+' 0,'+H+'" fill="#fff"/>'; }
+  else if(cv.id==="minimal-type"){ body='<rect width="'+W+'" height="'+H+'" fill="#fff"/>'; }
+  else if(cv.id==="emblem-center"){ body='<rect width="'+W+'" height="'+H+'" fill="#fff"/><circle cx="'+(W/2)+'" cy="196" r="46" fill="none" stroke="'+ac+'" stroke-width="2"/><circle cx="'+(W/2)+'" cy="196" r="34" fill="'+bg+'" opacity=".12"/>'; }
+  else if(cv.id==="ribbon-bottom"){ body='<rect width="'+W+'" height="'+H+'" fill="#fff"/><rect x="0" y="'+(H-90)+'" width="'+W+'" height="90" fill="'+bg+'"/>'; }
+  else { body='<rect width="'+W+'" height="'+H+'" fill="#fff"/>'; }
+  return '<svg class="cover-svg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid slice" role="img" aria-label="封面底图（'+esc(cv.name)+'）">'+defs+body+'</svg>';
+}
+function tag(name,opt){ return '<span class="p-tag'+(opt?" opt":"")+'" data-tag="'+name+'" aria-hidden="true"></span>'; }
+function pageHd(){
+  const hf=findItem(grp("headerFooter"),state.layout.headerFooter);
+  const ps=findItem(grp("pageSetup"),state.layout.pageSetup);
+  return hf.pageMode==="none"?"":'<div class="pg-hd"><span>'+esc(hf.header||"无页眉")+'</span><span>'+esc(ps.name)+' · '+esc(ps.margin||"")+'</span></div>';
+}
+function pageFt(n){
+  const hf=findItem(grp("headerFooter"),state.layout.headerFooter);
+  if(hf.pageMode==="none") return "";
+  return '<div class="pg-ft">'+(hf.pageMode==="page-only"?n:"- "+n+" -")+'</div>';
+}
+function coverPageHTML(){
+  const cv=findItem(grp("cover"),state.layout.cover);
+  const P=pal();
+  const darkBg = ["full-block","image-underlay","gradient","top-banner"].indexOf(cv.id)>=0;
+  const ink = darkBg && !state.dark ? "#fff" : "#1f2330";
+  const em= cv.id==="emblem-center";
+  return '<div class="page" style="padding:0">'+tag("封面 · 第 1 页")+svgCover(cv)+
+    '<div class="cover-page" style="color:'+ink+'">'+
+    (em?'<svg width="46" height="46" viewBox="0 0 46 46"><circle cx="23" cy="23" r="21" fill="'+P.primary+'"/><text x="23" y="29" text-anchor="middle" font-size="12" fill="#fff">LOGO</text></svg>':"")+
+    '<div class="cp-title">'+esc(SAMPLE.title)+'</div>'+
+    '<div class="cp-sub">（'+esc(cv.name)+' · '+esc(cv.docx||"")+'）</div>'+
+    '<div class="cp-info">投 标 单 位：'+esc(SAMPLE.unit)+'<br>编 制 日 期：'+esc(SAMPLE.date)+'</div>'+
+    '</div>'+pageFt(1)+'</div>';
+}
+function titlePageHTML(){
+  return '<div class="page">'+tag("扉页（可选页）",true)+pageHd()+
+    '<div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:12px;text-align:center">'+
+    '<div style="font-size:22px;font-weight:800;line-height:1.5">'+esc(SAMPLE.title)+'</div>'+
+    '<div style="width:220px;border-top:2px solid '+(state.dark?"#333":pal().primary)+'"></div>'+
+    '<div style="font-size:12px;line-height:2.2;color:#3a4356">项目名称：XX 工程项目（示例）<br>招标编号：XXZB-2026-0001（示例）<br>投 标 单 位：'+esc(SAMPLE.unit)+'<br>编制日期：'+esc(SAMPLE.date)+'</div>'+
+    '</div>'+
+    '<div style="font-size:10px;color:#9aa3b8;text-align:center">扉页：预览恒显示 · 真实文档由「扉页」开关控制（当前：'+(state.structure.titlePage?"开":"关")+'）</div>'+pageFt(2)+'</div>';
+}
+function tocPageHTML(){
+  const ts=findItem(grp("tocStyle"),state.layout.tocStyle);
+  const noPage = ts.id==="t3-qinghai-nopage";
+  return '<div class="page">'+tag("目录 · 第 3 页")+pageHd()+
+    '<div class="toc-title">目&nbsp;&nbsp;录</div>'+
+    SAMPLE.toc.map(r=>'<div class="toc-row'+(r[2]?" lv2":"")+'"><span class="tn">'+r[0]+'</span><span class="dots"></span>'+(noPage?"":'<span class="pn">'+r[1]+'</span>')+'</div>').join("")+
+    '<div style="margin-top:10px;font-size:10px;color:#9aa3b8;text-align:right">'+esc(ts.name)+' · '+(noPage?"无页码（暗标条款）":esc(ts.leading||""))+'</div>'+pageFt(3)+'</div>';
+}
+function tblHTML(){
+  const ts=findItem(grp("tableStyle"),state.layout.tableStyle);
+  const P=pal();
+  const fill = (ts.headerFill && ts.headerFill!=="无底纹") ? P.tableFill : "#fff";
+  const border = ts.id==="tb6-no-line" ? "border:none" : "border:1px solid "+(state.dark?"#333":"#cdd4e0");
+  const cap=findItem(grp("captionSystem"),state.layout.captionSystem);
+  const capTxt = cap.id==="c9-dark-appendix" ? "附表一  单位工程一览表（示例）" : "表2-1  单位工程一览表（示例）";
+  return '<table class="p-tbl" style="border-collapse:collapse"><tr style="background:'+fill+';font-weight:700"><th style="'+border+'">序号</th><th style="'+border+'">单位工程</th><th style="'+border+'">规模</th><th style="'+border+'">计划工期</th></tr>'+
+    '<tr><td style="'+border+'">1</td><td style="'+border+'">教学楼（示例）</td><td style="'+border+'">12000㎡</td><td style="'+border+'">420 天</td></tr>'+
+    '<tr><td style="'+border+'">2</td><td style="'+border+'">综合楼（示例）</td><td style="'+border+'">8000㎡</td><td style="'+border+'">360 天</td></tr>'+
+    '</table><div class="fig-cap">'+capTxt+'</div>';
+}
+function bodyPage1HTML(){
+  const fs=findItem(grp("font"),state.layout.font);
+  const P=pal(); const hc=state.dark?"#1f2330":P.heading;
+  const hs=findItem(grp("headingSystem"),state.layout.headingSystem);
+  const num1=hs.numbering.split("/")[0].trim();
+  const ps=findItem(grp("paragraphStyle"),state.layout.paragraphStyle);
+  const lh = ps.lineSpacing.indexOf("倍")>=0 ? "1.5" : "1.32";
+  const pr=findItem(grp("preset"),state.layout.preset);
+  const dc=findItem(grp("decoration"),state.layout.decoration);
+  const cap=findItem(grp("captionSystem"),state.layout.captionSystem);
+  const darkCap=cap.id==="c9-dark-appendix";
+  const title=decoTitle(esc(num1+"  工程概况"),hc,fs,P,dc,"zhang");
+  const p1='<div class="p-text" style="font-family:'+(fs.body||"宋体")+';line-height:'+lh+'">'+esc(SAMPLE.p1a)+'</div>';
+  const p2='<div class="p-text" style="font-family:'+(fs.body||"宋体")+';line-height:'+lh+'">'+esc(SAMPLE.p1b)+'</div>';
+  const tbl=tblHTML();
+  let inner;
+  switch(pr.id){
+    case "tabular":
+      inner=title+'<div class="tbl-para"><div class="tp-row"><b>监理范围</b><span>'+esc(SAMPLE.p1a)+'</span></div><div class="tp-row"><b>工作原则</b><span>'+esc(SAMPLE.p1b)+'</span></div></div>'+tbl; break;
+    case "two-column":
+      inner=title+'<div class="two-cols">'+p1+p2+'</div>'+tbl; break;
+    case "card":
+      inner=title+'<div class="ph-cards" style="margin:10px 0">'+cardBox("监理范围",SAMPLE.p1a)+cardBox("工作原则",SAMPLE.p1b)+'</div>'+tbl; break;
+    case "image-left":
+      inner=title+'<div class="ph-cols"><div class="photo-box">'+phImg(state.photoIdx)+figLabel(darkCap,state.photoIdx,"现场实景（"+esc(pr.name)+"）")+'</div>'+p1+'</div>'+tbl; break;
+    case "image-right":
+      inner=title+'<div class="ph-cols"><div>'+p1+'</div><div class="photo-box">'+phImg(state.photoIdx)+figLabel(darkCap,state.photoIdx,"现场实景（"+esc(pr.name)+"）")+'</div></div>'+tbl; break;
+    case "divider":
+      inner='<div class="divider-page" style="color:'+hc+'"><div class="dv-no">'+esc(num1)+'</div><div class="dv-name">工程概况</div><div style="font-size:11px;color:#9aa3b8;margin-top:16px">'+esc(pr.name)+' · 每章前分页 + 大号章号/章名页，页面不显示章名</div></div>'; break;
+    case "data-row":
+      inner=title+'<div class="kpi-row" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0">'+
+        '<div style="border:1px solid var(--line);border-radius:5px;padding:8px;text-align:center;background:#f7f8fa"><div style="font-size:16px;font-weight:800;color:'+P.primary+'">2</div><div style="font-size:10px;color:#7a8293">单位工程</div></div>'+
+        '<div style="border:1px solid var(--line);border-radius:5px;padding:8px;text-align:center;background:#f7f8fa"><div style="font-size:16px;font-weight:800;color:'+P.primary+'">20000㎡</div><div style="font-size:10px;color:#7a8293">建筑面积</div></div>'+
+        '<div style="border:1px solid var(--line);border-radius:5px;padding:8px;text-align:center;background:#f7f8fa"><div style="font-size:16px;font-weight:800;color:'+P.primary+'">420 天</div><div style="font-size:10px;color:#7a8293">计划工期</div></div>'+
+        '</div>'+p1; break;
+    case "hybrid-flow":
+      inner=title+p1+'<div class="ph-banner" style="margin:6px 0">'+phImg(state.photoIdx)+figLabel(darkCap,state.photoIdx,"现场实景（示例）")+'</div>'+p2+tbl; break;
+    default:
+      inner=title+p1+p2+tbl;
+  }
+  return '<div class="page'+(pr.id==="minimal-clean"?" pg-clean":"")+'">'+tag("正文 · 第 1/3 页")+pageHd()+
+    '<div style="font-size:10px;color:#9aa3b8;margin-bottom:4px">版面范式：'+esc(pr.name)+' · 装饰强度：'+esc(dc.name)+'</div>'+inner+pageFt(4)+'</div>';
+}
+function bodyPage2HTML(){
+  const fs=findItem(grp("font"),state.layout.font);
+  const P=pal(); const hc=state.dark?"#1f2330":P.heading;
+  const hs=findItem(grp("headingSystem"),state.layout.headingSystem);
+  const num2=(hs.numbering.split("/")[1]||"2.1").trim();
+  const ps=findItem(grp("paragraphStyle"),state.layout.paragraphStyle);
+  const lh = ps.lineSpacing.indexOf("倍")>=0 ? "1.5" : "1.32";
+  const cap=findItem(grp("captionSystem"),state.layout.captionSystem);
+  const figCap = cap.id==="c9-dark-appendix" ? "附图一  施工总体流程图（暗标：附图专页）" : "图2-1  施工总体流程图（示例）";
+  return '<div class="page">'+tag("正文 · 第 2/3 页")+pageHd()+
+    decoTitle(esc(num2+"  施工总体流程"),hc,fs,P,findItem(grp("decoration"),state.layout.decoration),"jie")+
+    '<div class="p-text" style="font-family:'+(fs.body||"宋体")+';line-height:'+lh+'">'+esc(SAMPLE.p2)+'</div>'+
+    '<div class="flow-box">'+svgFlow()+'</div>'+
+    '<div class="fig-cap">'+figCap+'（预设流程图素材：'+esc(FLOWS[flowKey].name)+'）</div>'+pageFt(5)+'</div>';
+}
+const CNUM=["一","二","三","四","五","六","七"];
+const PHOTOS=[["photoAsset","塔吊全景"],["photoAsset2","混凝土泵送"],["photoAsset3","土方开挖"],["photoAsset4","钢筋绑扎"]];
+function decoTitle(text,hc,fs,P,dc,cls){
+  const fam=(fs.heading||"黑体"), base='font-family:'+fam+';color:'+hc;
+  const ic='<span class="d-ic" style="background:'+P.accent+'"></span>';
+  switch(dc.id){
+    case "minimal":      return '<div class="'+cls+'" style="'+base+';border-bottom:1px solid '+P.accent+';padding-bottom:4px">'+text+'</div>';
+    case "standard":     return '<div class="'+cls+'" style="'+base+';background:'+P.tableFill+';border-left:4px solid '+P.accent+';padding:6px 10px">'+text+'</div>';
+    case "rich":         return '<div class="'+cls+'" style="'+base+';background:'+P.primary+';color:#fff;padding:6px 10px;border-radius:3px 3px 3px 0">'+ic+text+'</div>';
+    case "heading-rule": return '<div class="'+cls+'" style="'+base+';border-bottom:2px solid '+P.accent+';padding-bottom:4px">'+text+'</div>';
+    case "sidebar-tab":  return '<div class="'+cls+'" style="'+base+';border-left:6px solid '+P.accent+';padding-left:8px;background:#f2f5fb">'+text+'</div>';
+    case "corner-dots":  return '<div class="'+cls+'" style="'+base+'"><span style="color:'+P.accent+'">● </span>'+text+'<span style="color:'+P.accent+'"> ●</span></div>';
+    case "section-band": return '<div class="'+cls+'" style="'+base+';border-top:8px solid '+P.accent+';padding-top:8px">'+text+'</div>';
+    case "icon-accent":  return '<div class="'+cls+'" style="'+base+'">'+ic+text+'</div>';
+    default:             return '<div class="'+cls+'" style="'+base+'">'+text+'</div>';
+  }
+}
+function cardBox(t,c){ return '<div class="ph-card"><div class="ph-card-txt" style="font-weight:700;color:#3a4356">'+t+'</div><div class="ph-card-txt">'+esc(c)+'</div></div>'; }
+function phImg(i){
+  const id=PHOTOS[i][0];
+  return document.getElementById(id).outerHTML.replace(' id="'+id+'"',"").replace(' style="display:none" aria-hidden="true"',"");
+}
+function figLabel(darkCap,i,txt){ return '<div class="fig-cap">'+(darkCap?"附图"+CNUM[i+1]+"  ":"图2-"+(i+2)+"  ")+txt+'</div>'; }
+function renderPhotoBlock(ir,il,cap,darkCap){
+  if(ir.id==="none") return '<div class="photo-box" style="border:1px dashed #c3cbd9;border-radius:4px;padding:16px;text-align:center;font-size:11px;color:#9aa3b8">零图模式（imageRatio=none）：正文不插入图片，图表集中附末</div>';
+  const TEXTS=["施工现场总平面布置（塔吊全景）","混凝土泵送作业","土方开挖作业","钢筋绑扎作业"];
+  const img=i=>phImg(i), capN=i=>figLabel(darkCap,i,TEXTS[i]);
+  const note='<div class="p-text" style="font-size:11px;line-height:1.9;color:#7a8293;margin:0">';
+  switch(il.id){
+    case "split-h":
+      return '<div class="ph-cols"><div>'+img(state.photoIdx)+capN(state.photoIdx)+'</div><div class="p-text" style="font-size:11px;line-height:1.9;color:#3a4356;margin:0">配图排版 · 左右分栏（split-h）：左图 + 右文，两列表格结构，适合图文并重的施工部署章节。</div></div>';
+    case "split-v":
+      return '<div class="ph-col">'+img(state.photoIdx)+capN(state.photoIdx)+'<div class="p-text" style="font-size:11px;line-height:1.9;color:#3a4356;margin-top:8px">配图排版 · 上下分栏（split-v）：图上文下，适合大尺寸现场照片配段落说明。</div></div>';
+    case "inline":
+      return '<div class="p-text" style="font-size:11.5px;line-height:1.9;color:#3a4356;margin:0 0 8px">配图排版 · 图文混排（inline）：文字与图片交错穿插。</div><div class="ph-cols"><div>'+img(0)+capN(0)+'</div><div class="p-text" style="font-size:11px;line-height:1.9;color:#3a4356;margin:0">施工场地功能分区与交通组织说明（inline 内联示意）。</div></div>';
+    case "grid":
+      return '<div class="ph-grid">'+[0,1,2,3].map(i=>'<div>'+img(i)+capN(i)+'</div>').join("")+'</div>';
+    case "appendix":
+      return '<div style="margin:6px 0 8px;font-size:11px;color:#8a93a8">附图专页（appendix）：正文引用，图表集中附末</div>'+
+        '<div class="ph-grid">'+[0,1,2,3].map(i=>'<div>'+img(i)+capN(i)+'</div>').join("")+'</div>';
+    case "banner":
+      return '<div class="ph-banner">'+img(state.photoIdx)+capN(state.photoIdx)+'</div>';
+    case "side-note":
+      return '<div class="ph-cols"><div>'+img(state.photoIdx)+capN(state.photoIdx)+'</div><div class="p-text" style="font-size:11px;line-height:1.9;color:#7a8293;margin:0">侧注式（side-note）：图居左，右栏注记文字，适合对图片内容的解释说明。</div></div>';
+    case "timeline":{
+      let h='<div class="ph-tl">';
+      for(let i=0;i<4;i++){ if(i) h+='<span class="tl-arr">→</span>'; h+=img(i); }
+      h+='</div><div class="fig-cap">'+(darkCap?"附图二":"图2-6")+'  施工进度形象进度时间轴（'+esc(il.name)+'）</div>';
+      return h;
+    }
+    case "card-mix":
+      return '<div class="ph-cards">'+[0,1,2,3].map(i=>'<div class="ph-card">'+img(i)+'<div class="ph-card-txt">'+TEXTS[i]+'</div></div>').join("")+'</div>';
+    default:
+      return '<div class="photo-box">'+img(state.photoIdx)+capN(state.photoIdx)+'</div>';
+  }
+}
+function bodyPage3HTML(){
+  const fs=findItem(grp("font"),state.layout.font);
+  const P=pal(); const hc=state.dark?"#1f2330":P.heading;
+  const hs=findItem(grp("headingSystem"),state.layout.headingSystem);
+  const num2=(hs.numbering.split("/")[1]||"3.2").trim();
+  const ps=findItem(grp("paragraphStyle"),state.layout.paragraphStyle);
+  const lh = ps.lineSpacing.indexOf("倍")>=0 ? "1.5" : "1.32";
+  const ir=findItem(grp("imageRatio"),state.layout.imageRatio);
+  const il=findItem(grp("imageLayout"),state.layout.imageLayout);
+  const cap=findItem(grp("captionSystem"),state.layout.captionSystem);
+  const darkCap = cap.id==="c9-dark-appendix";
+  return '<div class="page">'+tag("正文 · 第 3/3 页")+pageHd()+
+    decoTitle(esc(num2+"  施工现场平面布置"),hc,fs,P,findItem(grp("decoration"),state.layout.decoration),"jie")+
+    '<div class="p-text" style="font-family:'+(fs.body||"宋体")+';line-height:'+lh+'">'+esc(SAMPLE.p3)+'</div>'+
+    renderPhotoBlock(ir,il,cap,darkCap)+pageFt(6)+'</div>';
+}
+function closingPageHTML(){
+  return '<div class="page">'+tag("结尾（可选页）",true)+pageHd()+
+    '<div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:14px;text-align:center">'+
+    '<div style="font-size:16px;font-weight:700">本技术标文件编制完毕</div>'+
+    '<div style="width:160px;border-top:1px solid #c3cbd9"></div>'+
+    '<div style="font-size:12px;line-height:2.2;color:#3a4356">编制单位：'+esc(SAMPLE.unit)+'<br>编制日期：'+esc(SAMPLE.date)+'</div>'+
+    '</div>'+
+    '<div style="font-size:10px;color:#9aa3b8;text-align:center">结尾：预览恒显示 · 真实文档由「结尾」开关控制（当前：'+(state.structure.closing?"开":"关")+'）</div>'+pageFt(7)+'</div>';
+}
+function renderDoc(){
+  const pages=[coverPageHTML(), titlePageHTML(), tocPageHTML(), bodyPage1HTML(), bodyPage2HTML(), bodyPage3HTML(), closingPageHTML()];
+  document.getElementById("docFlow").innerHTML = pages.join("");
+  document.title="版面设计器 · "+nameOf("preset")+" · "+(state.dark?"暗标":"明标")+" · 全文档预览";
+  if(sampleOpen) renderSample();
+}
+function renderAsset(){
+  const box=document.getElementById("assetLib");
+  const icF='<svg width="20" height="14" viewBox="0 0 20 14"><rect x="1" y="1" width="18" height="12" rx="2" fill="none" stroke="#9aa3b8" stroke-width="1.2"/><circle cx="4" cy="8" r="1.4" fill="#9aa3b8"/><path d="M6 9h8M6 6h5" stroke="#9aa3b8" stroke-width="1.2"/></svg>';
+  const icP='<svg width="20" height="14" viewBox="0 0 20 14"><rect x="1" y="1" width="18" height="12" rx="2" fill="none" stroke="#9aa3b8" stroke-width="1.2"/><path d="M3 11l4-4 3 3 2-2 3 3" stroke="#9aa3b8" stroke-width="1.2" fill="none"/></svg>';
+  box.innerHTML='<div class="asset-h">预设素材库<span>所见即所得</span></div>'+
+  '<button class="asset-item'+(flowKey==="A"?" on":"")+'" data-f="A"><span class="a-ic">'+icF+'</span>施工总流程<span class="a-tag">SVG 流程图</span></button>'+
+  '<button class="asset-item'+(flowKey==="B"?" on":"")+'" data-f="B"><span class="a-ic">'+icF+'</span>质量控制流程<span class="a-tag">SVG 流程图</span></button>'+
+  '<button class="asset-item'+(flowKey==="C"?" on":"")+'" data-f="C"><span class="a-ic">'+icF+'</span>进度管理流程<span class="a-tag">SVG 流程图</span></button>'+
+  '<div class="asset-h" style="margin-top:10px">施工图库 · 4 张</div>'+
+  PHOTOS.map((p,i)=>'<button class="asset-item'+(state.photoIdx===i?" on":"")+'" data-p="'+i+'"><span class="a-ic">'+icP+'</span>'+p[1]+'<span class="a-tag">'+(i===0?"主图":"备用")+'</span></button>').join("")+
+  '<div class="asset-item"><span class="a-ic">'+icP+'</span>封面纹理<span class="a-tag">随版式</span></div>';
+  box.querySelectorAll("[data-f]").forEach(b=>b.addEventListener("click",()=>{ flowKey=b.dataset.f; renderAsset(); renderDoc(); }));
+  box.querySelectorAll("[data-p]").forEach(b=>b.addEventListener("click",()=>{ state.photoIdx=Number(b.dataset.p); renderAsset(); renderDoc(); }));
+}
+function syncStruct(){
+  const t=document.getElementById("tgTitle"), c=document.getElementById("tgClosing");
+  t.textContent="扉页 "+(state.structure.titlePage?"开":"关"); t.classList.toggle("on",state.structure.titlePage);
+  c.textContent="结尾 "+(state.structure.closing?"开":"关"); c.classList.toggle("on",state.structure.closing);
+}
+function renderChecks(){
+  const box=document.getElementById("checks");
+  box.innerHTML = runChecks().map(c=>'<span class="ck '+c[0]+'">'+(c[0]==="err"?"错误":c[0]==="warn"?"提示":c[0]==="ok"?"通过":"信息")+' · '+esc(c[1])+'</span>').join("");
+}
+function renderAll(){ renderNav(); renderAsset(); renderPanel(); renderDoc(); renderChecks(); syncStruct(); }
+/* ================= 导出 ================= */
+function buildExport(){
+  const L={}; GROUPS.forEach(g=>L[g.key]=state.layout[g.key]);
+  const ov={}; Object.keys(state.overrides).forEach(k=>{ if(Object.keys(state.overrides[k]).length) ov[k]=state.overrides[k]; });
+  return { schema:"m6.layout-designer/v1", version:"1.1", bidMode:state.dark?"暗标":"明标",
+    layout:L, structure:{titlePage:state.structure.titlePage, closing:state.structure.closing, toc:true, bodyPages:3},
+    overrides:ov, checks:runChecks().map(c=>c[1]) };
+}
+function downloadJSON(){
+  const data=JSON.stringify(buildExport(),null,2);
+  const blob=new Blob([data],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download="版面设计组合_"+(state.dark?"暗标":"明标")+".json"; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),3000);
+}
+function copyJSON(){
+  const data=JSON.stringify(buildExport(),null,2);
+  const done=()=>showModal("复制 JSON","已复制到剪贴板。请人工确认后替换 <code>共享资源/技术标风格/layout-presets.json</code>（overrides 如需落库，由脚本合并）。");
+  if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(data).then(done,()=>fallbackCopy(data,done)); }
+  else fallbackCopy(data,done);
+}
+function fallbackCopy(text,done){
+  const ta=document.createElement("textarea"); ta.value=text; document.body.appendChild(ta); ta.select();
+  try{ document.execCommand("copy"); done(); }catch(e){ showModal("复制 JSON","<pre class=\"export-pre\">"+esc(text)+"</pre>"); }
+  ta.remove();
+}
+/* ================= 存组合（→ 预设库闭环：tech-layout --apply-combo 生成专家包） ================= */
+function buildComboPatch(){
+  const L={}; GROUPS.forEach(g=>L[g.key]=state.layout[g.key]);
+  const d=new Date(), ts=d.getFullYear()+("0"+(d.getMonth()+1)).slice(-2)+("0"+d.getDate()).slice(-2)+"-"+("0"+d.getHours()).slice(-2)+("0"+d.getMinutes()).slice(-2);
+  return { schema:"m6.layout-designer/v1", version:"1.2", kind:"combo-patch", name:"自定义组合-"+ts,
+    bidMode:state.dark?"暗标":"明标", layout:L,
+    structure:{titlePage:state.structure.titlePage, closing:state.structure.closing, toc:true, bodyPages:3},
+    checks:runChecks().map(c=>c[1]) };
+}
+function saveCombo(){
+  const bad=[];
+  GROUPS.forEach(g=>{ if(!grp(g.key).items.some(x=>x.id===state.layout[g.key])) bad.push(g.label+"="+state.layout[g.key]); });
+  if(bad.length){ showModal("存组合失败","以下组不在预设清单内（请先切换为合法选项再存）：<br>"+esc(bad.join("、"))); return; }
+  const p=buildComboPatch();
+  const rows=GROUPS.map(g=>"<tr><td>"+g.label+"</td><td>"+esc(nameOf(g.key))+"</td></tr>").join("");
+  showModal("保存组合到预设库",
+    "将下载组合补丁 <code>组合补丁_"+esc(p.name)+".json</code>（"+esc(p.bidMode)+"，15 组 id 已校验）。<br>"+
+    "补丁经人工确认后运行：<code>python scripts/bidcraft.py tech-layout --apply-combo 组合补丁_"+esc(p.name)+".json --confirm</code>"+
+    "，即校验并生成专家包 <code>"+esc("custom-"+p.layout.preset+"-"+p.layout.palette)+"</code>，进入生成链路（tech-init --expert-pack 使用）。<br>"+
+    "<table class=\"combo-tbl\"><tr><th>组</th><th>当前值</th></tr>"+rows+"</table>",
+    ()=>{ hideModal();
+      const blob=new Blob([JSON.stringify(p,null,2)],{type:"application/json"});
+      const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+      a.download="组合补丁_"+p.name+".json"; a.click();
+      setTimeout(()=>URL.revokeObjectURL(a.href),3000);
+    });
+}
+/* ================= 弹层 ================= */
+function showModal(title,body,act){
+  document.getElementById("modalTitle").textContent=title;
+  document.getElementById("modalBody").innerHTML=body;
+  document.getElementById("modalAct").textContent = act ? "确认并下载" : "下载 JSON";
+  document.getElementById("modalAct").style.display=act?"inline-flex":"none";
+  document.getElementById("modalAct").onclick=act||null;
+  document.getElementById("modalMask").classList.add("show");
+}
+function hideModal(){ document.getElementById("modalMask").classList.remove("show"); }
+/* ================= 样张浏览器（右侧抽屉 · 实时联动工作台） ================= */
+let sampleOpen=false, sampleKey="live";
+function sampleChips(){ return [["live","当前编辑组合"]].concat(COMBOS.map(c=>[c.id,c.name])); }
+function openSample(){
+  sampleOpen=true; sampleKey="live";
+  document.getElementById("sampleView").classList.add("show");
+  renderSampleChips(); renderSample();
+}
+function closeSample(){
+  sampleOpen=false;
+  document.getElementById("sampleView").classList.remove("show");
+}
+function renderSampleChips(){
+  const box=document.getElementById("sampleChips");
+  box.innerHTML=sampleChips().map(k=>'<button class="s-chip'+(sampleKey===k[0]?" on":"")+'" data-s="'+k[0]+'">'+k[1]+'</button>').join("");
+  box.querySelectorAll("[data-s]").forEach(b=>b.addEventListener("click",()=>{
+    const id=b.dataset.s;
+    if(id!=="live"){ sampleKey=id; const cb=COMBOS.find(c=>c.id===id); if(cb) applyCombo(id); }
+    else sampleKey="live";
+    renderSampleChips();
+  }));
+}
+function renderSample(){
+  document.getElementById("sampleFlow").innerHTML=
+    [coverPageHTML(),titlePageHTML(),tocPageHTML(),bodyPage1HTML(),bodyPage2HTML(),bodyPage3HTML(),closingPageHTML()].join("");
+}
+/* ================= 事件 ================= */
+document.getElementById("darkToggle").addEventListener("click",()=>{ setDark(!state.dark); document.body.classList.toggle("dark",state.dark); document.getElementById("darkLabel").textContent=state.dark?"暗标":"明标"; });
+document.getElementById("tgTitle").addEventListener("click",()=>{ state.structure.titlePage=!state.structure.titlePage; syncStruct(); renderDoc(); });
+document.getElementById("tgClosing").addEventListener("click",()=>{ state.structure.closing=!state.structure.closing; syncStruct(); renderDoc(); });
+document.getElementById("btnDefault").addEventListener("click",()=>{ state.dark?setDark(true):Object.keys(DEFAULT_ID).forEach(k=>state.layout[k]=DEFAULT_ID[k]); state.overrides={}; renderAll(); });
+document.getElementById("btnExport").addEventListener("click",downloadJSON);
+document.getElementById("btnCopy").addEventListener("click",copyJSON);
+document.getElementById("btnSaveCombo").addEventListener("click",saveCombo);
+document.getElementById("btnSample").addEventListener("click",openSample);
+document.getElementById("sampleClose").addEventListener("click",closeSample);
+document.getElementById("modalClose").addEventListener("click",hideModal);
+document.getElementById("modalCancel").addEventListener("click",hideModal);
+document.getElementById("modalMask").addEventListener("click",e=>{ if(e.target.id==="modalMask") hideModal(); });
+document.getElementById("modalAct").addEventListener("click",()=>{ hideModal(); if(!document.getElementById("modalAct").onclick) downloadJSON(); });
+/* ================= 实时化（bidcraft-server 只读桥：数据/能力实时刷新；失败回退内联快照） ================= */
+const API_BASE = (function(){ const m=location.search.match(/[?&]api=([^&]+)/); return m?decodeURIComponent(m[1]):"http://127.0.0.1:8765"; })();
+const CAPS_SNAPSHOT = {
+  server:"offline", presetsVersion:RAW.version||"",
+  modules:[["M1 素材库","asset"],["M2 模板库","tpl"],["M4 招标解析","tender"],["M5 商务标","fill/proj"],["M6 技术标","tech"],["M7 标书检查","check"],["M8 模拟评标","eval"],["M10 失分补救","remedy"]],
+  commands:[
+    ["tech-layout","版面预设查看/组合/专家包"],["tech-outline","章节树落盘"],["tech-export","docx 导出"],
+    ["tender-parse","招标解析"],["fill-tpl","商务标填充"],["check-report","标书检查报告"],["eval-run","模拟评标"],
+    ["remedy-gen","失分补救"],["docx-read","docx 深读"],
+  ],
+  endpoints:["/api/health","/api/layout/presets","/api/layout/validate","/api/layout/packs","/api/capabilities"]
+};
+let LIVE = null;
+function toast(msg){
+  let t=document.getElementById("miniToast");
+  if(!t){ t=document.createElement("div"); t.id="miniToast"; t.className="mini-toast"; document.body.appendChild(t); }
+  t.textContent=msg; t.classList.add("show");
+  clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),1800);
+}
+function copyText(t){
+  try{ if(navigator.clipboard && window.isSecureContext){ navigator.clipboard.writeText(t); return; } }catch(e){}
+  const ta=document.createElement("textarea"); ta.value=t; ta.style.position="fixed"; ta.style.opacity="0";
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand("copy"); }catch(e){}
+  document.body.removeChild(ta);
+}
+function fetchJson(url, ms){
+  return new Promise((res,rej)=>{
+    const c=new AbortController(); const t=setTimeout(()=>c.abort(), ms||4000);
+    fetch(url,{signal:c.signal}).then(r=>r.json().then(res)).catch(rej).finally(()=>clearTimeout(t));
+  });
+}
+function setSrcBadge(text, cls){ const b=document.getElementById("srcBadge"); b.textContent=text; b.className="st-badge"+(cls?" "+cls:""); }
+function buildGroups(pg, groupsMeta){
+  const meta={}; (groupsMeta||[]).forEach(g=>meta[g.key]=g.label);
+  return Object.keys(pg).map(k=>({key:k, arr:k+"s", label:meta[k]||k, items:pg[k]||[]}));
+}
+function applyLiveData(presets, caps, packs){
+  const prev=Object.assign({}, state.layout), darkWas=state.dark;
+  GROUPS=buildGroups(presets.groups||{}, caps&&caps.layoutGroups);
+  COMBOS=(presets.recommendedCombos||[]).slice();
+  DEFAULT=presets.default||DEFAULT;
+  if(presets.darkInject && typeof presets.darkInject==="object") DARK_INJECT=presets.darkInject;
+  buildDefaultId();
+  GROUPS.forEach(g=>{ const cur=prev[g.key]; if(g.items.some(x=>x.id===cur)) state.layout[g.key]=cur; });
+  Object.keys(DEFAULT_ID).forEach(k=>{ if(!state.layout[k]) state.layout[k]=DEFAULT_ID[k]; });
+  state.sel=GROUPS.some(g=>g.key===state.sel)?state.sel:GROUPS[0].key;
+  if(darkWas){ setDark(true); } else { renderAll(); }
+}
+function renderCapability(caps, packs){
+  const box=document.getElementById("capBox"); if(!box) return;
+  const mods=caps?caps.moduleEntries:CAPS_SNAPSHOT.modules.map(m=>({name:m[0],commands:[m[1]]}));
+  const cmds=caps?caps.commands:CAPS_SNAPSHOT.commands.map(c=>({name:c[0],help:c[1]}));
+  const eps=caps?caps.endpoints:CAPS_SNAPSHOT.endpoints;
+  const pks=(packs&&packs.ok)?(packs.packs||[]):[];
+  let h='<div class="cap-h">项目能力 <span class="cap-badge '+(caps?"live":"off")+'">'
+    +(caps?("实时 · "+caps.server+" v"+caps.serverVersion):"离线快照 · 未连接 bidcraft-server")+'</span></div>';
+  h+='<div class="cap-sec">模块</div><div class="cap-chips">'+(mods||[]).map(m=>'<span class="cap-chip" title="'+esc(m.name)+'">'+esc(m.name)+'</span>').join("")+'</div>';
+  h+='<div class="cap-sec">命令速查 <span class="cap-hint">点击复制</span></div><div class="cap-chips">'
+    +(cmds||[]).map(c=>'<button class="cap-cmd" data-cmd="'+esc(c.name)+'" title="'+esc(c.help||"")+'">'+esc(c.name)+'</button>').join("")+'</div>';
+  if(pks.length) h+='<div class="cap-sec">专家包（'+pks.length+'）</div><div class="cap-chips">'
+    +pks.map(p=>'<span class="cap-chip pk" title="'+esc(p.description||"")+'">'+esc(p.id)+'</span>').join("")+'</div>';
+  h+='<div class="cap-sec">桥接口</div><div class="cap-chips">'+(eps||[]).map(e=>'<code class="cap-ep">'+e+'</code>').join("")+'</div>';
+  box.innerHTML=h;
+  box.querySelectorAll(".cap-cmd").forEach(b=>b.addEventListener("click",()=>{ copyText(b.dataset.cmd); toast("已复制命令："+b.dataset.cmd); }));
+}
+function boot(){
+  setSrcBadge("连接 bidcraft-server …","");
+  fetchJson(API_BASE+"/api/health").then(h=>{
+    if(!h || h.ok!==true) throw new Error("health 不可用");
+    return Promise.all([
+      fetchJson(API_BASE+"/api/layout/presets").catch(()=>null),
+      fetchJson(API_BASE+"/api/capabilities").catch(()=>null),
+      fetchJson(API_BASE+"/api/layout/packs").catch(()=>null),
+    ]);
+  }).then(([p,c,k])=>{
+    if(!p || p.ok===false) throw new Error("presets 不可用");
+    applyLiveData(p,c,k);
+    LIVE={presets:p,caps:c,packs:k};
+    setSrcBadge((c?("bidcraft-server v"+c.serverVersion+" · "):"")+"预设 v"+(p.version||RAW.version)+" · 专家包 "+((k&&k.packs)?k.packs.length:0)+" · 实时","");
+    renderCapability(c,k);
+  }).catch(()=>{
+    setSrcBadge("离线快照 · 预设 v"+RAW.version+" · 未连接 bidcraft-server","dark-b");
+    renderCapability(null,null);
+  });
+}
+/* ================= 启动 ================= */
+const hm=location.hash.match(/il=([a-z-]+)/);
+if(hm && grp("imageLayout").items.some(x=>x.id===hm[1])) state.layout.imageLayout=hm[1];
+const hp=location.hash.match(/pr=([a-z-]+)/);
+if(hp && grp("preset").items.some(x=>x.id===hp[1])) state.layout.preset=hp[1];
+const hd=location.hash.match(/dc=([a-z-]+)/);
+if(hd && grp("decoration").items.some(x=>x.id===hd[1])) state.layout.decoration=hd[1];
+if(location.hash.indexOf("dark")>=0){ setDark(true); document.body.classList.add("dark"); document.getElementById("darkLabel").textContent="暗标"; }
+renderAll();
+if(location.hash.indexOf("sample")>=0){ openSample(); }
+boot();
+</script>
+</body>
+</html>

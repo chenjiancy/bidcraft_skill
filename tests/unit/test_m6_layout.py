@@ -240,5 +240,135 @@ class CommandTest(unittest.TestCase):
         self.assertTrue((tech / "产出" / "技术标_演示项目.docx").is_file())
 
 
+class ApplyComboTest(unittest.TestCase):
+    """版面设计器「存组合」闭环：组合补丁 → 专家包（dry-run / confirm / 非法回绝）。"""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self.tmp.name) / "素材库"
+        self.root.mkdir()
+        self.shared = self.root / "共享资源" / "技术标风格"
+        self.shared.mkdir(parents=True)
+        (self.shared / layout.PRESETS_FILE).write_text(
+            json.dumps(_doc(), ensure_ascii=False), encoding="utf-8")
+        # 模板 taxonomy：复制官方包（apply-combo 以此为模板生成新包）
+        tax = REPO / "共享资源" / "技术标风格" / "专家包" / "official-tech" / "taxonomy.json"
+        if tax.is_file():
+            (self.shared / "专家包" / "official-tech").mkdir(parents=True, exist_ok=True)
+            (self.shared / "专家包" / "official-tech" / "taxonomy.json").write_text(
+                tax.read_text(encoding="utf-8"), encoding="utf-8")
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _patch(self, layout_override=None, name="测试组合"):
+        combo = dict(_doc()["default"])
+        if layout_override:
+            combo.update(layout_override)
+        p = self.root / "组合补丁_测试.json"
+        p.write_text(json.dumps({
+            "schema": "m6.layout-designer/v1", "version": "1.2", "kind": "combo-patch",
+            "name": name, "bidMode": "明标", "layout": combo,
+        }, ensure_ascii=False), encoding="utf-8")
+        return p
+
+    def _run(self, *argv):
+        out, err, code = io.StringIO(), io.StringIO(), 0
+        with redirect_stdout(out), redirect_stderr(err):
+            try:
+                bidcraft.main(["--root", str(self.root)] + list(argv))
+            except SystemExit as e:
+                code = e.code or 0
+        return code, out.getvalue(), err.getvalue()
+
+    def test_dry_run_does_not_write(self):
+        p = self._patch()
+        code, out, _ = self._run("tech-layout", "--apply-combo", str(p))
+        self.assertEqual(code, 0)
+        self.assertIn("[DRY-RUN]", out)
+        self.assertFalse((self.shared / "专家包" / "custom-single-column-deep-indigo").exists())
+
+    def test_confirm_generates_pack_and_reads_back(self):
+        p = self._patch({"palette": "steel-cyan", "decoration": "rich"})
+        code, out, _ = self._run("tech-layout", "--apply-combo", str(p), "--confirm")
+        self.assertEqual(code, 0, out)
+        self.assertIn("已生成专家包", out)
+        pdir = self.shared / "专家包" / "custom-single-column-steel-cyan"
+        self.assertTrue((pdir / "包.json").is_file())
+        self.assertTrue((pdir / "taxonomy.json").is_file())
+        m = json.loads((pdir / "包.json").read_text(encoding="utf-8"))
+        self.assertEqual(m["schema"], "m6.expert-pack/v1")
+        self.assertEqual(m["id"], "custom-single-column-steel-cyan")
+        self.assertEqual(m["layoutCombo"]["palette"], "steel-cyan")
+        self.assertEqual(m["layoutCombo"]["decoration"], "rich")
+        self.assertEqual(len(m["layoutCombo"]), 15)
+        t = json.loads((pdir / "taxonomy.json").read_text(encoding="utf-8"))
+        self.assertEqual(t["pack"], "custom-single-column-steel-cyan")
+
+    def test_explicit_pack_id(self):
+        p = self._patch(name="我的组合")
+        code, out, _ = self._run("tech-layout", "--apply-combo", str(p),
+                                 "--pack-id", "custom-mine", "--confirm")
+        self.assertEqual(code, 0, out)
+        self.assertTrue((self.shared / "专家包" / "custom-mine" / "包.json").is_file())
+        m = json.loads((self.shared / "专家包" / "custom-mine" / "包.json").read_text(encoding="utf-8"))
+        self.assertEqual(m["name"], "我的组合")
+
+    def test_unknown_id_rejected(self):
+        p = self._patch({"palette": "no-such"})
+        code, _, err = self._run("tech-layout", "--apply-combo", str(p))
+        self.assertEqual(code, 1)
+        self.assertIn("组合校验未通过", err)
+
+    def test_missing_layout_rejected(self):
+        p = self.root / "组合补丁_bad.json"
+        p.write_text(json.dumps({"schema": "m6.layout-designer/v1", "name": "x"},
+                                ensure_ascii=False), encoding="utf-8")
+        code, _, err = self._run("tech-layout", "--apply-combo", str(p))
+        self.assertEqual(code, 1)
+        self.assertIn("缺少 layout", err)
+
+    def test_outline_applies_pack_combo(self):
+        """设计器闭环端到端：专家包 layoutCombo 经 tech-outline 落盘章节树。"""
+        p = self._patch({"palette": "steel-cyan", "decoration": "rich"})
+        code, _, err = self._run("tech-layout", "--apply-combo", str(p), "--confirm")
+        self.assertEqual(code, 0, err)
+        code, _, err = self._run("init-enterprise", "--name", "企业A")
+        self.assertEqual(code, 0, err)
+        proj = self.root / "企业A" / "项目级" / "演示项目"
+        (proj / "技术标" / "章节").mkdir(parents=True)
+        (proj / "招标解析").mkdir(parents=True)
+        (proj / "招标解析" / "投标要点_演示项目.json").write_text(json.dumps({
+            "project": "演示项目",
+            "modules": [
+                {"id": "basic", "title": "项目基本信息", "type": "fields",
+                 "fields": {"项目名称": {"value": "演示项目", "evidence": "e"}}},
+                {"id": "project_overview", "title": "项目概况", "type": "fields",
+                 "fields": {"项目概况": {"value": "演示项目为公共建筑", "evidence": "e"}}},
+                {"id": "scoring", "title": "评分办法", "type": "score_items",
+                 "score_items": [{"item": "监理大纲", "weight": 50, "unit": "分", "evidence": "e"}]},
+                {"id": "reject", "title": "废标红线", "type": "items",
+                 "items": [{"type": "格式", "rule": "技术标总页数不超过 60 页；按明标编制",
+                            "evidence": "e"}]},
+            ]}, ensure_ascii=False), encoding="utf-8")
+        code, _, err = self._run("tech-init", "--project", "演示项目")
+        self.assertEqual(code, 0, err)
+        draft = proj / "技术标" / "章节树草案.json"
+        draft.write_text(json.dumps({
+            "schema": "m6.tree/v1", "project": "演示项目",
+            "chapters": [{"id": "ch-01", "no": "1", "title": "工程概况与监理范围", "level": 1,
+                          "scoreRefs": [{"idx": 0, "item": "监理大纲", "weight": 50}],
+                          "keyPoints": ["监理大纲"], "wordCnt": 3000,
+                          "dependsOnMaterials": ["project_overview"]}],
+        }, ensure_ascii=False), encoding="utf-8")
+        code, _, err = self._run("tech-outline", "--project", "演示项目", "--file", str(draft),
+                                 "--expert-pack", "custom-single-column-steel-cyan", "--confirm")
+        self.assertEqual(code, 0, err)
+        tree = json.loads((proj / "技术标" / "章节树.json").read_text(encoding="utf-8"))
+        self.assertEqual(tree["layout"]["palette"], "steel-cyan")
+        self.assertEqual(tree["layout"]["decoration"], "rich")
+        self.assertEqual(tree["expertPack"]["id"], "custom-single-column-steel-cyan")
+
+
 if __name__ == "__main__":
     unittest.main()

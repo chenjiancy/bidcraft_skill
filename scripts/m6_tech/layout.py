@@ -8,6 +8,7 @@ bidcraft · M6 技术标制作 —— 排版预设读取与 tech-layout 命令�
 `--preview`：调用 T10 导出引擎（tech-export）直接渲染样张 docx —— 指定 --project/--enterprise 时走真实项目；否则用内置样例 fixture 渲染并复制到 `./技术标样张_<preset>.docx`
 """
 import json
+import re
 
 from _shared import core
 
@@ -340,6 +341,8 @@ def _render_preview(args, preset_id):
 
 
 def cmd_tech_layout(args):
+    if getattr(args, "apply_combo", ""):
+        return apply_combo(args)
     if getattr(args, "preview", ""):
         print(_render_preview(args, args.preview))
         return 0
@@ -381,4 +384,108 @@ def cmd_tech_layout(args):
         _print_group(doc, group, label, default)
     print("\n提示：暗标禁用 cover=image-underlay；渐变蓝青在 docx 中以两段色块近似。")
     print("      章节树 layout 十五组 id 须在上表内（tech-outline 落盘前校验；暗标强制 font=dark-safe、图片二选一：none 或 dark-safe-img+appendix、页眉页脚二选一：hf9/hf10；微观六组按招标条款自动注入、不开放选择）。")
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# tech-layout --apply-combo：组合补丁 → 专家包（版面设计器「存组合」闭环）
+# ---------------------------------------------------------------------------
+def apply_combo(args):
+    """组合补丁 json → 十五组 id 校验 → 生成专家包。
+
+    补丁来源：`dev/prototypes/版面设计器-工作台V1.html` 「存组合」导出
+    （m6.layout-designer/v1.x，含 layout 十五组 id；导出 JSON v1.1 同样兼容）。
+    校验：每组 id 须在排版预设清单内（缺失键回退 preset `default`）；非法即报错。
+    落盘：默认 **dry-run 不写**；`--confirm` 才在
+    `<素材库根>/共享资源/技术标风格/专家包/<pack-id>/` 生成
+    `包.json`（layoutCombo=组合）+ `taxonomy.json`（复制 official-tech 并改写 pack 字段）；
+    写后经 `packs.load_pack` 全量回读（id/schema/taxonomy/layoutCombo/F11）——失败即报错。
+    """
+    import datetime
+    from pathlib import Path
+
+    from . import packs  # 函数内导入，避免模块加载期循环依赖（packs 依赖 layout）
+
+    patch_path = Path(str(getattr(args, "apply_combo", "") or "").strip())
+    if not patch_path.is_file():
+        raise core.LibraryError("组合补丁不存在：%s" % patch_path)
+    doc = load_presets(args)
+    if doc is None:
+        raise core.LibraryError("排版预设文件缺失，无法校验组合：共享资源/技术标风格/layout-presets.json 须就位")
+    patch = core.read_json(str(patch_path), None)
+    if not isinstance(patch, dict) or not isinstance(patch.get("layout"), dict):
+        raise core.LibraryError("组合补丁缺少 layout（十五组 id）：%s（请由版面设计器「存组合」导出）" % patch_path)
+
+    defaults = default_entry(doc)
+    combo, bad = {}, []
+    for g, label in GROUPS:
+        vid = patch["layout"].get(g)
+        if not (isinstance(vid, str) and vid.strip()):
+            vid = defaults.get(g, "")
+        vid = str(vid).strip()
+        if not any(str(r.get("id")) == vid for r in entries(doc, g)):
+            bad.append("%s=%s（不在预设清单）" % (label, vid))
+        combo[g] = vid
+    if bad:
+        raise core.LibraryError("组合校验未通过：" + "；".join(bad))
+
+    bid_mode = str(patch.get("bidMode") or "").strip() or \
+        ("暗标" if (patch.get("dark") or combo.get("font") == "dark-safe") else "明标")
+    name = str(patch.get("name") or "").strip() or "自定义组合"
+    pack_id = str(getattr(args, "pack_id", "") or "").strip()
+    if not pack_id:
+        pack_id = "custom-%s-%s" % (combo["preset"], combo["palette"])
+    if not re.match(r"^[A-Za-z0-9][A-Za-z0-9_-]*$", pack_id):
+        raise core.LibraryError("专家包 id 非法（须为字母数字开头，含 -/_）：%r" % pack_id)
+
+    root = sources.lib_root(args)
+    pack_base = root / "共享资源" / "技术标风格" / "专家包"
+    pdir = pack_base / pack_id
+    if pdir.is_dir():
+        raise core.LibraryError("专家包已存在：%s（换 --pack-id，或人工确认后处理既有包）" % pdir)
+
+    print("组合补丁：%s（%s）" % (patch_path, bid_mode))
+    print("组合名称：%s → 专家包 id：%s" % (name, pack_id))
+    for g, label in GROUPS:
+        print("  %-10s %s" % (label, combo[g]))
+    if not getattr(args, "confirm", False):
+        print("\n[DRY-RUN] 未写盘。确认后执行：tech-layout --apply-combo <json> --pack-id %s --confirm" % pack_id)
+        return 0
+
+    tax_src = pack_base / "official-tech" / packs.TAXONOMY_FILE
+    if not tax_src.is_file():
+        raise core.LibraryError("模板 taxonomy 缺失（无法生成专家包）：%s" % tax_src)
+    try:
+        tax = json.loads(tax_src.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as e:
+        raise core.LibraryError("模板 taxonomy 无法解析：%s（%s）" % (tax_src, e))
+
+    manifest = {
+        "schema": packs.PACK_SCHEMA,
+        "id": pack_id,
+        "name": name,
+        "description": "由版面设计器「存组合」导出（%s）；layoutCombo 十五组 id 已校验（F11）。" % bid_mode,
+        "tags": ["custom"],
+        "bidType": [],
+        "docType": "ENGINEERING",
+        "taxonomy": packs.TAXONOMY_FILE,
+        "layoutCombo": combo,
+        "source": {"kind": "layout-designer", "patch": str(patch_path),
+                   "capturedAt": datetime.date.today().isoformat()},
+    }
+    pdir.mkdir(parents=True, exist_ok=True)
+    try:
+        (pdir / packs.MANIFEST_FILE).write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+        tax["pack"] = pack_id
+        (pdir / packs.TAXONOMY_FILE).write_text(json.dumps(tax, ensure_ascii=False, indent=2), encoding="utf-8")
+        packs.load_pack(args, pack_id)   # 写后回读：缺/非法即报错（fail fast）
+    except BaseException:
+        # 写失败不留下半成品：删除刚创建的包目录
+        import shutil
+        if pdir.is_dir():
+            shutil.rmtree(str(pdir))
+        raise
+    print("\n已生成专家包：%s（写后回读通过）" % pdir)
+    print("使用：tech-init ... --expert-pack %s（tech-outline 落盘 layout 十五组即套用）" % pack_id)
+    print("预览：tech-layout --preview <preset> 可对照正文版式；色值见 色卡预览.html")
     return 0

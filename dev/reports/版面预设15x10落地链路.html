@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%232B5CD9'/%3E%3Cpath d='M9 21V11h14' fill='none' stroke='%23fff' stroke-width='2.4'/%3E%3Ccircle cx='9' cy='11' r='2.6' fill='%23B08A4B'/%3E%3C/svg%3E">
+<title>版面预设 15×10 落地链路</title>
+<style>
+  :root{--ink:#1f2330;--dim:#7a8293;--line:#dde3ec;--bg:#f4f6fa;--blue:#2B5CD9;--deep:#1B2C52;--gold:#B08A4B;--green:#2e8b57;--card:#fff}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Microsoft YaHei","PingFang SC",sans-serif;color:var(--ink);background:var(--bg)}
+  .wrap{max-width:1040px;margin:0 auto;padding:24px 18px 48px}
+  h1{font-size:21px;margin:0 0 4px}
+  .sub{font-size:12px;color:var(--dim);margin-bottom:16px}
+  .hero{background:var(--deep);color:#fff;border-radius:10px;padding:18px 20px;display:flex;flex-wrap:wrap;gap:18px;align-items:center;margin-bottom:20px}
+  .hero .big{font-size:34px;font-weight:800;line-height:1}
+  .hero .big small{font-size:13px;font-weight:400;display:block;color:#c9d4ea;margin-top:6px}
+  .hero .kv{font-size:12px;line-height:1.9;color:#dbe4f5}
+  .hero .kv b{color:#fff}
+  .stage{margin:14px 0 6px;font-size:12px;font-weight:700;color:var(--gold);letter-spacing:2px}
+  .node{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--blue);border-radius:8px;padding:14px 16px;margin-bottom:8px;box-shadow:0 1px 2px rgba(20,28,45,.05)}
+  .node h3{font-size:14px;margin:0 0 2px}
+  .node .path{font-size:11px;color:var(--blue);font-family:Consolas,monospace;word-break:break-all;margin-bottom:6px}
+  .node .p{font-size:12px;line-height:1.85;color:#3a4356}
+  .node .p b{color:var(--ink)}
+  .node .tag{display:inline-block;font-size:10px;color:#fff;background:var(--blue);border-radius:3px;padding:1px 6px;margin-left:6px;vertical-align:1px}
+  .node.dark{border-left-color:var(--deep)}
+  .node.green{border-left-color:var(--green)}
+  .node.gold{border-left-color:var(--gold)}
+  .arrow{text-align:center;color:var(--dim);font-size:15px;line-height:1;margin:2px 0 8px}
+  table{width:100%;border-collapse:collapse;font-size:11px;margin-top:10px;background:#fff}
+  th,td{border:1px solid var(--line);padding:5px 8px;text-align:left}
+  th{background:#f2f5fb;color:#3a4356}
+  td.mono{font-family:Consolas,monospace;color:#3a4356}
+  .note{font-size:11px;color:var(--dim);margin-top:14px;line-height:1.8}
+  .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .tbl-wrap table{min-width:660px;margin-top:0}
+  @media (max-width:640px){ .hero .big{font-size:26px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>技术标排版预设 15 组 × 10 套 · 项目落地链路</h1>
+  <div class="sub">数据源：<b>共享资源/技术标风格/layout-presets.json</b>（schema m6.layout-presets/v1 · version 1.4）——代码层逐环消费，单测 558 项全绿（2026-10-23 实测）</div>
+
+  <div class="hero">
+    <div class="big">150<small>正交组合 = 15 组 × 10 套</small></div>
+    <div class="kv">
+      默认组合 15 键：single-column · deep-indigo · full-block · standard · gov-gongwen · mid · hybrid · split-h · p1-standard-a4 · h1-gbt-arabic · t1-jianyu-auto · tb1-three-line · c2-cy-chapter · pa7-jianyu-15 · hf1-classic-enterprise<br>
+      推荐套餐 5 套：official-engineering-default · engineering-premium-flow · service-general-graphic · service-full-chart · dark-safe-minimal<br>
+      暗标强制注入 9 键：DARK_LAYOUT_INJECT（sources.py）
+    </div>
+  </div>
+
+  <div class="stage">一 · 数据定义（共享资源 · 所有企业共用）</div>
+  <div class="node">
+    <h3>S1 预设清单落库 <span class="tag">数据</span></h3>
+    <div class="path">共享资源/技术标风格/layout-presets.json</div>
+    <div class="p">15 个数组键（每组恰好 <b>10 套</b>，实测全量 id 通过）：presets / palettes / covers / decorations / fontSchemes / imageRatios / imageRules / imageLayouts / pageSetups / headingSystems / tocStyles / tableStyles / captionSystems / paragraphStyles / headerFooters；另含 <b>default</b>（15 键默认组合）、<b>recommendedCombos</b>（5 套套餐）、fontDefaults（仿宋默认）。</div>
+  </div>
+  <div class="arrow">▼</div>
+
+  <div class="stage">二 · 引擎读取（scripts/m6_tech · T13 排版预设）</div>
+  <div class="node dark">
+    <h3>S2 读取与映射 <span class="tag">layout.py</span></h3>
+    <div class="path">scripts/m6_tech/layout.py：find_presets → load_presets → entries / default_entry / palette_colors</div>
+    <div class="p"><b>GROUPS</b> 常量定义 15 组（key+中文标签，含页眉页脚第 15 组）；<b>entries()</b> 兼容数组/对象数组/dict 三写法并按 m6rules.LAYOUT_ALIAS_KEYS 别名取键；文件缺失 → 回退 <b>rules_base.py DEFAULT_LAYOUT</b> 内置兜底并标注「内置兜底」，不静默造假。</div>
+  </div>
+  <div class="arrow">▼</div>
+  <div class="node dark">
+    <h3>S3 组合合法性校验（F11） <span class="tag">rules_chapters.py</span></h3>
+    <div class="path">scripts/m6_tech/rules_chapters.py：validate_layout(layout, presets, bid_mode)</div>
+    <div class="p">15 组 id 逐一核对预设清单，非法即 <b>layout.unknown error</b>；暗标额外硬约束：禁封面 image-underlay（mixcover）、强制字体 dark-safe（mixfont）、图片二选一 none 或 dark-safe-img+appendix（dark-image-mix）、页眉页脚二选一 hf9/hf10（dark-header-footer），均为 error 级，另有企业配色/标题体系 warning。</div>
+  </div>
+  <div class="arrow">▼</div>
+
+  <div class="stage">三 · 默认与暗标注入（sources.py + cli.py）</div>
+  <div class="node green">
+    <h3>S4 组合来源：默认 or 专家包，暗标注入覆盖 <span class="tag">tech-init / tech-outline</span></h3>
+    <div class="path">scripts/m6_tech/sources.py：DEFAULT_LAYOUT（15 键）+ DARK_LAYOUT_INJECT（9 键）；cli.py cmd_tech_init / cmd_tech_outline</div>
+    <div class="p"><b>tech-init</b>：settings.layout = 预设 default（暗标时 DARK_LAYOUT_INJECT 覆盖 font/pageSetup/headingSystem/tocStyle/tableStyle/captionSystem/paragraphStyle/headerFooter/imageRatio）；<b>tech-outline --expert-pack</b>：章节树 layout 落盘取专家包 <b>layoutCombo</b>（暗标仍由注入覆盖），落盘前再经 F11 校验。</div>
+  </div>
+  <div class="arrow">▼</div>
+
+  <div class="stage">四 · 生成链路消费（T10 导出）</div>
+  <div class="node">
+    <h3>S5 章节树落盘 → S6 docx 导出逐组取用 <span class="tag">tech-outline / tech-export</span></h3>
+    <div class="path">scripts/m6_tech/export.py：_row_of("palette"|"font"|"headingSystem"|"tocStyle"|"tableStyle"|"captionSystem"|"decoration"|"imageLayout") + cfg.get("cover"/"pageSetup"/"paragraphStyle"/"headerFooter"/"preset")</div>
+    <div class="p">导出引擎以章节树 <b>layout 十五组</b> 为唯一排版配置：palette 五色（primary/accent/heading/tableFill/coverBg）→ 封面 SVG 与标题色；cover → 封面版式；decoration → 标题装饰；font → 字体方案；pageSetup → 页面/边距；headingSystem → 标题编号；tocStyle → 目录；tableStyle → 表格边框/底纹；captionSystem → 表题图题编号；paragraphStyle → 行距；headerFooter → 页眉页脚/页码；imageLayout → 图排；preset → 正文版式。产出 <b>技术标_&lt;项目&gt;.docx</b>。</div>
+  </div>
+  <div class="arrow">▼</div>
+
+  <div class="stage">五 · 版面设计器闭环（原型 ↔ 预设库 ↔ 专家包）</div>
+  <div class="node gold">
+    <h3>S7 提取 → 预览 → 存组合 → 专家包回写 <span class="tag">闭环</span></h3>
+    <div class="path">dev/prototypes/_gen_designer_data.py → _designer_data.json → 版面设计器-工作台V1.html（RAW 内联）→ 「存组合」补丁 v1.2 → tech-layout --apply-combo --confirm → 专家包</div>
+    <div class="p">设计器数据<b>同一来源</b>：_gen_designer_data.py 从 layout-presets.json 提取 15 组×10 套内联进原型；「存组合」导出 <b>组合补丁</b>（m6.layout-designer/v1.2），经 <b>tech-layout --apply-combo</b>（与 F11 同源校验，dry-run 默认）生成新<b>专家包</b>（包.json layoutCombo + taxonomy.json），tech-outline --expert-pack 即落盘生效——选配真正进入 docx 生成。</div>
+  </div>
+  <div class="arrow">▼</div>
+
+  <div class="stage">六 · 回归保障</div>
+  <div class="node green">
+    <h3>S8 结构与闭环测试 <span class="tag">tests/unit</span></h3>
+    <div class="path">tests/unit/test_m6_layout.py：test_schema_and_counts（每组 len==10 硬断言）+ ApplyComboTest 闭环 7 项；全量 unit 558 项 OK</div>
+    <div class="p">预设文件结构（schema/每组 10 套/默认 15 键）被单测锁定；组合补丁 → 专家包 → tech-outline 落盘的端到端路径有防回归用例。</div>
+  </div>
+
+  <div class="stage">附 · 15 组默认值对照</div>
+  <div class="tbl-wrap"><table>
+    <tr><th>#</th><th>组（GROUPS 键）</th><th>文件内数组键</th><th>默认 id</th><th>暗标注入</th></tr>
+    <tr><td>1</td><td>preset 版面范式</td><td class="mono">presets</td><td class="mono">single-column</td><td class="mono">—</td></tr>
+    <tr><td>2</td><td>palette 配色方案</td><td class="mono">palettes</td><td class="mono">deep-indigo</td><td class="mono">—（暗标提示不用企业色）</td></tr>
+    <tr><td>3</td><td>cover 封面版式</td><td class="mono">covers</td><td class="mono">full-block</td><td class="mono">禁 image-underlay</td></tr>
+    <tr><td>4</td><td>decoration 装饰强度</td><td class="mono">decorations</td><td class="mono">standard</td><td class="mono">—</td></tr>
+    <tr><td>5</td><td>font 字体方案</td><td class="mono">fontSchemes</td><td class="mono">gov-gongwen</td><td class="mono"><b>dark-safe</b></td></tr>
+    <tr><td>6</td><td>imageRatio 图文比例</td><td class="mono">imageRatios</td><td class="mono">mid</td><td class="mono"><b>none</b></td></tr>
+    <tr><td>7</td><td>imageRule 配图规则</td><td class="mono">imageRules</td><td class="mono">hybrid</td><td class="mono">dark-safe-img（有图时）</td></tr>
+    <tr><td>8</td><td>imageLayout 配图排版</td><td class="mono">imageLayouts</td><td class="mono">split-h</td><td class="mono">appendix（有图时）</td></tr>
+    <tr><td>9</td><td>pageSetup 页面设置</td><td class="mono">pageSetups</td><td class="mono">p1-standard-a4</td><td class="mono"><b>p7-hb-25-20</b></td></tr>
+    <tr><td>10</td><td>headingSystem 标题体系</td><td class="mono">headingSystems</td><td class="mono">h1-gbt-arabic</td><td class="mono"><b>h2-tender-arabic</b></td></tr>
+    <tr><td>11</td><td>tocStyle 目录版式</td><td class="mono">tocStyles</td><td class="mono">t1-jianyu-auto</td><td class="mono"><b>t3-qinghai-nopage</b></td></tr>
+    <tr><td>12</td><td>tableStyle 表格样式</td><td class="mono">tableStyles</td><td class="mono">tb1-three-line</td><td class="mono"><b>tb7-dark-0.5</b></td></tr>
+    <tr><td>13</td><td>captionSystem 图表编号</td><td class="mono">captionSystems</td><td class="mono">c2-cy-chapter</td><td class="mono"><b>c9-dark-appendix</b></td></tr>
+    <tr><td>14</td><td>paragraphStyle 段落样式</td><td class="mono">paragraphStyles</td><td class="mono">pa7-jianyu-15</td><td class="mono"><b>pa3-hebei-30</b></td></tr>
+    <tr><td>15</td><td>headerFooter 页眉页脚</td><td class="mono">headerFooters</td><td class="mono">hf1-classic-enterprise</td><td class="mono"><b>hf9-dark-none</b></td></tr>
+  </table></div>
+
+  <div class="note">证据口径：以上组键/数组键/默认值/暗标注入值取自 layout-presets.json v1.4 与 scripts/m6_tech/sources.py（DEFAULT_LAYOUT、DARK_LAYOUT_INJECT）、rules_chapters.py（F11）、export.py（T10 消费）、_gen_designer_data.py（设计器提取）实测；"150 组合"为 15 组正交可组合量（默认与套餐组合实际落盘使用），非逐一预生成文件。</div>
+</div>
+</body>
+</html>
