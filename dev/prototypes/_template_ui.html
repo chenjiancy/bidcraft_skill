@@ -270,6 +270,21 @@ body.dark .dark-toggle .sw::after{left:17px}
 .rule-bar{display:flex;gap:10px;align-items:flex-start;background:#f3f7ff;border:1px solid #d5e3fb;border-radius:10px;padding:12px 14px;font-size:12.3px;color:#33527e;line-height:1.8;margin-top:14px}
 .rule-bar b{color:#1f3f7a}
 
+/* ===== 公司管理 / 企业库 ===== */
+.comp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.comp-card{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:14px 16px;cursor:pointer;transition:box-shadow .15s,transform .12s;border-top:3px solid transparent}
+.comp-card:hover{box-shadow:0 8px 22px rgba(30,40,80,.12);transform:translateY(-2px)}
+.comp-card.on{border-top-color:var(--brand);background:#f7faff}
+.comp-card .cn{font-size:14px;font-weight:800;margin-bottom:3px}
+.comp-card .cm{font-size:11.5px;color:var(--dim);margin-bottom:10px}
+.comp-stats{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:#5c6478;margin-top:8px;border-top:1px dashed #eef1f7;padding-top:9px}
+.comp-stats b{font-size:15px;color:var(--ink)}
+.dir-tree{font-family:Consolas,"Courier New",monospace;font-size:12.3px;line-height:1.85;background:#fafbfd;border:1px solid var(--line);border-radius:10px;padding:14px 18px;color:#5c6478;white-space:pre;overflow:auto;max-width:100%;box-sizing:border-box}
+.dir-tree .hl{color:var(--brand);font-weight:700}
+.dir-tree .dim{color:#a9b1c3}
+.two-col>*{min-width:0}
+.rule-bar{min-width:0}
+
 /* toast */
 #toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:#1f2937;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;box-shadow:0 6px 22px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:all .25s;z-index:99;max-width:88vw}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -286,13 +301,15 @@ body.dark .dark-toggle .sw::after{left:17px}
   .editor-grid{grid-template-columns:1fr}
   .style-grid{grid-template-columns:1fr}
   .asset-grid{grid-template-columns:repeat(2,1fr)}
+  .comp-grid{grid-template-columns:repeat(2,1fr)}
+  .two-col{grid-template-columns:1fr!important}
   .top-search{width:120px}
   .top-user .tr{display:none}
 }
 @media (max-width:860px){
   .context{display:none}
   .resizer{display:none}
-  .expert-grid,.book-grid,.act-grid,.asset-grid{grid-template-columns:1fr}
+  .expert-grid,.book-grid,.act-grid,.asset-grid,.comp-grid{grid-template-columns:1fr}
   .banner{flex-direction:column;align-items:flex-start;padding:20px}
   .banner h1{font-size:17px}
   .top-user .tn{display:none}
@@ -361,6 +378,9 @@ body.dark .dark-toggle .sw::after{left:17px}
     </button>
     <button class="ctx-item" onclick="toast('导入招标文件在后续迭代实现（规划中）')">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>导入招标文件
+    </button>
+    <button class="ctx-item" onclick="go('company')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>公司管理 · 企业库
     </button>
     <button class="ctx-item" onclick="toast('素材归档在素材库视图实现（规划中）')">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>归档素材
@@ -458,6 +478,31 @@ body.dark .dark-toggle .sw::after{left:17px}
       <button class="ctx-item" onclick="applyStyle()">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>应用此组合
       </button>
+    </div>
+  </div>
+
+  <!-- 公司管理上下文 -->
+  <div class="ctx-group" id="ctx-company">
+    <div class="ctx-h">企业列表</div>
+    <div id="compNav" style="margin-top:2px"></div>
+    <div class="ctx-sec">
+      <div class="ctx-h">快捷操作（M1 命令）</div>
+      <button class="ctx-item" onclick="toast('新建企业在后续迭代实现（规划中）：init-enterprise --name X [--credit-code Y]，幂等，重名目录加信用代码')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>新建企业（init-enterprise）
+      </button>
+      <button class="ctx-item" onclick="toast('数据一致性巡检在后续迭代实现（规划中）：reconcile 台账↔磁盘↔回收站三方对账（只读）')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>数据一致性巡检（reconcile）
+      </button>
+      <button class="ctx-item" onclick="toast('运行环境体检在后续迭代实现（规划中）：env-check M0 全局命令（Python/docx 引擎/依赖）')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3M4.9 4.9l2.1 2.1m10 10l2.1 2.1m0-14.2l-2.1 2.1m-10 10l-2.1 2.1"/></svg>运行环境体检（env-check）
+      </button>
+      <button class="ctx-item" onclick="toast('企业概览在后续迭代实现（规划中）：overview 台账条目/分类分布/磁盘文件/收件箱/回收站')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>企业概览（overview）
+      </button>
+    </div>
+    <div class="ctx-sec">
+      <div class="ctx-h">素材分类（企业级）</div>
+      <div style="padding:4px 11px;font-size:12px;color:var(--dim);line-height:1.8">资质 / 人员 / 业绩 / 荣誉 / 财务 / 企业介绍 / 收件箱</div>
     </div>
   </div>
 
@@ -821,6 +866,43 @@ body.dark .dark-toggle .sw::after{left:17px}
     </div>
   </section>
 
+  <!-- 公司管理 / 企业库 -->
+  <section class="view" id="view-company">
+    <div class="lib-head">
+      <div>
+        <div style="font-size:17px;font-weight:800">公司管理 · 企业库（M1）</div>
+        <div style="font-size:12.5px;color:var(--dim)">软件根/&lt;企业&gt;/：回收站 · 企业级/素材库（7 分类）· 企业级/模板库 · 项目级 · 共享资源（技术标风格等）</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="toast('新建企业在后续迭代实现（规划中）：init-enterprise，首次调用 skill 必做')">新建企业</button>
+        <button class="btn btn-primary" onclick="toast('数据一致性巡检在后续迭代实现（规划中）：reconcile 台账↔磁盘↔回收站')">数据一致性巡检</button>
+      </div>
+    </div>
+
+    <div class="comp-grid" id="compGrid"></div>
+
+    <div class="two-col" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
+      <div style="background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;box-shadow:var(--shadow)">
+        <div style="font-size:13px;font-weight:800;margin-bottom:8px">目录结构（三层）<span class="sub" id="compDirName"></span></div>
+        <div class="dir-tree" id="compTree"></div>
+      </div>
+      <div>
+        <div style="background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;box-shadow:var(--shadow)">
+          <div style="font-size:13px;font-weight:800;margin-bottom:8px">素材库标准流程（五阶段）</div>
+          <div class="check-mini"><span class="dot">①</span>进入企业：--enterprise 锁定企业，素材天然隔离</div>
+          <div class="check-mini"><span class="dot">②</span>合规巡检：非常规上传 / 命名规范 / 企业归属校验（ownership-check）</div>
+          <div class="check-mini"><span class="dot">③</span>用户确认：巡检结果人工确认后再进入收件箱</div>
+          <div class="check-mini"><span class="dot">④</span>收件箱上传：open-inbox → upload（每次一文件）→ close-inbox</div>
+          <div class="check-mini"><span class="dot">⑤</span>归档（半自动确认制）：propose 生成提案 → 人工确认/修改 → apply 执行（多页 P0/P1）</div>
+        </div>
+        <div class="rule-bar" style="margin-top:14px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex:none;margin-top:2px"><path d="M12 3l1.7 4.8L18 9.5l-4.3 1.7L12 16l-1.7-4.8L6 9.5l4.3-1.7z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>
+          <div><b>保护与清理规则：</b>素材归档即受保护（变更走 propose / apply）；删除先进公司回收站（&lt;企业&gt;/回收站），默认保留 30 天后 cleanup-trash 清理；台账 JSON 权威单源，CSV 按需导出。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- 模板库 -->
   <section class="view" id="view-template">
     <div class="lib-head">
@@ -1068,7 +1150,7 @@ body.dark .dark-toggle .sw::after{left:17px}
   function go(v){ location.hash='#/'+v; }
   window.go=go;
 
-  var VIEW_CTX={home:'ctx-home',project:'ctx-project',editor:'ctx-editor',style:'ctx-style',library:'ctx-library',template:'ctx-template',wizard:'ctx-wizard'};
+  var VIEW_CTX={home:'ctx-home',project:'ctx-project',editor:'ctx-editor',style:'ctx-style',library:'ctx-library',template:'ctx-template',company:'ctx-company',wizard:'ctx-wizard'};
 
   function showView(id){
     document.querySelectorAll('.view').forEach(function(s){s.classList.remove('active')});
@@ -1085,7 +1167,7 @@ body.dark .dark-toggle .sw::after{left:17px}
 
   window.addEventListener('hashchange',function(){
     var h=(location.hash||'#/home').replace('#','').replace(/^\//,'');
-    if(['home','project','editor','style','library','template','wizard'].indexOf(h)>-1) showView(h);
+    if(['home','project','editor','style','library','template','company','wizard'].indexOf(h)>-1) showView(h);
   });
   if(!location.hash) location.hash='#/home';
 
@@ -1350,6 +1432,49 @@ body.dark .dark-toggle .sw::after{left:17px}
     filterTpl(chip.getAttribute('data-tpl'),chip);
   });
   renderTpl('all');
+
+  /* ---- 公司管理 / 企业库（M1） ---- */
+  var COMP_DATA=[
+    {n:'安徽皖科工程监理有限公司',code:'91340500MA2U8J3L5F',ledger:126,disk:158,trash:5,inbox:'打开中 batch=20261020，待归档 12 个',active:true},
+    {n:'马鞍山新时代建设工程监理有限公司',code:'91340500MA2T7Q8B2A',ledger:84,disk:97,trash:0,inbox:'未打开',active:false},
+    {n:'池州江南工程监理有限公司',code:'91341700MA2R4X6C7N',ledger:51,disk:63,trash:2,inbox:'未打开',active:false}
+  ];
+  function compTree(ent){
+    var t=
+      '<span class="hl">'+ent+'/</span>\n'+
+      '├── <span class="hl">回收站/</span>（公司级统一回收站 · 30 天后清理）\n'+
+      '├── <span class="hl">企业级/</span>\n'+
+      '│   ├── <span class="hl">素材库/</span>（资质 / 人员 / 业绩 / 荣誉 / 财务 / 企业介绍 / 收件箱）\n'+
+      '│   ├── <span class="hl">模板库/</span>&lt;招标代理机构&gt;/{投标, 采购, 询比价}\n'+
+      '│   └── <span class="hl">技术标风格/</span>（共享预设，layout-presets.json v1.4）\n'+
+      '└── <span class="hl">项目级/</span>\n'+
+      '    └── 市政务服务中心项目/（招标解析 / 技术标 / 标书检查 / 项目模板 / 补救任务单）';
+    return t;
+  }
+  function renderComp(sel){
+    var grid=document.getElementById('compGrid');
+    grid.innerHTML='';
+    COMP_DATA.forEach(function(c,i){
+      var card=document.createElement('div'); card.className='comp-card'+(c.n===sel?' on':'');
+      card.innerHTML='<div class="cn">'+c.n+'</div>'+
+        '<div class="cm">信用代码：'+c.code+'</div>'+
+        '<div class="cm">素材库：软件根/'+c.n+'/企业级/素材库</div>'+
+        '<div class="comp-stats"><span>台账 <b>'+c.ledger+'</b></span><span>磁盘 <b>'+c.disk+'</b></span><span>回收站 <b>'+c.trash+'</b></span></div>'+
+        '<div style="font-size:11.5px;color:var(--dim);margin-top:6px">收件箱：'+c.inbox+'</div>';
+      card.addEventListener('click',function(){ renderComp(c.n); });
+      grid.appendChild(card);
+    });
+    document.getElementById('compDirName').textContent='（当前：'+sel+'）';
+    document.getElementById('compTree').innerHTML=compTree(sel);
+    var nav=document.getElementById('compNav'); nav.innerHTML='';
+    COMP_DATA.forEach(function(c){
+      var b=document.createElement('button'); b.className='ctx-item'+(c.n===sel?' active':'');
+      b.textContent=c.n;
+      b.addEventListener('click',function(){ renderComp(c.n); });
+      nav.appendChild(b);
+    });
+  }
+  renderComp(COMP_DATA[0].n);
 
   /* ---- 新建标书向导 ---- */
   var curW=1;
