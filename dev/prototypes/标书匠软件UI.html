@@ -285,6 +285,17 @@ body.dark .dark-toggle .sw::after{left:17px}
 .two-col>*{min-width:0}
 .rule-bar{min-width:0}
 
+/* ===== 全局开发台 ===== */
+.dev-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.dev-panel{background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column}
+.dev-panel .dev-h{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;border-bottom:1px solid var(--line);font-size:13px;font-weight:800;background:#fafbfd}
+.dev-panel .dev-b{padding:12px 16px;font-size:12.3px;color:#5c6478;line-height:1.8;overflow:auto}
+.dev-mod{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px dashed #f0f2f7;font-size:12.3px}
+.dev-mod:last-child{border-bottom:none}
+.dev-mod .mk{font-family:Consolas,monospace;font-weight:700;color:var(--brand);width:64px;flex:none}
+.dev-mod .md{flex:1;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dev-mod .mc{font-size:11px;color:var(--dim);white-space:nowrap}
+
 /* toast */
 #toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:#1f2937;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;box-shadow:0 6px 22px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:all .25s;z-index:99;max-width:88vw}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -303,6 +314,7 @@ body.dark .dark-toggle .sw::after{left:17px}
   .asset-grid{grid-template-columns:repeat(2,1fr)}
   .comp-grid{grid-template-columns:repeat(2,1fr)}
   .two-col{grid-template-columns:1fr!important}
+  .dev-grid{grid-template-columns:1fr}
   .top-search{width:120px}
   .top-user .tr{display:none}
 }
@@ -310,6 +322,8 @@ body.dark .dark-toggle .sw::after{left:17px}
   .context{display:none}
   .resizer{display:none}
   .expert-grid,.book-grid,.act-grid,.asset-grid,.comp-grid{grid-template-columns:1fr}
+  .stat-row{grid-template-columns:repeat(2,1fr)}
+  .stat-row>*{min-width:0}
   .banner{flex-direction:column;align-items:flex-start;padding:20px}
   .banner h1{font-size:17px}
   .top-user .tn{display:none}
@@ -346,7 +360,7 @@ body.dark .dark-toggle .sw::after{left:17px}
     <a class="n1" href="#/template">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>模板库
     </a>
-    <a class="n1" href="javascript:void(0)" onclick="toast('全局开发台在后续迭代实现（规划中）')">
+    <a class="n1" href="#/dev">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.7 4.8L18 9.5l-4.3 1.7L12 16l-1.7-4.8L6 9.5l4.3-1.7z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>开发台<span class="dev-b">DEV</span>
     </a>
   </nav>
@@ -477,6 +491,38 @@ body.dark .dark-toggle .sw::after{left:17px}
       </button>
       <button class="ctx-item" onclick="applyStyle()">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>应用此组合
+      </button>
+    </div>
+  </div>
+
+  <!-- 开发台上下文 -->
+  <div class="ctx-group" id="ctx-dev">
+    <div class="ctx-h">开发台面板</div>
+    <button class="ctx-item" onclick="toast('模块管道：M0–M10 + m_feedback + _shared/core + docx_tools')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg>模块管道（M0–M10）
+    </button>
+    <button class="ctx-item" onclick="toast('测试中心：tests/unit 26 · integration 3 · e2e 4')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>测试中心（33 文件）
+    </button>
+    <button class="ctx-item" onclick="toast('审计与一致性：audit_presets.py C1–C9 → audit_report.json → HTML 报告')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>审计与一致性（C1–C9）
+    </button>
+    <button class="ctx-item" onclick="toast('契约与文档：references 19 篇（契约草案/需求对齐/操作手册/提示词）')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>契约与文档（19 篇）
+    </button>
+    <button class="ctx-item" onclick="toast('产物反馈：m_feedback 反馈注册 → 回读 → 闭环')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>产物反馈（m_feedback）
+    </button>
+    <button class="ctx-item" onclick="toast('开发日志与版本：development-log / 规则对齐 / 已知缺口（T10）')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>日志与版本
+    </button>
+    <div class="ctx-sec">
+      <div class="ctx-h">入口</div>
+      <button class="ctx-item" onclick="toast('开发日志：dev/notes/development-log.md')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>开发日志
+      </button>
+      <button class="ctx-item" onclick="toast('模块契约：references/module-contracts.md')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19L20 4M8 20h12M4 16h12"/></svg>模块契约
       </button>
     </div>
   </div>
@@ -950,6 +996,98 @@ body.dark .dark-toggle .sw::after{left:17px}
     </div>
   </section>
 
+  <!-- 全局开发台 -->
+  <section class="view" id="view-dev">
+    <div class="lib-head">
+      <div>
+        <div style="font-size:17px;font-weight:800">全局开发台 <span class="ctx-tag">DEV</span></div>
+        <div style="font-size:12.5px;color:var(--dim)">模块管道 · 测试中心 · 审计一致性 · 契约文档 · 产物反馈 · 日志版本（对应 dev/ 与 scripts/ 真实载体）</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="toast('运行环境体检在后续迭代实现（规划中）：env-check M0 全局命令（Python/docx 引擎/依赖）')">环境体检（env-check）</button>
+        <button class="btn btn-primary" onclick="toast('跑全量测试在后续迭代实现（规划中）：unit 26 + integration 3 + e2e 4')">跑全量测试</button>
+      </div>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat-box"><div class="n">12</div><div class="l">命令模块（M0–M10+反馈+core+docx_tools）</div></div>
+      <div class="stat-box"><div class="n">33</div><div class="l">测试文件（unit 26 · int 3 · e2e 4）</div></div>
+      <div class="stat-box"><div class="n">9 / 9</div><div class="l">审计一致性命中（C1–C9 全绿）</div></div>
+      <div class="stat-box"><div class="n">19</div><div class="l">references 契约与文档</div></div>
+    </div>
+
+    <div class="dev-grid">
+      <!-- P1 模块管道 -->
+      <div class="dev-panel">
+        <div class="dev-h">P1 · 模块管道（bidcraft.py 总入口）<span class="sub">scripts/</span></div>
+        <div class="dev-b" id="devMods"></div>
+      </div>
+
+      <!-- P2 测试中心 -->
+      <div class="dev-panel">
+        <div class="dev-h">P2 · 测试中心<span class="sub">tests/</span></div>
+        <div class="dev-b">
+          <div class="dev-mod"><span class="mk">unit</span><span class="md">26 文件：M1/M2/M4/M5/M6/M7/M8/M10 单测（含 golden 回归）</span><span class="mc">已全绿</span></div>
+          <div class="dev-mod"><span class="mk">int</span><span class="md">3 文件：core / templates / tender 集成</span><span class="mc">已全绿</span></div>
+          <div class="dev-mod"><span class="mk">e2e</span><span class="md">4 文件：cli / tpl_cli / tender_cli / proj_cli 端到端</span><span class="mc">已全绿</span></div>
+          <div class="dev-mod"><span class="mk">M6</span><span class="md">test_m6_layout/rules/store/packs/write/cli（15 组 × 10 套夹具）</span><span class="mc">166 用例</span></div>
+          <div class="wz-sub">回归纪律：提交代码前必须跑完整回归测试（全绿）；任何改动需向用户披露。</div>
+        </div>
+      </div>
+
+      <!-- P3 审计与一致性 -->
+      <div class="dev-panel">
+        <div class="dev-h">P3 · 审计与一致性<span class="sub">audit_presets.py</span></div>
+        <div class="dev-b">
+          <div class="dev-mod"><span class="mk">C1</span><span class="md">JSON ↔ builtin 预设 ID 一致性</span><span class="mc" style="color:var(--ok)">通过</span></div>
+          <div class="dev-mod"><span class="mk">C2</span><span class="md">别名表 ↔ 分组 ID 一致性</span><span class="mc" style="color:var(--ok)">通过</span></div>
+          <div class="dev-mod"><span class="mk">C3</span><span class="md">代码内置 ↔ JSON 循环比对</span><span class="mc" style="color:var(--ok)">通过</span></div>
+          <div class="dev-mod"><span class="mk">C4</span><span class="md">文档提及数 ↔ 实际方案数（15 组 × 10）</span><span class="mc" style="color:var(--ok)">通过</span></div>
+          <div class="dev-mod"><span class="mk">C5</span><span class="md">微观六组共享别名 stray 检查</span><span class="mc" style="color:var(--ok)">通过</span></div>
+          <div class="dev-mod"><span class="mk">C6–C8</span><span class="md">专家包 / 契约草案 / 需求对齐 口径一致</span><span class="mc" style="color:var(--ok)">通过</span></div>
+          <div class="dev-mod"><span class="mk">C9</span><span class="md">文档覆盖"10 种/10 套"且含 headerFooters</span><span class="mc" style="color:var(--ok)">通过</span></div>
+          <div class="wz-sub">输出 dev/notes/audit_report.json → dev/reports/技术标排版预设统一十方案审计报告.html（可复跑）。</div>
+        </div>
+      </div>
+
+      <!-- P4 契约与文档 -->
+      <div class="dev-panel">
+        <div class="dev-h">P4 · 契约与文档<span class="sub">references/ 19 篇</span></div>
+        <div class="dev-b">
+          <div class="dev-mod"><span class="mk">契约</span><span class="md">module-contracts.md（模块间契约草案）</span><span class="mc">1 篇</span></div>
+          <div class="dev-mod"><span class="mk">对齐</span><span class="md">M1 素材库 / M2 模板库 / M4 招标解析 / M6 技术标 / 产物反馈机制</span><span class="mc">5 篇</span></div>
+          <div class="dev-mod"><span class="mk">手册</span><span class="md">M1 素材库 / M2 模板库 / M4 招标解析 / M5 项目模板生成 / M5 通用格式配置</span><span class="mc">5 篇</span></div>
+          <div class="dev-mod"><span class="mk">提示词</span><span class="md">M4 招标解析 / M5 项目模板检查 / M6 技术标 / M7 标书检查 / M8 模拟评标 / 固化 / 经验总结</span><span class="mc">7 篇</span></div>
+          <div class="dev-mod"><span class="mk">规范</span><span class="md">模块开发规范.md</span><span class="mc">1 篇</span></div>
+          <div class="wz-sub">开发纪律：每轮开发变化记录 dev/notes/development-log.md 并推送 git。</div>
+        </div>
+      </div>
+
+      <!-- P5 产物反馈 -->
+      <div class="dev-panel">
+        <div class="dev-h">P5 · 产物反馈<span class="sub">m_feedback / feedback.py</span></div>
+        <div class="dev-b">
+          <div class="dev-mod"><span class="mk">注册</span><span class="md">反馈 register：产物 → 反馈条目（test_feedback_register）</span><span class="mc">已实现</span></div>
+          <div class="dev-mod"><span class="mk">回读</span><span class="md">readback 落盘回读比对（test_readback）</span><span class="mc">已实现</span></div>
+          <div class="dev-mod"><span class="mk">闭环</span><span class="md">产物反馈机制-需求对齐：反馈驱动迭代（与 M4–M10 产物链闭环）</span><span class="mc">已实现</span></div>
+          <div class="wz-sub">设计原则：agent 产物 JSON 统一 落盘→回读→校验，反馈沉淀为下轮契约输入。</div>
+        </div>
+      </div>
+
+      <!-- P6 日志与版本 -->
+      <div class="dev-panel">
+        <div class="dev-h">P6 · 开发日志与版本<span class="sub">dev/notes/ + git</span></div>
+        <div class="dev-b">
+          <div class="dev-mod"><span class="mk">日志</span><span class="md">development-log.md（决策/踩坑/验证数据/耗时）</span><span class="mc">持续</span></div>
+          <div class="dev-mod"><span class="mk">对齐</span><span class="md">规则对齐-系列（开发纪律/决策权限/企业模板库/M7/M8/docx 工具移植）</span><span class="mc">11 篇</span></div>
+          <div class="dev-mod"><span class="mk">审计</span><span class="md">audit_report.json + 审计报告 HTML（C1–C9）</span><span class="mc">已交付</span></div>
+          <div class="dev-mod"><span class="mk">缺口</span><span class="md">T10 导出引擎（tech-export）未开发；tech-layout --preview 依赖 T10</span><span class="mc" style="color:var(--warn)">已知</span></div>
+          <div class="wz-sub">git 分支 feat/tpl-inplace-relax，已提交：a333d0b V1–V3 / 9cc98eb 任务9 M6 收尾 / fa32619 风格屏 / 6513084 素材库 / 0b4be8d 向导+真实流程 / 332c8c5 模板库 / fd46922 公司管理。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- 新建标书向导 -->
   <section class="view" id="view-wizard">
     <div class="editor-steps" id="wzSteps"></div>
@@ -1150,7 +1288,7 @@ window.STYLE_DATA={groups:[{key:"presets",label:"版面版式",items:[{"id":"sin
   function go(v){ location.hash='#/'+v; }
   window.go=go;
 
-  var VIEW_CTX={home:'ctx-home',project:'ctx-project',editor:'ctx-editor',style:'ctx-style',library:'ctx-library',template:'ctx-template',company:'ctx-company',wizard:'ctx-wizard'};
+  var VIEW_CTX={home:'ctx-home',project:'ctx-project',editor:'ctx-editor',style:'ctx-style',library:'ctx-library',template:'ctx-template',company:'ctx-company',wizard:'ctx-wizard',dev:'ctx-dev'};
 
   function showView(id){
     document.querySelectorAll('.view').forEach(function(s){s.classList.remove('active')});
@@ -1167,7 +1305,7 @@ window.STYLE_DATA={groups:[{key:"presets",label:"版面版式",items:[{"id":"sin
 
   window.addEventListener('hashchange',function(){
     var h=(location.hash||'#/home').replace('#','').replace(/^\//,'');
-    if(['home','project','editor','style','library','template','company','wizard'].indexOf(h)>-1) showView(h);
+    if(['home','project','editor','style','library','template','company','wizard','dev'].indexOf(h)>-1) showView(h);
   });
   if(!location.hash) location.hash='#/home';
 
@@ -1475,6 +1613,31 @@ window.STYLE_DATA={groups:[{key:"presets",label:"版面版式",items:[{"id":"sin
     });
   }
   renderComp(COMP_DATA[0].n);
+
+  /* ---- 全局开发台：模块管道 ---- */
+  var DEV_MODS=[
+    {k:'M0',d:'环境 env-check（全局）',c:'1 命令'},
+    {k:'M1',d:'素材库 assets（收件箱/归档/propose-apply/回收站/命名/巡检）',c:'21 命令'},
+    {k:'M2',d:'模板库 template_lib（台账/导入/占位扫描/对账/导出）',c:'10+ 操作'},
+    {k:'M4',d:'招标解析 tender（双通道解析/投标要点/差异/HTML 闸门①）',c:'4 命令'},
+    {k:'M5',d:'项目模板 fill_from_tpl（内容契约+素材清单+格式契约）',c:'6 命令'},
+    {k:'M6',d:'技术标 tech（init/outline/ctx/parse/check/report/status/layout）',c:'8 命令'},
+    {k:'M7',d:'标书检查 check（通道A 机器 + 通道B agent + diff）',c:'4 命令'},
+    {k:'M8',d:'模拟评标 evaluator（评分标准 → 报告）',c:'3 命令'},
+    {k:'M10',d:'补救 remedy（失分补救任务单）',c:'2 命令'},
+    {k:'FB',d:'产物反馈 feedback（register → readback → 闭环）',c:'2 命令'},
+    {k:'CORE',d:'_shared/core（台账/批次/检索/收件箱/回收站/回读/命名）',c:'12 模块'},
+    {k:'DTX',d:'docx_tools（audit/reader 读取与审计）',c:'8 模块'}
+  ];
+  var box=document.getElementById('devMods');
+  if(box){
+    box.innerHTML='';
+    DEV_MODS.forEach(function(m){
+      var r=document.createElement('div'); r.className='dev-mod';
+      r.innerHTML='<span class="mk">'+m.k+'</span><span class="md">'+m.d+'</span><span class="mc">'+m.c+'</span>';
+      box.appendChild(r);
+    });
+  }
 
   /* ---- 新建标书向导 ---- */
   var curW=1;
