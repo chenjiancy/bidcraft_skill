@@ -1382,6 +1382,30 @@ def cmd_tech_export(args):
     if not store.outline_confirmed(tree):
         raise core.LibraryError("闸门①未确认：章节树需先 tech-outline --confirm，禁止 tech-export")
 
+    # V12（T12）：双通道差异未全部裁决 → 拒绝导出（--force 留痕，闸门②同纪律）
+    diff_json = tech / ("检查/双通道差异_%s.json" % args.project)
+    if diff_json.is_file():
+        try:
+            diff_doc = json.loads(diff_json.read_text(encoding="utf-8"))
+        except ValueError:
+            diff_doc = {}
+        diff_items = diff_doc.get("diffs") or []
+        if diff_items:
+            rec = next((r for r in (tree.get("confirmLog") or [])
+                        if r.get("gate") == "diff"), None)
+            resolved_n = 0
+            if rec:
+                try:
+                    note_obj = json.loads(rec.get("note") or "{}")
+                    resolved_n = int((note_obj or {}).get("total", 0))
+                except ValueError:
+                    resolved_n = 0
+            if resolved_n < len(diff_items) and not getattr(args, "force", False):
+                raise core.LibraryError(
+                    "双通道差异 %d 条未全部裁决（已裁决 %d），禁止 tech-export："
+                    "先 tech-diff --verdict <json> --confirm 完成裁决（V12），或 --force 留痕"
+                    % (len(diff_items), resolved_n))
+
     presets_doc = layout_mod.load_presets(args)
     tree_layout = tree.get("layout") if isinstance(tree, dict) else None
     # P1 模板驱动：--template 提供 structure/styleRef/placeholders/rules；
@@ -1685,4 +1709,4 @@ def add_sub(sub):
     sp.add_argument("--force", action="store_true", help="预留：闸门②存在 error 时强制导出（本次未接入闸门②检查）")
     sp.add_argument("--template", default="", help="P1 模板驱动：模板描述文件（schema m6.template/v1）——structure 决定部件渲染（封面/扉页/目录/正文/结尾），styleRef 十五组覆盖章节树 layout，rules 暗标铁律先行派生，--override 仍最高")
     sp.add_argument("--fill", default="", help="P1 占位符填充：'key=值;key2=值2'（enterprise_name/project_name/bid_date 缺省自动注入；未提供键保留原文）")
-    sp.set_defaults(handler=cmd_tech_export)
+    sp.set_defaults(func=cmd_tech_export)

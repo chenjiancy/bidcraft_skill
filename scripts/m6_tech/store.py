@@ -294,6 +294,29 @@ def read_selfcheck(tech_dir, ch_id):
         raise core.LibraryError("自述块 JSON 损坏：%s（%s）" % (p, e))
 
 
+def write_revise(tech_dir, ch_id, info):
+    """写 P5 精修变更块（M6-REVISE）→ `.meta/ch-xx.revise.json`（独立于 COVERAGE，避免覆盖）。"""
+    if not isinstance(info, dict) or info.get("block") != "M6-REVISE":
+        raise core.LibraryError("精修块 info 非法（须含 block=M6-REVISE）")
+    if not isinstance(info.get("data"), dict):
+        raise core.LibraryError("精修块 info.data 必须是对象")
+    payload = {"chapter": ch_id, "block": "M6-REVISE", "data": info["data"],
+               "createdAt": core.now_iso()}
+    p = _meta_path(tech_dir, ch_id, ".revise.json")
+    _write_and_verify(p, _dump(payload), "精修变更块")
+    return p
+
+
+def read_revise(tech_dir, ch_id):
+    p = _meta_path(tech_dir, ch_id, ".revise.json")
+    if not p.is_file():
+        return None
+    try:
+        return json.loads(_read_text(p))
+    except ValueError as e:
+        raise core.LibraryError("精修变更块 JSON 损坏：%s（%s）" % (p, e))
+
+
 def write_state(tech_dir, ch_id, status, history=None):
     """写章节状态文件（状态机唯一落盘处之一，与章节树 status 同步）。"""
     if status not in STATUSES:

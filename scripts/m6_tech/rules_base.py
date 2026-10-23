@@ -15,7 +15,7 @@ import re
 SCHEMA_ID = "m6.chapters/v1"
 BID_MODES = ("明标", "暗标")
 STATUSES = ("PENDING", "CONTEXT_READY", "WRITING", "WRITTEN", "CHECKED", "CONFIRMED", "FAILED")
-GATES = ("outline", "write", "final")
+GATES = ("outline", "write", "final", "diff")
 
 # 状态迁移表（契约 §8）：PENDING→CONTEXT_READY→WRITING→WRITTEN→CHECKED→CONFIRMED/FAILED
 STATUS_FLOW = [
