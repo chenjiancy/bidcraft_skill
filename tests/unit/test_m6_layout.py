@@ -199,11 +199,45 @@ class CommandTest(unittest.TestCase):
         self.assertEqual(len(payload["groups"]["headerFooter"]), 10)
 
     def test_preview_routes_to_export(self):
-        """T10 已实现：--preview 引导到 tech-export（不再报'未实现'）。"""
-        code, _, err = self._run("tech-layout", "--preview", "single-column")
+        """T10 已实现：--preview 直接渲染样张 docx（内置样例 fixture），不再报错。"""
+        code, out, _ = self._run("tech-layout", "--preview", "single-column")
+        self.assertEqual(code, 0)
+        self.assertIn("技术标样张_single-column.docx", out)
+        target = Path.cwd() / "技术标样张_single-column.docx"
+        self.assertTrue(target.is_file())
+        try:
+            target.unlink()
+        except OSError:
+            pass
+
+    def test_preview_unknown_preset(self):
+        code, _, err = self._run("tech-layout", "--preview", "no-such-preset")
         self.assertEqual(code, 1)
-        self.assertIn("T10 导出引擎", err)
-        self.assertIn("tech-export", err)
+        self.assertIn("版面范式不存在", err)
+
+    def test_preview_real_project(self):
+        """--preview + --project 走真实项目导出（覆盖 preset）。"""
+        root2 = self.root
+        d = root2 / "共享资源" / "技术标风格"
+        d.mkdir(parents=True)
+        (d / layout.PRESETS_FILE).write_text(
+            json.dumps(_doc(), ensure_ascii=False), encoding="utf-8")
+        ent = root2 / "测试企业"
+        tech = ent / "项目级" / "演示项目" / "技术标"
+        for dd in ("章节", "章节/.meta", "产出"):
+            (tech / dd).mkdir(parents=True, exist_ok=True)
+        (tech / "章节" / "ch-01").mkdir(parents=True, exist_ok=True)
+        tree = {"schema": "m6.tree/v1", "project": "演示项目", "confirmed": True,
+                "chapters": [{"id": "ch-01", "title": "第一章", "status": "WRITTEN",
+                              "files": {"body": "章节/ch-01/正文.md"}}]}
+        (tech / "章节树.json").write_text(json.dumps(tree, ensure_ascii=False), encoding="utf-8")
+        (tech / "章节" / "ch-01" / "正文.md").write_text(
+            "# 一、概况\n\n演示项目正文。\n", encoding="utf-8")
+        code, _, err = self._run(
+            "tech-layout", "--preview", "single-column", "--project", "演示项目",
+            "--enterprise", "测试企业")
+        self.assertEqual(code, 0, err)
+        self.assertTrue((tech / "产出" / "技术标_演示项目.docx").is_file())
 
 
 if __name__ == "__main__":

@@ -5,7 +5,7 @@ bidcraft · M6 技术标制作 —— 排版预设读取与 tech-layout 命令�
 预设文件：共享级 `<软件根>/共享资源/技术标风格/layout-presets.json`
   十五组均为数组（可增行表，全部统一为 10 套）：presets / palettes / covers / decorations / fontSchemes / imageRatios / imageRules / imageLayouts / pageSetups / headingSystems / tocStyles / tableStyles / captionSystems / paragraphStyles / headerFooters
 缺失时：回退 `rules.DEFAULT_LAYOUT` 内置清单，并在输出中标注「内置兜底」
-`--preview`：样张 docx 依赖 T10 导出排版引擎，未实现前显式报错（不静默跳过）
+`--preview`：调用 T10 导出引擎（tech-export）直接渲染样张 docx —— 指定 --project/--enterprise 时走真实项目；否则用内置样例 fixture 渲染并复制到 `./技术标样张_<preset>.docx`
 """
 import json
 
@@ -179,11 +179,118 @@ def _print_group(doc, group, label, default):
             print("  %-18s %s" % ("", row["docx"]))
 
 
+def _builtin_preview_fixture(root):
+    """内置样张 fixture：共享资源预设 + 预览企业/项目级/预览项目/技术标（3 章精简正文）。"""
+    import shutil
+    import tempfile
+    from pathlib import Path
+    from types import SimpleNamespace
+
+    shared = Path(root) / "共享资源" / "技术标风格"
+    shared.mkdir(parents=True, exist_ok=True)
+    preset_src = find_presets(SimpleNamespace(root=str(root)))
+    if preset_src:
+        shutil.copyfile(str(preset_src), str(shared / PRESETS_FILE))
+    ent = Path(root) / "预览企业"
+    tech = ent / "项目级" / "预览项目" / "技术标"
+    for d in ("章节", "章节/.meta", "检查", "产出", "源文件"):
+        (tech / d).mkdir(parents=True, exist_ok=True)
+    for cid in ("ch-01", "ch-02", "ch-03"):
+        (tech / "章节" / cid).mkdir(parents=True, exist_ok=True)
+    tree = {
+        "schema": "m6.tree/v1", "project": "预览项目", "confirmed": True,
+        "layout": dict(sources.DEFAULT_LAYOUT),
+        "chapters": [{"id": cid, "title": t, "status": "WRITTEN",
+                      "files": {"body": "章节/%s/正文.md" % cid}}
+                     for cid, t in (
+                         ("ch-01", "第一章 工程概况与监理工作范围"),
+                         ("ch-02", "第二章 监理工作依据、目标与内容"),
+                         ("ch-03", "第三章 项目监理机构及人员配备"))],
+    }
+    (tech / "章节树.json").write_text(json.dumps(tree, ensure_ascii=False), encoding="utf-8")
+    bodies = {
+        "ch-01": (
+            "# 一、工程概况\n"
+            "预览项目为框架剪力墙结构公共建筑，总建筑面积约 8.6 万平方米，地上十层、地下两层。\n"
+            "## （一）项目理解\n"
+            "本项目监理工作覆盖质量、进度、投资、安全环保与合同信息管理五大目标。\n"
+            "| 序号 | 控制目标 | 主要措施 |\n"
+            "| --- | --- | --- |\n"
+            "| 1 | 质量目标 | 三检制、样板引路 |\n"
+            "| 2 | 进度目标 | 关键线路周报纠偏 |\n"
+            "### 1. 监理工作范围\n"
+            "施工阶段监理，含土建、安装、装饰、智能化、室外工程等全部专业。\n"),
+        "ch-02": (
+            "# 一、监理工作依据\n"
+            "1. 国家和地方有关工程建设的法律、法规与规章；\n"
+            "2. 《建设工程监理规范》GB/T 50319-2013。\n"
+            "## （一）监理工作目标\n"
+            "质量达到一次性验收合格标准；进度满足合同节点要求；投资控制在批准概算内。\n"
+            "### 1. 监理工作制度\n"
+            "建立监理例会、旁站监理、见证取样、巡视检查、资料管理制度。\n"),
+        "ch-03": (
+            "# 一、项目监理机构\n"
+            "实行总监理工程师负责制，设总监理工程师 1 名、专业监理工程师 5 名、监理员 4 名。\n"
+            "## （一）人员配备\n"
+            "| 岗位 | 人数 | 资格要求 |\n"
+            "| --- | --- | --- |\n"
+            "| 总监理工程师 | 1 | 注册监理工程师、高级职称 |\n"
+            "| 专业监理工程师 | 5 | 中级及以上职称 |\n"
+            "### 1. 仪器设备配置\n"
+            "配备全站仪、水准仪、回弹仪等常规检测仪器及监理信息化管理平台。\n"),
+    }
+    for cid, body in bodies.items():
+        (tech / "章节" / cid / "正文.md").write_text(body, encoding="utf-8")
+        (tech / "章节" / ".meta" / (cid + ".json")).write_text(
+            json.dumps({"schema": "m6.ctx/v1", "chapter": cid, "project": "预览项目",
+                        "context": {"tender_points": [], "pageBudget": 900}},
+                       ensure_ascii=False), encoding="utf-8")
+    return ent
+
+
+def _render_preview(args, preset_id):
+    """--preview <preset>：调 T10 tech-export 渲染样张（真实项目或内置 fixture）。"""
+    from . import export
+
+    doc = load_presets(args)
+    if not any(r.get("id") == preset_id for r in entries(doc, "preset")):
+        raise core.LibraryError("版面范式不存在：%s（tech-layout --list 查看全部）" % preset_id)
+    project = getattr(args, "project", "") or "预览项目"
+    enterprise = getattr(args, "enterprise", "") or "预览企业"
+    if getattr(args, "project", ""):
+        # 真实项目：直接调导出引擎（override 仅换版面范式，其余取项目默认）
+        from types import SimpleNamespace
+
+        export.cmd_tech_export(SimpleNamespace(
+            root=args.root, enterprise=enterprise, project=project,
+            override="preset=%s" % preset_id, bid_mode="", out="", force=True))
+        return "项目 %s 已按 %s 导出：技术标/产出/技术标_%s.docx" % (project, preset_id, project)
+
+    import shutil
+    import tempfile
+    from pathlib import Path
+    from types import SimpleNamespace
+
+    tmp = tempfile.TemporaryDirectory()
+    try:
+        ent = _builtin_preview_fixture(tmp.name)
+        from types import SimpleNamespace
+
+        out_dir = ent / "项目级" / "预览项目" / "技术标" / "产出"
+        export.cmd_tech_export(SimpleNamespace(
+            root=tmp.name, enterprise=enterprise, project=project,
+            override="preset=%s" % preset_id, bid_mode="", out=str(out_dir), force=True))
+        target = Path.cwd() / ("技术标样张_%s.docx" % preset_id)
+        shutil.copyfile(str(out_dir / ("技术标_%s.docx" % project)), str(target))
+        return "样张已生成（内置样例正文）：%s\n      打开 Word 目视排版；如需暗标条款样式请用 tech-export --bid-mode。" % target
+    finally:
+        tmp.cleanup()
+
+
 def cmd_tech_layout(args):
     if getattr(args, "preview", ""):
-        raise core.LibraryError(
-            "tech-layout --preview 样张请使用 T10 导出引擎：tech-export --project <项目> "
-            "--override 'preset=%s' [--out <目录>]" % args.preview)
+        print(_render_preview(args, args.preview))
+        return 0
     path = find_presets(args)
     doc = load_presets(args)
     fallback = doc is None

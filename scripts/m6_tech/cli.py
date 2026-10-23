@@ -382,9 +382,11 @@ def register_parser(sub):
     sp.add_argument("--note", default="", help="闸门②确认备注（写入 confirmLog）")
     sp.set_defaults(func=cmd_tech_report)
 
-    sp = sub.add_parser("tech-layout", help="M6：列出排版预设（版面/配色/封面/装饰）；--preview 样张依赖 T10")
+    sp = sub.add_parser("tech-layout", help="M6：列出排版预设（版面/配色/封面/装饰）；--preview 调 T10 直出样张 docx")
     sp.add_argument("--list", action="store_true", help="列出全部预设（默认行为）")
-    sp.add_argument("--preview", default="", help="生成样张 docx（依赖 T10 导出引擎，未实现）")
+    sp.add_argument("--preview", default="", help="用 T10 导出引擎生成样张 docx（无 --project 时用内置样例正文）")
+    sp.add_argument("--project", default="", help="指定项目（--preview 走真实项目导出）")
+    sp.add_argument("--enterprise", default="", help="企业名（--preview 真实项目时必填）")
     sp.set_defaults(func=layout.cmd_tech_layout)
 
     export.add_sub(sub)

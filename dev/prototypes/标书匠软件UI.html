@@ -811,7 +811,7 @@ body.dark .dark-toggle .sw::after{left:17px}
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-primary" onclick="go('editor')">继续编写技术标</button>
-        <button class="btn btn-ghost" onclick="toast('导出交付在后续迭代实现（规划中）')">导出</button>
+        <button class="btn btn-ghost" onclick="toast('导出交付（T10 tech-export）：tech-export --project <项目> [--override preset=…;palette=…] → 技术标/产出/技术标_<项目>.docx（封面/目录域/三线表/页眉页脚三态/暗标条款注入/页数回写）')">导出</button>
       </div>
     </div>
 
@@ -835,7 +835,7 @@ body.dark .dark-toggle .sw::after{left:17px}
         <span class="a-name">质量检查</span>
         <span class="a-desc">暗标合规校验 · 章节完整性 · 评分点覆盖 · 格式一致性</span>
       </div>
-      <div class="act-card" onclick="toast('导出交付在后续迭代实现（规划中）')">
+      <div class="act-card" onclick="toast('导出交付（T10 tech-export）：tech-export --project <项目> → 技术标/产出/技术标_<项目>.docx；暗标 --bid-mode 强制全黑条款注入；页数估算回写 export.json')">
         <span class="a-name">导出交付</span>
         <span class="a-desc">导出可编辑 Word · 暗标条款格式注入 · PDF 校验</span>
       </div>
@@ -1991,7 +1991,7 @@ window.STYLE_DATA={groups:[{key:"presets",label:"版面版式",items:[{"id":"sin
     document.querySelectorAll('.wz-step').forEach(function(s){s.classList.remove('active')});
     var el=document.getElementById('wz'+n); if(el) el.classList.add('active');
     document.getElementById('wzPrev').style.visibility=n===1?'hidden':'visible';
-    document.getElementById('wzNext').textContent=n===5?'生成标书文件（规划中）':'下一步';
+    document.getElementById('wzNext').textContent=n===5?'生成标书文件（T10 导出）':'下一步';
     renderWzSteps();
     wzSyncDark();
     window.scrollTo({top:0});
@@ -1999,7 +1999,7 @@ window.STYLE_DATA={groups:[{key:"presets",label:"版面版式",items:[{"id":"sin
   window.wzGo=wzGo;
   function wzNext(){
     if(curW<5){ wzGo(curW+1); }
-    else{ toast('已实现（T10 tech-export）：tech-export --project <项目> [--override preset=…;palette=…] 生成可编辑 Word（docx），明标封面+目录域+页眉页脚，暗标强制全黑条款注入'); }
+    else{ toast('已实现（T10 tech-export）：tech-export --project <项目> [--override preset=…;palette=…] → 技术标/产出/技术标_<项目>.docx；明标封面+目录域+页眉页脚，暗标 --bid-mode 强制全黑条款注入；页数估算回写 export.json'); }
   }
   window.wzNext=wzNext;
   function manualJudge(){
