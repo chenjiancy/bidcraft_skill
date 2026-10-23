@@ -439,6 +439,9 @@ body.dark .dark-toggle .sw::after{left:17px}
     </button>
     <div class="ctx-sec">
       <div class="ctx-h">项目流程（产物目录）</div>
+      <button class="ctx-item" onclick="go('projtpl')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>项目模板 · 商务标（M5 fill-tpl）<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:6px"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
       <button class="ctx-item" onclick="go('tender')">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>招标解析（M4 双通道）<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:6px"><path d="M9 18l6-6-6-6"/></svg>
       </button>
@@ -562,6 +565,22 @@ body.dark .dark-toggle .sw::after{left:17px}
     <div class="ctx-sec">
       <div class="ctx-h">任务分类</div>
       <div style="padding:4px 11px;font-size:12px;color:var(--dim);line-height:1.8">能力问题：素材补齐（业绩/职称/荣誉/体系）<br>响应问题：内容补强 / 格式合规 / 报价策略</div>
+    </div>
+  </div>
+
+  <!-- 项目模板上下文（M5） -->
+  <div class="ctx-group" id="ctx-projtpl">
+    <div class="ctx-h">项目模板 · 商务标（M5）</div>
+    <div class="ctx-h" style="padding-top:4px">管线（v2.0 布局样板范式）</div>
+    <button class="ctx-item active" onclick="toast('proj-mat 在后续迭代实现（规划中）：素材清单表 → 素材清单_<项目>.json（v2.0 数据源）')">1 · 素材清单组装（proj-mat）</button>
+    <button class="ctx-item" onclick="toast('fill-tpl 在后续迭代实现（规划中）：企业母版深拷贝 → 项目模板 → 类别聚合填充 → 商务标')">2 · 填充商务标（fill-tpl）</button>
+    <div class="ctx-sec">
+      <div class="ctx-h">数据源</div>
+      <div style="padding:4px 11px;font-size:12px;color:var(--dim);line-height:1.8">素材清单_空白表_v5*.xlsm（最新）<br>素材台账.json（企业级/素材库）<br>社保素材（项目资料/社保* 自动定位）</div>
+    </div>
+    <div class="ctx-sec">
+      <div class="ctx-h">产物</div>
+      <div style="padding:4px 11px;font-size:12px;color:var(--dim);line-height:1.8">项目级/&lt;项目&gt;/项目模板<br>项目级/&lt;项目&gt;/商务标</div>
     </div>
   </div>
 
@@ -1214,6 +1233,46 @@ body.dark .dark-toggle .sw::after{left:17px}
     </div>
   </section>
 
+  <!-- 项目模板（M5） -->
+  <section class="view" id="view-projtpl">
+    <div class="lib-head">
+      <div>
+        <div style="font-size:17px;font-weight:800">项目模板 · 商务标生成（M5）</div>
+        <div style="font-size:12.5px;color:var(--dim)">唯一商务标生成管线 = fill-tpl（v2.0 布局样板范式）；V5 招标原文深拷贝链路已作废（2026-10-19）</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="toast('proj-mat 在后续迭代实现（规划中）：素材清单表 → 素材清单_<项目>.json')">组装素材清单</button>
+        <button class="btn btn-primary" onclick="toast('fill-tpl 在后续迭代实现（规划中）：企业母版 → 项目模板 → 类别聚合填充 → 商务标')">生成商务标</button>
+      </div>
+    </div>
+
+    <div class="mline"><span class="sn">mat</span><span class="st">proj-mat：素材清单表组装为生成器结构素材清单 JSON（v2.0 数据源）</span><span class="sg">招标解析/素材清单_<项目>.json</span></div>
+    <div class="mline"><span class="sn">copy</span><span class="st">fill-tpl ①：企业母版（布局样板）深拷贝 → 项目模板</span><span class="sg">项目级/<项目>/项目模板</span></div>
+    <div class="mline"><span class="sn">fill</span><span class="st">fill-tpl ②：类别聚合填充（按 素材清单.json 类别聚合填充布局样板）</span><span class="sg">类别聚合</span></div>
+    <div class="mline"><span class="sn">out</span><span class="st">fill-tpl ③：输出商务标（唯一生成管线，替代已作废 proj-gen 招标原文路径）</span><span class="sg" style="color:var(--warn)">项目级/<项目>/商务标 · 页数待 T10 校验</span></div>
+
+    <div class="dual" style="margin-top:14px">
+      <div class="du">
+        <div class="du-h"><span class="ch" style="background:var(--brand)"></span>输入</div>
+        <div class="mline"><span class="sn">母版</span><span class="st">企业级/模板库/安徽安硕工程咨询有限公司/投标/（布局样板 10 章）</span></div>
+        <div class="mline"><span class="sn">清单</span><span class="st">素材清单_空白表_v5*.xlsm（招标解析/，最新版自动定位）</span></div>
+        <div class="mline"><span class="sn">台账</span><span class="st">素材台账.json（企业级/素材库，propose/apply 归档受保护）</span></div>
+        <div class="mline"><span class="sn">社保</span><span class="st">项目资料/社保* 自动定位（人员配置佐证）</span></div>
+      </div>
+      <div class="du">
+        <div class="du-h"><span class="ch" style="background:#7a3ed6"></span>输出</div>
+        <div class="mline"><span class="sn">模板</span><span class="st">项目级/<项目>/项目模板（母版深拷贝，M7 check-rule 对照基准）</span></div>
+        <div class="mline"><span class="sn">商务标</span><span class="st">项目级/<项目>/商务标（类别聚合填充产物）</span></div>
+        <div class="mline"><span class="sn">校验</span><span class="st">M7 标书检查默认检查对象 = 商务标目录；占位符清零/格式完整性</span><span class="sg" style="color:var(--ok)">已接管线</span></div>
+      </div>
+    </div>
+
+    <div class="rule-bar" style="margin-top:14px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex:none;margin-top:2px"><path d="M12 3l1.7 4.8L18 9.5l-4.3 1.7L12 16l-1.7-4.8L6 9.5l4.3-1.7z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>
+      <div><b>管线纪律：</b>企业模板库模板、项目模板、商务标三者格式排版必须完全一致（字体/页数/图片排布/表格）；源文即成品模板，完全复现格式排版（含下划线空格），文字按指定项占位、图片一律图框占位。</div>
+    </div>
+  </section>
+
   <!-- 全局开发台 -->
   <section class="view" id="view-dev">
     <div class="lib-head">
@@ -1506,7 +1565,7 @@ body.dark .dark-toggle .sw::after{left:17px}
   function go(v){ location.hash='#/'+v; }
   window.go=go;
 
-  var VIEW_CTX={home:'ctx-home',project:'ctx-project',editor:'ctx-editor',style:'ctx-style',library:'ctx-library',template:'ctx-template',company:'ctx-company',wizard:'ctx-wizard',dev:'ctx-dev',tender:'ctx-tender',check:'ctx-check',eval:'ctx-eval',remedy:'ctx-remedy'};
+  var VIEW_CTX={home:'ctx-home',project:'ctx-project',editor:'ctx-editor',style:'ctx-style',library:'ctx-library',template:'ctx-template',company:'ctx-company',wizard:'ctx-wizard',dev:'ctx-dev',tender:'ctx-tender',check:'ctx-check',eval:'ctx-eval',remedy:'ctx-remedy',projtpl:'ctx-projtpl'};
 
   function showView(id){
     document.querySelectorAll('.view').forEach(function(s){s.classList.remove('active')});
@@ -1523,7 +1582,7 @@ body.dark .dark-toggle .sw::after{left:17px}
 
   window.addEventListener('hashchange',function(){
     var h=(location.hash||'#/home').replace('#','').replace(/^\//,'');
-    if(['home','project','editor','style','library','template','company','wizard','dev','tender','check','eval','remedy'].indexOf(h)>-1) showView(h);
+    if(['home','project','editor','style','library','template','company','wizard','dev','tender','check','eval','remedy','projtpl'].indexOf(h)>-1) showView(h);
   });
   if(!location.hash) location.hash='#/home';
 
