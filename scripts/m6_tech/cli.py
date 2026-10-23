@@ -36,6 +36,8 @@ from . import partlib
 from .ctxpack import build_context, fill_score_items
 from .report import cmd_tech_check, cmd_tech_report
 from .writer import cmd_tech_parse
+from .rewrite import cmd_tech_rewrite
+from .diff import cmd_tech_diff
 
 
 def _print_json(obj):
@@ -400,6 +402,18 @@ def register_parser(sub):
     sp.add_argument("--pack-id", default="", help="新专家包 id（默认 custom-<preset>-<palette>）")
     sp.add_argument("--confirm", action="store_true", help="配合 --apply-combo：确认落盘（写后回读校验）")
     sp.set_defaults(func=layout.cmd_tech_layout)
+
+    sp = sub.add_parser("tech-rewrite", help="M6·T11 精修回路：修订稿校验（非空/字数/占位/敏感词）→ M6-REVISE 变更块 → 行级 diff 披露 → 旧稿 .rewrite-trash 备份 → 回写回读 → WRITTEN")
+    sp.add_argument("--project", required=True, help="项目名（项目级/<项目>）")
+    sp.add_argument("--chapter", required=True, help="章节 id（如 ch-01）")
+    sp.add_argument("--file", required=True, help="agent 精修产出的章节 md（须位于本项目目录内）")
+    sp.set_defaults(func=cmd_tech_rewrite)
+
+    sp = sub.add_parser("tech-diff", help="M6·T12 双通道差异比对：tech-check 机器结论 vs agent 自述（M6-COVERAGE）→ 四类差异落盘；--verdict <json> --confirm 逐项裁决写 confirmLog（V12 不静默）")
+    sp.add_argument("--project", required=True, help="项目名（项目级/<项目>）")
+    sp.add_argument("--verdict", default="", help="逐项裁决 JSON（{\"diffs\":[{\"idx\":0,\"verdict\":\"accept|reject|note\",\"note\":\"\"}]}，须位于本项目目录内）")
+    sp.add_argument("--confirm", action="store_true", help="配合 --verdict：确认裁决并写入 confirmLog（gate=diff）")
+    sp.set_defaults(func=cmd_tech_diff)
 
     sp = sub.add_parser("tpl-design",
                         help="M6·模板设计器（P0）：模板描述文件（template.json，schema m6.template/v1）校验/落盘/样张；"
