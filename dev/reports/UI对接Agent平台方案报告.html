@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%232B5CD9'/%3E%3Cpath d='M8 9h16v4H8zm0 6h16v4H8zm0 6h10v4H8z' fill='%23fff'/%3E%3C/svg%3E">
+<title>UI 对接 Agent 平台方案调研报告</title>
+<style>
+  :root{--ink:#1f2330;--dim:#7a8293;--line:#dde3ec;--bg:#f4f6fa;--blue:#2B5CD9;--deep:#1B2C52;--gold:#B08A4B;--green:#2e8b57;--red:#c0392b;--card:#fff}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Microsoft YaHei","PingFang SC",sans-serif;color:var(--ink);background:var(--bg);line-height:1.7}
+  .wrap{max-width:1060px;margin:0 auto;padding:26px 18px 56px}
+  h1{font-size:23px;margin:0 0 4px}
+  .sub{font-size:12px;color:var(--dim);margin-bottom:18px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin-bottom:16px;box-shadow:0 1px 3px rgba(20,28,45,.05)}
+  h2{font-size:16px;margin:0 0 10px;color:var(--deep);border-left:4px solid var(--blue);padding-left:10px}
+  .tag{display:inline-block;font-size:10px;color:#fff;border-radius:3px;padding:1px 7px;margin-right:4px;vertical-align:1px}
+  .t-blue{background:var(--blue)} .t-green{background:var(--green)} .t-gold{background:var(--gold)} .t-red{background:var(--red)} .t-dim{background:#8a94a6}
+  ul{margin:6px 0 0;padding-left:20px}
+  li{font-size:13px;margin:4px 0}
+  .kv{font-size:12.5px;color:#3a4356}
+  .kv b{color:var(--ink)}
+  table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px;background:#fff}
+  th,td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+  th{background:#f2f5fb;color:#3a4356}
+  td.mono,code{font-family:Consolas,"Courier New",monospace;font-size:11px;background:#eef2f8;padding:1px 5px;border-radius:3px;color:#2b3a55}
+  .diag{background:#f0f4fb;border:1px dashed #c3cbd9;border-radius:8px;padding:12px 16px;font-size:12px;color:#3a4356;margin:10px 0;white-space:pre-wrap;font-family:Consolas,monospace}
+  .reco{background:var(--deep);color:#fff;border-radius:10px;padding:18px 22px;margin:16px 0}
+  .reco h2{color:#fff;border-left-color:var(--gold)}
+  .reco li{color:#e8edf7}
+  .reco b{color:var(--gold)}
+  .step{font-size:13px;margin:8px 0;line-height:1.8}
+  .src{font-size:11px;color:var(--dim);margin-top:6px;word-break:break-all}
+  .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .tbl-wrap table{min-width:760px;margin-top:0}
+  @media (max-width:640px){ h1{font-size:19px} .wrap{padding:18px 12px 44px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>前端 UI 对接 Agent 平台 · 方案调研报告</h1>
+  <div class="sub">针对 bidcraft（skill+agent 项目，agent 由豆包/WorkBuddy 等平台提供）：当前版面设计器 UI 为纯前端原型，未接入 agent 能力、实际不可用。本报告给出经联网查证（2026-10-23）的 6 条接入方案与推荐路径。</div>
+
+  <div class="card">
+    <h2>一、问题诊断</h2>
+    <div class="kv">
+      <b>现状</b>：能力在 <code>SKILL.md + scripts/bidcraft.py</code>（CLI：tech-layout/apply-combo/outline/export 等）；前端 <code>版面设计器-工作台V1.html</code> 是单文件原型——内联 RAW 数据、无后端、无 agent 通道，故"UI 不可用"。<br>
+      <b>平台规则</b>（查证）：
+      <ul>
+        <li>豆包：Skill = 任务扩展单元，结构与本项目同构（<code>SKILL.md/scripts/references/assets</code>）；<b>外部服务须经「连接器」或「已注册工具」接入</b>，Skill 不应直接暴露外部 API；开放平台提供 OpenAPI 与开发者平台（MiniApp 支持 <b>MCP endpoint</b>）；火山方舟 Managed Agent 可接入豆包企业版「工作伙伴」。</li>
+        <li>WorkBuddy：技能市场 + 自定义技能（可对话创建）；<b>自定义技能可把任意 HTTP API 包装成可调用工具</b>（本地 127.0.0.1 服务已有社区实践）。</li>
+        <li>MCP 生态：<code>mcp-skill-bridge</code>（本地 skills 目录 → MCP server）、<code>a2a-mcp-skillmap</code>（A2A agent → MCP 工具）等桥接工具成熟。</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>二、六条方案对比</h2>
+    <div class="tbl-wrap"><table>
+      <tr><th>方案</th><th>接入通道</th><th>UI 形态</th><th>部署</th><th>迁移量</th><th>平台门槛</th></tr>
+      <tr>
+        <td><b>A 对话优先</b><br><span class="tag t-green">零成本立即可用</span></td>
+        <td>纯 Skill：设计器能力全部转成自然语言指令 + 既有 CLI 闭环（tech-layout/apply-combo/outline/export）</td>
+        <td>HTML 降级为「产物视图」（样张/报告/校验单查看器）</td>
+        <td>无需新增服务</td>
+        <td>低（写提示词编排，复用全部脚本）</td>
+        <td>无（豆包/WorkBuddy 安装 Skill 即用）</td>
+      </tr>
+      <tr>
+        <td><b>B 本地 HTTP 桥</b><br><span class="tag t-blue">恢复可操作 UI</span></td>
+        <td>bidcraft CLI 包本地 HTTP/SSE 服务（/api/layout /api/combos /api/export），前端 fetch 调用；平台侧把同服务注册为工具</td>
+        <td>现有设计器改造为「可操作台」（本地服务执行真实 CLI）</td>
+        <td>本地常驻服务（FastAPI/Flask）</td>
+        <td>中（新增 server 层 + 前端请求改造）</td>
+        <td>低（本地回环；注册工具走平台鉴权/审核）</td>
+      </tr>
+      <tr>
+        <td><b>C 豆包 MiniApp + MCP</b><br><span class="tag t-gold">豆包一等公民</span></td>
+        <td><code>defineMiniApp({ mcp: { server, endpoint } })</code>：能力包成 MCP server，前端迁为 MiniApp 并挂 MCP endpoint</td>
+        <td>豆包内的交互式 MiniApp（设计器形态保留）</td>
+        <td>MCP server 本地 stdio 或远程 HTTP</td>
+        <td>高（前端迁 MiniApp 形态 + MCP server）</td>
+        <td>中（开发者平台准入/内测）</td>
+      </tr>
+      <tr>
+        <td><b>D 方舟 Managed Agent</b><br><span class="tag t-gold">企业分发</span></td>
+        <td>火山方舟构建 Agent（挂 bidcraft 工具/OpenAPI）→ 接入豆包企业版「工作伙伴」，复用对话/任务展示/产物交付</td>
+        <td>对话为主；UI 留作外部 Web 视图</td>
+        <td>方舟云端</td>
+        <td>中（Agent 编排 + 工具注册）</td>
+        <td>中（方舟账号 + 企业版）</td>
+      </tr>
+      <tr>
+        <td><b>E 豆包 OpenAPI</b><br><span class="tag t-dim">反向接入</span></td>
+        <td>UI 作为业务系统前端，经 OpenAPI 调豆包工作的 AI 能力（生成章节/评审等）</td>
+        <td>UI 调 agent 的生成能力</td>
+        <td>云端 API</td>
+        <td>中</td>
+        <td>中（OpenAPI 开通/额度）</td>
+      </tr>
+      <tr>
+        <td><b>F WorkBuddy HTTP 技能</b><br><span class="tag t-green">单平台</span></td>
+        <td>bidcraft 包 HTTP 服务，WorkBuddy 自定义技能注册接口（POST /api/…），对话中调用</td>
+        <td>对话 + 本地 UI 双通道</td>
+        <td>本地常驻服务</td>
+        <td>中</td>
+        <td>低（WorkBuddy 明确支持自定义技能包 HTTP API）</td>
+      </tr>
+    </table></div>
+    <div class="src">证据来源：豆包 Skill 接入指南（open.doubao.com）、豆包开发者平台（developer.doubao.com MiniApp/MCP）、火山方舟 Managed Agents 文档、WorkBuddy 官方技能文档（open.workbuddy.cn）、MCP 官方 Build with Agent Skills、mcp-skill-bridge（npm）、火山开发者社区 WorkBuddy 自定义技能实践。</div>
+  </div>
+
+  <div class="card">
+    <h2>三、推荐路径（分三步，每步可独立验收）</h2>
+    <div class="diag">第 0 步（本周）　A 对话优先：Skill 编排提示词 + CLI 闭环 → UI 标注「演示原型，实际工作流在对话中执行」→ 立即可用
+　↓
+第 1 步（短期）　B/F 本地 HTTP 桥：bidcraft-server 暴露 /api/* → 设计器改造为可操作台 → WorkBuddy 自定义技能注册同一服务
+　↓
+第 2 步（中期）　C/D 平台化：能力包成 MCP server（MiniApp endpoint / 已注册工具）或方舟 Managed Agent 接入豆包企业版 → 设计器迁 MiniApp / 外部 Web 视图</div>
+    <div class="reco">
+      <h2>决策建议</h2>
+      <ul>
+        <li><b>先做 A</b>：零迁移、不依赖平台私有 API，且 Skill 结构（SKILL.md+scripts）与豆包/WorkBuddy 官方 Skill 形态完全同构，天然可分发；"UI 不可用"的观感由产物视图（样张 docx/html、报告）承接。</li>
+        <li><b>恢复 UI 操作性选 B</b>：本地 HTTP 桥是双平台通用的中间形态——豆包「已注册工具」与 WorkBuddy「自定义技能」都能包装 HTTP API，一套服务两处复用。</li>
+        <li><b>豆包深度集成选 C/D</b>：MiniApp 的 MCP endpoint 是豆包官方给出的前端↔工具通道；方舟 Managed Agent 适合企业统一分发。两者都需准入，宜在 A/B 跑通后申报。</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>四、关键落地动作（对接 A+B）</h2>
+    <ul>
+      <li><b>Skill 编排</b>：在 <code>SKILL.md</code> 增加"版面设计"工作流入口（触发词：设置版面/出样张/存组合/生成技术标），流程=tech-layout 查看 → 组合调整 → apply-combo 生成专家包 → outline 落盘 → export 导出 docx，全部人工确认闸门。</li>
+      <li><b>本地服务</b>：新增 <code>scripts/bidcraft_server.py</code>（仅读接口：组合清单/校验/样张渲染；写操作一律走 CLI+确认闸门，服务只做只读代理），前端 fetch 同源/回环地址。</li>
+      <li><b>平台注册</b>：豆包侧按「连接器/已注册工具」规范申报（鉴权、权限、安全验证）；WorkBuddy 侧用「添加技能→创建技能」注册 HTTP API（参考本地 127.0.0.1 实践）。</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>

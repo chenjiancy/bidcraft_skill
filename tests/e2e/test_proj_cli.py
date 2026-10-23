@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""L3 端到端测试：产物反馈机制 CLI（fb-*）冒烟 + proj-gen CLI（真实数据→临时输出）。"""
+"""L3 端到端测试：产物反馈机制 CLI（fb-*）冒烟 + fill-tpl CLI（真实数据→临时输出）。"""
 import json
 import os
 import shutil
@@ -114,30 +114,6 @@ class TestProjGenCli(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         shutil.rmtree(cls.tmp, ignore_errors=True)
-
-    def test_proj_gen_cli_json(self):
-        # ⑫ 数据前置细化：proj-gen 需要招标解析的内容契约+素材清单+招标文件 docx 作为输入，
-        # 数据被清除/未生成时应跳过而非在 CLI 里报错。V5：模板选择.json 已废弃。
-        # 注：proj-gen 已退役（2026-10-19，商务标生成源=模板库 fill-tpl），本测试仅保兼容。
-        proj = Path(REAL_ENT) / "项目级" / REAL_PROJECT
-        contract = proj / "招标解析" / "内容契约" / "内容契约.json"
-        src_docx = list((proj / "招标解析").glob("招标文件-*.docx"))
-        if not (contract.is_file() and (proj / "招标解析" / "素材清单.json").is_file()
-                and src_docx):
-            self.skipTest("真实项目数据不存在（内容契约/素材清单/招标文件docx 缺失），跳过")
-        out = Path(self.tmp) / "项目模板"
-        ent_name = Path(REAL_ENT).name
-        ent_root = str(Path(REAL_ENT).parent)
-        r = run("proj-gen", "--project", REAL_PROJECT, "--out", str(out),
-                "--no-baseline", "--json",
-                ent=ent_name, root=ent_root)
-        self.assertEqual(r.returncode, 0, r.stderr)
-        data = json.loads(r.stdout)
-        self.assertIn("目录", data)
-        self.assertTrue((Path(data["目录"]) / "生成记录.json").is_file())
-        names = {f["文件"] for f in data["文件"]}
-        self.assertIn("开标一览表.docx", names)
-        self.assertIn("资格证明及辅助资料表.docx", names)
 
     def test_fill_tpl_cli(self):
         """M5 商务标生成新路径（2026-10-19）：fill-tpl 模板库深拷贝→填充→商务标。"""

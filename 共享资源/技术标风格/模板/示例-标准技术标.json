@@ -1,0 +1,47 @@
+{
+  "schema": "m6.template/v1",
+  "version": "0.1",
+  "updated": "2026-10-23",
+  "name": "示例：标准技术标",
+  "description": "P0 示例模板：封面+扉页+目录+正文+结尾，样式引用默认组合。",
+  "structure": [
+    { "part": "cover", "pageMode": "single" },
+    { "part": "colophon", "pageMode": "single", "optional": true },
+    { "part": "toc", "pageMode": "single" },
+    { "part": "body", "pageMode": "flow" },
+    { "part": "closing", "pageMode": "single", "optional": true }
+  ],
+  "styleRef": {
+    "preset": "single-column",
+    "palette": "deep-indigo",
+    "cover": "full-block",
+    "decoration": "standard",
+    "font": "gov-gongwen",
+    "imageRatio": "mid",
+    "imageRule": "hybrid",
+    "imageLayout": "split-h",
+    "pageSetup": "p1-standard-a4",
+    "headingSystem": "h1-gbt-arabic",
+    "tocStyle": "t1-jianyu-auto",
+    "tableStyle": "tb1-three-line",
+    "captionSystem": "c2-cy-chapter",
+    "paragraphStyle": "pa7-jianyu-15",
+    "headerFooter": "hf1-classic-enterprise"
+  },
+  "placeholders": {
+    "enterprise_name": "{{ enterprise_name }}",
+    "project_name": "{{ project_name }}",
+    "bid_date": "{{ bid_date }}",
+    "site_photo": "【图片占位：施工现场】"
+  },
+  "rules": {
+    "bidMode": "明标",
+    "darkFontSafe": true
+  },
+  "provenance": {
+    "basedOn": "",
+    "author": "bidcraft",
+    "created": "2026-10-23",
+    "note": "P0 示例，供模板设计器数据模型演示与测试。"
+  }
+}

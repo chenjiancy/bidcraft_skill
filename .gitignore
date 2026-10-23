@@ -29,6 +29,9 @@ dev/docxtpl_eval/_deps/
 # 渲染缓存
 .preview/
 
+# 样张 docx/pdf（tech-layout --preview / tpl-design --specimen 生成产物，不入库）
+技术标样张_*
+
 # 敏感业务信息（企业名/人员名/项目名）：本地保留、不进公网仓库
 dev/notes/development-log.md
 dev/notes/经验总结-*.md
@@ -40,6 +43,11 @@ tests/run_local_regression.bat
 
 # Word 锁文件
 ~$*
+
+# 自检截图与临时产物（不入库；历史已跟踪的 _shots/report.json 由 git rm --cached 移出索引）
+dev/**/_shots/
+dev/tmp_cleanup_plan/
+dev/plans/*.docx
 
 # 上传标书转换/提取临时目录（不入库）
 dev/manual_conv/
@@ -57,5 +65,24 @@ dev/extract_agency.py
 dev/huagong_*.json
 dev/huagong_*.md
 dev/已完标书分析/
+
+# 生产环境治理（2026-10-23）：以下条目随升级同步到生产目录，确保生产侧
+# 运维文件/部署私钥/历史垃圾文件不入库。注意：不得在此忽略 dev/tests/.github
+# —— 开发侧仍需跟踪它们；生产侧防混入由"升级生产.ps1 白名单同步"机制保证。
+.deploy/
+升级日志.txt
+定时升级.cmd
+使用bidcraft_skill.bat
+生产环境说明.txt
+版本记录.txt
+gen2.txt
+gen_final.txt
+out.txt
+out_e2e.txt
+push.txt
+sme_prod_check.txt
+verify_patch.txt
+secedit.jfm
+secedit.sdb
 
 

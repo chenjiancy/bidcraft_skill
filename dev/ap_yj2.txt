@@ -1,3 +1,0 @@
-pages: 2 | thumb: E:\bidcraft_skill\.preview\1e37ad8dfec0\thumb.jpg
-collages: ['E:\\bidcraft_skill\\.preview\\1e37ad8dfec0\\collages\\c1.jpg']
-text: E:\bidcraft_skill\.preview\1e37ad8dfec0\text.md

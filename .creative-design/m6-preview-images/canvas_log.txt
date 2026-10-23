@@ -1,0 +1,13 @@
+DOWNLOADED 样张_施工现场全景.jpg 744182 bytes
+DOWNLOADED 样张_水准测量放线.jpg 563547 bytes
+DOWNLOADED 样张_图纸会审.jpg 434897 bytes
+CREATE 施工现场全景 rc=0
+  xml: {"code":0,"msg":"success","xml_data":"\u003citem item_id=\"qI0DnGQa-4O4XGRACHK-0201\" type=\"IMAGE\" path=\"/generated-assets/m6-preview-images/施工现场全景\" title=\"施工现场全景\" brief=\"技术标样张配图1：在建公共建筑施工现场全景，写实摄影，16:9\"\u003e\u003csize width=\"2730\" height=\"1536\"\u003e\u003c/size\u003e\u003casset url=\"h
+CREATE 水准测量放线 rc=0
+  xml: {"code":0,"msg":"success","xml_data":"\u003citem item_id=\"kQLFza3J-4O4tpf29Kc-0201\" type=\"IMAGE\" path=\"/generated-assets/m6-preview-images/水准测量放线\" title=\"水准测量放线\" brief=\"技术标样张配图2：监理工程师水准测量放线，写实摄影，16:9\"\u003e\u003csize width=\"2730\" height=\"1536\"\u003e\u003c/size\u003e\u003casset url=\"ht
+CREATE 监理例会图纸会审 rc=0
+  xml: {"code":0,"msg":"success","xml_data":"\u003citem item_id=\"RbN04QK2-4NxDExhbCk-0201\" type=\"IMAGE\" path=\"/generated-assets/m6-preview-images/监理例会图纸会审\" title=\"监理例会图纸会审\" brief=\"技术标样张配图3：监理例会图纸会审场景，写实摄影，16:9\"\u003e\u003csize width=\"2730\" height=\"1536\"\u003e\u003c/size\u003e\u003casset url=\
+IDS: {"施工现场全景": null, "水准测量放线": null, "监理例会图纸会审": null}
+GET 施工现场全景: no id
+GET 水准测量放线: no id
+GET 监理例会图纸会审: no id

@@ -1,4 +1,0 @@
-﻿模板_开标一览表.docx | 分页符: 0 | body: ['p', 'p', 'p', 'tbl', 'p', 'p', 'p', 'p', 'p', 'sectPr']
-模板_投标函附录.docx | 分页符: 0 | body: ['p', 'p', 'tbl', 'p', 'sectPr']
-模板_封面.docx | 分页符: 0 | body: ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'sectPr']
-模板_授权委托书.docx | 分页符: 0 | body: ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'tbl', 'p', 'sectPr']

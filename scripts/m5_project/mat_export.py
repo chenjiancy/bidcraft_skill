@@ -25,19 +25,12 @@ import json
 import re
 from pathlib import Path
 
-from .gen_common import GenError
+from .fill_common import FillError as GenError
 from _shared import core
 
-__all__ = ["export_material", "PERSON_DEFAULT_ROLE"]
-
-# 本项目人员默认角色（由 R04/R06/R07 人员配备口径推导，agent 维护）
-PERSON_DEFAULT_ROLE = {
-    "陈云": "项目总监",
-    "黄大海": "专业监理工程师",
-    "陈阳": "专业监理工程师",
-    "裴友谊": "监理员",
-    "阮旭": "监理员",
-}
+# 本项目人员默认角色（v2.0：不在此处硬编码人名；角色由 R04/R06/R07 人员配备口径推导，
+# 素材清单 personnel 数据驱动，未推导到时由 agent 维护）
+__all__ = ["export_material"]
 
 # R 编号 → (生成器 section, 名称) ；personnel 类单独处理
 SECTION_RULES = [
@@ -213,8 +206,12 @@ def export_material(ent, project, xlsm_path=None, ledger=None, social_path=""):
             {"name": "社保单位参保证明", "path": social_path})
 
     # 3) personnel 组装：姓名从 R04/R06/R07/R09/R15/R16 行 G 列「姓名：素材」前缀动态收集
+    #    v2.0：角色由行区间确定性推导（R04/R05=项目总监、R06=专业监理工程师、R07=监理员），
+    #    禁止硬编码人名；素材清单未列出的人员不出现（清单=数据，未列不生成）。
     P_KEY = {"R04": "注册证书", "R05": "职称", "R06": "注册证书", "R07": "岗位证书",
              "R09": "简历", "R15": "职称", "R16": "毕业证"}
+    ROLE_BY_RID = {"R04": "项目总监", "R05": "项目总监", "R06": "专业监理工程师",
+                   "R07": "监理员"}
     persons = {}
     for rid, r0, r1 in row_spans:
         if rid not in P_KEY:
@@ -223,11 +220,7 @@ def export_material(ent, project, xlsm_path=None, ledger=None, social_path=""):
             pname = _person_name_from_g(gv)
             if pname and pname not in persons:
                 persons[pname] = {"name": pname,
-                                   "role": PERSON_DEFAULT_ROLE.get(pname, "")}
-    if not persons:
-        # 旧表无姓名前缀时回退默认人员（agent 维护）
-        persons = {name: {"name": name, "role": role}
-                   for name, role in PERSON_DEFAULT_ROLE.items()}
+                                  "role": ROLE_BY_RID.get(rid, "")}
     for rid, r0, r1 in row_spans:
         key = P_KEY.get(rid)
         if not key:
@@ -237,14 +230,11 @@ def export_material(ent, project, xlsm_path=None, ledger=None, social_path=""):
             if pname and pname in persons:
                 path = _resolve_asset(gv, lib_root, ledger_items)
                 persons[pname].setdefault(key, []).append(path or gv)
-            elif not pname:
-                # 无姓名前缀（如 R16 毕业证 G36=陈阳：毕业证_工程造价.png 有前缀；兜底）
-                if rid == "R16" and "陈阳" in gv:
-                    path = _resolve_asset(gv, lib_root, ledger_items)
-                    persons["陈阳"].setdefault(key, []).append(path or gv)
 
     # 4) 企业基础信息 + 配置口径
-    biz = {"法定代表人姓名": "邵章华"}        # 台账营业执照 note 可核，agent 维护
+    #    v2.0：法定代表人姓名来自素材/台账数据（营业执照 note 可核），不在代码内硬编码；
+    #    未取得时留空由用户确认补录。
+    biz = {"法定代表人姓名": ""}        # 待补：由用户确认或素材解析提供（禁止代码硬编码）
     for rid, r0, r1 in row_spans:
         if rid != "R19":
             continue

@@ -1,0 +1,2138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>标书匠软件UI · 原型V3 · 混合导航</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%232B5CD9'/%3E%3Cpath d='M8 10h16v3H8zm0 6h10v3H8zm0 6h14v3H8z' fill='%23fff'/%3E%3C/svg%3E">
+<style>
+:root{
+  --brand:#2B5CD9; --brand2:#1c44a8; --acc:#4C82F2; --line:#e6e9f0; --bg:#f7f8fa;
+  --card:#ffffff; --ink:#1f2330; --dim:#7a8193; --ok:#22a06b; --warn:#b7791f; --bad:#d64545;
+  --shadow:0 1px 2px rgba(30,40,80,.05),0 6px 18px rgba(30,40,80,.07);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:"Microsoft YaHei","PingFang SC","Noto Sans SC",system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.6;min-width:320px}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+a{text-decoration:none;color:inherit}
+input{font-family:inherit}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:#c8cfdd;border-radius:4px}
+
+/* ===== 顶栏（一级导航 + 全局操作） ===== */
+.topbar{position:sticky;top:0;z-index:60;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;padding:0 18px;height:58px}
+.logo{display:flex;align-items:center;gap:8px;font-size:16px;font-weight:800;color:var(--brand2);white-space:nowrap;padding-right:14px;border-right:1px solid var(--line);margin-right:6px}
+.logo svg{flex:none}
+.nav1{display:flex;align-items:center;gap:2px;overflow-x:auto}
+.n1{display:flex;align-items:center;gap:6px;padding:9px 14px;border-radius:9px;font-size:13.5px;color:#4a5265;white-space:nowrap}
+.n1 svg{flex:none;color:#9aa3b8}
+.n1:hover{background:#f2f5fb;color:var(--brand2)}
+.n1.active{background:#e9effd;color:var(--brand2);font-weight:700}
+.n1.active svg{color:var(--brand)}
+.n1 .dev-b{font-size:10px;background:#fdf0dc;color:var(--warn);padding:0 6px;border-radius:7px}
+.top-right{display:flex;align-items:center;gap:8px;margin-left:auto}
+.btn{display:inline-flex;align-items:center;gap:6px;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;transition:all .15s}
+.btn-primary{background:var(--brand);color:#fff}
+.btn-primary:hover{background:var(--brand2)}
+.btn-ghost{border:1px solid var(--line);color:var(--ink);background:#fff}
+.btn-ghost:hover{border-color:var(--brand);color:var(--brand)}
+.btn-plain{color:var(--brand);padding:6px 10px}
+.btn-plain:hover{background:#eef3fd}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.top-search{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:8px;padding:6px 10px;width:190px;background:#f7f8fa}
+.top-search input{border:none;outline:none;background:none;font-size:12.5px;width:100%;color:var(--ink)}
+.top-search input::placeholder{color:#a6adbd}
+.dark-toggle{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:8px;padding:5px 9px;font-size:12px;color:#4a5265;white-space:nowrap;background:#fff}
+.dark-toggle .sw{width:32px;height:17px;border-radius:9px;background:#d7dbe5;position:relative;transition:background .2s}
+.dark-toggle .sw::after{content:"";position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transition:left .2s}
+body.dark .dark-toggle .sw{background:var(--warn)}
+body.dark .dark-toggle .sw::after{left:17px}
+.top-ic{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#6a7285;background:#f2f5fb;flex:none}
+.top-ic:hover{background:#e9effd}
+.top-user{display:flex;align-items:center;gap:8px;padding:4px 8px;border-radius:8px;white-space:nowrap}
+.top-user .ava{width:30px;height:30px;border-radius:50%;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex:none}
+.top-user .tn{font-size:12.5px;font-weight:700;line-height:1.3}
+.top-user .tr{font-size:11px;color:var(--dim)}
+
+/* ===== 主框架：左栏上下文 + 内容区 ===== */
+.shell{display:flex;align-items:stretch;min-height:calc(100vh - 58px)}
+.context{width:232px;flex:none;background:#fff;padding:14px 10px;overflow-y:auto;position:sticky;top:58px;height:calc(100vh - 58px)}
+.ctx-group{display:none}
+.ctx-group.active{display:block}
+.ctx-h{font-size:11px;color:var(--dim);padding:10px 10px 6px;letter-spacing:1px;display:flex;align-items:center;justify-content:space-between}
+.ctx-item{display:flex;align-items:center;gap:9px;width:100%;padding:8px 11px;border-radius:8px;font-size:13px;color:#4a5265;text-align:left}
+.ctx-item svg{flex:none;color:#9aa3b8}
+.ctx-item:hover{background:#f2f5fb;color:var(--brand2)}
+.ctx-item.active{background:#e9effd;color:var(--brand2);font-weight:700}
+.ctx-item.active svg{color:var(--brand)}
+.ctx-item .c-b{margin-left:auto;font-size:10.5px;background:#eef1f7;color:var(--dim);padding:0 6px;border-radius:7px}
+.ctx-sec{border-top:1px solid #f0f2f7;margin-top:6px;padding-top:6px}
+.ctx-tag{display:inline-block;font-size:11px;padding:1px 9px;border-radius:8px;background:#eef1f7;color:#5c6478;white-space:nowrap}
+.ctx-tag.ok{background:#e2f4ec;color:#14784f}
+.ctx-tag.warn{background:#fdf0dc;color:var(--warn)}
+.ctx-tag.bad{background:#fbe7e5;color:var(--bad)}
+.ctx-tag.plan{background:#fdf0dc;color:var(--warn);border:1px dashed #d4ab62}
+.ctx-tag.dark-tag{background:#e7e9f0;color:var(--brand2)}
+/* 左栏折叠态 */
+.context.collapsed{width:64px;padding:14px 8px}
+.context.collapsed .ctx-item{gap:0;justify-content:center;padding:9px 0;font-size:0}
+.context.collapsed .ctx-item svg{width:17px;height:17px;flex:none}
+.context.collapsed .ctx-h{height:0;padding:0;visibility:hidden;overflow:hidden}
+.context.collapsed .ctx-sec{border-top:none;padding-top:4px;margin-top:2px}
+.context.collapsed .ctx-tag,.context.collapsed .c-b{display:none}
+.context.collapsed .ctx-item.active{background:#e9effd}
+/* 分割线 + 折叠按钮 */
+.resizer{width:14px;flex:none;cursor:col-resize;position:relative;background:transparent;border-left:1px solid var(--line);user-select:none;touch-action:none}
+.resizer:hover{border-left-color:var(--brand)}
+.resizer.dragging{border-left-color:var(--brand)}
+.resizer .cb{position:absolute;left:0;top:50%;transform:translate(-50%,-50%);width:24px;height:24px;border-radius:7px;background:#fff;border:1px solid var(--line);box-shadow:0 2px 8px rgba(30,40,80,.14);display:flex;align-items:center;justify-content:center;color:#6a7285;z-index:5;cursor:pointer}
+.resizer .cb:hover{color:var(--brand);border-color:var(--brand)}
+.content{flex:1;min-width:0;padding:20px 22px 60px;width:100%;max-width:1700px;margin:0 auto}
+.view{display:none}
+.view.active{display:block}
+
+/* ===== 工作台 ===== */
+.banner{display:flex;align-items:center;justify-content:space-between;gap:18px;background:linear-gradient(120deg,#2B5CD9 0%,#3E6FE0 55%,#5B8BF0 120%);color:#fff;border-radius:14px;padding:26px 30px;margin-bottom:18px;box-shadow:0 8px 26px rgba(43,92,217,.22)}
+.banner h1{font-size:21px;margin-bottom:6px;letter-spacing:.5px}
+.banner p{font-size:13px;color:rgba(255,255,255,.85);max-width:640px}
+.banner .bb{display:flex;gap:10px;flex-wrap:wrap}
+.chips{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.chip{font-size:12.5px;color:#5c6478;background:#fff;border:1px solid var(--line);border-radius:16px;padding:5px 14px;cursor:pointer;transition:all .15s}
+.chip:hover{border-color:var(--brand);color:var(--brand)}
+.chip.active{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:600}
+.chip .c-n{opacity:.75;font-size:11px}
+.expert-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.expert-card{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:18px 18px 14px;display:flex;flex-direction:column;gap:9px;transition:box-shadow .15s,transform .12s;cursor:pointer}
+.expert-card:hover{box-shadow:0 8px 22px rgba(30,40,80,.12);transform:translateY(-2px)}
+.expert-card.hide{display:none}
+.ec-top{display:flex;align-items:center;gap:8px}
+.ec-name{font-size:14.5px;font-weight:800;color:var(--ink)}
+.ec-desc{font-size:12.3px;color:#5c6478;line-height:1.7}
+.ec-preview{height:104px;border-radius:8px;background:#f0f3fa;overflow:hidden;position:relative;border:1px solid #eef1f6}
+.ec-preview .pv{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;padding:8px 10px;font-size:10.5px;color:#5c6478}
+.ec-preview .pv-line{height:6px;border-radius:3px;background:#d8dfec;margin:3px 0;width:100%}
+.ec-preview .pv-line.brand{background:var(--brand)}
+.ec-foot{display:flex;align-items:center;justify-content:space-between}
+.ec-call{font-size:12.5px;font-weight:700;color:var(--brand)}
+.ec-call:hover{color:var(--brand2)}
+.pv1{background:linear-gradient(150deg,#eef3fd 0%,#dde7fb 60%,#c9d9f7 100%)}
+.pv2{background:linear-gradient(150deg,#eef2f6 0%,#dde4ea 60%,#ccd6df 100%)}
+.pv3{background:linear-gradient(150deg,#e9f7ef 0%,#d2ecd9 60%,#b7e0c4 100%)}
+.pv4{background:linear-gradient(150deg,#f2f1ee 0%,#e2e0db 60%,#cfccc5 100%)}
+.pv-dot{position:absolute;top:8px;left:10px;font-size:9.5px;color:#8a93a8;letter-spacing:1px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}
+.card-h{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;border-bottom:1px solid var(--line);font-size:14px;font-weight:700}
+.card-h .sub{font-weight:400;color:var(--dim);font-size:12px}
+.card-b{padding:14px 18px}
+.stat-grid{display:flex;gap:26px;flex-wrap:wrap}
+.stat-grid .s-n{font-size:20px;font-weight:800;color:var(--brand)}
+.stat-grid .s-l{font-size:12px;color:var(--dim)}
+
+/* ===== 项目视图 ===== */
+.proj-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:20px 22px;margin-bottom:16px}
+.proj-head h2{font-size:18px;font-weight:800;margin-bottom:4px}
+.proj-head .pm{font-size:12.5px;color:var(--dim)}
+.kv{display:flex;gap:26px;flex-wrap:wrap;margin-top:12px}
+.kv .k{font-size:11.5px;color:var(--dim)}
+.kv .v{font-size:13px;font-weight:700}
+.book-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.book-card{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:18px;display:flex;flex-direction:column;gap:10px;cursor:pointer;transition:box-shadow .15s,transform .12s}
+.book-card:hover{box-shadow:0 8px 22px rgba(30,40,80,.12);transform:translateY(-2px)}
+.book-card .b-name{font-size:14.5px;font-weight:800}
+.book-card .b-desc{font-size:12.3px;color:#5c6478;line-height:1.7}
+.book-card .b-prog{height:7px;border-radius:4px;background:#eef1f7;overflow:hidden}
+.book-card .b-prog i{display:block;height:100%;border-radius:4px;background:var(--brand)}
+.book-card .b-foot{display:flex;align-items:center;justify-content:space-between}
+.act-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
+.act-card{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:14px 16px;display:flex;flex-direction:column;gap:5px;cursor:pointer;transition:box-shadow .15s}
+.act-card:hover{box-shadow:0 6px 18px rgba(30,40,80,.12)}
+.act-card .a-name{font-size:13.5px;font-weight:700}
+.act-card .a-desc{font-size:12px;color:var(--dim)}
+
+/* ===== 编辑器 ===== */
+.editor-steps{display:flex;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:10px 16px;margin-bottom:14px;overflow-x:auto}
+.estep{display:flex;align-items:center;gap:7px;white-space:nowrap;font-size:12.5px;color:var(--dim)}
+.estep.cur{color:var(--brand2);font-weight:700}
+.estep.done{color:#14784f}
+.estep .e{width:20px;height:20px;border-radius:50%;background:#eef1f7;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex:none}
+.estep.cur .e{background:var(--brand);color:#fff}
+.estep.done .e{background:#e2f4ec;color:#14784f}
+.editor-grid{display:grid;grid-template-columns:1fr 300px;gap:14px;align-items:start}
+.canvas{min-height:520px;display:flex;flex-direction:column}
+.canvas-body{padding:18px 22px;flex:1}
+.ch-title{font-size:19px;font-weight:800;color:var(--brand2);border-bottom:2px solid var(--brand);padding-bottom:10px;margin-bottom:14px}
+.ch-sub{font-size:13.5px;color:var(--dim);margin-bottom:12px}
+.para{font-size:13.8px;text-indent:2em;margin-bottom:10px;color:#2a3242}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;padding:10px 14px;border-top:1px solid var(--line);background:#fafbfd;border-radius:0 0 12px 12px}
+.toolbar .btn{font-size:12px;padding:6px 12px}
+.prop-group{padding:12px 14px;border-bottom:1px solid #f2f4f9}
+.prop-group:last-child{border-bottom:none}
+.prop-label{font-size:12px;color:var(--dim);margin-bottom:6px;display:flex;justify-content:space-between}
+.prop-select{width:100%;border:1px solid var(--line);border-radius:7px;padding:6px 8px;font-size:12.5px;background:#fff;color:var(--ink)}
+.dark-alert{background:#fdf6ec;border:1px solid #e5cf9d;border-radius:8px;padding:10px 12px;font-size:12.3px;color:#6b5416}
+.dark-alert b{color:#8a6410}
+.statusbar{display:flex;gap:18px;padding:8px 16px;border-top:1px solid var(--line);background:#fafbfd;border-radius:0 0 12px 12px;font-size:12px;color:var(--dim);flex-wrap:wrap}
+
+/* ===== 风格配置屏 ===== */
+.style-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.style-grid{display:grid;grid-template-columns:330px 1fr;gap:14px;align-items:start}
+.sel-group{border:1px solid var(--line);border-radius:9px;padding:9px 11px;margin-bottom:8px;background:#fff}
+.sel-group h4{font-size:12.3px;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center}
+.sel-group h4 .lock{font-size:10.5px;color:var(--warn);background:#fdf0dc;padding:0 7px;border-radius:7px}
+.sel-group select{width:100%;border:1px solid var(--line);border-radius:7px;padding:5px 8px;font-size:12.3px;background:#fff;color:var(--ink)}
+.sel-group select:disabled{background:#f2f4f9;color:#8a93a8;cursor:not-allowed}
+.sel-group .dim{font-size:11px;color:var(--dim)}
+.a4{width:250px;aspect-ratio:210/297;background:#fff;border:1px solid var(--line);box-shadow:var(--shadow);padding:15px 17px;display:flex;flex-direction:column;gap:9px;margin:0 auto}
+.a4-head{font-size:9px;text-align:center;color:var(--dim);border-bottom:1px solid #d7dbe5;padding-bottom:5px;letter-spacing:2px}
+.a4-title{font-size:12.5px;font-weight:700;padding-bottom:4px;border-bottom:1px solid var(--pal,#243B6B)}
+.a4-para{font-size:8.3px;color:#3a4150;line-height:1.75;text-indent:2em}
+.a4-fig{height:58px;background:#eef1f7;border:1px dashed #c7cfdd;display:flex;align-items:center;justify-content:center;color:#9aa3b8;font-size:9px;border-radius:3px}
+.a4-tb{width:100%;border-collapse:collapse;font-size:8.3px;color:#3a4150}
+.a4-tb.tb1 tr:first-child{border-top:1.6px solid var(--pal,#243B6B);border-bottom:.9px solid var(--pal,#243B6B);font-weight:700}
+.a4-tb.tb1 tr:last-child{border-bottom:1px solid var(--pal,#243B6B)}
+.a4-tb.tb2 td{border:1px solid #c7cfdd;padding:3px 5px}
+.a4-caption{font-size:8.3px;color:var(--dim);text-align:center}
+.a4-foot{font-size:8.3px;color:var(--dim);text-align:center;border-top:1px solid #e6e9f0;padding-top:4px;margin-top:auto}
+.chk{display:flex;gap:8px;align-items:flex-start;font-size:12.3px;padding:7px 0;border-bottom:1px dashed #eef1f7}
+.chk:last-child{border-bottom:none}
+.chk .dot{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex:none;margin-top:1px}
+.chk .dot.ok{background:#e2f4ec;color:#14784f}
+.chk .dot.bad{background:#fbe7e5;color:var(--bad)}
+.chk .k{font-weight:700;margin-right:6px}
+
+/* ===== 素材库 ===== */
+.asset-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.asset-card{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:14px 15px;display:flex;flex-direction:column;gap:8px;cursor:pointer;transition:box-shadow .15s,transform .12s}
+.asset-card:hover{box-shadow:0 8px 22px rgba(30,40,80,.12);transform:translateY(-2px)}
+.asset-card.hide{display:none}
+.ac-top{display:flex;align-items:center;gap:10px}
+.ac-ico{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex:none;color:#fff}
+.ac-name{font-size:13px;font-weight:700;line-height:1.35}
+.ac-meta{font-size:11.5px;color:var(--dim)}
+.ac-tags{display:flex;gap:5px;flex-wrap:wrap}
+.ac-foot{display:flex;align-items:center;justify-content:space-between;border-top:1px dashed #eef1f7;padding-top:8px}
+.ac-act{font-size:12px;font-weight:700;color:var(--brand)}
+.ac-act:hover{color:var(--brand2)}
+.lib-note{display:flex;gap:10px;align-items:flex-start;background:#fdf6ec;border:1px solid #e5cf9d;border-radius:10px;padding:12px 14px;font-size:12.3px;color:#6b5416;margin-top:16px;line-height:1.7}
+.lib-note b{color:#8a6410}
+.act-chip{font-size:11px;padding:2px 9px;border-radius:7px;background:#eef1f7;color:#5c6478;white-space:nowrap}
+.act-chip.up{background:#e2f4ec;color:#14784f}
+.act-chip.web{background:#eef3fd;color:var(--brand2)}
+.act-chip.ai{background:#f3ecfd;color:#7a3ed6}
+.act-chip.arch{background:#e9effd;color:var(--brand)}
+.act-chip.prot{background:#fbe7e5;color:var(--bad)}
+.act-chip.recy{background:#fdf0dc;color:var(--warn)}
+
+/* ===== 向导 ===== */
+.wz-step{display:none}
+.wz-step.active{display:block}
+.dropzone{border:2px dashed #c7cfdd;border-radius:12px;padding:34px 20px;text-align:center;color:#7a8193;background:#fafbfd;cursor:pointer;font-size:13px;transition:border-color .15s,background .15s}
+.dropzone:hover{border-color:var(--brand);background:#f2f6fd;color:var(--brand)}
+.file-row{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:9px;padding:9px 12px;margin-top:8px;font-size:12.5px}
+.file-row .fn{font-weight:700;color:var(--ink)}
+.wz-form{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.wz-field label{display:block;font-size:12px;color:var(--dim);margin-bottom:4px}
+.wz-field input{width:100%;border:1px solid var(--line);border-radius:7px;padding:7px 10px;font-size:12.8px;color:var(--ink);background:#fff}
+.wz-field input:disabled{background:#f2f4f9;color:#8a93a8}
+.wz-judge{border:1px solid var(--line);border-radius:10px;padding:14px 16px;background:#fff;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.wz-judge .jt{font-size:13px;font-weight:700}
+.wz-judge .jd{font-size:12px;color:var(--dim);line-height:1.7}
+.chk-list{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+.chk-row{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid #f0f2f7;font-size:12.8px}
+.chk-row:last-child{border-bottom:none}
+.chk-row input{width:15px;height:15px;accent-color:var(--brand);flex:none}
+.chk-row .score{margin-left:auto;font-size:11px;color:var(--dim);white-space:nowrap}
+.wz-foot{display:flex;justify-content:space-between;margin-top:18px}
+.wz-sub{font-size:12px;color:var(--dim);margin-top:8px;line-height:1.7}
+.wz-opt{display:flex;gap:10px;flex-wrap:wrap}
+.wz-opt .opt{display:flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:9px;padding:9px 14px;font-size:12.8px;background:#fff;cursor:pointer}
+.wz-opt .opt input{accent-color:var(--brand)}
+.wz-opt .opt.on{border-color:var(--brand);background:#f2f6fd}
+.check-mini{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;padding:7px 0;border-bottom:1px dashed #eef1f7}
+.check-mini:last-child{border-bottom:none}
+.check-mini .dot{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex:none;margin-top:1px;background:#eef1f7;color:#5c6478}
+.check-mini .dot.on{background:#e2f4ec;color:#14784f}
+
+/* ===== 模板库 ===== */
+.tpl-table{table-layout:fixed;width:100%;border-collapse:collapse;font-size:12.3px;background:#fff;border-radius:10px;overflow:hidden;border:1px solid var(--line)}
+.tpl-table th{background:#f4f6fb;text-align:left;padding:9px 12px;font-weight:700;color:#5c6478;border-bottom:1px solid var(--line)}
+.tpl-table td{padding:9px 12px;border-bottom:1px solid #f0f2f7;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tpl-table tr:last-child td{border-bottom:none}
+.tpl-table tbody tr:hover{background:#f7f9fd}
+.tpl-name{font-weight:700}
+.tpl-act{color:var(--brand);font-weight:700;cursor:pointer}
+.tpl-act:hover{color:var(--brand2)}
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
+.stat-box{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 16px;box-shadow:var(--shadow)}
+.stat-box .n{font-size:22px;font-weight:800;color:var(--brand)}
+.stat-box .l{font-size:11.5px;color:var(--dim);margin-top:2px}
+.rule-bar{display:flex;gap:10px;align-items:flex-start;background:#f3f7ff;border:1px solid #d5e3fb;border-radius:10px;padding:12px 14px;font-size:12.3px;color:#33527e;line-height:1.8;margin-top:14px}
+.rule-bar b{color:#1f3f7a}
+
+/* ===== 公司管理 / 企业库 ===== */
+.comp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.comp-card{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:14px 16px;cursor:pointer;transition:box-shadow .15s,transform .12s;border-top:3px solid transparent}
+.comp-card:hover{box-shadow:0 8px 22px rgba(30,40,80,.12);transform:translateY(-2px)}
+.comp-card.on{border-top-color:var(--brand);background:#f7faff}
+.comp-card .cn{font-size:14px;font-weight:800;margin-bottom:3px}
+.comp-card .cm{font-size:11.5px;color:var(--dim);margin-bottom:10px}
+.comp-stats{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:#5c6478;margin-top:8px;border-top:1px dashed #eef1f7;padding-top:9px}
+.comp-stats b{font-size:15px;color:var(--ink)}
+.dir-tree{font-family:Consolas,"Courier New",monospace;font-size:12.3px;line-height:1.85;background:#fafbfd;border:1px solid var(--line);border-radius:10px;padding:14px 18px;color:#5c6478;white-space:pre;overflow:auto;max-width:100%;box-sizing:border-box}
+.dir-tree .hl{color:var(--brand);font-weight:700}
+.dir-tree .dim{color:#a9b1c3}
+.two-col>*{min-width:0}
+.rule-bar{min-width:0}
+
+/* ===== 全局开发台 ===== */
+.dev-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.dev-panel{background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column}
+.dev-panel .dev-h{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;border-bottom:1px solid var(--line);font-size:13px;font-weight:800;background:#fafbfd}
+.dev-panel .dev-b{padding:12px 16px;font-size:12.3px;color:#5c6478;line-height:1.8;overflow:auto}
+.dev-mod{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px dashed #f0f2f7;font-size:12.3px}
+.dev-mod:last-child{border-bottom:none}
+.dev-mod .mk{font-family:Consolas,monospace;font-weight:700;color:var(--brand);width:64px;flex:none}
+.dev-mod .md{flex:1;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dev-mod .mc{font-size:11px;color:var(--dim);white-space:nowrap}
+
+/* ===== 模块屏（M4/M7/M8/M10） ===== */
+.dual{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.dual .du{background:#fff;border:1px solid var(--line);border-radius:10px;padding:13px 15px;min-width:0}
+.dual .du-h{font-size:12.5px;font-weight:800;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.dual .du-h .ch{width:8px;height:8px;border-radius:50%;flex:none}
+.mline{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px dashed #f0f2f7;font-size:12.3px}
+.mline:last-child{border-bottom:none}
+.mline .sn{font-family:Consolas,monospace;color:var(--brand);font-weight:700;flex:none;width:64px}
+.mline .st{flex:1;color:#5c6478;line-height:1.7}
+.mline .sg{font-size:11px;color:var(--dim);white-space:nowrap;margin-top:2px}
+
+/* toast */
+#toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:#1f2937;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;box-shadow:0 6px 22px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:all .25s;z-index:99;max-width:88vw}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* 响应式 */
+@media (min-width:1920px){
+  .expert-grid{grid-template-columns:repeat(4,1fr)}
+  .content{padding:24px 34px 60px}
+}
+@media (max-width:1360px){
+  .top-search{width:130px}
+}
+@media (max-width:1080px){
+  .editor-grid{grid-template-columns:1fr}
+  .style-grid{grid-template-columns:1fr}
+  .asset-grid{grid-template-columns:repeat(2,1fr)}
+  .comp-grid{grid-template-columns:repeat(2,1fr)}
+  .two-col{grid-template-columns:1fr!important}
+  .dev-grid{grid-template-columns:1fr}
+  .top-search{width:120px}
+  .top-user .tr{display:none}
+}
+@media (max-width:860px){
+  .context{display:none}
+  .resizer{display:none}
+  #bridgeBtn{display:none}
+  .expert-grid,.book-grid,.act-grid,.asset-grid,.comp-grid{grid-template-columns:1fr}
+  .stat-row{grid-template-columns:repeat(2,1fr)}
+  .stat-row>*{min-width:0}
+  .banner{flex-direction:column;align-items:flex-start;padding:20px}
+  .banner h1{font-size:17px}
+  .top-user .tn{display:none}
+}
+@media (max-width:640px){
+  .topbar{padding:0 10px}
+  .logo{padding-right:8px}
+  .n1{padding:9px 10px}
+  .top-search{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- ===== 顶栏：Logo + 一级导航 + 全局操作 ===== -->
+<header class="topbar">
+  <div class="logo">
+    <svg width="26" height="26" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#2B5CD9"/><path d="M8 10h16v3H8zm0 6h10v3H8zm0 6h14v3H8z" fill="#fff"/></svg>
+    标书匠
+  </div>
+  <nav class="nav1">
+    <a class="n1 active" href="#/home">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10l9-7 9 7v10a1 1 0 0 1-1 1h-4v-7h-8v7H4a1 1 0 0 1-1-1z"/></svg>工作台
+    </a>
+    <a class="n1" href="#/project">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>项目
+    </a>
+    <a class="n1" href="#/style">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a9 9 0 1 0 9 9c0-1.5-.9-2-1.8-2.4-1-.5-1.4-1.6-.8-2.6.5-.9.3-2.1-.6-2.9C16.6 3.7 14.4 3 12 3z"/><circle cx="8.5" cy="10.5" r="1"/><circle cx="12" cy="15" r="1"/><circle cx="15.5" cy="10.5" r="1"/></svg>风格
+    </a>
+    <a class="n1" href="#/library">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>素材库
+    </a>
+    <a class="n1" href="#/template">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>模板库
+    </a>
+    <a class="n1" href="#/dev">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.7 4.8L18 9.5l-4.3 1.7L12 16l-1.7-4.8L6 9.5l4.3-1.7z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>开发台<span class="dev-b">DEV</span>
+    </a>
+  </nav>
+  <div class="top-right">
+    <button class="btn btn-primary" onclick="go('wizard')">＋ 新建标书</button>
+    <div class="top-search">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9aa3b8" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+      <input placeholder="全局搜索（规划中）" disabled>
+    </div>
+    <button class="dark-toggle" id="darkToggle"><span class="sw"></span>暗标</button>
+    <button class="top-ic" id="bridgeBtn" onclick="toggleBridge()" title="本地联调开关（CLI 桥）">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>
+    </button>
+    <button class="top-ic" onclick="toast('通知中心在后续迭代实现（规划中）')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+    </button>
+    <div class="top-user">
+      <span class="ava">标</span>
+      <div><div class="tn">开发者</div><div class="tr">安徽某某监理有限公司</div></div>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+<!-- ===== 左栏：上下文导航（随模块切换） ===== -->
+<aside class="context" id="ctxBar">
+  <!-- 工作台上下文 -->
+  <div class="ctx-group active" id="ctx-home">
+    <div class="ctx-h">快捷入口</div>
+    <button class="ctx-item" onclick="go('wizard')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>新建标书
+    </button>
+    <button class="ctx-item" onclick="toast('导入招标文件在后续迭代实现（规划中）')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>导入招标文件
+    </button>
+    <button class="ctx-item" onclick="go('company')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>公司管理 · 企业库
+    </button>
+    <button class="ctx-item" onclick="toast('素材归档在素材库视图实现（规划中）')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>归档素材
+    </button>
+    <button class="ctx-item" onclick="toast('质量检查面板在后续迭代实现（规划中）')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>质量检查
+    </button>
+    <div class="ctx-sec">
+      <div class="ctx-h">最近访问</div>
+      <button class="ctx-item" onclick="go('project')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="14" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>市政务服务中心项目
+      </button>
+      <button class="ctx-item" onclick="go('project')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="14" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>城东污水处理厂
+      </button>
+      <button class="ctx-item" onclick="go('project')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="14" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>滨江大道管网改造
+      </button>
+    </div>
+  </div>
+
+  <!-- 项目上下文 -->
+  <div class="ctx-group" id="ctx-project">
+    <div class="ctx-h">市政务服务中心项目 <span class="ctx-tag dark-tag" id="ctxTag1">暗标</span></div>
+    <div class="ctx-h" style="padding-top:4px">标书文件</div>
+    <button class="ctx-item active" onclick="go('editor')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>技术标 · 监理大纲<span class="c-b">60%</span>
+    </button>
+    <button class="ctx-item" onclick="toast('商务标编辑在后续迭代实现（规划中）')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg>商务标<span class="c-b">—</span>
+    </button>
+    <div class="ctx-sec">
+      <div class="ctx-h">项目流程（产物目录）</div>
+      <button class="ctx-item" onclick="go('projtpl')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>项目模板 · 商务标（M5 fill-tpl）<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:6px"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+      <button class="ctx-item" onclick="go('tender')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>招标解析（M4 双通道）<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:6px"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+      <button class="ctx-item" onclick="go('editor')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg>技术标（M6 状态机）<span class="c-b">60%</span>
+      </button>
+      <button class="ctx-item" onclick="go('check')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>标书检查（M7 双通道）<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:6px"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+      <button class="ctx-item" onclick="go('eval')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg>模拟评标 · 补救（M8/M10）<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:6px"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+    </div>
+    <div class="ctx-sec">
+      <div class="ctx-h">项目信息</div>
+      <div style="padding:4px 11px;font-size:12px;color:var(--dim);line-height:1.9">
+        <div>招标编号：MAS-2026-FJ-018</div>
+        <div>截止：2026-11-08 09:00</div>
+        <div>评分：综合评估法（技术 60%）</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 编辑器上下文 -->
+  <div class="ctx-group" id="ctx-editor">
+    <div class="ctx-h">技术标 · 监理大纲 <span class="ctx-tag dark-tag" id="ctxTag2">暗标</span></div>
+    <div class="ctx-h" style="padding-top:4px">章节（10 章）</div>
+    <div id="ctxTree" style="margin-top:2px">
+      <div class="ctx-item active" data-ch="1">第一章 工程概况与监理工作范围<span class="c-b" style="background:#2c8a62">CONFIRMED</span></div>
+      <div class="ctx-item" data-ch="2" style="padding-left:24px">1.1 工程概况<span class="c-b" style="background:#5b79b8">WRITTEN</span></div>
+      <div class="ctx-item" data-ch="3" style="padding-left:24px">1.2 监理工作范围<span class="c-b" style="background:#5b79b8">WRITTEN</span></div>
+      <div class="ctx-item" data-ch="4">第二章 监理工作依据、目标与内容<span class="c-b" style="background:#8a6bc8">CHECKED</span></div>
+      <div class="ctx-item" data-ch="5">第三章 项目监理机构及人员配备<span class="c-b" style="background:#d0883c">CONTEXT_READY</span></div>
+      <div class="ctx-item" data-ch="6">第四章 监理工作程序与方法<span class="c-b">PENDING</span></div>
+      <div class="ctx-item" data-ch="7">第五章 质量控制体系与措施<span class="c-b">PENDING</span></div>
+      <div class="ctx-item" data-ch="8">第六章 进度控制体系与措施<span class="c-b">PENDING</span></div>
+      <div class="ctx-item" data-ch="9">第七章 投资控制体系与措施<span class="c-b">PENDING</span></div>
+      <div class="ctx-item" data-ch="10">第八章 安全文明施工与环境保护监理<span class="c-b">PENDING</span></div>
+      <div class="ctx-item" data-ch="11">第九章 合同信息管理与组织协调<span class="c-b">PENDING</span></div>
+      <div class="ctx-item" data-ch="12">第十章 监理工作制度与资料管理<span class="c-b">PENDING</span></div>
+    </div>
+    <div class="ctx-sec">
+      <div class="ctx-h">评分点 / 素材</div>
+      <button class="ctx-item" onclick="toast('评分点面板在后续迭代实现（规划中）')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.7 4.8L18 9.5l-4.3 1.7L12 16l-1.7-4.8L6 9.5l4.3-1.7z"/></svg>评分点
+      </button>
+      <button class="ctx-item" onclick="toast('素材面板在后续迭代实现（规划中）')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>素材
+      </button>
+    </div>
+  </div>
+
+  <!-- 风格配置上下文 -->
+  <div class="ctx-group" id="ctx-style">
+    <div class="ctx-h">排版预设（15 组 × 10 套）<span class="ctx-tag ok">实时</span></div>
+    <div id="ctxStyleNav" style="margin-top:2px"></div>
+    <div class="ctx-sec">
+      <div class="ctx-h">快捷操作</div>
+      <button class="ctx-item" onclick="resetStyle()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>恢复默认组合
+      </button>
+      <button class="ctx-item" onclick="applyStyle()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>应用此组合
+      </button>
+    </div>
+  </div>
+
+  <!-- 招标解析上下文 -->
+  <div class="ctx-group" id="ctx-tender">
+    <div class="ctx-h">招标解析（M4）<span class="ctx-tag dark-tag">暗标</span></div>
+    <div class="ctx-h" style="padding-top:4px">流程（10 命令）</div>
+    <button class="ctx-item active" onclick="toast('当前：双通道比对阶段')">1 · 归档提取（tender-extract）</button>
+    <button class="ctx-item" onclick="toast('当前：双通道比对阶段')">2 · 双通道解析（tender-rule / parse）</button>
+    <button class="ctx-item" onclick="toast('当前：双通道比对阶段')">3 · 差异比对（tender-diff）</button>
+    <button class="ctx-item" onclick="toast('投标要点 HTML 核对（闸门①）在后续迭代实现（规划中）')">4 · 投标要点核对（tender-report 闸门①）</button>
+    <button class="ctx-item" onclick="toast('补遗归档在后续迭代实现（规划中）：tender-annex 补遗/澄清/修改 → 跨文件比对')">5 · 补遗归档（tender-annex）</button>
+    <div class="ctx-sec">
+      <div class="ctx-h">快捷操作</div>
+      <button class="ctx-item" onclick="toast('响应文件格式提取在后续迭代实现（规划中）：tender-fmt 脚本化提取一字不改')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>提取格式章节（tender-fmt）
+      </button>
+      <button class="ctx-item" onclick="toast('素材清单对照在后续迭代实现（规划中）：tender-check 逐项对照素材库 → 缺料标红 CSV')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>素材对照（tender-check）
+      </button>
+    </div>
+  </div>
+
+  <!-- 标书检查上下文 -->
+  <div class="ctx-group" id="ctx-check">
+    <div class="ctx-h">标书检查（M7 双通道）</div>
+    <div class="ctx-h" style="padding-top:4px">流程</div>
+    <button class="ctx-item active" onclick="toast('通道A：check-rule 机器检查规则引擎（checker 6 项硬检查 + 报价/证书/期限/素材确定性核对，标准=M4 解析产物）')">1 · 通道A 机器检查（check-rule）</button>
+    <button class="ctx-item" onclick="toast('通道B：check-parse agent 语义审查产物落盘（md+json 双份，结构校验）')">2 · 通道B 语义审查（check-parse）</button>
+    <button class="ctx-item" onclick="toast('双通道差异：check-diff 差异比对 → 人工裁决')">3 · 双通道差异（check-diff）</button>
+    <button class="ctx-item" onclick="toast('HTML 报告：check-report 执行摘要/差异/废标红线/整改清单 → 人工确认闸门')">4 · 检查报告（check-report 闸门）</button>
+    <div class="ctx-sec">
+      <div class="ctx-h">检查对象</div>
+      <div style="padding:4px 11px;font-size:12px;color:var(--dim);line-height:1.8">默认：项目级/市政务服务中心项目/商务标；上传版用 --tag 区分产物不覆盖。</div>
+    </div>
+  </div>
+
+  <!-- 模拟评标上下文 -->
+  <div class="ctx-group" id="ctx-eval">
+    <div class="ctx-h">模拟评标（M8）</div>
+    <div class="ctx-h" style="padding-top:4px">流程</div>
+    <button class="ctx-item active" onclick="toast('eval-run 阶段1 通道A：评分标准结构化 + 客观分计算 + 报价分反推基准价区间；报价铁律=用户提供（--quote）')">1 · 规则引擎（eval-run）</button>
+    <button class="ctx-item" onclick="toast('eval-parse 阶段2 通道B：agent 主观评审产物落盘（JSON 结构校验闸门）')">2 · 主观评审（eval-parse）</button>
+    <button class="ctx-item" onclick="toast('eval-report 合并渲染完整模拟评标报告 → HTML（人工确认闸门）')">3 · 合并报告（eval-report 闸门）</button>
+    <div class="ctx-sec">
+      <div class="ctx-h">评分办法</div>
+      <div style="padding:4px 11px;font-size:12px;color:var(--dim);line-height:1.8">综合评估法（技术 60% + 商务 40%）· 报价分反推基准价区间 · 失分项进入 M10 补救</div>
+    </div>
+  </div>
+
+  <!-- 补救上下文 -->
+  <div class="ctx-group" id="ctx-remedy">
+    <div class="ctx-h">补救（M10）</div>
+    <button class="ctx-item active" onclick="toast('remedy-gen：M8 失分诊断 → 可执行补救任务单（素材补齐/内容补强/格式合规/报价策略）')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg>生成补救任务单（remedy-gen）
+    </button>
+    <div class="ctx-sec">
+      <div class="ctx-h">任务分类</div>
+      <div style="padding:4px 11px;font-size:12px;color:var(--dim);line-height:1.8">能力问题：素材补齐（业绩/职称/荣誉/体系）<br>响应问题：内容补强 / 格式合规 / 报价策略</div>
+    </div>
+  </div>
+
+  <!-- 项目模板上下文（M5） -->
+  <div class="ctx-group" id="ctx-projtpl">
+    <div class="ctx-h">项目模板 · 商务标（M5）</div>
+    <div class="ctx-h" style="padding-top:4px">管线（v2.0 布局样板范式）</div>
+    <button class="ctx-item active" onclick="toast('proj-mat 在后续迭代实现（规划中）：素材清单表 → 素材清单_<项目>.json（v2.0 数据源）')">1 · 素材清单组装（proj-mat）</button>
+    <button class="ctx-item" onclick="toast('fill-tpl 在后续迭代实现（规划中）：企业母版深拷贝 → 项目模板 → 类别聚合填充 → 商务标')">2 · 填充商务标（fill-tpl）</button>
+    <div class="ctx-sec">
+      <div class="ctx-h">数据源</div>
+      <div style="padding:4px 11px;font-size:12px;color:var(--dim);line-height:1.8">素材清单_空白表_v5*.xlsm（最新）<br>素材台账.json（企业级/素材库）<br>社保素材（项目资料/社保* 自动定位）</div>
+    </div>
+    <div class="ctx-sec">
+      <div class="ctx-h">产物</div>
+      <div style="padding:4px 11px;font-size:12px;color:var(--dim);line-height:1.8">项目级/&lt;项目&gt;/项目模板<br>项目级/&lt;项目&gt;/商务标</div>
+    </div>
+  </div>
+
+  <!-- 开发台上下文 -->
+  <div class="ctx-group" id="ctx-dev">
+    <div class="ctx-h">开发台面板</div>
+    <button class="ctx-item" onclick="toast('模块管道：M0–M10 + m_feedback + _shared/core + docx_tools')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg>模块管道（M0–M10）
+    </button>
+    <button class="ctx-item" onclick="toast('测试中心：tests/unit 26 · integration 3 · e2e 4')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>测试中心（33 文件）
+    </button>
+    <button class="ctx-item" onclick="toast('审计与一致性：audit_presets.py C1–C9 → audit_report.json → HTML 报告')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>审计与一致性（C1–C9）
+    </button>
+    <button class="ctx-item" onclick="toast('契约与文档：references 19 篇（契约草案/需求对齐/操作手册/提示词）')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>契约与文档（19 篇）
+    </button>
+    <button class="ctx-item" onclick="toast('产物反馈：m_feedback 反馈注册 → 回读 → 闭环')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>产物反馈（m_feedback）
+    </button>
+    <button class="ctx-item" onclick="toast('开发日志与版本：development-log / 规则对齐 / 已知缺口（T11 待定）')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>日志与版本
+    </button>
+    <div class="ctx-sec">
+      <div class="ctx-h">入口</div>
+      <button class="ctx-item" onclick="toast('开发日志：dev/notes/development-log.md')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>开发日志
+      </button>
+      <button class="ctx-item" onclick="toast('模块契约：references/module-contracts.md')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19L20 4M8 20h12M4 16h12"/></svg>模块契约
+      </button>
+    </div>
+  </div>
+
+  <!-- 公司管理上下文 -->
+  <div class="ctx-group" id="ctx-company">
+    <div class="ctx-h">企业列表</div>
+    <div id="compNav" style="margin-top:2px"></div>
+    <div class="ctx-sec">
+      <div class="ctx-h">快捷操作（M1 命令）</div>
+      <button class="ctx-item" onclick="toast('新建企业在后续迭代实现（规划中）：init-enterprise --name X [--credit-code Y]，幂等，重名目录加信用代码')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>新建企业（init-enterprise）
+      </button>
+      <button class="ctx-item" onclick="toast('数据一致性巡检在后续迭代实现（规划中）：reconcile 台账↔磁盘↔回收站三方对账（只读）')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>数据一致性巡检（reconcile）
+      </button>
+      <button class="ctx-item" onclick="toast('运行环境体检在后续迭代实现（规划中）：env-check M0 全局命令（Python/docx 引擎/依赖）')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3M4.9 4.9l2.1 2.1m10 10l2.1 2.1m0-14.2l-2.1 2.1m-10 10l-2.1 2.1"/></svg>运行环境体检（env-check）
+      </button>
+      <button class="ctx-item" onclick="toast('企业概览在后续迭代实现（规划中）：overview 台账条目/分类分布/磁盘文件/收件箱/回收站')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>企业概览（overview）
+      </button>
+    </div>
+    <div class="ctx-sec">
+      <div class="ctx-h">素材分类（企业级）</div>
+      <div style="padding:4px 11px;font-size:12px;color:var(--dim);line-height:1.8">资质 / 人员 / 业绩 / 荣誉 / 财务 / 企业介绍 / 收件箱</div>
+    </div>
+  </div>
+
+  <!-- 模板库上下文 -->
+  <div class="ctx-group" id="ctx-template">
+    <div class="ctx-h">模板分类（代理机构 × 方式）</div>
+    <button class="ctx-item active" data-tpl="all" onclick="filterTpl('all',this)">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v18H3z"/></svg>全部模板<span class="c-b" id="tplN0"></span>
+    </button>
+    <button class="ctx-item" data-tpl="hf" onclick="filterTpl('hf',this)">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="14" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>合肥市招标集团<span class="c-b" id="tplN1"></span>
+    </button>
+    <button class="ctx-item" data-tpl="ah" onclick="filterTpl('ah',this)">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="14" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>安徽中技工程咨询<span class="c-b" id="tplN2"></span>
+    </button>
+    <button class="ctx-item" data-tpl="ah2" onclick="filterTpl('ah2',this)">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="14" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>安徽省招标集团<span class="c-b" id="tplN3"></span>
+    </button>
+    <div class="ctx-sec">
+      <div class="ctx-h">快捷操作（M2 命令）</div>
+      <button class="ctx-item" onclick="toast('导入模板在后续迭代实现（规划中）：import_template 支持 docx/doc/pdf/txt/md，含 --in-place 登记库内文件')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4m0 0L8 8m4-4l4 4"/><path d="M4 20h16"/></svg>导入模板（import_template）
+      </button>
+      <button class="ctx-item" onclick="toast('重新扫描占位符在后续迭代实现（规划中）：refresh_placeholders 统计文字/图片占位并更新台账')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>扫描占位符（refresh）
+      </button>
+      <button class="ctx-item" onclick="toast('目录对账在后续迭代实现（规划中）：sync_templates 模板库目录 ↔ 台账对账')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>目录对账（sync）
+      </button>
+      <button class="ctx-item" onclick="toast('导出台账在后续迭代实现（规划中）：export_ledger_csv 导出模板台账.csv（UTF-8 BOM）')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>导出台账（CSV）
+      </button>
+    </div>
+    <div class="ctx-sec">
+      <div class="ctx-h">占位符规范（D6/D3）</div>
+      <div style="padding:4px 11px;font-size:12px;color:var(--dim);line-height:1.8">文字占位【xxx】保留原格式；图片占位【图片：xxx】灰色单线边框段落；每模板登记清单 占位符登记清单.md 维护索引。</div>
+    </div>
+  </div>
+
+  <!-- 素材库上下文 -->
+  <div class="ctx-group" id="ctx-library">
+    <div class="ctx-h">素材分类</div>
+    <button class="ctx-item active" data-lib="all" onclick="filterLib('all',this)">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v18H3z"/></svg>全部素材<span class="c-b" id="libN0"></span>
+    </button>
+    <button class="ctx-item" data-lib="ent" onclick="filterLib('ent',this)">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="14" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>企业资信<span class="c-b" id="libN1"></span>
+    </button>
+    <button class="ctx-item" data-lib="honor" onclick="filterLib('honor',this)">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="9" r="6"/><path d="M8 14l-2 7 6-3 6 3-2-7"/></svg>荣誉证书<span class="c-b" id="libN2"></span>
+    </button>
+    <button class="ctx-item" data-lib="photo" onclick="filterLib('photo',this)">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5-9 9"/></svg>现场照片<span class="c-b" id="libN3"></span>
+    </button>
+    <button class="ctx-item" data-lib="draw" onclick="filterLib('draw',this)">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19L20 4M8 20h12M4 16h12"/></svg>图纸图表<span class="c-b" id="libN4"></span>
+    </button>
+    <div class="ctx-sec">
+      <div class="ctx-h">快捷操作（M1 命令）</div>
+      <button class="ctx-item" onclick="toast('收件箱流程在后续迭代实现（规划中）：open-inbox → upload → sync-inbox → close-inbox')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4m0 0L8 8m4-4l4 4"/><path d="M4 20h16"/></svg>收件箱（open / sync / close）
+      </button>
+      <button class="ctx-item" onclick="toast('素材命名与分类在后续迭代实现（规划中）：build-name 按关键字重命名 + classify 分类入库')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>命名与分类（build-name / classify）
+      </button>
+      <button class="ctx-item" onclick="toast('变更保护在后续迭代实现（规划中）：归档素材变更须 propose 提议 → apply 应用')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>变更保护（propose / apply）
+      </button>
+      <button class="ctx-item" onclick="toast('回收站在后续迭代实现（规划中）：trash 删除进回收站 → cleanup-trash 默认保留 30 天后清理')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>回收站（trash / cleanup 30 天）
+      </button>
+    </div>
+    <div class="ctx-sec">
+      <div class="ctx-h">保护规则</div>
+      <div style="padding:4px 11px;font-size:12px;color:var(--dim);line-height:1.8">素材一经归档即受保护，任何变更须走 propose / apply 流程，不得随意改动。</div>
+    </div>
+  </div>
+
+  <!-- 向导上下文 -->
+  <div class="ctx-group" id="ctx-wizard">
+    <div class="ctx-h">新建标书向导</div>
+    <div id="wzNav" style="margin-top:2px"></div>
+    <div class="ctx-sec">
+      <div class="ctx-h">提示</div>
+      <div style="padding:4px 11px;font-size:12px;color:var(--dim);line-height:1.8" id="wzTip">当前项目：新建（尚未关联）</div>
+    </div>
+  </div>
+</aside>
+
+<!-- ===== 分割线（可拖动调宽 + 居中折叠按钮） ===== -->
+<div class="resizer" id="resizer">
+  <button class="cb" id="collapseBtn" onclick="toggleCtx()" title="折叠 / 展开左栏" aria-label="折叠左栏">
+    <svg id="collapseIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 5l-7 7 7 7"/></svg>
+  </button>
+</div>
+
+<!-- ===== 内容区 ===== -->
+<main class="content">
+  <!-- 工作台 -->
+  <section class="view active" id="view-home">
+    <div class="banner">
+      <div>
+        <h1>把投标经验，变成团队的 AI 生产力</h1>
+        <p>专属流程串起标书全流程：招标解析 → 暗标/明标判定 → 目录 → 分章生成 → 质量检查 → 导出交付。技术标排版预设 15 组 × 10 套，风格即装即用。</p>
+      </div>
+      <div class="bb">
+        <button class="btn btn-ghost" style="background:#fff;border:none;color:var(--brand)" onclick="go('wizard')">新建标书</button>
+        <button class="btn" style="background:rgba(255,255,255,.18);color:#fff" onclick="go('wizard')">导入招标文件</button>
+      </div>
+    </div>
+
+    <div class="chips" id="homeChips">
+      <span class="chip active" data-f="all">全部 <span class="c-n">4</span></span>
+      <span class="chip" data-f="draft">编制中 <span class="c-n">1</span></span>
+      <span class="chip" data-f="check">待检查 <span class="c-n">1</span></span>
+      <span class="chip" data-f="done">已交付 <span class="c-n">1</span></span>
+      <span class="chip" data-f="fix">待补救 <span class="c-n">1</span></span>
+    </div>
+
+    <div class="expert-grid" id="projGrid">
+      <div class="expert-card" data-st="draft" onclick="go('project')">
+        <div class="ec-top"><span class="ec-name">市政务服务中心项目监理大纲</span><span class="ctx-tag dark-tag">暗标</span></div>
+        <div class="ec-desc">MAS-2026-FJ-018 · 综合评估法（技术分 60%）· 2026-10-12 更新</div>
+        <div class="ec-preview pv1"><span class="pv-dot">工程 · 技术标</span><div class="pv"><div class="pv-line brand" style="width:88%"></div><div class="pv-line" style="width:72%"></div><div class="pv-line" style="width:55%"></div></div></div>
+        <div class="ec-foot"><span class="ctx-tag warn">编制中</span><span class="ec-call">打开项目 →</span></div>
+      </div>
+      <div class="expert-card" data-st="check" onclick="go('project')">
+        <div class="ec-top"><span class="ec-name">城东污水处理厂改扩建工程</span><span class="ctx-tag">明标</span></div>
+        <div class="ec-desc">MAS-2026-SZ-007 · 商务标 + 技术标 · 2026-10-08 更新</div>
+        <div class="ec-preview pv2"><span class="pv-dot">工程 · 商务标</span><div class="pv"><div class="pv-line brand" style="width:92%"></div><div class="pv-line" style="width:80%"></div><div class="pv-line" style="width:64%"></div></div></div>
+        <div class="ec-foot"><span class="ctx-tag ok">待检查</span><span class="ec-call">打开项目 →</span></div>
+      </div>
+      <div class="expert-card" data-st="done" onclick="go('project')">
+        <div class="ec-top"><span class="ec-name">滨江大道管网改造监理</span><span class="ctx-tag">明标</span></div>
+        <div class="ec-desc">MAS-2026-市-031 · 技术标 · 2026-09-28 更新</div>
+        <div class="ec-preview pv3"><span class="pv-dot">工程 · 技术标</span><div class="pv"><div class="pv-line brand" style="width:96%"></div><div class="pv-line" style="width:88%"></div><div class="pv-line" style="width:76%"></div></div></div>
+        <div class="ec-foot"><span class="ctx-tag ok">已交付</span><span class="ec-call">查看交付物 →</span></div>
+      </div>
+      <div class="expert-card" data-st="fix" onclick="go('project')">
+        <div class="ec-top"><span class="ec-name">安置房二期工程质量监理</span><span class="ctx-tag dark-tag">暗标</span></div>
+        <div class="ec-desc">MAS-2026-ZJ-002 · 综合标 · 2026-09-15 更新</div>
+        <div class="ec-preview pv4"><span class="pv-dot">工程 · 综合标</span><div class="pv"><div class="pv-line brand" style="width:70%"></div><div class="pv-line" style="width:48%"></div><div class="pv-line" style="width:30%"></div></div></div>
+        <div class="ec-foot"><span class="ctx-tag bad">待补救</span><span class="ec-call">打开项目 →</span></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <div class="card-h">系统状态 <span class="sub">数据来自全局开发台</span></div>
+      <div class="card-b stat-grid">
+        <div><div class="s-n">150</div><div class="s-l">技术标风格预设（15 组 × 10 套）</div></div>
+        <div><div class="s-n">C1–C9</div><div class="s-l">一致性审计全部通过</div></div>
+        <div><div class="s-n">597</div><div class="s-l">回归用例全绿（unit 528 + int 69）</div></div>
+        <div><div class="s-n">v1.4</div><div class="s-l">排版预设引擎版本（最新）</div></div>
+        <div><div class="s-n" style="color:var(--warn)">3</div><div class="s-l">未提交改动（开发台可查）</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 项目 -->
+  <section class="view" id="view-project">
+    <div class="proj-head">
+      <div>
+        <h2>市政务服务中心项目</h2>
+        <div class="pm">监理招标 · 公开招标 · 综合评估法（技术分 60%）</div>
+        <div class="kv">
+          <div><div class="k">招标编号</div><div class="v">MAS-2026-FJ-018</div></div>
+          <div><div class="k">开标时间</div><div class="v">2026-11-08 09:00</div></div>
+          <div><div class="k">标书类型</div><div class="v">技术标 + 商务标</div></div>
+          <div><div class="k">判定</div><div class="v"><span class="ctx-tag dark-tag" id="projTag">暗标</span></div></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="go('editor')">继续编写技术标</button>
+        <button class="btn btn-ghost" onclick="toast('导出交付（T10 tech-export）：tech-export --project <项目> [--override preset=…;palette=…] → 技术标/产出/技术标_<项目>.docx（封面/目录域/三线表/页眉页脚三态/暗标条款注入/页数回写）')">导出</button>
+      </div>
+    </div>
+
+    <div class="book-grid">
+      <div class="book-card" onclick="go('editor')">
+        <div style="display:flex;align-items:center;gap:8px"><span class="b-name">技术标 · 监理大纲</span><span class="ctx-tag dark-tag">暗标</span></div>
+        <div class="b-desc">十章结构 · 已按评分点生成目录 · 正文编写中（1/10 章）· 排版预设：深靛蓝 · 标准公文 A4 · 政务公文风</div>
+        <div class="b-prog"><i style="width:60%"></i></div>
+        <div class="b-foot"><span class="ctx-tag warn">编制中</span><span class="ec-call">打开编辑器 →</span></div>
+      </div>
+      <div class="book-card" onclick="toast('商务标编辑在后续迭代实现（规划中）')">
+        <div style="display:flex;align-items:center;gap:8px"><span class="b-name">商务标</span><span class="ctx-tag">明标</span></div>
+        <div class="b-desc">企业资信、业绩证明、人员配置、报价文件；格式与企业模板库模板完全一致</div>
+        <div class="b-prog"><i style="width:0%"></i></div>
+        <div class="b-foot"><span class="ctx-tag plan">未开始</span><span class="ec-call">打开编辑器 →</span></div>
+      </div>
+    </div>
+
+    <div class="act-grid">
+      <div class="act-card" onclick="toast('质量检查面板在后续迭代实现（规划中）')">
+        <span class="a-name">质量检查</span>
+        <span class="a-desc">暗标合规校验 · 章节完整性 · 评分点覆盖 · 格式一致性</span>
+      </div>
+      <div class="act-card" onclick="toast('导出交付（T10 tech-export）：tech-export --project <项目> → 技术标/产出/技术标_<项目>.docx；暗标 --bid-mode 强制全黑条款注入；页数估算回写 export.json')">
+        <span class="a-name">导出交付</span>
+        <span class="a-desc">导出可编辑 Word · 暗标条款格式注入 · PDF 校验</span>
+      </div>
+      <div class="act-card" onclick="toast('项目资料归档在后续迭代实现（规划中）')">
+        <span class="a-name">项目资料</span>
+        <span class="a-desc">招标文件 · 答疑纪要 · 现场资料（素材归档至素材库）</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 编辑器 -->
+  <section class="view" id="view-editor">
+    <div class="editor-steps">
+      <span class="estep done"><span class="e">1</span>招标解析（M4）</span>
+      <span class="step-line" style="flex:1;min-width:24px;height:2px;background:#a9d6c4;margin:0 10px"></span>
+      <span class="estep done"><span class="e">2</span>章节树与覆盖（tech-outline）</span>
+      <span class="step-line" style="flex:1;min-width:24px;height:2px;background:#a9d6c4;margin:0 10px"></span>
+      <span class="estep done"><span class="e">3</span>上下文包（tech-ctx）</span>
+      <span class="step-line" style="flex:1;min-width:24px;height:2px;background:var(--line);margin:0 10px"></span>
+      <span class="estep cur"><span class="e">4</span>正文编写与校验（tech-parse，当前）</span>
+      <span class="step-line" style="flex:1;min-width:24px;height:2px;background:var(--line);margin:0 10px"></span>
+      <span class="estep"><span class="e">5</span>检查与确认（tech-check / report）</span>
+    </div>
+
+    <div class="editor-grid">
+      <div class="pane canvas">
+        <div class="pane-h" style="border-radius:12px 12px 0 0;padding:10px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:700">编辑画布
+          <span style="display:flex;gap:6px"><span class="ctx-tag dark-tag" id="edTag">暗标</span><span class="ctx-tag plan">AI 生成中（规划中）</span></span>
+        </div>
+        <div class="canvas-body">
+          <div class="ch-title" id="chTitle">第一章 工程概况与监理工作范围</div>
+          <div class="ch-sub" id="chSub">本章对应评分点：对项目的理解与认识、监理工作范围描述完整度</div>
+          <div class="para" id="p1">本工程位于马鞍山市城区，总建筑面积约 6.8 万平方米，地上十二层、地下两层，框架剪力墙结构，耐火等级一级，抗震设防烈度六度。项目总投资约 4.2 亿元，计划工期 720 日历天。</div>
+          <div class="para" id="p2">监理工作范围涵盖施工准备阶段、施工阶段及缺陷责任期阶段的全过程监理，包括工程质量、进度、投资控制，合同信息管理及安全生产管理、组织协调等全部监理工作内容。</div>
+          <div class="para" id="p3" style="color:#c3cad8;border-left:3px solid #e5e9f2;padding-left:10px;text-indent:0">[示例占位段落：AI 生成正文引擎在此续写，可插入图表、表格、现场照片（占页 ≤1/3）、图上分散彩色标签等元素 —— 规划中]</div>
+        </div>
+        <div class="toolbar">
+          <button class="btn btn-primary" onclick="toast('AI 正文生成在后续迭代实现（规划中）：writer 按上下文包生成，旧正文进 .rewrite-trash，回读比对后 WRITTEN')">AI 生成 / 续写（规划中）</button>
+          <button class="btn btn-ghost" onclick="toast('tech-parse 在后续迭代实现（规划中）：非空 / 字数 / 占位符 / 敏感词校验 → 自述块拆出 → 落盘回读 → WRITTEN')">校验正文 → WRITTEN</button>
+          <button class="btn btn-ghost" onclick="toast('tech-check 在后续迭代实现（规划中）：通道A 六项检查——覆盖 / 结构 / 篇幅 / 敏感词 / 一致性 / 占位')">通道A 六项检查</button>
+          <button class="btn btn-plain" onclick="toast('tech-report 在后续迭代实现（规划中）：闸门② HTML 检查报告，--confirm 记 confirmLog → CONFIRMED')">检查报告（闸门②）</button>
+        </div>
+        <div class="statusbar">
+          <span>章节：第一章 / 共 10 章</span><span>状态机：<b style="color:var(--brand)">WRITING</b> → WRITTEN</span><span>字数：约 3,600 / 预算 4,000</span><span>页数预算：900（招标抽取）</span><span id="edStyleNote">当前预设：深靛蓝 · 标准公文 A4 · 政务公文风</span>
+        </div>
+      </div>
+
+      <div class="pane">
+        <div class="pane-h">属性面板 <span class="ctx-tag">本章</span></div>
+        <div class="prop-group">
+          <div class="prop-label">标题体系 <span class="ctx-tag ok">已应用</span></div>
+          <select class="prop-select" onchange="toast('标题体系切换在风格配置视图统一实现（规划中）')">
+            <option>GB/T 阿拉伯分级（h1-gbt-arabic）</option>
+            <option>招标全阿拉伯式（h2-tender-arabic）</option>
+          </select>
+        </div>
+        <div class="prop-group">
+          <div class="prop-label">段落样式</div>
+          <select class="prop-select" onchange="toast('段落样式切换在风格配置视图统一实现（规划中）')">
+            <option>1.5 倍行距 · 首行缩进 2 字符（pa7-jianyu-15）</option>
+            <option>固定 26 磅（青海条款）</option>
+          </select>
+        </div>
+        <div class="prop-group">
+          <div class="prop-label">图文比例</div>
+          <select class="prop-select" onchange="toast('图文比例切换在风格配置视图统一实现（规划中）')">
+            <option>中图比 3:7（mid）</option>
+            <option>低图比 1:9（low）</option>
+            <option>零图模式（暗标推荐）</option>
+          </select>
+        </div>
+        <div class="prop-group">
+          <div class="prop-label">页眉页脚</div>
+          <select class="prop-select" onchange="toast('页眉页脚切换在风格配置视图统一实现（规划中）')">
+            <option>企业经典页眉页脚（明标）</option>
+            <option>无页眉页脚 · 无页码（暗标）</option>
+            <option>仅页码全文连续（暗标）</option>
+          </select>
+        </div>
+        <div class="prop-group">
+          <div class="dark-alert">
+            <b>暗标合规提示：</b>当前标题体系 / 段落样式 / 图文比例均符合暗标条款（全黑、无加粗、无装饰、零图或灰度附图）。切换方案时将即时校验并高亮冲突项。
+          </div>
+        </div>
+        <div class="prop-group">
+          <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="go('style')">打开完整风格配置（15 组 × 10 套）</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 风格配置 -->
+  <section class="view" id="view-style">
+    <div class="style-head">
+      <div>
+        <div style="font-size:17px;font-weight:800">技术标排版预设 · 风格配置</div>
+        <div style="font-size:12.5px;color:var(--dim)">15 组 × 10 套正交组合 · 数据源 layout-presets.json v1.4 · 组合空间 <span id="comboCount">—</span></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="resetStyle()">恢复默认</button>
+        <button class="btn btn-primary" onclick="applyStyle()">应用此组合</button>
+      </div>
+    </div>
+    <div class="style-grid">
+      <div class="card">
+        <div class="card-h">选择器（15 组）<span class="sub" id="darkModeNote"></span></div>
+        <div class="card-b" id="styleSelects"></div>
+      </div>
+      <div>
+        <div class="card">
+          <div class="card-h">实时 A4 示意 <span class="sub">210×297 等比</span></div>
+          <div class="card-b" style="display:flex;justify-content:center;padding:18px">
+            <div class="a4" id="a4Preview">
+              <div class="a4-head" id="a4Head">安徽某某监理有限公司 · 技术标</div>
+              <div class="a4-title" id="a4Title">第一章 工程概况与监理工作范围</div>
+              <div class="a4-para">本工程位于马鞍山市城区，总建筑面积约 6.8 万平方米，地上十二层、地下两层，框架剪力墙结构，耐火等级一级，抗震设防烈度六度。项目总投资约 4.2 亿元，计划工期 720 日历天。</div>
+              <div class="a4-para">监理工作范围涵盖施工准备、施工及缺陷责任期阶段的全过程监理，包括质量、进度、投资控制，合同信息管理及安全生产管理、组织协调等全部监理工作内容。</div>
+              <div class="a4-fig" id="a4Fig">现场图片占位（按图文比例）</div>
+              <div class="a4-caption" id="a4Cap">图 3-1 现场形象进度</div>
+              <table class="a4-tb tb1" id="a4Tb"><tbody><tr><td>序号</td><td>检验批名称</td><td>验收结果</td></tr><tr><td>1</td><td>地基与基础</td><td>合格</td></tr><tr><td>2</td><td>主体结构</td><td>合格</td></tr></tbody></table>
+              <div class="a4-foot" id="a4Foot">第 12 页</div>
+            </div>
+          </div>
+          <div class="card-b" style="border-top:1px solid var(--line)">
+            <div class="prop-label">当前组合摘要</div>
+            <div id="comboSummary" style="font-size:12px;color:#5c6478;line-height:1.9"></div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:14px">
+          <div class="card-h">暗标合规即时校验 <span class="sub" id="checkMode">明标：无硬约束</span></div>
+          <div class="card-b" id="checkList"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 素材库 -->
+  <section class="view" id="view-library">
+    <div class="lib-head">
+      <div>
+        <div style="font-size:17px;font-weight:800">素材库</div>
+        <div style="font-size:12.5px;color:var(--dim)">企业级共享素材 · 归档即受保护（propose / apply）· 多页素材自动加页码</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="toast('上传在后续迭代实现（规划中）：open-inbox → upload → sync-inbox → close-inbox')">上传（upload）</button>
+        <button class="btn btn-primary" onclick="toast('归档入库在后续迭代实现（规划中）：build-name 按关键字重命名（多页加页码）→ classify 分类 → 受保护')">归档入库</button>
+      </div>
+    </div>
+
+    <div class="chips" id="libChips">
+      <span class="chip active" data-lib="all">全部 <span class="c-n" id="libC0"></span></span>
+      <span class="chip" data-lib="ent">企业资信 <span class="c-n" id="libC1"></span></span>
+      <span class="chip" data-lib="honor">荣誉证书 <span class="c-n" id="libC2"></span></span>
+      <span class="chip" data-lib="photo">现场照片 <span class="c-n" id="libC3"></span></span>
+      <span class="chip" data-lib="draw">图纸图表 <span class="c-n" id="libC4"></span></span>
+    </div>
+
+    <div class="asset-grid" id="assetGrid"></div>
+
+    <div class="lib-note">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex:none;margin-top:2px"><path d="M12 3l1.7 4.8L18 9.5l-4.3 1.7L12 16l-1.7-4.8L6 9.5l4.3-1.7z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>
+      <div><b>素材保护规则：</b>素材一旦归档即受保护，任何更改必须走标准流程（propose / apply / 回收站）；删除先进回收站，默认保留 30 天后清理。联网搜索素材版权风险高，不用于事实性内容；AI 生成素材统一画风、无版权问题。</div>
+    </div>
+  </section>
+
+  <!-- 公司管理 / 企业库 -->
+  <section class="view" id="view-company">
+    <div class="lib-head">
+      <div>
+        <div style="font-size:17px;font-weight:800">公司管理 · 企业库（M1）</div>
+        <div style="font-size:12.5px;color:var(--dim)">软件根/&lt;企业&gt;/：回收站 · 企业级/素材库（7 分类）· 企业级/模板库 · 项目级 · 共享资源（技术标风格等）</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="toast('新建企业在后续迭代实现（规划中）：init-enterprise，首次调用 skill 必做')">新建企业</button>
+        <button class="btn btn-primary" onclick="toast('数据一致性巡检在后续迭代实现（规划中）：reconcile 台账↔磁盘↔回收站')">数据一致性巡检</button>
+      </div>
+    </div>
+
+    <div class="comp-grid" id="compGrid"></div>
+
+    <div class="two-col" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
+      <div style="background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;box-shadow:var(--shadow)">
+        <div style="font-size:13px;font-weight:800;margin-bottom:8px">目录结构（三层）<span class="sub" id="compDirName"></span></div>
+        <div class="dir-tree" id="compTree"></div>
+      </div>
+      <div>
+        <div style="background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;box-shadow:var(--shadow)">
+          <div style="font-size:13px;font-weight:800;margin-bottom:8px">素材库标准流程（五阶段）</div>
+          <div class="check-mini"><span class="dot">①</span>进入企业：--enterprise 锁定企业，素材天然隔离</div>
+          <div class="check-mini"><span class="dot">②</span>合规巡检：非常规上传 / 命名规范 / 企业归属校验（ownership-check）</div>
+          <div class="check-mini"><span class="dot">③</span>用户确认：巡检结果人工确认后再进入收件箱</div>
+          <div class="check-mini"><span class="dot">④</span>收件箱上传：open-inbox → upload（每次一文件）→ close-inbox</div>
+          <div class="check-mini"><span class="dot">⑤</span>归档（半自动确认制）：propose 生成提案 → 人工确认/修改 → apply 执行（多页 P0/P1）</div>
+        </div>
+        <div class="rule-bar" style="margin-top:14px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex:none;margin-top:2px"><path d="M12 3l1.7 4.8L18 9.5l-4.3 1.7L12 16l-1.7-4.8L6 9.5l4.3-1.7z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>
+          <div><b>保护与清理规则：</b>素材归档即受保护（变更走 propose / apply）；删除先进公司回收站（&lt;企业&gt;/回收站），默认保留 30 天后 cleanup-trash 清理；台账 JSON 权威单源，CSV 按需导出。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 模板库 -->
+  <section class="view" id="view-template">
+    <div class="lib-head">
+      <div>
+        <div style="font-size:17px;font-weight:800">模板库（M2）</div>
+        <div style="font-size:12.5px;color:var(--dim)">企业级\模板库\<招标代理机构>\{投标,采购,询比价} · 台账单源（模板台账.json）· 格式与排版契约</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="toast('导入模板在后续迭代实现（规划中）：import_template 支持 docx/doc/pdf/txt/md')">导入模板</button>
+        <button class="btn btn-primary" onclick="toast('新建商务标在后续迭代实现（规划中）：商务标六步——招标解析→检索基础模板→动态生成项目模板→人工冻结→生成→校验')">新建商务标</button>
+      </div>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat-box"><div class="n" id="tplStat0">10</div><div class="l">模板总数（台账）</div></div>
+      <div class="stat-box"><div class="n">4 家</div><div class="l">招标代理机构</div></div>
+      <div class="stat-box"><div class="n">2 种</div><div class="l">采购方式（投标/采购/询比价）</div></div>
+      <div class="stat-box"><div class="n">98</div><div class="l">占位符总数（文字+图片）</div></div>
+    </div>
+
+    <div class="chips" id="tplChips">
+      <span class="chip active" data-tpl="all">全部 <span class="c-n" id="tplC0"></span></span>
+      <span class="chip" data-tpl="hf">合肥市招标集团 <span class="c-n" id="tplC1"></span></span>
+      <span class="chip" data-tpl="ah">安徽中技工程咨询 <span class="c-n" id="tplC2"></span></span>
+      <span class="chip" data-tpl="ah2">安徽省招标集团 <span class="c-n" id="tplC3"></span></span>
+    </div>
+
+    <div style="background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:var(--shadow);margin-top:12px">
+      <table class="tpl-table">
+        <colgroup><col style="width:26%"><col style="width:17%"><col style="width:10%"><col style="width:9%"><col style="width:9%"><col style="width:8%"><col style="width:11%"><col style="width:10%"></colgroup>
+        <thead>
+          <tr><th>模板（台账登记名）</th><th>招标代理机构</th><th>方式</th><th>文字占位</th><th>图片占位</th><th>页数</th><th>登记清单</th><th>操作</th></tr>
+        </thead>
+        <tbody id="tplBody"></tbody>
+      </table>
+    </div>
+
+    <div class="rule-bar">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex:none;margin-top:2px"><path d="M12 3l1.7 4.8L18 9.5l-4.3 1.7L12 16l-1.7-4.8L6 9.5l4.3-1.7z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>
+      <div>
+        <b>三层页数规则（D21–D23）：</b>企业模板 ↔ 源文件页数必须一致；企业模板 ↔ 项目模板允许页数不同但格式/图片大小/位置/排版必须一致（页级布局硬约束：表格一页不跨页、图片独占一页）；项目模板 ↔ 商务标页数必须一致（生成后校验）。<br>
+        <b>生命周期（D11/D22）：</b>项目模板 生成 → 代码硬校验 → agent 检查（人工确认）→ 人工调整 → <b>冻结</b>（只读 + 版本号 + 审核人/日期）；商务标只认冻结版，变更须解冻；回写企业模板走版本管理（新增版本不覆盖）。<br>
+        <b>内容校验铁律（D25）：</b>差异范围=固定文字，空白/下划线/填写位置不属差异；固定文字以招标解析「投标文件格式」原文为准，一字不能改；先列差异清单人工确认后才更新。
+      </div>
+    </div>
+  </section>
+
+  <!-- 招标解析（M4） -->
+  <section class="view" id="view-tender">
+    <div class="lib-head">
+      <div>
+        <div style="font-size:17px;font-weight:800">招标解析（M4）<span class="ctx-tag dark-tag">暗标</span></div>
+        <div style="font-size:12.5px;color:var(--dim)">项目：市政务服务中心项目 · 目录：项目级/市政务服务中心项目/招标解析</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="toast('tender-fmt 在后续迭代实现（规划中）：响应文件格式_<项目>.txt 一字不改提取')">提取格式章节</button>
+        <button class="btn btn-primary" onclick="toast('投标要点 HTML 核对（闸门①）在后续迭代实现（规划中）：tender-report 渲染')">核对投标要点（闸门①）</button>
+      </div>
+    </div>
+
+    <div class="mline"><span class="sn">init</span><span class="st">tender-init：初始化项目级招标解析目录（幂等）</span><span class="sg">已执行</span></div>
+    <div class="mline"><span class="sn">extract</span><span class="st">tender-extract：归档原件（源文件/）+ 提取原文（PDF 表格/多栏感知）</span><span class="sg">已执行 · 招标文件.pdf 4.2MB</span></div>
+    <div class="mline"><span class="sn">parse</span><span class="st">tender-parse：提交 agent 解析产物落盘（投标要点.md/json + 素材清单.md/json）</span><span class="sg">已落盘</span></div>
+    <div class="mline"><span class="sn">rule</span><span class="st">tender-rule：通道A 文档解析规则引擎 → 文档解析_<项目>.json（确定性字段）</span><span class="sg">已生成</span></div>
+    <div class="mline"><span class="sn">diff</span><span class="st">tender-diff：双通道差异比对 → 双通道差异_<项目>.json/.md</span><span class="sg" style="color:var(--warn)">2 项待裁决</span></div>
+    <div class="mline"><span class="sn">report</span><span class="st">tender-report：投标要点 HTML 渲染（闸门① 人工核对形态）</span><span class="sg" style="color:var(--warn)">待核对</span></div>
+    <div class="mline"><span class="sn">annex</span><span class="st">tender-annex：补遗/澄清/修改归档（补遗/）→ 供 agent 跨文件比对</span><span class="sg">待处理</span></div>
+
+    <div class="dual" style="margin-top:14px">
+      <div class="du">
+        <div class="du-h"><span class="ch" style="background:var(--brand)"></span>通道A · 文档解析（确定性）</div>
+        <div class="mline"><span class="sn">项目</span><span class="st">市政务服务中心项目监理</span></div>
+        <div class="mline"><span class="sn">编号</span><span class="st">MAS-2026-FJ-018</span></div>
+        <div class="mline"><span class="sn">开标</span><span class="st">2026-11-08 09:00</span></div>
+        <div class="mline"><span class="sn">评分</span><span class="st">综合评估法（技术 60%）</span></div>
+        <div class="mline"><span class="sn">格式</span><span class="st">第八章 投标文件格式（章节脚本化提取）</span></div>
+      </div>
+      <div class="du">
+        <div class="du-h"><span class="ch" style="background:#7a3ed6"></span>通道B · 投标要点（agent 语义）</div>
+        <div class="mline"><span class="sn">判定</span><span class="st">暗标：投标要点文本含「暗标」条款（全黑/无装饰/无页眉页脚）</span></div>
+        <div class="mline"><span class="sn">评分点</span><span class="st">10 章 × 评分点对照（项目理解/人员配置/质量/进度/投资/安全环保/合同信息）</span></div>
+        <div class="mline"><span class="sn">红线</span><span class="st">单位名/标识泄露、超页数上限、格式偏离招标条款 → 废标风险</span></div>
+        <div class="mline"><span class="sn">素材</span><span class="st">素材清单.json：业绩 3 / 人员 5 / 证书 6（tender-check 对照缺料标红）</span></div>
+      </div>
+    </div>
+
+    <div class="rule-bar" style="margin-top:14px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex:none;margin-top:2px"><path d="M12 3l1.7 4.8L18 9.5l-4.3 1.7L12 16l-1.7-4.8L6 9.5l4.3-1.7z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>
+      <div><b>裁决规则：</b>双通道差异以招标原文为最终依据，人工裁决后并入投标要点 diffs 块由用户确认；响应文件格式文字一字不改（内容契约，供 M2 项目模板与 M7 校验引用）。</div>
+    </div>
+  </section>
+
+  <!-- 标书检查（M7） -->
+  <section class="view" id="view-check">
+    <div class="lib-head">
+      <div>
+        <div style="font-size:17px;font-weight:800">标书检查（M7 双通道）</div>
+        <div style="font-size:12.5px;color:var(--dim)">检查对象：项目级/市政务服务中心项目/商务标（tag 默认空）</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="toast('check-rule 在后续迭代实现（规划中）：通道A 机器检查规则引擎')">通道A 机器检查</button>
+        <button class="btn btn-primary" onclick="toast('check-report 在后续迭代实现（规划中）：HTML 报告 → 人工确认闸门')">生成检查报告</button>
+      </div>
+    </div>
+
+    <div class="mline"><span class="sn">A</span><span class="st">check-rule：通道A 机器检查（checker 6 项硬检查 + 报价/证书/期限/素材确定性核对，标准=M4 解析产物）</span><span class="sg">机器检查_<项目>.json/.md</span></div>
+    <div class="mline"><span class="sn">B</span><span class="st">check-parse：通道B agent 语义审查（文本 + JSON 双份，结构校验闸门）</span><span class="sg">检查要点_<项目>.json/.md</span></div>
+    <div class="mline"><span class="sn">D</span><span class="st">check-diff：双通道差异比对 → 人工裁决</span><span class="sg" style="color:var(--warn)">双通道检查差异_<项目>.json/.md</span></div>
+    <div class="mline"><span class="sn">R</span><span class="st">check-report：HTML 报告（执行摘要/差异/通道A/通道B/废标红线/整改清单/免责）</span><span class="sg" style="color:var(--warn)">标书检查报告_<项目>.html · 人工确认闸门</span></div>
+
+    <div class="dual" style="margin-top:14px">
+      <div class="du">
+        <div class="du-h"><span class="ch" style="background:var(--brand)"></span>通道A · 机器检查（6 项硬检查）</div>
+        <div class="mline"><span class="sn">① 格式</span><span class="st">格式完整性：页级布局 / 页眉页脚 / 页数一致（对照项目模板）</span><span class="sg" style="color:var(--ok)">通过</span></div>
+        <div class="mline"><span class="sn">② 占位</span><span class="st">占位符清零：无残留【xxx】文字占位 /【图片：xxx】</span><span class="sg" style="color:var(--ok)">通过</span></div>
+        <div class="mline"><span class="sn">③ 敏感</span><span class="st">敏感词残留：暗标单位名 / 标识 / 禁用表述</span><span class="sg" style="color:var(--ok)">通过</span></div>
+        <div class="mline"><span class="sn">④ 报价</span><span class="st">报价 / 证书 / 期限 / 素材确定性核对（对照 M4 解析产物）</span><span class="sg" style="color:var(--ok)">通过</span></div>
+      </div>
+      <div class="du">
+        <div class="du-h"><span class="ch" style="background:#7a3ed6"></span>通道B · 语义审查（agent）</div>
+        <div class="mline"><span class="sn">维度</span><span class="st">按 M7 提示词输出 schema：内容完整性 / 评分点覆盖 / 语义一致性 / 废标红线</span></div>
+        <div class="mline"><span class="sn">差异</span><span class="st">通道A 检出而 B 未报告 → 差异项人工裁决（以通道A 确定性为准）</span></div>
+        <div class="mline"><span class="sn">状态</span><span class="st">检查要点已落盘 · 待 check-diff</span><span class="sg" style="color:var(--warn)">2 项差异</span></div>
+      </div>
+    </div>
+    <div class="wz-sub" style="margin-top:10px">交付纪律：M7 检查报告为交标前闸门；废标红线项（单位名泄露 / 页数超限 / 格式偏离）一经检出即整改，整改后重跑。</div>
+  </section>
+
+  <!-- 模拟评标（M8） -->
+  <section class="view" id="view-eval">
+    <div class="lib-head">
+      <div>
+        <div style="font-size:17px;font-weight:800">模拟评标（M8）</div>
+        <div style="font-size:12.5px;color:var(--dim)">评分办法：综合评估法（技术 60% + 商务 40%）· 项目：市政务服务中心项目</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="toast('eval-run 在后续迭代实现（规划中）：通道A 规则引擎，报价由用户提供（--quote 铁律）')">运行规则引擎</button>
+        <button class="btn btn-ghost" onclick="go('remedy')">补救任务单（M10）</button>
+        <button class="btn btn-primary" onclick="toast('eval-report 在后续迭代实现（规划中）：合并渲染完整报告 → 人工确认闸门')">合并评标报告</button>
+      </div>
+    </div>
+
+    <div class="mline"><span class="sn">阶段1</span><span class="st">eval-run：通道A 规则引擎——评分标准结构化 + 客观分计算 + 报价分反推基准价区间</span><span class="sg">模拟评标_<项目>.json/.md + HTML</span></div>
+    <div class="mline"><span class="sn">阶段2</span><span class="st">eval-parse：通道B 主观评审产物落盘（JSON 结构校验闸门）</span><span class="sg">主观评审_<项目>.json/.md</span></div>
+    <div class="mline"><span class="sn">报告</span><span class="st">eval-report：合并渲染完整模拟评标报告 → HTML（人工确认闸门）</span><span class="sg" style="color:var(--warn)">模拟评标报告_<项目>.html</span></div>
+
+    <div class="dual" style="margin-top:14px">
+      <div class="du">
+        <div class="du-h"><span class="ch" style="background:var(--brand)"></span>客观分（通道A 规则引擎）</div>
+        <div class="mline"><span class="sn">技术</span><span class="st">60 分：监理大纲 / 人员配置 / 仪器设备（按评分点逐条命中）</span></div>
+        <div class="mline"><span class="sn">商务</span><span class="st">40 分：业绩 / 荣誉 / 报价</span></div>
+        <div class="mline"><span class="sn">报价</span><span class="st">报价分反推基准价区间（铁律：报价由用户提供，--quote）</span><span class="sg" style="color:var(--warn)">未评（待报价）</span></div>
+      </div>
+      <div class="du">
+        <div class="du-h"><span class="ch" style="background:#7a3ed6"></span>主观分（通道B agent）</div>
+        <div class="mline"><span class="sn">评审</span><span class="st">按 M8 提示词输出：各评分项失分诊断 / 风险点 / 竞标对比建议</span></div>
+        <div class="mline"><span class="sn">输出</span><span class="st">主观评审_<项目>.json（结构校验后并入报告）</span></div>
+        <div class="mline"><span class="sn">去向</span><span class="st">失分诊断 → M10 补救任务单</span><span class="sg">remedy-gen</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 补救（M10） -->
+  <section class="view" id="view-remedy">
+    <div class="lib-head">
+      <div>
+        <div style="font-size:17px;font-weight:800">补救（M10）</div>
+        <div style="font-size:12.5px;color:var(--dim)">数据来源：模拟评标/失分补救任务单_<项目>.json/.md/.html</div>
+      </div>
+      <button class="btn btn-primary" onclick="toast('remedy-gen 在后续迭代实现（规划中）：M8 失分诊断 → 可执行补救任务单')">生成补救任务单</button>
+    </div>
+
+    <div class="mline"><span class="sn">gen</span><span class="st">remedy-gen：把 M8 模拟评标失分诊断转成可执行补救任务单</span><span class="sg">失分补救任务单_<项目>.json/.md/.html</span></div>
+
+    <div class="dual" style="margin-top:14px">
+      <div class="du">
+        <div class="du-h"><span class="ch" style="background:var(--bad)"></span>能力问题 · 素材补齐（走 M1 素材库）</div>
+        <div class="mline"><span class="sn">业绩</span><span class="st">类似工程监理业绩不足：目标 3 项 / 现有 2 项（缺 1）</span></div>
+        <div class="mline"><span class="sn">职称</span><span class="st">总监理工程师职称 / 注册证书扫描件待归档</span></div>
+        <div class="mline"><span class="sn">荣誉</span><span class="st">省级优质工程证书（年度/颁发日期须与落款逐字核对）</span></div>
+        <div class="mline"><span class="sn">体系</span><span class="st">ISO 体系认证证书（质量/环境/职业健康）</span></div>
+      </div>
+      <div class="du">
+        <div class="du-h"><span class="ch" style="background:var(--warn)"></span>响应问题 · 内容/格式/报价</div>
+        <div class="mline"><span class="sn">内容</span><span class="st">内容补强：评分点未覆盖项（BIM 应用）重写对应章</span></div>
+        <div class="mline"><span class="sn">格式</span><span class="st">格式合规：暗标条款注入 / 页数预算重校验</span></div>
+        <div class="mline"><span class="sn">报价</span><span class="st">报价策略：基准价区间反推建议（用户决策）</span></div>
+      </div>
+    </div>
+    <div class="rule-bar" style="margin-top:14px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex:none;margin-top:2px"><path d="M12 3l1.7 4.8L18 9.5l-4.3 1.7L12 16l-1.7-4.8L6 9.5l4.3-1.7z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>
+      <div><b>补救流程：</b>逐项补救后再投标（BidPal.ai 对标国际投标咨询）——素材补齐走 收件箱上传→propose/apply；内容补强走 M6 章节重写（WRITTEN→重新检查）；格式合规走 M7 重检。</div>
+    </div>
+  </section>
+
+  <!-- 项目模板（M5） -->
+  <section class="view" id="view-projtpl">
+    <div class="lib-head">
+      <div>
+        <div style="font-size:17px;font-weight:800">项目模板 · 商务标生成（M5）</div>
+        <div style="font-size:12.5px;color:var(--dim)">唯一商务标生成管线 = fill-tpl（v2.0 布局样板范式）；V5 招标原文深拷贝链路已作废（2026-10-19）</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="toast('proj-mat 在后续迭代实现（规划中）：素材清单表 → 素材清单_<项目>.json')">组装素材清单</button>
+        <button class="btn btn-primary" onclick="toast('fill-tpl 在后续迭代实现（规划中）：企业母版 → 项目模板 → 类别聚合填充 → 商务标')">生成商务标</button>
+      </div>
+    </div>
+
+    <div class="mline"><span class="sn">mat</span><span class="st">proj-mat：素材清单表组装为生成器结构素材清单 JSON（v2.0 数据源）</span><span class="sg">招标解析/素材清单_<项目>.json</span></div>
+    <div class="mline"><span class="sn">copy</span><span class="st">fill-tpl ①：企业母版（布局样板）深拷贝 → 项目模板</span><span class="sg">项目级/<项目>/项目模板</span></div>
+    <div class="mline"><span class="sn">fill</span><span class="st">fill-tpl ②：类别聚合填充（按 素材清单.json 类别聚合填充布局样板）</span><span class="sg">类别聚合</span></div>
+    <div class="mline"><span class="sn">out</span><span class="st">fill-tpl ③：输出商务标（唯一生成管线，替代已作废 proj-gen 招标原文路径）</span><span class="sg" style="color:var(--ok)">项目级/<项目>/商务标 · 页数与 T10 校验一致</span></div>
+
+    <div class="dual" style="margin-top:14px">
+      <div class="du">
+        <div class="du-h"><span class="ch" style="background:var(--brand)"></span>输入</div>
+        <div class="mline"><span class="sn">母版</span><span class="st">企业级/模板库/安徽安硕工程咨询有限公司/投标/（布局样板 10 章）</span></div>
+        <div class="mline"><span class="sn">清单</span><span class="st">素材清单_空白表_v5*.xlsm（招标解析/，最新版自动定位）</span></div>
+        <div class="mline"><span class="sn">台账</span><span class="st">素材台账.json（企业级/素材库，propose/apply 归档受保护）</span></div>
+        <div class="mline"><span class="sn">社保</span><span class="st">项目资料/社保* 自动定位（人员配置佐证）</span></div>
+      </div>
+      <div class="du">
+        <div class="du-h"><span class="ch" style="background:#7a3ed6"></span>输出</div>
+        <div class="mline"><span class="sn">模板</span><span class="st">项目级/<项目>/项目模板（母版深拷贝，M7 check-rule 对照基准）</span></div>
+        <div class="mline"><span class="sn">商务标</span><span class="st">项目级/<项目>/商务标（类别聚合填充产物）</span></div>
+        <div class="mline"><span class="sn">校验</span><span class="st">M7 标书检查默认检查对象 = 商务标目录；占位符清零/格式完整性</span><span class="sg" style="color:var(--ok)">已接管线</span></div>
+      </div>
+    </div>
+
+    <div class="rule-bar" style="margin-top:14px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex:none;margin-top:2px"><path d="M12 3l1.7 4.8L18 9.5l-4.3 1.7L12 16l-1.7-4.8L6 9.5l4.3-1.7z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>
+      <div><b>管线纪律：</b>企业模板库模板、项目模板、商务标三者格式排版必须完全一致（字体/页数/图片排布/表格）；源文即成品模板，完全复现格式排版（含下划线空格），文字按指定项占位、图片一律图框占位。</div>
+    </div>
+  </section>
+
+  <!-- 全局开发台 -->
+  <section class="view" id="view-dev">
+    <div class="lib-head">
+      <div>
+        <div style="font-size:17px;font-weight:800">全局开发台 <span class="ctx-tag">DEV</span></div>
+        <div style="font-size:12.5px;color:var(--dim)">模块管道 · 测试中心 · 审计一致性 · 契约文档 · 产物反馈 · 日志版本（对应 dev/ 与 scripts/ 真实载体）</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="toast('运行环境体检在后续迭代实现（规划中）：env-check M0 全局命令（Python/docx 引擎/依赖）')">环境体检（env-check）</button>
+        <button class="btn btn-primary" onclick="toast('跑全量测试在后续迭代实现（规划中）：unit 26 + integration 3 + e2e 4')">跑全量测试</button>
+      </div>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat-box"><div class="n">12</div><div class="l">命令模块（M0–M10+反馈+core+docx_tools）</div></div>
+      <div class="stat-box"><div class="n">33</div><div class="l">测试文件（unit 26 · int 3 · e2e 4）</div></div>
+      <div class="stat-box"><div class="n">9 / 9</div><div class="l">审计一致性命中（C1–C9 全绿）</div></div>
+      <div class="stat-box"><div class="n">19</div><div class="l">references 契约与文档</div></div>
+    </div>
+
+    <div class="dev-grid">
+      <!-- P1 模块管道 -->
+      <div class="dev-panel">
+        <div class="dev-h">P1 · 模块管道（bidcraft.py 总入口）<span class="sub">scripts/</span></div>
+        <div class="dev-b" id="devMods"></div>
+      </div>
+
+      <!-- P2 测试中心 -->
+      <div class="dev-panel">
+        <div class="dev-h">P2 · 测试中心<span class="sub">tests/</span></div>
+        <div class="dev-b">
+          <div class="dev-mod"><span class="mk">unit</span><span class="md">26 文件：M1/M2/M4/M5/M6/M7/M8/M10 单测（含 golden 回归）</span><span class="mc">已全绿</span></div>
+          <div class="dev-mod"><span class="mk">int</span><span class="md">3 文件：core / templates / tender 集成</span><span class="mc">已全绿</span></div>
+          <div class="dev-mod"><span class="mk">e2e</span><span class="md">4 文件：cli / tpl_cli / tender_cli / proj_cli 端到端</span><span class="mc">已全绿</span></div>
+          <div class="dev-mod"><span class="mk">M6</span><span class="md">test_m6_layout/rules/store/packs/write/cli（15 组 × 10 套夹具）</span><span class="mc">166 用例</span></div>
+          <div class="wz-sub">回归纪律：提交代码前必须跑完整回归测试（全绿）；任何改动需向用户披露。</div>
+        </div>
+      </div>
+
+      <!-- P3 审计与一致性 -->
+      <div class="dev-panel">
+        <div class="dev-h">P3 · 审计与一致性<span class="sub">audit_presets.py</span></div>
+        <div class="dev-b">
+          <div class="dev-mod"><span class="mk">C1</span><span class="md">JSON ↔ builtin 预设 ID 一致性</span><span class="mc" style="color:var(--ok)">通过</span></div>
+          <div class="dev-mod"><span class="mk">C2</span><span class="md">别名表 ↔ 分组 ID 一致性</span><span class="mc" style="color:var(--ok)">通过</span></div>
+          <div class="dev-mod"><span class="mk">C3</span><span class="md">代码内置 ↔ JSON 循环比对</span><span class="mc" style="color:var(--ok)">通过</span></div>
+          <div class="dev-mod"><span class="mk">C4</span><span class="md">文档提及数 ↔ 实际方案数（15 组 × 10）</span><span class="mc" style="color:var(--ok)">通过</span></div>
+          <div class="dev-mod"><span class="mk">C5</span><span class="md">微观六组共享别名 stray 检查</span><span class="mc" style="color:var(--ok)">通过</span></div>
+          <div class="dev-mod"><span class="mk">C6–C8</span><span class="md">专家包 / 契约草案 / 需求对齐 口径一致</span><span class="mc" style="color:var(--ok)">通过</span></div>
+          <div class="dev-mod"><span class="mk">C9</span><span class="md">文档覆盖"10 种/10 套"且含 headerFooters</span><span class="mc" style="color:var(--ok)">通过</span></div>
+          <div class="wz-sub">输出 dev/notes/audit_report.json → dev/reports/技术标排版预设统一十方案审计报告.html（可复跑）。</div>
+        </div>
+      </div>
+
+      <!-- P4 契约与文档 -->
+      <div class="dev-panel">
+        <div class="dev-h">P4 · 契约与文档<span class="sub">references/ 19 篇</span></div>
+        <div class="dev-b">
+          <div class="dev-mod"><span class="mk">契约</span><span class="md">module-contracts.md（模块间契约草案）</span><span class="mc">1 篇</span></div>
+          <div class="dev-mod"><span class="mk">对齐</span><span class="md">M1 素材库 / M2 模板库 / M4 招标解析 / M6 技术标 / 产物反馈机制</span><span class="mc">5 篇</span></div>
+          <div class="dev-mod"><span class="mk">手册</span><span class="md">M1 素材库 / M2 模板库 / M4 招标解析 / M5 项目模板生成 / M5 通用格式配置</span><span class="mc">5 篇</span></div>
+          <div class="dev-mod"><span class="mk">提示词</span><span class="md">M4 招标解析 / M5 项目模板检查 / M6 技术标 / M7 标书检查 / M8 模拟评标 / 固化 / 经验总结</span><span class="mc">7 篇</span></div>
+          <div class="dev-mod"><span class="mk">规范</span><span class="md">模块开发规范.md</span><span class="mc">1 篇</span></div>
+          <div class="wz-sub">开发纪律：每轮开发变化记录 dev/notes/development-log.md 并推送 git。</div>
+        </div>
+      </div>
+
+      <!-- P5 产物反馈 -->
+      <div class="dev-panel">
+        <div class="dev-h">P5 · 产物反馈<span class="sub">m_feedback / feedback.py</span></div>
+        <div class="dev-b">
+          <div class="dev-mod"><span class="mk">注册</span><span class="md">反馈 register：产物 → 反馈条目（test_feedback_register）</span><span class="mc">已实现</span></div>
+          <div class="dev-mod"><span class="mk">回读</span><span class="md">readback 落盘回读比对（test_readback）</span><span class="mc">已实现</span></div>
+          <div class="dev-mod"><span class="mk">闭环</span><span class="md">产物反馈机制-需求对齐：反馈驱动迭代（与 M4–M10 产物链闭环）</span><span class="mc">已实现</span></div>
+          <div class="wz-sub">设计原则：agent 产物 JSON 统一 落盘→回读→校验，反馈沉淀为下轮契约输入。</div>
+        </div>
+      </div>
+
+      <!-- P6 日志与版本 -->
+      <div class="dev-panel">
+        <div class="dev-h">P6 · 开发日志与版本<span class="sub">dev/notes/ + git</span></div>
+        <div class="dev-b">
+          <div class="dev-mod"><span class="mk">日志</span><span class="md">development-log.md（决策/踩坑/验证数据/耗时）</span><span class="mc">持续</span></div>
+          <div class="dev-mod"><span class="mk">对齐</span><span class="md">规则对齐-系列（开发纪律/决策权限/企业模板库/M7/M8/docx 工具移植）</span><span class="mc">11 篇</span></div>
+          <div class="dev-mod"><span class="mk">审计</span><span class="md">audit_report.json + 审计报告 HTML（C1–C9）</span><span class="mc">已交付</span></div>
+          <div class="dev-mod"><span class="mk">已实现</span><span class="md">T10 导出引擎（tech-export）：章节树+正文 md → 可编辑 Word（封面/目录域/标题层级/三线表/页眉页脚三态/暗标强制注入/页数回写）</span><span class="mc" style="color:var(--ok)">v1</span></div>
+          <div class="wz-sub">git 分支 feat/tpl-inplace-relax，已提交：a333d0b V1–V3 / 9cc98eb 任务9 M6 收尾 / fa32619 风格屏 / 6513084 素材库 / 0b4be8d 向导+真实流程 / 332c8c5 模板库 / fd46922 公司管理。</div>
+        </div>
+      </div>
+
+      <!-- P7 本地联调命令台（B：真实 CLI 调用链） -->
+      <div class="dev-panel">
+        <div class="dev-h">P7 · 本地联调命令台<span class="sub">ui_cli_bridge.py → scripts/bidcraft.py</span></div>
+        <div class="dev-b">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <span class="ctx-tag" id="bridgeState" style="background:#9aa3b8">桥未检测</span>
+            <span style="font-size:12px;color:var(--txt2)">先运行：python dev/prototypes/ui_cli_bridge.py --port 8765</span>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+            <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px" onclick="bridgeSetCmd(['tech-status'])">tech-status</button>
+            <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px" onclick="bridgeSetCmd(['tech-layout','--list'])">tech-layout --list</button>
+            <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px" onclick="bridgeSetCmd(['tech-check','--project','市政务服务中心项目'])">tech-check</button>
+            <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px" onclick="bridgeSetCmd(['tech-export','--project','市政务服务中心项目'])">tech-export</button>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <input id="bridgeCmd" value='["tech-status"]' spellcheck="false"
+                   style="flex:1;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;font-family:Consolas,monospace;font-size:12px">
+            <button class="btn btn-primary" onclick="bridgeExec()">执行</button>
+          </div>
+          <div style="background:#0f172a;border-radius:10px;padding:10px 12px;color:#c9d4e8;font-family:Consolas,monospace;font-size:12px;white-space:pre-wrap;max-height:260px;overflow:auto" id="bridgeOut">等待执行…（显示 stdout / err / 产物路径）</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 新建标书向导 -->
+  <section class="view" id="view-wizard">
+    <div class="editor-steps" id="wzSteps"></div>
+
+    <div class="card" style="margin-top:14px">
+      <div class="card-b" style="padding:20px 22px">
+        <!-- 步骤 1：招标解析（M4 双通道） -->
+        <div class="wz-step active" id="wz1">
+          <div style="font-size:15px;font-weight:800;margin-bottom:4px">步骤 1 · 招标解析（M4 双通道）</div>
+          <div class="wz-sub">通道A 文档解析（确定性抽取）+ 通道B 投标要点（agent 语义）→ 双通道差异 → 投标要点 HTML 人工核对（闸门①），核对通过后才进入下游。</div>
+          <div class="dropzone" onclick="toast('招标文件上传在后续迭代实现（规划中）：tender-parse → tender-diff → tender-report')">拖拽招标文件到此处，或点击选择文件</div>
+          <div class="file-row"><span class="fn">市政务服务中心项目监理招标文件.pdf</span><span style="margin-left:auto;color:var(--ok);font-weight:700">已解析</span></div>
+          <div class="file-row"><span class="fn">答疑纪要（第 1 次）.pdf</span><span style="margin-left:auto;color:var(--warn)">待导入</span></div>
+          <div style="margin-top:10px">
+            <div class="wz-sub" style="margin-bottom:4px">解析产物</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <span class="act-chip arch">文档解析.json · 已生成</span>
+              <span class="act-chip recy">投标要点.json · 待核对</span>
+              <span class="act-chip web">双通道差异.json · 2 项待裁决</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <button class="btn btn-ghost" onclick="toast('投标要点 HTML 核对（闸门①）在后续迭代实现（规划中）：以招标原文为最终依据，裁决双通道差异')">核对投标要点（闸门①）</button>
+            <button class="btn btn-ghost" onclick="toast('重新解析在后续迭代实现（规划中）：tender-parse 重新生成文档解析.json')">重新解析</button>
+          </div>
+        </div>
+
+        <!-- 步骤 2：判定与初始化（tech-init） -->
+        <div class="wz-step" id="wz2">
+          <div style="font-size:15px;font-weight:800;margin-bottom:10px">步骤 2 · 判定与初始化（tech-init）</div>
+          <div class="wz-form">
+            <div class="wz-field"><label>项目名称</label><input value="市政务服务中心项目监理" disabled></div>
+            <div class="wz-field"><label>招标编号</label><input value="MAS-2026-FJ-018" disabled></div>
+            <div class="wz-field"><label>招标解析目录</label><input value="项目级/市政务服务中心项目/招标解析" disabled></div>
+            <div class="wz-field"><label>页数上限（从招标文件抽取）</label><input value="900 页" disabled></div>
+          </div>
+          <div class="wz-judge" style="margin-top:14px">
+            <div>
+              <div class="jt">标书模式判定：<span id="wzJudgeVal" class="ctx-tag dark-tag">暗标</span></div>
+              <div class="jd" id="wzJudgeDesc">判定依据：投标要点文本含「暗标」→ 自动判定暗标；版式受招标条款硬约束（全黑 / 无装饰 / 无页眉页脚），可用 --bid-mode 手动覆盖。</div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn btn-ghost" onclick="toast('重新抽取判定在后续迭代实现（规划中）：重新读取投标要点判定标书模式与页数上限')">重新抽取判定</button>
+              <button class="btn btn-ghost" onclick="manualJudge()">手动覆盖（--bid-mode）</button>
+            </div>
+          </div>
+          <div class="wz-sub" style="margin-top:10px">初始化动作：建技术标目录骨架（章节树 / 上下文包 / 状态文件 m6.state/v1）→ 校验 M4 产物完整 → 落设置。</div>
+        </div>
+
+        <!-- 步骤 3：章节树草案与覆盖矩阵（tech-outline） -->
+        <div class="wz-step" id="wz3">
+          <div style="font-size:15px;font-weight:800;margin-bottom:4px">步骤 3 · 章节树草案与覆盖矩阵（tech-outline）</div>
+          <div class="wz-sub">校验 agent 章节树草案 → 回填系统字段 → 覆盖矩阵（评分点 ↔ 章节）→ 落盘；闸门①：存在未覆盖或页数超限则拒绝，须 --confirm 确认。</div>
+          <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">
+            <span class="act-chip arch">章节树草案.json · 已通过校验</span>
+            <span class="act-chip web">覆盖矩阵 · 评分点覆盖率 90%</span>
+            <span class="act-chip recy">未覆盖 1 项 · BIM 应用（待补充）</span>
+            <span class="act-chip">页数预算：900 页（超限将拒绝）</span>
+          </div>
+          <div class="chk-list" id="wzChk" style="margin-top:12px"></div>
+          <div class="wz-sub" id="wzChCount" style="margin-top:8px">已选 10 章 · 预计成稿约 900–1100 页</div>
+          <button class="btn btn-primary" style="margin-top:12px" onclick="toast('确认章节树（闸门①）在后续迭代实现（规划中）：存在未覆盖/页数超限时需 --confirm 确认，否则拒绝')">确认章节树（闸门①）</button>
+        </div>
+
+        <!-- 步骤 4：上下文包与正文编写（tech-ctx → writer → tech-parse） -->
+        <div class="wz-step" id="wz4">
+          <div style="font-size:15px;font-weight:800;margin-bottom:10px">步骤 4 · 上下文包与正文编写（tech-ctx → writer → tech-parse）</div>
+          <div class="wz-sub">逐章生成 m6.ctx/v1 上下文包（PENDING → CONTEXT_READY）→ AI 编写正文 → 正文校验（非空 / 字数 / 占位符 / 敏感词）→ 落盘回读 → WRITTEN。</div>
+          <div class="chk-list" id="wzCtxList" style="margin-top:12px"></div>
+          <div style="margin-top:14px">
+            <div class="wz-sub" style="margin-bottom:6px">写作模式</div>
+            <div class="wz-opt">
+              <label class="opt on"><input type="radio" name="wzGen" checked onclick="toast('分批生成：逐章 WRITTEN 后继续（规划中）')">分批生成（逐章确认）</label>
+              <label class="opt"><input type="radio" name="wzGen" onclick="toast('整章生成：全量生成后统一检查（规划中）')">整章生成（全量）</label>
+            </div>
+          </div>
+          <div style="margin-top:14px">
+            <div class="wz-sub" style="margin-bottom:6px">排版预设（当前组合）</div>
+            <div class="wz-judge">
+              <div>
+                <div class="jt" id="wzPresetName">深靛蓝 · 单栏流式 · 政务公文风 · 标准公文 A4</div>
+                <div class="jd">页眉页脚：经典企业版（明标）· 图文比例：中图比 3:7 · 表格：三线表</div>
+              </div>
+              <button class="btn btn-ghost" onclick="go('style')">调整预设 →</button>
+            </div>
+          </div>
+          <div style="margin-top:14px" id="wzDarkNote"></div>
+        </div>
+
+        <!-- 步骤 5：检查与确认（tech-check → tech-report → T10 导出） -->
+        <div class="wz-step" id="wz5">
+          <div style="font-size:15px;font-weight:800;margin-bottom:10px">步骤 5 · 检查与确认（tech-check → tech-report → T10 导出）</div>
+          <div class="wz-sub">通道A 六项检查（覆盖 / 结构 / 篇幅 / 敏感词 / 一致性 / 占位）→ 闸门② HTML 检查报告（--confirm 记 confirmLog）→ T10 导出引擎生成可编辑 Word。</div>
+          <div style="margin-top:12px" id="wzCheckList">
+            <div class="check-mini"><span class="dot on">合</span>覆盖检查：章节 ↔ 评分点覆盖矩阵无未覆盖项</div>
+            <div class="check-mini"><span class="dot on">合</span>结构检查：章节树层级 / 编号 / 必填节完整</div>
+            <div class="check-mini"><span class="dot on">合</span>篇幅检查：预算字数与页数上限（招标抽取）达标</div>
+            <div class="check-mini"><span class="dot on" id="wzDarkDot">合</span>敏感词检查：单位名 / 标识 / 禁用表述（暗标项）</div>
+            <div class="check-mini"><span class="dot on">合</span>一致性检查：术语 / 编号 / 预设字段一致</div>
+            <div class="check-mini"><span class="dot on">合</span>占位检查：无残留占位符 / 未生成段落</div>
+          </div>
+          <div style="margin-top:14px">
+            <div class="wz-sub" style="margin-bottom:6px">闸门② 确认（tech-report）</div>
+            <div class="wz-judge">
+              <div>
+                <div class="jt">检查报告：<span class="ctx-tag ok">0 error · 0 warning</span></div>
+                <div class="jd">--confirm 确认后记 confirmLog → CONFIRMED；存在 error 需 --force + --note 备注。</div>
+              </div>
+              <button class="btn btn-ghost" onclick="toast('tech-report 闸门②在后续迭代实现（规划中）：HTML 检查报告 + confirmLog')">生成检查报告</button>
+            </div>
+          </div>
+          <div style="margin-top:14px">
+            <div class="wz-sub" style="margin-bottom:6px">导出选项（T10 导出引擎）</div>
+            <div class="wz-opt">
+              <label class="opt on"><input type="checkbox" checked onclick="toast('已实现（T10 tech-export）：章节树+正文 md → 可编辑 Word docx，段落/表格/目录域齐全')">可编辑 Word（docx）</label>
+              <label class="opt"><input type="checkbox" onclick="toast('已实现（T10 tech-export）：页眉页脚三态 + 明标封面色块')">页眉页脚 / 封面一并生成</label>
+              <label class="opt"><input type="checkbox" onclick="toast('已实现（T10 tech-export）：暗标强制注入（全黑/无图/无封面/页眉页脚按招标条款双态）')">暗标条款格式注入</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="wz-foot">
+          <button class="btn btn-ghost" id="wzPrev" onclick="wzGo(curW-1)">上一步</button>
+          <button class="btn btn-primary" id="wzNext" onclick="wzNext()">下一步</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/*__STYLE_DATA__*/
+(function(){
+  var darkMode=false;
+
+  function toast(msg){
+    var t=document.getElementById('toast');
+    t.textContent=msg; t.classList.add('show');
+    clearTimeout(t._h); t._h=setTimeout(function(){t.classList.remove('show')},2400);
+  }
+  window.toast=toast;
+
+  // ---- 本地联调桥（B：真实 CLI 调用链）----
+  var BRIDGE_URL='http://127.0.0.1:8765';
+  var bridgeOn=false;
+  function setBridgeState(txt,on){
+    var el=document.getElementById('bridgeState');
+    if(!el) return;
+    el.textContent=txt;
+    el.style.background=on?'#16a34a':'#9aa3b8';
+  }
+  function checkBridge(){
+    fetch(BRIDGE_URL+'/health').then(function(r){return r.json()}).then(function(j){
+      bridgeOn=!!(j&&j.ok); setBridgeState(bridgeOn?'桥已连接（'+j.root+'）':'桥未连接',bridgeOn);
+    }).catch(function(){bridgeOn=false; setBridgeState('桥未连接（未启动）',false)});
+  }
+  function toggleBridge(){
+    if(bridgeOn){ setBridgeState('已断开（关闭浏览器联调）',false); bridgeOn=false; toast('本地联调已关闭；按钮恢复占位提示'); }
+    else{ checkBridge(); toast(bridgeOn?'本地联调已开启：命令台将真实执行 CLI':'桥未启动，请先运行 ui_cli_bridge.py'); }
+  }
+  window.toggleBridge=toggleBridge; window.checkBridge=checkBridge;
+  function bridgeSetCmd(arr){ var el=document.getElementById('bridgeCmd'); if(el) el.value=JSON.stringify(arr); }
+  window.bridgeSetCmd=bridgeSetCmd;
+  function bridgeExec(){
+    var el=document.getElementById('bridgeCmd'); var out=document.getElementById('bridgeOut');
+    if(!el||!out) return;
+    var arr; try{ arr=JSON.parse(el.value); }catch(e){ out.textContent='参数 JSON 解析失败：'+e; return; }
+    if(!Array.isArray(arr)){ out.textContent='需为命令参数数组，如 ["tech-status"]'; return; }
+    out.textContent='执行中：python scripts/bidcraft.py '+arr.join(' ')+' …';
+    fetch(BRIDGE_URL+'/exec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cmd:arr})})
+      .then(function(r){return r.json()}).then(function(j){
+        if(!j.ok){ out.textContent='桥错误：'+(j.error||'未知'); return; }
+        var t='exit='+j.code+'\n---- stdout ----\n'+j.out;
+        if(j.err){ t+='\n---- stderr ----\n'+j.err; }
+        if(j.artifacts&&j.artifacts.length){ t+='\n---- 产物 ----\n'+j.artifacts.join('\n'); }
+        out.textContent=t;
+      }).catch(function(e){ out.textContent='请求失败（桥未启动？）：'+e; });
+  }
+  window.bridgeExec=bridgeExec;
+  if(document.readyState!=='loading'){ checkBridge(); } else { window.addEventListener('DOMContentLoaded',checkBridge); }
+
+  function toggleCtx(){
+    var collapsed=ctxBar.classList.toggle('collapsed');
+    if(collapsed){
+      lastW=ctxBar.offsetWidth||DEF_W;
+      ctxBar.style.width='64px'; setIcon(true);
+      toast('左栏已折叠（仅图标），点箭头展开');
+    }else{
+      ctxBar.style.width=(lastW>=MIN_W?lastW:DEF_W)+'px'; setIcon(false);
+      toast('左栏已展开，宽度 '+ctxBar.style.width.replace('px','')+'px');
+    }
+  }
+  window.toggleCtx=toggleCtx;
+
+  function setIcon(collapsed){
+    var ic=document.getElementById('collapseIcon');
+    ic.innerHTML=collapsed
+      ? '<path d="M9 5l7 7-7 7"/>'
+      : '<path d="M15 5l-7 7 7 7"/>';
+  }
+
+  var ctxBar=document.getElementById('ctxBar');
+  var resizer=document.getElementById('resizer');
+  var MIN_W=200, MAX_W=420, DEF_W=232, lastW=DEF_W;
+  setIcon(false);
+
+  /* 分割线拖拽调宽：下限 200px，上限 420px */
+  resizer.addEventListener('mousedown',function(e){
+    e.preventDefault();
+    if(ctxBar.classList.contains('collapsed')){
+      ctxBar.classList.remove('collapsed');
+      ctxBar.style.width=(lastW>=MIN_W?lastW:DEF_W)+'px';
+      setIcon(false);
+    }
+    resizer.classList.add('dragging');
+    var startX=e.clientX, startW=parseFloat(ctxBar.style.width)||ctxBar.offsetWidth;
+    function onMove(ev){
+      var w=startW+(ev.clientX-startX);
+      if(w<MIN_W) w=MIN_W;
+      if(w>MAX_W) w=MAX_W;
+      ctxBar.style.width=w+'px';
+    }
+    function onUp(){
+      resizer.classList.remove('dragging');
+      document.removeEventListener('mousemove',onMove);
+      document.removeEventListener('mouseup',onUp);
+      lastW=parseFloat(ctxBar.style.width)||DEF_W;
+      toast('左栏宽度 '+lastW+'px（范围 200–420）');
+    }
+    document.addEventListener('mousemove',onMove);
+    document.addEventListener('mouseup',onUp);
+  });
+
+  function go(v){ location.hash='#/'+v; }
+  window.go=go;
+
+  var VIEW_CTX={home:'ctx-home',project:'ctx-project',editor:'ctx-editor',style:'ctx-style',library:'ctx-library',template:'ctx-template',company:'ctx-company',wizard:'ctx-wizard',dev:'ctx-dev',tender:'ctx-tender',check:'ctx-check',eval:'ctx-eval',remedy:'ctx-remedy',projtpl:'ctx-projtpl'};
+
+  function showView(id){
+    document.querySelectorAll('.view').forEach(function(s){s.classList.remove('active')});
+    var v=document.getElementById('view-'+id); if(v) v.classList.add('active');
+    document.querySelectorAll('.n1').forEach(function(n){
+      var href=((n.getAttribute('href')||'').replace('#','')).replace(/^\//,'');
+      n.classList.toggle('active', href===id);
+    });
+    document.querySelectorAll('.ctx-group').forEach(function(g){g.classList.remove('active')});
+    var cg=document.getElementById(VIEW_CTX[id]);
+    if(cg) cg.classList.add('active');
+    window.scrollTo({top:0});
+  }
+
+  window.addEventListener('hashchange',function(){
+    var h=(location.hash||'#/home').replace('#','').replace(/^\//,'');
+    if(['home','project','editor','style','library','template','company','wizard','dev','tender','check','eval','remedy','projtpl'].indexOf(h)>-1) showView(h);
+  });
+  if(!location.hash) location.hash='#/home';
+
+  /* ---- 暗标联动 ---- */
+  function setDarkMode(on){
+    document.body.classList.toggle('dark', on);
+    var labels=['ctxTag1','ctxTag2','projTag','edTag'];
+    labels.forEach(function(id){
+      var el=document.getElementById(id);
+      if(el) el.textContent=on?'暗标':'明标';
+    });
+    updateStyleUI();
+    if(window.wzSyncDark) wzSyncDark();
+  }
+  document.getElementById('darkToggle').addEventListener('click',function(){ setDarkMode(!document.body.classList.contains('dark')); toast(document.body.classList.contains('dark')?'已切换暗标：版式受招标条款硬约束':'已切换明标：可自由组合风格'); });
+
+  /* ---- 风格配置：15 组 × 10 套 ---- */
+  var SD=window.STYLE_DATA;
+  var cur={}, userSel={};
+  (function(){ var d=SD.default; for(var k in d){ cur[k]=d[k]; userSel[k]=d[k]; } })();
+  var DARK_INJECT={font:'dark-safe',imageRatio:'none',imageRule:'dark-safe-img',imageLayout:'appendix',pageSetup:'p7-hb-25-20',headingSystem:'h2-tender-arabic',tocStyle:'t3-qinghai-nopage',tableStyle:'tb7-dark-0.5',captionSystem:'c9-dark-appendix',paragraphStyle:'pa3-hebei-30',headerFooter:'hf9-dark-none'};
+  var MICRO=['font','imageRatio','imageRule','imageLayout','pageSetup','headingSystem','tocStyle','tableStyle','captionSystem','paragraphStyle','headerFooter'];
+  var SINGULAR={presets:'preset',palettes:'palette',covers:'cover',decorations:'decoration',fontSchemes:'font',imageRatios:'imageRatio',imageRules:'imageRule',imageLayouts:'imageLayout',pageSetups:'pageSetup',headingSystems:'headingSystem',tocStyles:'tocStyle',tableStyles:'tableStyle',captionSystems:'captionSystem',paragraphStyles:'paragraphStyle',headerFooters:'headerFooter'};
+
+  function itemName(key,id){
+    var g=SD.groups.filter(function(x){return x.key===key})[0]; if(!g)return id;
+    var it=g.items.filter(function(x){return x.id===id})[0]; return it?it.n:id;
+  }
+  function selBox(g,label){
+    var box=document.createElement('div'); box.className='sel-group'; box.id='grp-'+g.key;
+    var h=document.createElement('h4');
+    h.innerHTML='<span>'+label+'</span><span class="dim" id="cur-'+g.key+'"></span>';
+    var sel=document.createElement('select'); sel.setAttribute('data-g',g.key);
+    g.items.forEach(function(it){
+      var o=document.createElement('option'); o.value=it.id; o.textContent=it.n+(it.do===false?'（暗标禁）':'');
+      if(it.do===false) o.setAttribute('data-darkbad','1');
+      sel.appendChild(o);
+    });
+    sel.addEventListener('change',function(){ cur[g.key]=sel.value; renderStyle(); });
+    box.appendChild(h); box.appendChild(sel);
+    return box;
+  }
+  function renderSelects(){
+    var wrap=document.getElementById('styleSelects'); if(!wrap) return;
+    wrap.innerHTML='';
+    SD.groups.forEach(function(g){ wrap.appendChild(selBox(g,g.label)); });
+    var nav=document.getElementById('ctxStyleNav');
+    nav.innerHTML='';
+    SD.groups.forEach(function(g){
+      var b=document.createElement('button'); b.className='ctx-item'; b.setAttribute('data-g',g.key); b.textContent=g.label;
+      b.addEventListener('click',function(){
+        var el=document.getElementById('grp-'+g.key);
+        if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
+        document.querySelectorAll('#ctxStyleNav .ctx-item').forEach(function(x){x.classList.remove('active')});
+        b.classList.add('active');
+      });
+      nav.appendChild(b);
+    });
+    document.getElementById('comboCount').textContent='10^15';
+  }
+  function syncSelects(){
+    var selAny=document.querySelectorAll('.sel-group select');
+    Array.prototype.forEach.call(selAny,function(sel){
+      var key=sel.getAttribute('data-g');
+      var g=SD.groups.filter(function(x){return x.key===key})[0];
+      var ck=SINGULAR[key]||key;
+      var darkNow=document.body.classList.contains('dark');
+      sel.value=cur[ck]||userSel[ck];
+      var lockSel=document.querySelector('#grp-'+key+' h4 span .lock');
+      if(darkNow && MICRO.indexOf(ck)>-1){
+        sel.disabled=true;
+        if(!lockSel){ var s=document.createElement('span'); s.className='lock'; s.textContent='暗标锁定'; document.querySelector('#grp-'+key+' h4 span').appendChild(s); }
+      } else {
+        sel.disabled=false;
+        if(lockSel) lockSel.parentNode.removeChild(lockSel);
+        Array.prototype.forEach.call(sel.options,function(o){ o.disabled = darkNow && o.getAttribute('data-darkbad'); });
+      }
+      var cv=document.getElementById('cur-'+key);
+      if(cv) cv.textContent = darkNow&&MICRO.indexOf(ck)>-1 ? '自动注入' : itemName(key,sel.value);
+    });
+  }
+  function renderPreview(){
+    var dark=document.body.classList.contains('dark');
+    var pal=(SD.groups.filter(function(x){return x.key==='palettes'})[0].items.filter(function(x){return x.id===cur.palette})[0]);
+    var pk=pal&&pal.p?pal.p:'#243B6B';
+    document.getElementById('a4Preview').style.setProperty('--pal',pk);
+    var t=document.getElementById('a4Title');
+    var hk=cur.headingSystem||'', prefix='第一章 ', body='工程概况与监理工作范围';
+    if(hk.indexOf('tender')>-1||hk.indexOf('tongliao')>-1) prefix='1 ';
+    else if(hk.indexOf('hybrid')>-1||hk.indexOf('nanyang')>-1) prefix='一、';
+    t.textContent=prefix+body;
+    t.style.fontWeight=dark?'400':'700';
+    var fontName=itemName('fontSchemes',cur.font)||'', ff='SimSun,serif';
+    if(fontName.indexOf('仿')>-1) ff='FangSong,"仿宋",serif';
+    else if(fontName.indexOf('黑')>-1||fontName.indexOf('商务')>-1) ff='"Microsoft YaHei",sans-serif';
+    else if(fontName.indexOf('楷')>-1) ff='KaiTi,"楷体",serif';
+    t.style.fontFamily=ff;
+    var fig=document.getElementById('a4Fig'), cap=document.getElementById('a4Cap');
+    var r=cur.imageRatio||'mid', showFig=true, figH=58, figTxt='现场图片占位（按图文比例）';
+    if(r==='none'){ showFig=false; cap.style.display='none'; }
+    else{
+      cap.style.display='';
+      if(r==='ultra-low'||r==='low') figH=40;
+      else if(r==='mid'||r==='low-mid') figH=58;
+      else if(r==='high'||r==='very-high') figH=86;
+      else if(r==='full'){ figH=200; figTxt='整页图版占位'; }
+      else if(r==='appendix-only') figTxt='附图专页（置于文末）';
+    }
+    if(cur.imageLayout==='appendix' && r!=='none') figTxt='附图专页（置于文末）';
+    fig.style.display=showFig?'flex':'none'; fig.style.height=figH+'px'; fig.textContent=figTxt;
+    var tb=document.getElementById('a4Tb');
+    tb.className='a4-tb ';
+    var tsk=cur.tableStyle||'tb1';
+    if(tsk==='tb2-full-line'||tsk==='tb4-header-fill'||tsk==='tb5-grid-fine') tb.className+='tb2';
+    else tb.className+='tb1';
+    var head=document.getElementById('a4Head'), foot=document.getElementById('a4Foot');
+    var hf=cur.headerFooter||'hf1';
+    head.style.display=''; foot.style.display=''; foot.textContent='第 12 页';
+    if(hf==='hf9-dark-none'){ head.style.display='none'; foot.style.display='none'; }
+    else if(hf==='hf10-dark-page-only'){ head.style.display='none'; foot.textContent='12'; }
+    var sum='';
+    SD.groups.forEach(function(g){
+      var ck=SINGULAR[g.key]||g.key;
+      var v=(dark&&MICRO.indexOf(ck)>-1)?(DARK_INJECT[ck]||userSel[ck]):cur[ck];
+      sum+='<span style="display:inline-block;background:#eef1f7;border-radius:6px;padding:1px 8px;margin:2px 3px 0 0;font-size:11px">'+g.label+' · '+itemName(g.key,v)+'</span>';
+    });
+    document.getElementById('comboSummary').innerHTML=sum;
+  }
+  function darkCheck(){
+    var list=document.getElementById('checkList'); if(!list) return;
+    var d=[];
+    function push(k,ok,msg){ d.push('<div class="chk"><span class="dot '+(ok?'ok':'bad')+'">'+(ok?'合':'差')+'</span><span><b class="k">'+k+'</b>'+msg+'</span></div>'); }
+    function gDo(key,id){ var g=SD.groups.filter(function(x){return x.key===key})[0]; if(!g)return null; var it=g.items.filter(function(x){return x.id===id})[0]; return it?it.do:null; }
+    if(document.body.classList.contains('dark')){
+      document.getElementById('checkMode').textContent='暗标合规（自动注入 + 即时校验）';
+      push('字体', cur.font==='dark-safe', '当前已自动注入宋体常规无加粗');
+      push('图文', cur.imageRatio==='none'||(cur.imageRule==='dark-safe-img'&&cur.imageLayout==='appendix'), '零图或灰度附图（二选一）');
+      push('页眉页脚', cur.headerFooter==='hf9-dark-none'||cur.headerFooter==='hf10-dark-page-only', '无页眉页脚或仅页码');
+      push('标题体系', gDo('headingSystems',cur.headingSystem)===true, '条款式编号、不加粗');
+      push('配色', cur.palette==='charcoal'||cur.palette==='mono-red', '全黑或灰度印刷');
+      push('表格', gDo('tableStyles',cur.tableStyle)===true, '细线表、无色底纹');
+      push('段落', gDo('paragraphStyles',cur.paragraphStyle)===true, '固定行距或条款行距');
+      push('目录', gDo('tocStyles',cur.tocStyle)===true, '无页码或仅页码目录');
+      list.innerHTML=d.join('');
+    } else {
+      document.getElementById('checkMode').textContent='明标：无硬约束';
+      list.innerHTML='<div class="chk"><span class="dot ok">合</span><span>明标模式：正交组合自由选择，页眉页脚/封面/配色均可启用；具体格式以招标文件条款为准。</span></div>';
+    }
+  }
+  function renderStyle(){ syncSelects(); renderPreview(); darkCheck(); }
+  function applyDarkInject(){ if(document.body.classList.contains('dark')){ MICRO.forEach(function(k){ cur[k]=DARK_INJECT[k]; }); } }
+  function updateStyleUI(){ if(!document.getElementById('styleSelects')) return; applyDarkInject(); renderStyle(); }
+  function resetStyle(){
+    var d=SD.default; for(var k in d){ cur[k]=d[k]; userSel[k]=d[k]; }
+    if(document.body.classList.contains('dark')) applyDarkInject();
+    renderStyle(); toast('已恢复默认组合（明标默认）');
+  }
+  window.resetStyle=resetStyle;
+  function applyStyle(){
+    var dark=document.body.classList.contains('dark');
+    var note=document.getElementById('edStyleNote');
+    if(note) note.textContent=dark?'已应用：暗标自动注入组合':'已应用：自定义 15 组 × 10 套组合';
+    toast('组合已应用到当前技术标（导出时由 tech-export 渲染）');
+  }
+  window.applyStyle=applyStyle;
+  renderSelects(); renderStyle();
+
+  /* ---- 素材库 ---- */
+  var LIB_ICON_CLS=['#2F5D50','#8C3B32','#B7791F','#2E5F73','#7A3ED6'];
+  var LIB_DATA=[
+    {n:'安徽省社会保险单位参保证明.png',cat:'ent',catN:'企业资信',src:'up',srcN:'人工上传',st:'arch',stN:'已归档',prot:true,meta:'企业资质证明 · P1/共1页 · 1.2MB',ico:0,note:'已保护：变更须 propose / apply'},
+    {n:'企业信用评价报告.pdf',cat:'ent',catN:'企业资信',src:'up',srcN:'人工上传',st:'arch',stN:'已归档',prot:false,meta:'信用报告 · 2026 年度 · 3.8MB',ico:1,note:'引用到商务标 · 企业资信部分'},
+    {n:'获奖证书-省级优质工程.jpg',cat:'honor',catN:'荣誉证书',src:'up',srcN:'人工上传',st:'arch',stN:'已归档',prot:true,meta:'年度与颁发日期已逐字核对落款 · 2.4MB',ico:2,note:'已保护：OCR 识别后须与落款核对'},
+    {n:'现场形象进度照片-地下室.jpg',cat:'photo',catN:'现场照片',src:'ai',srcN:'AI 生成',st:'arch',stN:'已归档',prot:false,meta:'统一画风 · 无版权问题 · 4.1MB',ico:3,note:'嵌入技术标正文（占页 ≤1/3）'},
+    {n:'总平面布置图.png',cat:'draw',catN:'图纸图表',src:'web',srcN:'联网搜索',st:'draft',stN:'待归档',prot:false,meta:'版权风险高 · 仅作示意参考 · 6.7MB',ico:4,note:'待归档：不用于事实性内容'},
+    {n:'项目监理机构框图.svg',cat:'draw',catN:'图纸图表',src:'ai',srcN:'AI 生成',st:'draft',stN:'待归档',prot:false,meta:'矢量图 · 可直接引用 · 0.4MB',ico:0,note:'待归档：建议命名规范入库存档'}
+  ];
+  function renderLib(cat){
+    var grid=document.getElementById('assetGrid');
+    grid.innerHTML='';
+    LIB_DATA.forEach(function(it,i){
+      if(cat!=='all'&&it.cat!==cat) return;
+      var card=document.createElement('div'); card.className='asset-card';
+      card.innerHTML='<div class="ac-top"><span class="ac-ico" style="background:'+LIB_ICON_CLS[i%LIB_ICON_CLS.length]+'"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></span><div><div class="ac-name">'+it.n+'</div><div class="ac-meta">'+it.meta+'</div></div></div>'+
+        '<div class="ac-tags"><span class="act-chip arch">'+it.catN+'</span><span class="act-chip '+it.src+'" style="'+(it.src==='web'?'background:#eef3fd;color:var(--brand2)':it.src==='ai'?'background:#f3ecfd;color:#7a3ed6':'background:#e2f4ec;color:#14784f')+'">'+it.srcN+'</span><span class="act-chip '+(it.st==='arch'?'arch':'recy')+'">'+it.stN+'</span>'+(it.prot?'<span class="act-chip prot">受保护</span>':'')+'</div>'+
+        '<div class="ac-foot"><span style="font-size:11.5px;color:var(--dim)">'+it.note+'</span><span class="ac-act" onclick="event.stopPropagation();toast(\'素材详情与引用在后续迭代实现（规划中）\')">引用 →</span></div>';
+      card.addEventListener('click',function(){
+        toast('素材详情在后续迭代实现（规划中）：预览 / 版本 / 变更 propose / apply');
+      });
+      grid.appendChild(card);
+    });
+    var C=['libC0','libC1','libC2','libC3','libC4'];
+    var cats=['all','ent','honor','photo','draw'];
+    cats.forEach(function(c,j){
+      var el=document.getElementById(C[j]);
+      if(el) el.textContent=LIB_DATA.filter(function(x){return c==='all'||x.cat===c}).length;
+    });
+    var cls=['libN0','libN1','libN2','libN3','libN4'];
+    cats.forEach(function(c,j){
+      var el=document.getElementById(cls[j]);
+      if(el) el.textContent=LIB_DATA.filter(function(x){return c==='all'||x.cat===c}).length;
+    });
+  }
+  function filterLib(cat,el){
+    renderLib(cat);
+    var sel=el;
+    document.querySelectorAll('#libChips .chip').forEach(function(c){c.classList.toggle('active',c.getAttribute('data-lib')===cat)});
+    document.querySelectorAll('#ctx-library .ctx-item[data-lib]').forEach(function(c){c.classList.toggle('active',c.getAttribute('data-lib')===cat)});
+  }
+  window.filterLib=filterLib;
+  document.getElementById('libChips').addEventListener('click',function(e){
+    var chip=e.target.closest('.chip'); if(!chip) return;
+    filterLib(chip.getAttribute('data-lib'),chip);
+  });
+  renderLib('all');
+
+  /* ---- 模板库（M2） ---- */
+  var TPL_DATA=[
+    {n:'商务标母版-招标式',ag:'hf',agN:'合肥市招标集团',mode:'投标',tw:18,iw:6,pg:38,ph:'18 文字 + 6 图片'},
+    {n:'投标函及投标函附录',ag:'hf',agN:'合肥市招标集团',mode:'投标',tw:9,iw:0,pg:3,ph:'9 文字'},
+    {n:'法定代表人身份证明与授权委托书',ag:'hf',agN:'合肥市招标集团',mode:'投标',tw:7,iw:1,pg:4,ph:'7 文字 + 1 图片'},
+    {n:'投标保证金承诺函',ag:'ah',agN:'安徽中技工程咨询',mode:'投标',tw:5,iw:0,pg:2,ph:'5 文字'},
+    {n:'投标报价表（总价 / 分项）',ag:'ah',agN:'安徽中技工程咨询',mode:'投标',tw:12,iw:0,pg:6,ph:'12 文字（表格）'},
+    {n:'项目监理机构人员配置表',ag:'ah',agN:'安徽中技工程咨询',mode:'投标',tw:8,iw:3,pg:5,ph:'8 文字 + 3 图片'},
+    {n:'近年完成的类似工程业绩表',ag:'ah',agN:'安徽中技工程咨询',mode:'投标',tw:6,iw:2,pg:4,ph:'6 文字 + 2 图片'},
+    {n:'企业资信证明文件组合页',ag:'ah2',agN:'安徽省招标集团',mode:'投标',tw:4,iw:8,pg:12,ph:'4 文字 + 8 图片'},
+    {n:'拟投入设备仪器清单',ag:'ah2',agN:'安徽省招标集团',mode:'投标',tw:10,iw:0,pg:3,ph:'10 文字（表格）'},
+    {n:'监理大纲技术标样章（封面+页眉页脚）',ag:'ah2',agN:'安徽省招标集团',mode:'投标',tw:14,iw:2,pg:16,ph:'14 文字 + 2 图片'}
+  ];
+  function renderTpl(cat){
+    var body=document.getElementById('tplBody');
+    body.innerHTML='';
+    TPL_DATA.forEach(function(t){
+      if(cat!=='all'&&t.ag!==cat) return;
+      var tr=document.createElement('tr');
+      tr.innerHTML='<td class="tpl-name">'+t.n+'</td>'+
+        '<td>'+t.agN+'</td><td>'+t.mode+'</td><td>'+t.tw+'</td><td>'+t.iw+'</td><td>'+t.pg+'</td>'+
+        '<td><span class="tpl-act" onclick="event.stopPropagation();toast(\'占位符登记清单在后续迭代实现（规划中）：'+t.ph+'，维护 占位符登记清单.md\')">查看清单</span></td>'+
+        '<td><span class="tpl-act" onclick="event.stopPropagation();toast(\'用此模板新建商务标在后续迭代实现（规划中）：商务标六步流程\')">选用</span></td>';
+      body.appendChild(tr);
+    });
+    var cats=['all','hf','ah','ah2'];
+    var C=['tplC0','tplC1','tplC2','tplC3'];
+    cats.forEach(function(c,j){
+      var el=document.getElementById(C[j]);
+      if(el) el.textContent=TPL_DATA.filter(function(x){return c==='all'||x.ag===c}).length;
+    });
+    var N=['tplN0','tplN1','tplN2','tplN3'];
+    cats.forEach(function(c,j){
+      var el=document.getElementById(N[j]);
+      if(el) el.textContent=TPL_DATA.filter(function(x){return c==='all'||x.ag===c}).length;
+    });
+  }
+  function filterTpl(cat,el){
+    renderTpl(cat);
+    document.querySelectorAll('#tplChips .chip').forEach(function(c){c.classList.toggle('active',c.getAttribute('data-tpl')===cat)});
+    document.querySelectorAll('#ctx-template .ctx-item[data-tpl]').forEach(function(c){c.classList.toggle('active',c.getAttribute('data-tpl')===cat)});
+  }
+  window.filterTpl=filterTpl;
+  document.getElementById('tplChips').addEventListener('click',function(e){
+    var chip=e.target.closest('.chip'); if(!chip) return;
+    filterTpl(chip.getAttribute('data-tpl'),chip);
+  });
+  renderTpl('all');
+
+  /* ---- 公司管理 / 企业库（M1） ---- */
+  var COMP_DATA=[
+    {n:'安徽皖科工程监理有限公司',code:'91340500MA2U8J3L5F',ledger:126,disk:158,trash:5,inbox:'打开中 batch=20261020，待归档 12 个',active:true},
+    {n:'马鞍山新时代建设工程监理有限公司',code:'91340500MA2T7Q8B2A',ledger:84,disk:97,trash:0,inbox:'未打开',active:false},
+    {n:'池州江南工程监理有限公司',code:'91341700MA2R4X6C7N',ledger:51,disk:63,trash:2,inbox:'未打开',active:false}
+  ];
+  function compTree(ent){
+    var t=
+      '<span class="hl">'+ent+'/</span>\n'+
+      '├── <span class="hl">回收站/</span>（公司级统一回收站 · 30 天后清理）\n'+
+      '├── <span class="hl">企业级/</span>\n'+
+      '│   ├── <span class="hl">素材库/</span>（资质 / 人员 / 业绩 / 荣誉 / 财务 / 企业介绍 / 收件箱）\n'+
+      '│   ├── <span class="hl">模板库/</span>&lt;招标代理机构&gt;/{投标, 采购, 询比价}\n'+
+      '│   └── <span class="hl">技术标风格/</span>（共享预设，layout-presets.json v1.4）\n'+
+      '└── <span class="hl">项目级/</span>\n'+
+      '    └── 市政务服务中心项目/（招标解析 / 技术标 / 标书检查 / 项目模板 / 补救任务单）';
+    return t;
+  }
+  function renderComp(sel){
+    var grid=document.getElementById('compGrid');
+    grid.innerHTML='';
+    COMP_DATA.forEach(function(c,i){
+      var card=document.createElement('div'); card.className='comp-card'+(c.n===sel?' on':'');
+      card.innerHTML='<div class="cn">'+c.n+'</div>'+
+        '<div class="cm">信用代码：'+c.code+'</div>'+
+        '<div class="cm">素材库：软件根/'+c.n+'/企业级/素材库</div>'+
+        '<div class="comp-stats"><span>台账 <b>'+c.ledger+'</b></span><span>磁盘 <b>'+c.disk+'</b></span><span>回收站 <b>'+c.trash+'</b></span></div>'+
+        '<div style="font-size:11.5px;color:var(--dim);margin-top:6px">收件箱：'+c.inbox+'</div>';
+      card.addEventListener('click',function(){ renderComp(c.n); });
+      grid.appendChild(card);
+    });
+    document.getElementById('compDirName').textContent='（当前：'+sel+'）';
+    document.getElementById('compTree').innerHTML=compTree(sel);
+    var nav=document.getElementById('compNav'); nav.innerHTML='';
+    COMP_DATA.forEach(function(c){
+      var b=document.createElement('button'); b.className='ctx-item'+(c.n===sel?' active':'');
+      b.textContent=c.n;
+      b.addEventListener('click',function(){ renderComp(c.n); });
+      nav.appendChild(b);
+    });
+  }
+  renderComp(COMP_DATA[0].n);
+
+  /* ---- 全局开发台：模块管道 ---- */
+  var DEV_MODS=[
+    {k:'M0',d:'环境 env-check（全局）',c:'1 命令'},
+    {k:'M1',d:'素材库 assets（收件箱/归档/propose-apply/回收站/命名/巡检）',c:'21 命令'},
+    {k:'M2',d:'模板库 template_lib（台账/导入/占位扫描/对账/导出）',c:'10+ 操作'},
+    {k:'M4',d:'招标解析 tender（双通道解析/投标要点/差异/HTML 闸门①）',c:'4 命令'},
+    {k:'M5',d:'项目模板 fill_from_tpl（内容契约+素材清单+格式契约）',c:'6 命令'},
+    {k:'M6',d:'技术标 tech（init/outline/ctx/parse/check/report/status/layout）',c:'8 命令'},
+    {k:'M7',d:'标书检查 check（通道A 机器 + 通道B agent + diff）',c:'4 命令'},
+    {k:'M8',d:'模拟评标 evaluator（评分标准 → 报告）',c:'3 命令'},
+    {k:'M10',d:'补救 remedy（失分补救任务单）',c:'2 命令'},
+    {k:'FB',d:'产物反馈 feedback（register → readback → 闭环）',c:'2 命令'},
+    {k:'CORE',d:'_shared/core（台账/批次/检索/收件箱/回收站/回读/命名）',c:'12 模块'},
+    {k:'DTX',d:'docx_tools（audit/reader 读取与审计）',c:'8 模块'}
+  ];
+  var box=document.getElementById('devMods');
+  if(box){
+    box.innerHTML='';
+    DEV_MODS.forEach(function(m){
+      var r=document.createElement('div'); r.className='dev-mod';
+      r.innerHTML='<span class="mk">'+m.k+'</span><span class="md">'+m.d+'</span><span class="mc">'+m.c+'</span>';
+      box.appendChild(r);
+    });
+  }
+
+  /* ---- 新建标书向导 ---- */
+  var curW=1;
+  var WZ_STEPS=['招标解析（M4）','判定与初始化','章节树与覆盖','上下文与正文','检查与确认'];
+  var WZ_CH=[
+    ['第一章 工程概况与监理工作范围','评分点：项目理解'],
+    ['第二章 监理工作依据、目标与内容','评分点：依据齐全性'],
+    ['第三章 项目监理机构及人员配备','评分点：人员配置'],
+    ['第四章 监理工作程序与方法','评分点：程序完整'],
+    ['第五章 质量控制体系与措施','评分点：质量措施'],
+    ['第六章 进度控制体系与措施','评分点：进度措施'],
+    ['第七章 投资控制体系与措施','评分点：投资措施'],
+    ['第八章 安全文明施工与环境保护监理','评分点：安全环保'],
+    ['第九章 合同信息管理与组织协调','评分点：合同信息'],
+    ['第十章 监理工作制度与资料管理','评分点：制度资料']
+  ];
+  var wzSelCh=0;
+  function renderWzSteps(){
+    var s=document.getElementById('wzSteps'); s.innerHTML='';
+    WZ_STEPS.forEach(function(n,i){
+      var sp=document.createElement('span');
+      sp.className='estep '+(i+1<curW?'done':(i+1===curW?'cur':''));
+      sp.innerHTML='<span class="e">'+(i+1<curW?'已':(i+1))+ '</span>'+n;
+      s.appendChild(sp);
+      if(i<WZ_STEPS.length-1){ var ln=document.createElement('span'); ln.className='step-line'; ln.style.cssText='flex:1;min-width:24px;height:2px;background:'+(i+1<curW?'#a9d6c4':'var(--line)')+';margin:0 10px'; s.appendChild(ln); }
+    });
+    var nav=document.getElementById('wzNav'); nav.innerHTML='';
+    WZ_STEPS.forEach(function(n,i){
+      var b=document.createElement('button'); b.className='ctx-item'; b.textContent=(i+1)+' · '+n;
+      if(i+1===curW) b.classList.add('active');
+      b.addEventListener('click',function(){ wzGo(i+1); });
+      nav.appendChild(b);
+    });
+  }
+  function renderWzChk(){
+    var box=document.getElementById('wzChk'); if(!box) return;
+    box.innerHTML='';
+    WZ_CH.forEach(function(c,i){
+      var row=document.createElement('label'); row.className='chk-row';
+      var cb=document.createElement('input'); cb.type='checkbox'; cb.checked=true;
+      cb.addEventListener('change',function(){
+        wzSelCh+=cb.checked?1:-1;
+        document.getElementById('wzChCount').textContent='已选 '+wzSelCh+' 章';
+        toast('目录已调整：'+(cb.checked?'增加':'移除')+'「'+c[0]+'」');
+      });
+      row.appendChild(cb);
+      var txt=document.createElement('span'); txt.textContent=c[0];
+      var sc=document.createElement('span'); sc.className='score'; sc.textContent=c[1];
+      row.appendChild(txt); row.appendChild(sc);
+      box.appendChild(row);
+    });
+    wzSelCh=10;
+  }
+  var WZ_CTX=['CONTEXT_READY','WRITTEN','WRITTEN','CHECKED','CONTEXT_READY','PENDING','PENDING','PENDING','PENDING','PENDING'];
+  function renderWzCtx(){
+    var box=document.getElementById('wzCtxList'); if(!box) return;
+    box.innerHTML='';
+    WZ_CH.forEach(function(c,i){
+      var row=document.createElement('div'); row.className='chk-row';
+      var st=WZ_CTX[i];
+      var badge=document.createElement('span');
+      badge.className='c-b';
+      badge.style.background=st==='CONTEXT_READY'?'#d0883c':st==='WRITTEN'?'#5b79b8':st==='CHECKED'?'#8a6bc8':'#b7bfd0';
+      badge.textContent=st;
+      var txt=document.createElement('span'); txt.textContent=(i+1<=9?'0'+(i+1):(i+1))+'. '+c[0];
+      var sc=document.createElement('span'); sc.className='score'; sc.textContent='上下文包 · 未生成'+(st==='PENDING'?'（待 tech-ctx）':'');
+      row.appendChild(badge); row.appendChild(txt); row.appendChild(sc);
+      box.appendChild(row);
+    });
+  }
+  function wzGo(n){
+    if(n<1||n>5) return;
+    curW=n;
+    document.querySelectorAll('.wz-step').forEach(function(s){s.classList.remove('active')});
+    var el=document.getElementById('wz'+n); if(el) el.classList.add('active');
+    document.getElementById('wzPrev').style.visibility=n===1?'hidden':'visible';
+    document.getElementById('wzNext').textContent=n===5?'生成标书文件（T10 导出）':'下一步';
+    renderWzSteps();
+    wzSyncDark();
+    window.scrollTo({top:0});
+  }
+  window.wzGo=wzGo;
+  function wzNext(){
+    if(curW<5){ wzGo(curW+1); }
+    else{ toast('已实现（T10 tech-export）：tech-export --project <项目> [--override preset=…;palette=…] → 技术标/产出/技术标_<项目>.docx；明标封面+目录域+页眉页脚，暗标 --bid-mode 强制全黑条款注入；页数估算回写 export.json'); }
+  }
+  window.wzNext=wzNext;
+  function manualJudge(){
+    var v=document.getElementById('wzJudgeVal');
+    var desc=document.getElementById('wzJudgeDesc');
+    if(v.textContent==='暗标'){
+      v.textContent='明标'; v.className='ctx-tag';
+      desc.textContent='手动覆盖为明标（--bid-mode=明标）：可自由组合风格（封面/配色/页眉页脚均可启用）；仍建议以投标要点判定为准。';
+      toast('已手动覆盖标书模式为明标');
+    } else {
+      v.textContent='暗标'; v.className='ctx-tag dark-tag';
+      desc.textContent='判定依据：投标要点文本含「暗标」→ 自动判定暗标；版式受招标条款硬约束（全黑 / 无装饰 / 无页眉页脚），可用 --bid-mode 手动覆盖。';
+      toast('已手动覆盖标书模式为暗标');
+    }
+  }
+  window.manualJudge=manualJudge;
+  function wzSyncDark(){
+    var dark=document.body.classList.contains('dark');
+    var note=document.getElementById('wzDarkNote');
+    if(note){
+      note.innerHTML=dark
+        ?'<div class="dark-alert"><b>暗标模式生效：</b>微观排版 11 组已自动锁定（字体 dark-safe / 零图 / 无页眉页脚 / 条款式标题），AI 生成结果将即时合规校验。</div>'
+        :'';
+    }
+    var dot=document.getElementById('wzDarkDot');
+    if(dot){ dot.textContent=dark?'合':'待'; dot.className='dot'+(dark?' on':''); }
+    document.getElementById('wzPresetName').textContent=dark
+      ?'暗标自动注入（宋体常规 · 零图 · 无页眉页脚）'
+      :'深靛蓝 · 单栏流式 · 政务公文风 · 标准公文 A4';
+  }
+  renderWzSteps(); renderWzChk(); renderWzCtx(); wzGo(1);
+
+  /* ---- 工作台筛选 ---- */
+  document.getElementById('homeChips').addEventListener('click',function(e){
+    var chip=e.target.closest('.chip'); if(!chip) return;
+    document.querySelectorAll('#homeChips .chip').forEach(function(c){c.classList.remove('active')});
+    chip.classList.add('active');
+    var f=chip.getAttribute('data-f');
+    document.querySelectorAll('#projGrid .expert-card').forEach(function(c){
+      c.classList.toggle('hide', f!=='all'&&c.getAttribute('data-st')!==f);
+    });
+  });
+
+  /* ---- 编辑器章节切换 ---- */
+  var chData={
+    '1':['第一章 工程概况与监理工作范围','本工程位于马鞍山市城区，总建筑面积约 6.8 万平方米，地上十二层、地下两层，框架剪力墙结构，耐火等级一级，抗震设防烈度六度。项目总投资约 4.2 亿元，计划工期 720 日历天。','监理工作范围涵盖施工准备阶段、施工阶段及缺陷责任期阶段的全过程监理，包括工程质量、进度、投资控制，合同信息管理及安全生产管理、组织协调等全部监理工作内容。'],
+    '4':['第二章 监理工作依据、目标与内容','本工程监理依据主要包括：国家现行法律法规、工程建设标准规范、《建设工程监理规范》GB/T 50319-2013、招标文件及其补充文件、监理合同、施工合同、经审批的施工组织设计与施工图。','监理目标：质量合格率 100%，一次验收合格；进度满足合同工期要求；投资控制在批复概算内；安全生产零事故、文明施工达标。'],
+    '5':['第三章 项目监理机构及人员配备','项目监理机构实行总监理工程师负责制，设总监理工程师 1 名、专业监理工程师 6 名、监理员 8 名，覆盖土建、安装、给排水、电气、安全等专业。','监理人员均持证上岗，总监理工程师具有注册监理工程师执业资格，专业监理工程师具备相应专业中级以上技术职称及执业资格。']
+  };
+  document.getElementById('ctxTree').addEventListener('click',function(e){
+    var item=e.target.closest('.ctx-item'); if(!item) return;
+    document.querySelectorAll('#ctxTree .ctx-item').forEach(function(n){n.classList.remove('active')});
+    item.classList.add('active');
+    var ch=item.getAttribute('data-ch'); if(!ch) return;
+    var d=chData[ch];
+    if(d){
+      document.getElementById('chTitle').textContent=d[0];
+      document.getElementById('chSub').textContent='本章对应评分点：对项目的理解与认识、监理工作范围描述完整度';
+      document.getElementById('p1').textContent=d[1];
+      document.getElementById('p2').textContent=d[2];
+      document.getElementById('p3').innerHTML='[示例占位段落：AI 生成正文引擎在此续写，可插入图表、表格、现场照片（占页 ≤1/3）、图上分散彩色标签等元素 —— 规划中]';
+      toast('已切换章节：'+d[0]);
+    }
+  });
+
+  setDarkMode(false);
+})();
+</script>
+</body>
+</html>

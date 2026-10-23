@@ -1,9 +1,0 @@
-﻿== procs ==
-30704 powershell CPU=2.734375 start=10/10/2026 20:57:32 CMD=C:\WINDOWS\system32\WindowsPowerShell\v1.0\powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -NoLogo -NoProfile -ExecutionPolicy Bypass -NonInteractive -File "C:\Users\hxjlcj\AppData\Local\Doubao\User Data\Profile 2\agent_infra\to\lr_39ca5581ac798654\non_interactive_command_fed86e11-fb2d-4f9b-a9ce-3ad40f017fb6.ps1"
-33908 powershell CPU=2.6875 start=10/10/2026 21:57:41 CMD=C:\WINDOWS\system32\WindowsPowerShell\v1.0\powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -NoLogo -NoProfile -ExecutionPolicy Bypass -NonInteractive -File "C:\Users\hxjlcj\AppData\Local\Doubao\User Data\Profile 2\agent_infra\to\lr_39ca5581ac798654\non_interactive_command_281b4a52-9143-4f9b-9e94-029a45c74a58.ps1"
-35072 powershell CPU=2.265625 start=10/10/2026 21:57:37 CMD=
-16128 python CPU=368.046875 start=10/10/2026 08:41:36 CMD="C:\Users\hxjlcj\AppData\Local\hermes\tools\python-3.14.7+20260901-win32-x64\python.exe" -m hermes_cli.main gateway run
-29640 python CPU=18.15625 start=10/10/2026 20:57:34 CMD="D:\anaconda3\python.exe" bidcraft.py --root E:\监理标书制作 --enterprise 和县建设工程监理有限公司 proj-gen --project 和县2026年老旧小区改造项目（EPC总承包）监理
-39596 WINWORD CPU=1.96875 start=10/10/2026 21:57:38 CMD=
-== txt ==
-done

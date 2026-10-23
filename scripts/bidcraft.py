@@ -23,6 +23,7 @@ import m2_template                  # noqa: E402
 import m4_tender                    # noqa: E402
 import m_feedback                   # noqa: E402
 import m5_project                   # noqa: E402
+import m6_tech                      # noqa: E402
 import m7_check                     # noqa: E402
 import m8_eval                      # noqa: E402
 import m10_remedy                    # noqa: E402
@@ -55,6 +56,7 @@ def build_parser():
     m4_tender.register_parser(sub)          # 挂载 M4 招标解析子命令
     m_feedback.register_parser(sub)         # 挂载产物反馈机制（跨模块）
     m5_project.register_parser(sub)         # 挂载 M5 项目模板生成器
+    m6_tech.register_parser(sub)            # 挂载 M6 技术标制作（首批 4 命令）
     m7_check.register_parser(sub)           # 挂载 M7 交标前质量检查
     m8_eval.register_parser(sub)            # 挂载 M8 AI模拟评标
     m10_remedy.register_parser(sub)          # 挂载 M10 失分补救指引

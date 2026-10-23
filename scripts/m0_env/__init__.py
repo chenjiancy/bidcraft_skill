@@ -155,12 +155,17 @@ def _check_fonts():
 
 
 def _check_tesseract():
-    from m5_project import fill_ocr as ocr
-    t = ocr.TESS
-    p = Path(t)
-    if not p.exists():
+    # v2.0：不再依赖 m5_project.fill_ocr（V5 已退役）；直接探测系统 tesseract
+    p = shutil.which("tesseract")
+    if not p:
+        for cand in (r"C:\Program Files\Tesseract-OCR\tesseract.exe",
+                     r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe"):
+            if Path(cand).exists():
+                p = cand
+                break
+    if not p:
         return {"name": "Tesseract OCR", "status": "warn",
-                "detail": "未找到 tesseract：%s（rapidocr 可用时 OCR 仍可工作）" % t}
+                "detail": "未找到 tesseract（rapidocr 可用时 OCR 仍可工作）"}
     try:
         r = subprocess.run([str(p), "--version"], capture_output=True, text=True,
                            timeout=10, encoding="utf-8", errors="replace")

@@ -1,0 +1,45 @@
+{
+  "schema": "m6.layout-preview/v1",
+  "items": [
+    {
+      "preset": "single-column",
+      "docx": "E:\\bidcraft_skill\\dev\\reports\\layout-preview\\single-column_技术标样张.docx"
+    },
+    {
+      "preset": "tabular",
+      "docx": "E:\\bidcraft_skill\\dev\\reports\\layout-preview\\tabular_技术标样张.docx"
+    },
+    {
+      "preset": "two-column",
+      "docx": "E:\\bidcraft_skill\\dev\\reports\\layout-preview\\two-column_技术标样张.docx"
+    },
+    {
+      "preset": "card",
+      "docx": "E:\\bidcraft_skill\\dev\\reports\\layout-preview\\card_技术标样张.docx"
+    },
+    {
+      "preset": "image-left",
+      "docx": "E:\\bidcraft_skill\\dev\\reports\\layout-preview\\image-left_技术标样张.docx"
+    },
+    {
+      "preset": "divider",
+      "docx": "E:\\bidcraft_skill\\dev\\reports\\layout-preview\\divider_技术标样张.docx"
+    },
+    {
+      "preset": "data-row",
+      "docx": "E:\\bidcraft_skill\\dev\\reports\\layout-preview\\data-row_技术标样张.docx"
+    },
+    {
+      "preset": "image-right",
+      "docx": "E:\\bidcraft_skill\\dev\\reports\\layout-preview\\image-right_技术标样张.docx"
+    },
+    {
+      "preset": "hybrid-flow",
+      "docx": "E:\\bidcraft_skill\\dev\\reports\\layout-preview\\hybrid-flow_技术标样张.docx"
+    },
+    {
+      "preset": "minimal-clean",
+      "docx": "E:\\bidcraft_skill\\dev\\reports\\layout-preview\\minimal-clean_技术标样张.docx"
+    }
+  ]
+}
