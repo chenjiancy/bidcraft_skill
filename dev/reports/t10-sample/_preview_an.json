@@ -1,0 +1,25 @@
+﻿{
+  "ok": true,
+  "tool": "render",
+  "result": {
+    "output_dir": "E:\\bidcraft_skill\\.preview\\40a68be50f80",
+    "manifest": "E:\\bidcraft_skill\\.preview\\40a68be50f80\\manifest.json",
+    "kind": "pdf",
+    "page_count": 4,
+    "rendered_page_count": 4,
+    "collage_count": 1,
+    "extracted_text_chars": 2868,
+    "text": "E:\\bidcraft_skill\\.preview\\40a68be50f80\\text.md",
+    "thumbnail": "E:\\bidcraft_skill\\.preview\\40a68be50f80\\thumb.jpg",
+    "collages": [
+      "E:\\bidcraft_skill\\.preview\\40a68be50f80\\collages\\c1.jpg"
+    ],
+    "pages": [
+      "E:\\bidcraft_skill\\.preview\\40a68be50f80\\pages\\p001.png",
+      "E:\\bidcraft_skill\\.preview\\40a68be50f80\\pages\\p002.png",
+      "E:\\bidcraft_skill\\.preview\\40a68be50f80\\pages\\p003.png",
+      "E:\\bidcraft_skill\\.preview\\40a68be50f80\\pages\\p004.png"
+    ],
+    "warnings": []
+  }
+}

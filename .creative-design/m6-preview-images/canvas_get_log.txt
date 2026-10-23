@@ -1,0 +1,9 @@
+﻿施工现场全景 rc= 0
+   type= IMAGE  path= /generated-assets/m6-preview-images/施工现场全景
+   url= https://aka.doubaocdn.com/s/IG0S28Ka0M
+水准测量放线 rc= 0
+   type= IMAGE  path= /generated-assets/m6-preview-images/水准测量放线
+   url= https://aka.doubaocdn.com/s/VEV6C8BCfA
+监理例会图纸会审 rc= 0
+   type= IMAGE  path= /generated-assets/m6-preview-images/监理例会图纸会审
+   url= https://aka.doubaocdn.com/s/7LhMLiHfB3

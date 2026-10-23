@@ -1,0 +1,91 @@
+{
+  "src": "E:\\bidcraft_skill\\dev\\prototypes\\标书匠软件UI.html",
+  "url": "file:///E:/bidcraft_skill/dev/prototypes/%E6%A0%87%E4%B9%A6%E5%8C%A0%E8%BD%AF%E4%BB%B6UI.html",
+  "outdir": "E:\\bidcraft_skill\\dev\\prototypes\\_shots",
+  "include": [
+    "lint",
+    "screenshots",
+    "structure"
+  ],
+  "shots": {
+    "desktop": {
+      "screenshot": "E:\\bidcraft_skill\\dev\\prototypes\\_shots\\标书匠软件UI_desktop.jpg",
+      "screenshotBytes": 69365,
+      "truncated": false,
+      "structure": {
+        "title": "标书匠软件UI · 原型V3 · 混合导航",
+        "firstH1": "把投标经验，变成团队的 AI 生产力",
+        "viewport": {
+          "w": 1440,
+          "h": 900
+        },
+        "fullpage": {
+          "w": 1440,
+          "h": 960
+        },
+        "counts": {
+          "section": 14,
+          "h1": 1,
+          "h2": 1,
+          "img": 0,
+          "canvas": 0,
+          "svg": 78,
+          "links": 6,
+          "buttons": 136
+        }
+      },
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "horizontalOverflow": [],
+      "resourceErrors": [],
+      "reportSource": "cdp"
+    }
+  },
+  "engine": "chrome_cli",
+  "chromiumExec": "C:\\Users\\hxjlcj/AppData/Local/ms-playwright\\chromium_headless_shell-1228\\chrome-headless-shell-win64\\chrome-headless-shell.exe",
+  "evalIgnored": "chrome_cli 降级模式不支持 --eval 注入，本次已忽略；如需注入 JS，请装 playwright。",
+  "engineDegraded": true,
+  "engineDegradedReason": "playwright 未装",
+  "elapsedSec": 3.32,
+  "schemaVersion": 2,
+  "status": "pass",
+  "engineInfo": {
+    "name": "chrome_cli",
+    "degraded": true,
+    "degradedReasons": [
+      "playwright 未装"
+    ]
+  },
+  "input": {
+    "original": "E:\\bidcraft_skill\\dev\\prototypes\\标书匠软件UI.html",
+    "resolvedPath": "E:\\bidcraft_skill\\dev\\prototypes\\标书匠软件UI.html",
+    "baseUrl": "file:///E:/bidcraft_skill/dev/prototypes/%E6%A0%87%E4%B9%A6%E5%8C%A0%E8%BD%AF%E4%BB%B6UI.html",
+    "protocol": "file",
+    "cwd": "E:\\bidcraft_skill",
+    "mediaMode": {
+      "reducedMotion": true
+    }
+  },
+  "artifacts": {
+    "screenshots": [
+      {
+        "viewport": "desktop",
+        "path": "E:\\bidcraft_skill\\dev\\prototypes\\_shots\\标书匠软件UI_desktop.jpg",
+        "size": 69365,
+        "visualCoverage": {
+          "complete": true,
+          "reason": null
+        }
+      }
+    ]
+  },
+  "summary": {
+    "blocker": 0,
+    "error": 0,
+    "warning": 0,
+    "info": 0
+  },
+  "findings": [],
+  "prioritizedActions": [],
+  "reportPath": "E:\\bidcraft_skill\\dev\\prototypes\\_shots\\report.json"
+}

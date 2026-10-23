@@ -1,0 +1,4 @@
+﻿OK  single-column tables=2 cols=[3] expect=2 (md 表 2 个（列表为段落）)
+OK  tabular tables=8 cols=[2, 3] expect=8 (2 md 表 + 6 双列数据行表)
+OK  card tables=8 cols=[1, 3] expect=8 (2 md 表 + 6 单列卡片表)
+FAIL image-left tables=7 cols=[2, 3] expect=5 (3 图 × 1×2 左图右文表 + 2 md 表)

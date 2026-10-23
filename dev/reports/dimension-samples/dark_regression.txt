@@ -1,0 +1,10 @@
+﻿T10 tech-export → C:\Users\hxjlcj\AppData\Local\Temp\tmpf0z61ao1\预览企业\项目级\预览项目\技术标\产出\技术标_预览项目.docx
+  暗标=True 预设=preset=single-column palette=deep-indigo font=dark-safe headerFooter=hf9-dark-none 页数估算=2 段落=32 TOC=True
+  回写: C:\Users\hxjlcj\AppData\Local\Temp\tmpf0z61ao1\预览企业\项目级\预览项目\技术标\章节\.meta\export.json
+暗标[hf9-dark-none]: 图片=0 底纹=0 加粗run=7 页脚部件=0 页脚含PAGE域=False
+   文本样本: ['一、工程概况', '表1-1', '1. 监理工作范围', '表3-1', '监理例会与图纸会审制度保障参建各方信息畅通，重大问题及时协调解决。']
+T10 tech-export → C:\Users\hxjlcj\AppData\Local\Temp\tmpfk9cfvmx\预览企业\项目级\预览项目\技术标\产出\技术标_预览项目.docx
+  暗标=True 预设=preset=single-column palette=deep-indigo font=dark-safe headerFooter=hf10-dark-page-only 页数估算=2 段落=32 TOC=True
+  回写: C:\Users\hxjlcj\AppData\Local\Temp\tmpfk9cfvmx\预览企业\项目级\预览项目\技术标\章节\.meta\export.json
+暗标[hf10-dark-page-only]: 图片=0 底纹=0 加粗run=7 页脚部件=1 页脚含PAGE域=True
+   文本样本: ['一、工程概况', '表1-1', '1. 监理工作范围', '表3-1', '监理例会与图纸会审制度保障参建各方信息畅通，重大问题及时协调解决。']

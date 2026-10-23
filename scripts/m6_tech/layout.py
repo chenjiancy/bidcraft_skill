@@ -200,6 +200,13 @@ def _builtin_preview_fixture(root):
     shared = Path(root) / "共享资源" / "技术标风格"
     shared.mkdir(parents=True, exist_ok=True)
     preset_src = find_presets(SimpleNamespace(root=str(root)))
+    if preset_src is None:
+        # fixture 根是临时目录：回溯调用方项目（cwd 或其父目录）的共享资源
+        for base in (Path.cwd(), Path.cwd().parent):
+            p = base / "共享资源" / "技术标风格" / PRESETS_FILE
+            if p.is_file():
+                preset_src = p
+                break
     if preset_src:
         shutil.copyfile(str(preset_src), str(shared / PRESETS_FILE))
     ent = Path(root) / "预览企业"

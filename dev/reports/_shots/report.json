@@ -1,0 +1,454 @@
+{
+  "src": "E:\\bidcraft_skill\\dev\\reports\\技术标排版预设统一十方案审计报告.html",
+  "url": "file:///E:/bidcraft_skill/dev/reports/%E6%8A%80%E6%9C%AF%E6%A0%87%E6%8E%92%E7%89%88%E9%A2%84%E8%AE%BE%E7%BB%9F%E4%B8%80%E5%8D%81%E6%96%B9%E6%A1%88%E5%AE%A1%E8%AE%A1%E6%8A%A5%E5%91%8A.html",
+  "outdir": "E:\\bidcraft_skill\\dev\\reports\\_shots",
+  "include": [
+    "lint",
+    "screenshots",
+    "structure"
+  ],
+  "shots": {
+    "desktop": {
+      "slices": [
+        "E:\\bidcraft_skill\\dev\\reports\\_shots\\技术标排版预设统一十方案审计报告_desktop_p1of4.jpg",
+        "E:\\bidcraft_skill\\dev\\reports\\_shots\\技术标排版预设统一十方案审计报告_desktop_p2of4.jpg",
+        "E:\\bidcraft_skill\\dev\\reports\\_shots\\技术标排版预设统一十方案审计报告_desktop_p3of4.jpg",
+        "E:\\bidcraft_skill\\dev\\reports\\_shots\\技术标排版预设统一十方案审计报告_desktop_p4of4.jpg"
+      ],
+      "sliceHint": "按顺序 Read slices 里的各分片。",
+      "truncated": false,
+      "structure": {
+        "title": "技术标排版预设 · 统一十方案审计报告",
+        "firstH1": "技术标排版预设 · 统一十方案审计报告",
+        "viewport": {
+          "w": 1440,
+          "h": 900
+        },
+        "fullpage": {
+          "w": 1440,
+          "h": 14178
+        },
+        "counts": {
+          "section": 6,
+          "h1": 1,
+          "h2": 6,
+          "img": 0,
+          "canvas": 0,
+          "svg": 0,
+          "links": 0,
+          "buttons": 0
+        }
+      },
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "horizontalOverflow": [],
+      "resourceErrors": [],
+      "misalignedBlocks": [
+        {
+          "tag": "div.sec-head",
+          "text": "01任务与范围本轮三连任务",
+          "rect": [
+            210,
+            548,
+            1020,
+            58
+          ],
+          "widthDeltaVsGrid": 160,
+          "gridWidth": 860,
+          "containerWidth": 1020,
+          "containerTag": "section"
+        },
+        {
+          "tag": "div.sec-head",
+          "text": "02① 统一为 10 种方案layout-presets.json v1.3 → v1.4",
+          "rect": [
+            210,
+            808,
+            1020,
+            58
+          ],
+          "widthDeltaVsGrid": 160,
+          "gridWidth": 860,
+          "containerWidth": 1020,
+          "containerTag": "section"
+        },
+        {
+          "tag": "div.tablewrap",
+          "text": "组（JSON 键）字段键数量默认值本批变化\npresetspreset10single-column7→10：新增 im",
+          "rect": [
+            210,
+            1015,
+            1020,
+            935
+          ],
+          "widthDeltaVsGrid": 160,
+          "gridWidth": 860,
+          "containerWidth": 1020,
+          "containerTag": "section"
+        },
+        {
+          "tag": "div.sec-head",
+          "text": "03② 落实检查 · 150 方案 × 六载体carrier_missing = 0",
+          "rect": [
+            210,
+            2022,
+            1020,
+            58
+          ],
+          "widthDeltaVsGrid": 160,
+          "gridWidth": 860,
+          "containerWidth": 1020,
+          "containerTag": "section"
+        },
+        {
+          "tag": "div.group-block",
+          "text": "版面范式 preset正文版面骨架：单栏/表格化/分栏/卡片/图文/分隔页/数据行/镜像/混合/极简 · 默认 sing",
+          "rect": [
+            210,
+            2173,
+            1020,
+            558
+          ],
+          "widthDeltaVsGrid": 160,
+          "gridWidth": 860,
+          "containerWidth": 1020,
+          "containerTag": "section"
+        },
+        {
+          "tag": "div.group-block",
+          "text": "配色方案 palette每套 5 组色值 primary/accent/heading/tableFill/coverB",
+          "rect": [
+            210,
+            2766,
+            1020,
+            558
+          ],
+          "widthDeltaVsGrid": 160,
+          "gridWidth": 860,
+          "containerWidth": 1020,
+          "containerTag": "section"
+        },
+        {
+          "tag": "div.group-block",
+          "text": "封面版式 cover封页视觉：满版/留白/图底/渐变/四角框/通栏/对角/纯文字/徽标/底带 · 默认 full-blo",
+          "rect": [
+            210,
+            3358,
+            1020,
+            558
+          ],
+          "widthDeltaVsGrid": 160,
+          "gridWidth": 860,
+          "containerWidth": 1020,
+          "containerTag": "section"
+        },
+        {
+          "tag": "div.group-block",
+          "text": "装饰强度 decoration章节装饰密度与手法，克制→丰富→零装饰；带色项暗标禁用 · 默认 standard数据 J",
+          "rect": [
+            210,
+            3951,
+            1020,
+            558
+          ],
+          "widthDeltaVsGrid": 160,
+          "gridWidth": 860,
+          "containerWidth": 1020,
+          "containerTag": "section"
+        }
+      ],
+      "misalignedBlocksHint": "含义：section/main/article 直接子级里，个别元素撑到父容器全宽、其他兄弟明显更窄。widthDeltaVsGrid=比栅格宽多少 px、gridWidth=正常栅格宽度、containerWidth=父容器宽度。最常见根因：HTML 标签闭合错位（<p> 忘了 </p> 等）导致元素跳出 .wrap/.container 层级，浏览器容错解析、不报 console 错但布局层级已被打乱。 | 修法：从 containerTag 定位到出问题的 section，逐行检查该 section 内前面的 HTML 标签闭合。 | 豁免：(1) **full-bleed / breakout 布局**——故意做全宽 hero、全宽 gradient divider、文章里跳出正文栏的大图/引用块（杂志排版）。看截图确认是设计意图后忽略；(2) sticky/absolute 顶栏错放在 section 直接子级下（罕见）。",
+      "reportSource": "cdp"
+    },
+    "mobile": {
+      "slices": [
+        "E:\\bidcraft_skill\\dev\\reports\\_shots\\技术标排版预设统一十方案审计报告_mobile_p1of7.jpg",
+        "E:\\bidcraft_skill\\dev\\reports\\_shots\\技术标排版预设统一十方案审计报告_mobile_p2of7.jpg",
+        "E:\\bidcraft_skill\\dev\\reports\\_shots\\技术标排版预设统一十方案审计报告_mobile_p3of7.jpg",
+        "E:\\bidcraft_skill\\dev\\reports\\_shots\\技术标排版预设统一十方案审计报告_mobile_p4of7.jpg",
+        "E:\\bidcraft_skill\\dev\\reports\\_shots\\技术标排版预设统一十方案审计报告_mobile_p5of7.jpg",
+        "E:\\bidcraft_skill\\dev\\reports\\_shots\\技术标排版预设统一十方案审计报告_mobile_p6of7.jpg",
+        "E:\\bidcraft_skill\\dev\\reports\\_shots\\技术标排版预设统一十方案审计报告_mobile_p7of7.jpg"
+      ],
+      "sliceHint": "按顺序 Read slices 里的各分片。",
+      "truncated": false,
+      "structure": {
+        "title": "技术标排版预设 · 统一十方案审计报告",
+        "firstH1": "技术标排版预设 · 统一十方案审计报告",
+        "viewport": {
+          "w": 390,
+          "h": 844
+        },
+        "fullpage": {
+          "w": 390,
+          "h": 20244
+        },
+        "counts": {
+          "section": 6,
+          "h1": 1,
+          "h2": 6,
+          "img": 0,
+          "canvas": 0,
+          "svg": 0,
+          "links": 0,
+          "buttons": 0
+        }
+      },
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "horizontalOverflow": [],
+      "resourceErrors": [],
+      "reportSource": "cdp"
+    }
+  },
+  "engine": "chrome_cli",
+  "chromiumExec": "C:\\Users\\hxjlcj/AppData/Local/ms-playwright\\chromium_headless_shell-1228\\chrome-headless-shell-win64\\chrome-headless-shell.exe",
+  "engineDegraded": true,
+  "engineDegradedReason": "playwright 未装",
+  "elapsedSec": 8.95,
+  "schemaVersion": 2,
+  "status": "warning",
+  "engineInfo": {
+    "name": "chrome_cli",
+    "degraded": true,
+    "degradedReasons": [
+      "playwright 未装"
+    ]
+  },
+  "input": {
+    "original": "E:\\bidcraft_skill\\dev\\reports\\技术标排版预设统一十方案审计报告.html",
+    "resolvedPath": "E:\\bidcraft_skill\\dev\\reports\\技术标排版预设统一十方案审计报告.html",
+    "baseUrl": "file:///E:/bidcraft_skill/dev/reports/%E6%8A%80%E6%9C%AF%E6%A0%87%E6%8E%92%E7%89%88%E9%A2%84%E8%AE%BE%E7%BB%9F%E4%B8%80%E5%8D%81%E6%96%B9%E6%A1%88%E5%AE%A1%E8%AE%A1%E6%8A%A5%E5%91%8A.html",
+    "protocol": "file",
+    "cwd": "E:\\bidcraft_skill",
+    "mediaMode": {
+      "reducedMotion": true
+    }
+  },
+  "artifacts": {
+    "screenshots": [
+      {
+        "viewport": "desktop",
+        "tiles": [
+          "E:\\bidcraft_skill\\dev\\reports\\_shots\\技术标排版预设统一十方案审计报告_desktop_p1of4.jpg",
+          "E:\\bidcraft_skill\\dev\\reports\\_shots\\技术标排版预设统一十方案审计报告_desktop_p2of4.jpg",
+          "E:\\bidcraft_skill\\dev\\reports\\_shots\\技术标排版预设统一十方案审计报告_desktop_p3of4.jpg",
+          "E:\\bidcraft_skill\\dev\\reports\\_shots\\技术标排版预设统一十方案审计报告_desktop_p4of4.jpg"
+        ],
+        "visualCoverage": {
+          "complete": true,
+          "reason": null
+        }
+      },
+      {
+        "viewport": "mobile",
+        "tiles": [
+          "E:\\bidcraft_skill\\dev\\reports\\_shots\\技术标排版预设统一十方案审计报告_mobile_p1of7.jpg",
+          "E:\\bidcraft_skill\\dev\\reports\\_shots\\技术标排版预设统一十方案审计报告_mobile_p2of7.jpg",
+          "E:\\bidcraft_skill\\dev\\reports\\_shots\\技术标排版预设统一十方案审计报告_mobile_p3of7.jpg",
+          "E:\\bidcraft_skill\\dev\\reports\\_shots\\技术标排版预设统一十方案审计报告_mobile_p4of7.jpg",
+          "E:\\bidcraft_skill\\dev\\reports\\_shots\\技术标排版预设统一十方案审计报告_mobile_p5of7.jpg",
+          "E:\\bidcraft_skill\\dev\\reports\\_shots\\技术标排版预设统一十方案审计报告_mobile_p6of7.jpg",
+          "E:\\bidcraft_skill\\dev\\reports\\_shots\\技术标排版预设统一十方案审计报告_mobile_p7of7.jpg"
+        ],
+        "visualCoverage": {
+          "complete": true,
+          "reason": null
+        }
+      }
+    ]
+  },
+  "summary": {
+    "blocker": 0,
+    "error": 0,
+    "warning": 8,
+    "info": 0
+  },
+  "findings": [
+    {
+      "ruleId": "misalignedBlocks",
+      "severity": "warning",
+      "kind": "layout",
+      "viewport": "desktop",
+      "selector": "div.sec-head",
+      "evidence": {
+        "tag": "div.sec-head",
+        "text": "01任务与范围本轮三连任务",
+        "rect": [
+          210,
+          548,
+          1020,
+          58
+        ],
+        "widthDeltaVsGrid": 160,
+        "gridWidth": 860,
+        "containerWidth": 1020,
+        "containerTag": "section"
+      },
+      "dedupeKey": "misalignedBlocks|desktop|div.sec-head|0"
+    },
+    {
+      "ruleId": "misalignedBlocks",
+      "severity": "warning",
+      "kind": "layout",
+      "viewport": "desktop",
+      "selector": "div.sec-head",
+      "evidence": {
+        "tag": "div.sec-head",
+        "text": "02① 统一为 10 种方案layout-presets.json v1.3 → v1.4",
+        "rect": [
+          210,
+          808,
+          1020,
+          58
+        ],
+        "widthDeltaVsGrid": 160,
+        "gridWidth": 860,
+        "containerWidth": 1020,
+        "containerTag": "section"
+      },
+      "dedupeKey": "misalignedBlocks|desktop|div.sec-head|1"
+    },
+    {
+      "ruleId": "misalignedBlocks",
+      "severity": "warning",
+      "kind": "layout",
+      "viewport": "desktop",
+      "selector": "div.tablewrap",
+      "evidence": {
+        "tag": "div.tablewrap",
+        "text": "组（JSON 键）字段键数量默认值本批变化\npresetspreset10single-column7→10：新增 im",
+        "rect": [
+          210,
+          1015,
+          1020,
+          935
+        ],
+        "widthDeltaVsGrid": 160,
+        "gridWidth": 860,
+        "containerWidth": 1020,
+        "containerTag": "section"
+      },
+      "dedupeKey": "misalignedBlocks|desktop|div.tablewrap|2"
+    },
+    {
+      "ruleId": "misalignedBlocks",
+      "severity": "warning",
+      "kind": "layout",
+      "viewport": "desktop",
+      "selector": "div.sec-head",
+      "evidence": {
+        "tag": "div.sec-head",
+        "text": "03② 落实检查 · 150 方案 × 六载体carrier_missing = 0",
+        "rect": [
+          210,
+          2022,
+          1020,
+          58
+        ],
+        "widthDeltaVsGrid": 160,
+        "gridWidth": 860,
+        "containerWidth": 1020,
+        "containerTag": "section"
+      },
+      "dedupeKey": "misalignedBlocks|desktop|div.sec-head|3"
+    },
+    {
+      "ruleId": "misalignedBlocks",
+      "severity": "warning",
+      "kind": "layout",
+      "viewport": "desktop",
+      "selector": "div.group-block",
+      "evidence": {
+        "tag": "div.group-block",
+        "text": "版面范式 preset正文版面骨架：单栏/表格化/分栏/卡片/图文/分隔页/数据行/镜像/混合/极简 · 默认 sing",
+        "rect": [
+          210,
+          2173,
+          1020,
+          558
+        ],
+        "widthDeltaVsGrid": 160,
+        "gridWidth": 860,
+        "containerWidth": 1020,
+        "containerTag": "section"
+      },
+      "dedupeKey": "misalignedBlocks|desktop|div.group-block|4"
+    },
+    {
+      "ruleId": "misalignedBlocks",
+      "severity": "warning",
+      "kind": "layout",
+      "viewport": "desktop",
+      "selector": "div.group-block",
+      "evidence": {
+        "tag": "div.group-block",
+        "text": "配色方案 palette每套 5 组色值 primary/accent/heading/tableFill/coverB",
+        "rect": [
+          210,
+          2766,
+          1020,
+          558
+        ],
+        "widthDeltaVsGrid": 160,
+        "gridWidth": 860,
+        "containerWidth": 1020,
+        "containerTag": "section"
+      },
+      "dedupeKey": "misalignedBlocks|desktop|div.group-block|5"
+    },
+    {
+      "ruleId": "misalignedBlocks",
+      "severity": "warning",
+      "kind": "layout",
+      "viewport": "desktop",
+      "selector": "div.group-block",
+      "evidence": {
+        "tag": "div.group-block",
+        "text": "封面版式 cover封页视觉：满版/留白/图底/渐变/四角框/通栏/对角/纯文字/徽标/底带 · 默认 full-blo",
+        "rect": [
+          210,
+          3358,
+          1020,
+          558
+        ],
+        "widthDeltaVsGrid": 160,
+        "gridWidth": 860,
+        "containerWidth": 1020,
+        "containerTag": "section"
+      },
+      "dedupeKey": "misalignedBlocks|desktop|div.group-block|6"
+    },
+    {
+      "ruleId": "misalignedBlocks",
+      "severity": "warning",
+      "kind": "layout",
+      "viewport": "desktop",
+      "selector": "div.group-block",
+      "evidence": {
+        "tag": "div.group-block",
+        "text": "装饰强度 decoration章节装饰密度与手法，克制→丰富→零装饰；带色项暗标禁用 · 默认 standard数据 J",
+        "rect": [
+          210,
+          3951,
+          1020,
+          558
+        ],
+        "widthDeltaVsGrid": 160,
+        "gridWidth": 860,
+        "containerWidth": 1020,
+        "containerTag": "section"
+      },
+      "dedupeKey": "misalignedBlocks|desktop|div.group-block|7"
+    }
+  ],
+  "prioritizedActions": [
+    {
+      "ruleId": "misalignedBlocks",
+      "severity": "warning",
+      "viewport": "desktop",
+      "selector": "div.sec-head"
+    }
+  ],
+  "reportPath": "E:\\bidcraft_skill\\dev\\reports\\_shots\\report.json"
+}
