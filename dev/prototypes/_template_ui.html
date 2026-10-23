@@ -296,6 +296,17 @@ body.dark .dark-toggle .sw::after{left:17px}
 .dev-mod .md{flex:1;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dev-mod .mc{font-size:11px;color:var(--dim);white-space:nowrap}
 
+/* ===== 模块屏（M4/M7/M8/M10） ===== */
+.dual{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.dual .du{background:#fff;border:1px solid var(--line);border-radius:10px;padding:13px 15px;min-width:0}
+.dual .du-h{font-size:12.5px;font-weight:800;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.dual .du-h .ch{width:8px;height:8px;border-radius:50%;flex:none}
+.mline{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px dashed #f0f2f7;font-size:12.3px}
+.mline:last-child{border-bottom:none}
+.mline .sn{font-family:Consolas,monospace;color:var(--brand);font-weight:700;flex:none;width:64px}
+.mline .st{flex:1;color:#5c6478;line-height:1.7}
+.mline .sg{font-size:11px;color:var(--dim);white-space:nowrap;margin-top:2px}
+
 /* toast */
 #toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:#1f2937;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;box-shadow:0 6px 22px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:all .25s;z-index:99;max-width:88vw}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -428,17 +439,17 @@ body.dark .dark-toggle .sw::after{left:17px}
     </button>
     <div class="ctx-sec">
       <div class="ctx-h">项目流程（产物目录）</div>
-      <button class="ctx-item" onclick="go('wizard')">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>招标解析<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:6px"><path d="M9 18l6-6-6-6"/></svg>
+      <button class="ctx-item" onclick="go('tender')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>招标解析（M4 双通道）<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:6px"><path d="M9 18l6-6-6-6"/></svg>
       </button>
       <button class="ctx-item" onclick="go('editor')">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg>技术标（M6 状态机）<span class="c-b">60%</span>
       </button>
-      <button class="ctx-item" onclick="toast('标书检查（M7 双通道）在后续迭代实现（规划中）：机器检查 / 检查要点 / 双通道差异 / 检查报告')">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>标书检查（M7 双通道）
+      <button class="ctx-item" onclick="go('check')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>标书检查（M7 双通道）<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:6px"><path d="M9 18l6-6-6-6"/></svg>
       </button>
-      <button class="ctx-item" onclick="toast('模拟评标与补救（M8→M10）在后续迭代实现（规划中）：失分补救任务单——能力问题素材补齐 vs 响应问题')">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg>模拟评标 · 补救（M8/M10）
+      <button class="ctx-item" onclick="go('eval')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg>模拟评标 · 补救（M8/M10）<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:6px"><path d="M9 18l6-6-6-6"/></svg>
       </button>
     </div>
     <div class="ctx-sec">
@@ -492,6 +503,65 @@ body.dark .dark-toggle .sw::after{left:17px}
       <button class="ctx-item" onclick="applyStyle()">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>应用此组合
       </button>
+    </div>
+  </div>
+
+  <!-- 招标解析上下文 -->
+  <div class="ctx-group" id="ctx-tender">
+    <div class="ctx-h">招标解析（M4）<span class="ctx-tag dark-tag">暗标</span></div>
+    <div class="ctx-h" style="padding-top:4px">流程（10 命令）</div>
+    <button class="ctx-item active" onclick="toast('当前：双通道比对阶段')">1 · 归档提取（tender-extract）</button>
+    <button class="ctx-item" onclick="toast('当前：双通道比对阶段')">2 · 双通道解析（tender-rule / parse）</button>
+    <button class="ctx-item" onclick="toast('当前：双通道比对阶段')">3 · 差异比对（tender-diff）</button>
+    <button class="ctx-item" onclick="toast('投标要点 HTML 核对（闸门①）在后续迭代实现（规划中）')">4 · 投标要点核对（tender-report 闸门①）</button>
+    <button class="ctx-item" onclick="toast('补遗归档在后续迭代实现（规划中）：tender-annex 补遗/澄清/修改 → 跨文件比对')">5 · 补遗归档（tender-annex）</button>
+    <div class="ctx-sec">
+      <div class="ctx-h">快捷操作</div>
+      <button class="ctx-item" onclick="toast('响应文件格式提取在后续迭代实现（规划中）：tender-fmt 脚本化提取一字不改')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>提取格式章节（tender-fmt）
+      </button>
+      <button class="ctx-item" onclick="toast('素材清单对照在后续迭代实现（规划中）：tender-check 逐项对照素材库 → 缺料标红 CSV')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>素材对照（tender-check）
+      </button>
+    </div>
+  </div>
+
+  <!-- 标书检查上下文 -->
+  <div class="ctx-group" id="ctx-check">
+    <div class="ctx-h">标书检查（M7 双通道）</div>
+    <div class="ctx-h" style="padding-top:4px">流程</div>
+    <button class="ctx-item active" onclick="toast('通道A：check-rule 机器检查规则引擎（checker 6 项硬检查 + 报价/证书/期限/素材确定性核对，标准=M4 解析产物）')">1 · 通道A 机器检查（check-rule）</button>
+    <button class="ctx-item" onclick="toast('通道B：check-parse agent 语义审查产物落盘（md+json 双份，结构校验）')">2 · 通道B 语义审查（check-parse）</button>
+    <button class="ctx-item" onclick="toast('双通道差异：check-diff 差异比对 → 人工裁决')">3 · 双通道差异（check-diff）</button>
+    <button class="ctx-item" onclick="toast('HTML 报告：check-report 执行摘要/差异/废标红线/整改清单 → 人工确认闸门')">4 · 检查报告（check-report 闸门）</button>
+    <div class="ctx-sec">
+      <div class="ctx-h">检查对象</div>
+      <div style="padding:4px 11px;font-size:12px;color:var(--dim);line-height:1.8">默认：项目级/市政务服务中心项目/商务标；上传版用 --tag 区分产物不覆盖。</div>
+    </div>
+  </div>
+
+  <!-- 模拟评标上下文 -->
+  <div class="ctx-group" id="ctx-eval">
+    <div class="ctx-h">模拟评标（M8）</div>
+    <div class="ctx-h" style="padding-top:4px">流程</div>
+    <button class="ctx-item active" onclick="toast('eval-run 阶段1 通道A：评分标准结构化 + 客观分计算 + 报价分反推基准价区间；报价铁律=用户提供（--quote）')">1 · 规则引擎（eval-run）</button>
+    <button class="ctx-item" onclick="toast('eval-parse 阶段2 通道B：agent 主观评审产物落盘（JSON 结构校验闸门）')">2 · 主观评审（eval-parse）</button>
+    <button class="ctx-item" onclick="toast('eval-report 合并渲染完整模拟评标报告 → HTML（人工确认闸门）')">3 · 合并报告（eval-report 闸门）</button>
+    <div class="ctx-sec">
+      <div class="ctx-h">评分办法</div>
+      <div style="padding:4px 11px;font-size:12px;color:var(--dim);line-height:1.8">综合评估法（技术 60% + 商务 40%）· 报价分反推基准价区间 · 失分项进入 M10 补救</div>
+    </div>
+  </div>
+
+  <!-- 补救上下文 -->
+  <div class="ctx-group" id="ctx-remedy">
+    <div class="ctx-h">补救（M10）</div>
+    <button class="ctx-item active" onclick="toast('remedy-gen：M8 失分诊断 → 可执行补救任务单（素材补齐/内容补强/格式合规/报价策略）')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg>生成补救任务单（remedy-gen）
+    </button>
+    <div class="ctx-sec">
+      <div class="ctx-h">任务分类</div>
+      <div style="padding:4px 11px;font-size:12px;color:var(--dim);line-height:1.8">能力问题：素材补齐（业绩/职称/荣誉/体系）<br>响应问题：内容补强 / 格式合规 / 报价策略</div>
     </div>
   </div>
 
@@ -996,6 +1066,153 @@ body.dark .dark-toggle .sw::after{left:17px}
     </div>
   </section>
 
+  <!-- 招标解析（M4） -->
+  <section class="view" id="view-tender">
+    <div class="lib-head">
+      <div>
+        <div style="font-size:17px;font-weight:800">招标解析（M4）<span class="ctx-tag dark-tag">暗标</span></div>
+        <div style="font-size:12.5px;color:var(--dim)">项目：市政务服务中心项目 · 目录：项目级/市政务服务中心项目/招标解析</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="toast('tender-fmt 在后续迭代实现（规划中）：响应文件格式_<项目>.txt 一字不改提取')">提取格式章节</button>
+        <button class="btn btn-primary" onclick="toast('投标要点 HTML 核对（闸门①）在后续迭代实现（规划中）：tender-report 渲染')">核对投标要点（闸门①）</button>
+      </div>
+    </div>
+
+    <div class="mline"><span class="sn">init</span><span class="st">tender-init：初始化项目级招标解析目录（幂等）</span><span class="sg">已执行</span></div>
+    <div class="mline"><span class="sn">extract</span><span class="st">tender-extract：归档原件（源文件/）+ 提取原文（PDF 表格/多栏感知）</span><span class="sg">已执行 · 招标文件.pdf 4.2MB</span></div>
+    <div class="mline"><span class="sn">parse</span><span class="st">tender-parse：提交 agent 解析产物落盘（投标要点.md/json + 素材清单.md/json）</span><span class="sg">已落盘</span></div>
+    <div class="mline"><span class="sn">rule</span><span class="st">tender-rule：通道A 文档解析规则引擎 → 文档解析_<项目>.json（确定性字段）</span><span class="sg">已生成</span></div>
+    <div class="mline"><span class="sn">diff</span><span class="st">tender-diff：双通道差异比对 → 双通道差异_<项目>.json/.md</span><span class="sg" style="color:var(--warn)">2 项待裁决</span></div>
+    <div class="mline"><span class="sn">report</span><span class="st">tender-report：投标要点 HTML 渲染（闸门① 人工核对形态）</span><span class="sg" style="color:var(--warn)">待核对</span></div>
+    <div class="mline"><span class="sn">annex</span><span class="st">tender-annex：补遗/澄清/修改归档（补遗/）→ 供 agent 跨文件比对</span><span class="sg">待处理</span></div>
+
+    <div class="dual" style="margin-top:14px">
+      <div class="du">
+        <div class="du-h"><span class="ch" style="background:var(--brand)"></span>通道A · 文档解析（确定性）</div>
+        <div class="mline"><span class="sn">项目</span><span class="st">市政务服务中心项目监理</span></div>
+        <div class="mline"><span class="sn">编号</span><span class="st">MAS-2026-FJ-018</span></div>
+        <div class="mline"><span class="sn">开标</span><span class="st">2026-11-08 09:00</span></div>
+        <div class="mline"><span class="sn">评分</span><span class="st">综合评估法（技术 60%）</span></div>
+        <div class="mline"><span class="sn">格式</span><span class="st">第八章 投标文件格式（章节脚本化提取）</span></div>
+      </div>
+      <div class="du">
+        <div class="du-h"><span class="ch" style="background:#7a3ed6"></span>通道B · 投标要点（agent 语义）</div>
+        <div class="mline"><span class="sn">判定</span><span class="st">暗标：投标要点文本含「暗标」条款（全黑/无装饰/无页眉页脚）</span></div>
+        <div class="mline"><span class="sn">评分点</span><span class="st">10 章 × 评分点对照（项目理解/人员配置/质量/进度/投资/安全环保/合同信息）</span></div>
+        <div class="mline"><span class="sn">红线</span><span class="st">单位名/标识泄露、超页数上限、格式偏离招标条款 → 废标风险</span></div>
+        <div class="mline"><span class="sn">素材</span><span class="st">素材清单.json：业绩 3 / 人员 5 / 证书 6（tender-check 对照缺料标红）</span></div>
+      </div>
+    </div>
+
+    <div class="rule-bar" style="margin-top:14px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex:none;margin-top:2px"><path d="M12 3l1.7 4.8L18 9.5l-4.3 1.7L12 16l-1.7-4.8L6 9.5l4.3-1.7z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>
+      <div><b>裁决规则：</b>双通道差异以招标原文为最终依据，人工裁决后并入投标要点 diffs 块由用户确认；响应文件格式文字一字不改（内容契约，供 M2 项目模板与 M7 校验引用）。</div>
+    </div>
+  </section>
+
+  <!-- 标书检查（M7） -->
+  <section class="view" id="view-check">
+    <div class="lib-head">
+      <div>
+        <div style="font-size:17px;font-weight:800">标书检查（M7 双通道）</div>
+        <div style="font-size:12.5px;color:var(--dim)">检查对象：项目级/市政务服务中心项目/商务标（tag 默认空）</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="toast('check-rule 在后续迭代实现（规划中）：通道A 机器检查规则引擎')">通道A 机器检查</button>
+        <button class="btn btn-primary" onclick="toast('check-report 在后续迭代实现（规划中）：HTML 报告 → 人工确认闸门')">生成检查报告</button>
+      </div>
+    </div>
+
+    <div class="mline"><span class="sn">A</span><span class="st">check-rule：通道A 机器检查（checker 6 项硬检查 + 报价/证书/期限/素材确定性核对，标准=M4 解析产物）</span><span class="sg">机器检查_<项目>.json/.md</span></div>
+    <div class="mline"><span class="sn">B</span><span class="st">check-parse：通道B agent 语义审查（文本 + JSON 双份，结构校验闸门）</span><span class="sg">检查要点_<项目>.json/.md</span></div>
+    <div class="mline"><span class="sn">D</span><span class="st">check-diff：双通道差异比对 → 人工裁决</span><span class="sg" style="color:var(--warn)">双通道检查差异_<项目>.json/.md</span></div>
+    <div class="mline"><span class="sn">R</span><span class="st">check-report：HTML 报告（执行摘要/差异/通道A/通道B/废标红线/整改清单/免责）</span><span class="sg" style="color:var(--warn)">标书检查报告_<项目>.html · 人工确认闸门</span></div>
+
+    <div class="dual" style="margin-top:14px">
+      <div class="du">
+        <div class="du-h"><span class="ch" style="background:var(--brand)"></span>通道A · 机器检查（6 项硬检查）</div>
+        <div class="mline"><span class="sn">① 格式</span><span class="st">格式完整性：页级布局 / 页眉页脚 / 页数一致（对照项目模板）</span><span class="sg" style="color:var(--ok)">通过</span></div>
+        <div class="mline"><span class="sn">② 占位</span><span class="st">占位符清零：无残留【xxx】文字占位 /【图片：xxx】</span><span class="sg" style="color:var(--ok)">通过</span></div>
+        <div class="mline"><span class="sn">③ 敏感</span><span class="st">敏感词残留：暗标单位名 / 标识 / 禁用表述</span><span class="sg" style="color:var(--ok)">通过</span></div>
+        <div class="mline"><span class="sn">④ 报价</span><span class="st">报价 / 证书 / 期限 / 素材确定性核对（对照 M4 解析产物）</span><span class="sg" style="color:var(--ok)">通过</span></div>
+      </div>
+      <div class="du">
+        <div class="du-h"><span class="ch" style="background:#7a3ed6"></span>通道B · 语义审查（agent）</div>
+        <div class="mline"><span class="sn">维度</span><span class="st">按 M7 提示词输出 schema：内容完整性 / 评分点覆盖 / 语义一致性 / 废标红线</span></div>
+        <div class="mline"><span class="sn">差异</span><span class="st">通道A 检出而 B 未报告 → 差异项人工裁决（以通道A 确定性为准）</span></div>
+        <div class="mline"><span class="sn">状态</span><span class="st">检查要点已落盘 · 待 check-diff</span><span class="sg" style="color:var(--warn)">2 项差异</span></div>
+      </div>
+    </div>
+    <div class="wz-sub" style="margin-top:10px">交付纪律：M7 检查报告为交标前闸门；废标红线项（单位名泄露 / 页数超限 / 格式偏离）一经检出即整改，整改后重跑。</div>
+  </section>
+
+  <!-- 模拟评标（M8） -->
+  <section class="view" id="view-eval">
+    <div class="lib-head">
+      <div>
+        <div style="font-size:17px;font-weight:800">模拟评标（M8）</div>
+        <div style="font-size:12.5px;color:var(--dim)">评分办法：综合评估法（技术 60% + 商务 40%）· 项目：市政务服务中心项目</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="toast('eval-run 在后续迭代实现（规划中）：通道A 规则引擎，报价由用户提供（--quote 铁律）')">运行规则引擎</button>
+        <button class="btn btn-primary" onclick="toast('eval-report 在后续迭代实现（规划中）：合并渲染完整报告 → 人工确认闸门')">合并评标报告</button>
+      </div>
+    </div>
+
+    <div class="mline"><span class="sn">阶段1</span><span class="st">eval-run：通道A 规则引擎——评分标准结构化 + 客观分计算 + 报价分反推基准价区间</span><span class="sg">模拟评标_<项目>.json/.md + HTML</span></div>
+    <div class="mline"><span class="sn">阶段2</span><span class="st">eval-parse：通道B 主观评审产物落盘（JSON 结构校验闸门）</span><span class="sg">主观评审_<项目>.json/.md</span></div>
+    <div class="mline"><span class="sn">报告</span><span class="st">eval-report：合并渲染完整模拟评标报告 → HTML（人工确认闸门）</span><span class="sg" style="color:var(--warn)">模拟评标报告_<项目>.html</span></div>
+
+    <div class="dual" style="margin-top:14px">
+      <div class="du">
+        <div class="du-h"><span class="ch" style="background:var(--brand)"></span>客观分（通道A 规则引擎）</div>
+        <div class="mline"><span class="sn">技术</span><span class="st">60 分：监理大纲 / 人员配置 / 仪器设备（按评分点逐条命中）</span></div>
+        <div class="mline"><span class="sn">商务</span><span class="st">40 分：业绩 / 荣誉 / 报价</span></div>
+        <div class="mline"><span class="sn">报价</span><span class="st">报价分反推基准价区间（铁律：报价由用户提供，--quote）</span><span class="sg" style="color:var(--warn)">未评（待报价）</span></div>
+      </div>
+      <div class="du">
+        <div class="du-h"><span class="ch" style="background:#7a3ed6"></span>主观分（通道B agent）</div>
+        <div class="mline"><span class="sn">评审</span><span class="st">按 M8 提示词输出：各评分项失分诊断 / 风险点 / 竞标对比建议</span></div>
+        <div class="mline"><span class="sn">输出</span><span class="st">主观评审_<项目>.json（结构校验后并入报告）</span></div>
+        <div class="mline"><span class="sn">去向</span><span class="st">失分诊断 → M10 补救任务单</span><span class="sg">remedy-gen</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 补救（M10） -->
+  <section class="view" id="view-remedy">
+    <div class="lib-head">
+      <div>
+        <div style="font-size:17px;font-weight:800">补救（M10）</div>
+        <div style="font-size:12.5px;color:var(--dim)">数据来源：模拟评标/失分补救任务单_<项目>.json/.md/.html</div>
+      </div>
+      <button class="btn btn-primary" onclick="toast('remedy-gen 在后续迭代实现（规划中）：M8 失分诊断 → 可执行补救任务单')">生成补救任务单</button>
+    </div>
+
+    <div class="mline"><span class="sn">gen</span><span class="st">remedy-gen：把 M8 模拟评标失分诊断转成可执行补救任务单</span><span class="sg">失分补救任务单_<项目>.json/.md/.html</span></div>
+
+    <div class="dual" style="margin-top:14px">
+      <div class="du">
+        <div class="du-h"><span class="ch" style="background:var(--bad)"></span>能力问题 · 素材补齐（走 M1 素材库）</div>
+        <div class="mline"><span class="sn">业绩</span><span class="st">类似工程监理业绩不足：目标 3 项 / 现有 2 项（缺 1）</span></div>
+        <div class="mline"><span class="sn">职称</span><span class="st">总监理工程师职称 / 注册证书扫描件待归档</span></div>
+        <div class="mline"><span class="sn">荣誉</span><span class="st">省级优质工程证书（年度/颁发日期须与落款逐字核对）</span></div>
+        <div class="mline"><span class="sn">体系</span><span class="st">ISO 体系认证证书（质量/环境/职业健康）</span></div>
+      </div>
+      <div class="du">
+        <div class="du-h"><span class="ch" style="background:var(--warn)"></span>响应问题 · 内容/格式/报价</div>
+        <div class="mline"><span class="sn">内容</span><span class="st">内容补强：评分点未覆盖项（BIM 应用）重写对应章</span></div>
+        <div class="mline"><span class="sn">格式</span><span class="st">格式合规：暗标条款注入 / 页数预算重校验</span></div>
+        <div class="mline"><span class="sn">报价</span><span class="st">报价策略：基准价区间反推建议（用户决策）</span></div>
+      </div>
+    </div>
+    <div class="rule-bar" style="margin-top:14px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex:none;margin-top:2px"><path d="M12 3l1.7 4.8L18 9.5l-4.3 1.7L12 16l-1.7-4.8L6 9.5l4.3-1.7z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>
+      <div><b>补救流程：</b>逐项补救后再投标（BidPal.ai 对标国际投标咨询）——素材补齐走 收件箱上传→propose/apply；内容补强走 M6 章节重写（WRITTEN→重新检查）；格式合规走 M7 重检。</div>
+    </div>
+  </section>
+
   <!-- 全局开发台 -->
   <section class="view" id="view-dev">
     <div class="lib-head">
@@ -1288,7 +1505,7 @@ body.dark .dark-toggle .sw::after{left:17px}
   function go(v){ location.hash='#/'+v; }
   window.go=go;
 
-  var VIEW_CTX={home:'ctx-home',project:'ctx-project',editor:'ctx-editor',style:'ctx-style',library:'ctx-library',template:'ctx-template',company:'ctx-company',wizard:'ctx-wizard',dev:'ctx-dev'};
+  var VIEW_CTX={home:'ctx-home',project:'ctx-project',editor:'ctx-editor',style:'ctx-style',library:'ctx-library',template:'ctx-template',company:'ctx-company',wizard:'ctx-wizard',dev:'ctx-dev',tender:'ctx-tender',check:'ctx-check',eval:'ctx-eval',remedy:'ctx-remedy'};
 
   function showView(id){
     document.querySelectorAll('.view').forEach(function(s){s.classList.remove('active')});
@@ -1305,7 +1522,7 @@ body.dark .dark-toggle .sw::after{left:17px}
 
   window.addEventListener('hashchange',function(){
     var h=(location.hash||'#/home').replace('#','').replace(/^\//,'');
-    if(['home','project','editor','style','library','template','company','wizard','dev'].indexOf(h)>-1) showView(h);
+    if(['home','project','editor','style','library','template','company','wizard','dev','tender','check','eval','remedy'].indexOf(h)>-1) showView(h);
   });
   if(!location.hash) location.hash='#/home';
 
