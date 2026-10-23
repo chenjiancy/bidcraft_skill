@@ -214,19 +214,50 @@ def _header_line_after(section):
     pPr.append(pBdr)
 
 
+def _box_borders(table, color="C9D2E2", sz=4):
+    """全边框（卡片式/数据行布局）。"""
+    tbl = table._tbl
+    tblPr = tbl.tblPr
+    borders = tblPr.find(qn("w:tblBorders"))
+    if borders is None:
+        borders = OxmlElement("w:tblBorders")
+        tblPr.append(borders)
+    for edge in ("top", "left", "bottom", "right", "insideH", "insideV"):
+        el = borders.find(qn("w:" + edge))
+        if el is None:
+            el = OxmlElement("w:" + edge)
+            borders.append(el)
+        el.set(qn("w:val"), "single"); el.set(qn("w:sz"), str(sz)); el.set(qn("w:color"), color)
+
+
+def _no_borders(table):
+    """无边框表格（左图右文等版式容器）。"""
+    tblPr = table._tbl.tblPr
+    borders = OxmlElement("w:tblBorders")
+    for edge in ("top", "left", "bottom", "right", "insideH", "insideV"):
+        el = OxmlElement("w:" + edge)
+        el.set(qn("w:val"), "none")
+        borders.append(el)
+    tblPr.append(borders)
+
+
 # ---------------------------------------------------------------------------
 # 正文解析与渲染
 # ---------------------------------------------------------------------------
 class _Renderer:
-    def __init__(self, doc, cfg, dark, colors, sizes, ps=None):
+    def __init__(self, doc, cfg, dark, colors, sizes, ps=None, preset="single-column"):
         self.doc = doc
         self.cfg = cfg
         self.dark = dark
         self.colors = colors
         self.sizes = sizes
         self.ps = ps or {}
+        # 版面范式：暗标一律退回单栏全黑（渲染层兜底，不依赖数据注入）
+        self.preset = "single-column" if dark else (preset or "single-column")
         self.table_no = 0
         self.fig_no = 0
+        self._last_list = False
+        self._list_seq = 0
 
     def _heading(self, level, text):
         sizes = self.sizes or {}
@@ -279,6 +310,13 @@ class _Renderer:
         return p
 
     def _list(self, text):
+        # 版面范式：tabular → 序号/内容数据行；card → 卡片单元格
+        if self.preset == "tabular":
+            self._list_row(self._list_seq, text)
+            return
+        if self.preset == "card":
+            self._list_card(text)
+            return
         p = self.doc.add_paragraph(style="List Bullet")
         pf = p.paragraph_format
         pf.line_spacing = 1.5
@@ -313,11 +351,71 @@ class _Renderer:
                 run = cell.paragraphs[0].add_run(v)
                 _set_font(run, None, size=Pt(10.5), east="宋体")
 
+    def _list_row(self, idx, text):
+        """tabular：列表项 → 序号/内容双列数据行。"""
+        table = self.doc.add_table(rows=1, cols=2)
+        table.autofit = True
+        _box_borders(table, "C9D2E2", 4)
+        try:
+            table.columns[0].width = Cm(1.4)
+            table.columns[1].width = Cm(13.0)
+        except Exception:
+            pass
+        c0 = table.rows[0].cells[0]
+        c0.text = ""
+        p0 = c0.paragraphs[0]
+        p0.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        r0 = p0.add_run(str(idx))
+        _set_font(r0, None, size=Pt(10.5), east="宋体")
+        _shade(c0._tc, self.colors.get("tableFill", "E8ECF4"))
+        c1 = table.rows[0].cells[1]
+        c1.text = ""
+        r1 = c1.paragraphs[0].add_run(text)
+        _set_font(r1, None, size=Pt(10.5), east="宋体")
+
+    def _list_card(self, text):
+        """card：列表项 → 单列卡片（边框 + 浅底纹）。"""
+        table = self.doc.add_table(rows=1, cols=1)
+        table.autofit = True
+        _box_borders(table, "B9C4D8", 6)
+        cell = table.rows[0].cells[0]
+        cell.text = ""
+        p = cell.paragraphs[0]
+        r = p.add_run(text)
+        _set_font(r, None, size=Pt(10.5), east="宋体")
+        _shade(cell._tc, "F4F7FB")
+
+    def _image_left(self, cap, src, right_text=""):
+        """image-left：左图右文 1×2 无边框表格（左图，右图题+紧跟正文）。"""
+        table = self.doc.add_table(rows=1, cols=2)
+        table.autofit = True
+        _no_borders(table)
+        try:
+            table.columns[0].width = Cm(7.6)
+            table.columns[1].width = Cm(6.8)
+        except Exception:
+            pass
+        c0 = table.rows[0].cells[0]
+        p0 = c0.paragraphs[0]
+        p0.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p0.add_run().add_picture(str(src), width=Cm(7.2))
+        c1 = table.rows[0].cells[1]
+        p1 = c1.paragraphs[0]
+        r1 = p1.add_run("图 %d　%s" % (self.fig_no, cap))
+        _set_font(r1, None, size=Pt(9), east="宋体")
+        if right_text:
+            p2 = c1.add_paragraph()
+            r2 = p2.add_run(right_text)
+            _set_font(r2, None, size=_heading_size(self.sizes, "body", 12), east="仿宋")
+
     def render_md(self, text, table_fill):
         lines = text.splitlines()
         i = 0
         while i < len(lines):
             line = lines[i].rstrip()
+            if self._last_list and not (line.startswith("- ") or line.startswith("* ")):
+                self._last_list = False
+                self._list_seq = 0
             if not line.strip():
                 i += 1
                 continue
@@ -331,10 +429,20 @@ class _Renderer:
                 cap, src = mimg.group(1), mimg.group(2)
                 if Path(src).is_file():
                     self.fig_no += 1
-                    self.doc.add_picture(str(src), width=Cm(13))
-                    cp = self.doc.add_paragraph()
-                    r = cp.add_run("图 %d　%s" % (self.fig_no, cap))
-                    _set_font(r, None, size=Pt(9), east="宋体")
+                    if self.preset == "image-left":
+                        right_text = ""
+                        if i + 1 < len(lines):
+                            nt = lines[i + 1].rstrip()
+                            if (nt and not nt.startswith(("#", "!", "-", "*", "|"))
+                                    and not _MD_TABLE_ROW.match(nt)):
+                                right_text = nt
+                                i += 1
+                        self._image_left(cap, src, right_text)
+                    else:
+                        self.doc.add_picture(str(src), width=Cm(13))
+                        cp = self.doc.add_paragraph()
+                        r = cp.add_run("图 %d　%s" % (self.fig_no, cap))
+                        _set_font(r, None, size=Pt(9), east="宋体")
                 i += 1
                 continue
             mtab = _MD_TABLE_ROW.match(line)
@@ -354,6 +462,11 @@ class _Renderer:
                 self._table(header, rows, table_fill)
                 continue
             if line.startswith("- ") or line.startswith("* "):
+                if self._last_list:
+                    self._list_seq += 1
+                else:
+                    self._list_seq = 1
+                    self._last_list = True
                 self._list(line[2:].strip())
                 i += 1
                 continue
@@ -500,7 +613,7 @@ def cmd_tech_export(args):
 
     # 正文渲染
     chapters = store.list_chapters(tree)
-    renderer = _Renderer(doc, cfg, dark, colors, sizes, ps=ps)
+    renderer = _Renderer(doc, cfg, dark, colors, sizes, ps=ps, preset=cfg.get("preset", "single-column"))
     total_chars = 0
     for ch in chapters:
         cid = ch["id"]

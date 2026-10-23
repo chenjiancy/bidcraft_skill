@@ -156,6 +156,48 @@ class TechExportTest(unittest.TestCase):
         with self.assertRaises(core.LibraryError):
             export.cmd_tech_export(_A(self.tmp))
 
+    # ---- 渲染层范式差异化（T11 试水：tabular / card / image-left）----
+    def _tables_of(self, tech):
+        from docx import Document
+        doc = Document(str(tech / "产出" / "技术标_DEMO项目.docx"))
+        return [t for t in doc.tables]
+
+    def test_export_preset_tabular(self):
+        """tabular：列表项转为序号/内容双列数据行，表格数 > 基准（md 表 2 个）。"""
+        tech = _mk_project(self.tmp, dark=False)
+        code = export.cmd_tech_export(_A(self.tmp, override="preset=tabular"))
+        self.assertEqual(code, 0)
+        tables = self._tables_of(tech)
+        self.assertGreater(len(tables), 2, "tabular 应把列表转为数据行表")
+        self.assertTrue(any(len(t.columns) == 2 for t in tables), "应有双列数据行表")
+
+    def test_export_preset_card(self):
+        """card：列表项转为单列卡片（全边框 + 底纹），存在 1 列表格。"""
+        tech = _mk_project(self.tmp, dark=False)
+        code = export.cmd_tech_export(_A(self.tmp, override="preset=card"))
+        self.assertEqual(code, 0)
+        tables = self._tables_of(tech)
+        self.assertGreater(len(tables), 2)
+        self.assertTrue(any(len(t.columns) == 1 for t in tables), "应有单列卡片表")
+
+    def test_export_preset_image_left_degrade(self):
+        """image-left：fixture 无图时安全降级单栏，导出正常且表格数 = 基准。"""
+        tech = _mk_project(self.tmp, dark=False)
+        code = export.cmd_tech_export(_A(self.tmp, override="preset=image-left"))
+        self.assertEqual(code, 0)
+        tables = self._tables_of(tech)
+        self.assertEqual(len(tables), 2, "无图时应保持 md 表格数（降级不引入额外表）")
+
+    def test_export_anbiao_forces_single_column(self):
+        """暗标强制单栏：override preset=tabular 也不得引入数据行表（渲染层兜底）。"""
+        tech = _mk_project(self.tmp, dark=True)
+        code = export.cmd_tech_export(_A(self.tmp, override="preset=tabular"))
+        self.assertEqual(code, 0)
+        tables = self._tables_of(tech)
+        self.assertEqual(len(tables), 2, "暗标必须保持单栏，列表不得转表")
+        meta = json.loads((tech / "章节" / ".meta" / "export.json").read_text(encoding="utf-8"))
+        self.assertTrue(meta["dark"])
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
