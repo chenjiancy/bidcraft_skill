@@ -491,10 +491,10 @@ def _cmd_apply(args, jflag):
 
 
 def _cmd_specimen(args, jflag):
-    """--specimen <file>：按模板样式引用生成样张 docx。
+    """--specimen <file>：按模板全映射生成样张 docx（P1）。
 
-    P0 以版面范式 styleRef.preset 驱动 tech-layout 样张机制（真实项目或内置样例正文）；
-    其余 14 组样式由模板 styleRef 承载，P1 模板驱动渲染分支落地后全映射。
+    模板驱动导出：structure 决定部件渲染（封面/扉页/目录/正文/结尾）、styleRef 十五组生效、
+    placeholders 由 --fill 填充、rules.bidMode 暗标铁律派生——真实项目或内置样例正文。
     """
     presets_doc = m6layout.load_presets(args)
     try:
@@ -507,18 +507,45 @@ def _cmd_specimen(args, jflag):
         print("校验未通过，拒绝出样张：")
         _print_issues(issues)
         return 1
-    preset_id = (doc.get("styleRef") or {}).get("preset") or m6layout.default_entry(presets_doc)["preset"]
+    from . import export as _export
+    from .layout import _builtin_preview_fixture
+    import shutil
+    import tempfile
     from types import SimpleNamespace
-    msg = m6layout._render_preview(SimpleNamespace(
-        root=getattr(args, "root", None),
-        enterprise=getattr(args, "enterprise", ""),
-        project=getattr(args, "project", ""),
-        json=False), preset_id)
-    if jflag:
-        print(json.dumps({"ok": True, "template": p.name, "preset": preset_id,
-                          "note": "P0 样张以版面范式驱动；其余组样式见 tpl-design --show"})
-              , ensure_ascii=False, indent=2)
-    else:
-        print("按模板「%s」生成样张（版面范式 %s）：" % (doc.get("name", ""), preset_id))
-        print(msg)
+
+    project = getattr(args, "project", "") or "预览项目"
+    fill = getattr(args, "fill", "") or ""
+    if getattr(args, "project", ""):
+        # 真实项目：模板全映射导出成稿（企业名取 --enterprise）
+        enterprise = getattr(args, "enterprise", "") or "安徽安硕工程咨询有限公司"
+        _export.cmd_tech_export(SimpleNamespace(
+            root=getattr(args, "root", None), enterprise=enterprise, project=project,
+            template=str(p), fill=fill, override="", bid_mode="", out="", force=True))
+        msg = ("项目 %s 已按模板「%s」导出（全映射：structure/styleRef/placeholders/暗标）："
+               "技术标/产出/技术标_%s.docx" % (project, doc.get("name", ""), project))
+        if jflag:
+            print(json.dumps({"ok": True, "template": p.name, "project": project}, ensure_ascii=False, indent=2))
+        else:
+            print(msg)
+        return 0
+    tmp = tempfile.TemporaryDirectory()
+    try:
+        ent = _builtin_preview_fixture(tmp.name)
+        out_dir = ent / "项目级" / "预览项目" / "技术标" / "产出"
+        # fixture 分支：企业/项目固定为预览企业/预览项目（与 tech-layout --preview 同规）
+        _export.cmd_tech_export(SimpleNamespace(
+            root=tmp.name, enterprise="预览企业", project="预览项目",
+            template=str(p), fill=fill, override="", bid_mode="", out=str(out_dir), force=True))
+        target = Path.cwd() / ("技术标样张_%s.docx" % p.stem)
+        shutil.copyfile(str(out_dir / ("技术标_%s.docx" % project)), str(target))
+        if jflag:
+            print(json.dumps({"ok": True, "template": p.name, "preset": (doc.get("styleRef") or {}).get("preset", ""),
+                              "note": "P1 模板全映射：structure/styleRef/placeholders/暗标派生均生效"},
+                             ensure_ascii=False, indent=2))
+        else:
+            print("按模板「%s」生成样张（模板全映射：structure/styleRef/placeholders/暗标派生均生效）：%s"
+                  % (doc.get("name", ""), target))
+            print("      打开 Word 目视排版；暗标条款样式由模板 rules.bidMode 派生。")
+    finally:
+        tmp.cleanup()
     return 0

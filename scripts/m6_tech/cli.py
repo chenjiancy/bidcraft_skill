@@ -409,6 +409,7 @@ def register_parser(sub):
     sp.add_argument("--apply", default="", help="校验通过后落盘登记模板到 模板/ 目录（需 --confirm；已在目录内则登记回读）")
     sp.add_argument("--specimen", default="", help="按模板样式引用生成样张 docx（P0 以版面范式 preset 驱动，其余组样式见 --show；P1 全映射）")
     sp.add_argument("--project", default="", help="配合 --specimen：走真实项目导出（否则内置样例正文）")
+    sp.add_argument("--fill", default="", help="配合 --specimen：占位符填充 'key=值;key2=值2'（enterprise_name/project_name/bid_date 缺省自动注入）")
     sp.add_argument("--confirm", action="store_true", help="配合 --apply：确认落盘（写后回读校验）")
     sp.set_defaults(func=tpl_design.cmd_tpl_design)
 

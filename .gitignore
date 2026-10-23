@@ -29,6 +29,9 @@ dev/docxtpl_eval/_deps/
 # 渲染缓存
 .preview/
 
+# 样张 docx/pdf（tech-layout --preview / tpl-design --specimen 生成产物，不入库）
+技术标样张_*
+
 # 敏感业务信息（企业名/人员名/项目名）：本地保留、不进公网仓库
 dev/notes/development-log.md
 dev/notes/经验总结-*.md

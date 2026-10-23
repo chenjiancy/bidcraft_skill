@@ -37,7 +37,7 @@ from docx.shared import Cm, Pt, RGBColor
 from _shared import core
 
 from . import layout as layout_mod
-from . import sources, store
+from . import sources, store, tpl_design
 
 EXPORT_SCHEMA = "m6.export/v1"
 
@@ -1283,6 +1283,77 @@ def _render_chapter_title(doc, title, colors, preset, dark):
     pPr.append(lvl)
 
 
+# ---------------------------------------------------------------------------
+# P1 模板驱动：占位符填充 + 部件渲染（扉页 / 结尾）
+# ---------------------------------------------------------------------------
+def _fill_map(args, template_doc):
+    """--fill "k=v;k2=v2" + 默认注入（enterprise_name/project_name/bid_date）→ 占位符填充字典。
+
+    模板 placeholders 里未提供的键保留原文（披露由调用方负责）。"""
+    out = {}
+    f = getattr(args, "fill", "") or ""
+    for seg in f.split(";"):
+        if "=" not in seg:
+            continue
+        k, v = seg.split("=", 1)
+        k, v = k.strip(), v.strip()
+        if k and v:
+            out[k] = v
+    out.setdefault("enterprise_name", getattr(args, "enterprise", "") or "安徽安硕工程咨询有限公司")
+    out.setdefault("project_name", getattr(args, "project", ""))
+    out.setdefault("bid_date", datetime.now().strftime("%Y年%m月%d日"))
+    return out
+
+
+def _sub_fill(text, fill):
+    """把文本里的 {{ key }} 替换为填充值；未提供的键保留原文。"""
+    for k, v in fill.items():
+        text = text.replace("{{ %s }}" % k, v)
+    return text
+
+
+def _render_colophon(doc, colors, fill, dark=False):
+    """扉页（模板 structure 含 colophon 时渲染）：项目名 / 企业名 / 日期，占位符替换。"""
+    proj = _sub_fill("{{ project_name }}", fill) or "项目名称"
+    ent = "" if dark else _sub_fill("{{ enterprise_name }}", fill)
+    date = _sub_fill("{{ bid_date }}", fill)
+    for _ in range(6):
+        doc.add_paragraph()
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    r = p.add_run(proj)
+    _set_font(r, None, size=Pt(26), bold=True, color=colors["primary"], east="黑体")
+    if not dark:
+        p2 = doc.add_paragraph()
+        p2.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        r2 = p2.add_run("—— 投标技术标 ——")
+        _set_font(r2, None, size=Pt(14), color=colors["heading"], east="仿宋")
+    if ent:
+        p3 = doc.add_paragraph()
+        p3.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        r3 = p3.add_run(ent)
+        _set_font(r3, None, size=Pt(16), bold=True, color=colors["heading"], east="黑体")
+    if date:
+        p4 = doc.add_paragraph()
+        p4.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        r4 = p4.add_run(date)
+        _set_font(r4, None, size=Pt(12), east="宋体")
+    doc.add_page_break()
+
+
+def _render_closing(doc, colors, fill, dark=False):
+    """结尾页（模板 structure 含 closing 时渲染）：占位符 closing_text，缺省"（以下无正文）"。"""
+    text = _sub_fill("{{ closing_text }}", fill)
+    if text == "{{ closing_text }}" or not text.strip():
+        text = "（以下无正文）"
+    for _ in range(10):
+        doc.add_paragraph()
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    r = p.add_run(text)
+    _set_font(r, None, size=Pt(12), east="宋体" if dark else "仿宋")
+
+
 def cmd_tech_export(args):
     ent = sources.get_ent(args)
     proj = sources.proj_dir(ent, args.project)
@@ -1293,6 +1364,19 @@ def cmd_tech_export(args):
 
     presets_doc = layout_mod.load_presets(args)
     tree_layout = tree.get("layout") if isinstance(tree, dict) else None
+    # P1 模板驱动：--template 提供 structure/styleRef/placeholders/rules；
+    # 派生 layout 覆盖章节树 layout（--override 仍最高）；暗标铁律由 dark_derived 先行落实
+    template_doc = None
+    tpl_fill = {}
+    tpl_path = getattr(args, "template", "") or ""
+    if tpl_path:
+        _, template_doc = tpl_design.load_template(args, tpl_path)
+        ok, issues = tpl_design.validate_template(template_doc, presets_doc)
+        if not ok:
+            raise core.LibraryError("模板校验未通过，拒绝导出：%s（%s）" % (tpl_path, issues[0]["msg"]))
+        tpl_layout, _ = tpl_design.dark_derived(template_doc, presets_doc)
+        tree_layout = tpl_layout
+        tpl_fill = _fill_map(args, template_doc)
     cfg = resolve_presets(args, presets_doc, tree_layout)
     dark = _is_dark(args, tree_layout, cfg)
     if dark:
@@ -1399,6 +1483,13 @@ def cmd_tech_export(args):
             image_rule = row.get("id", "hybrid")
             break
 
+    # P1 模板驱动：部件渲染顺序（无模板时保持既有行为：封面→目录→正文）
+    if template_doc is not None:
+        parts = [it.get("part") for it in template_doc.get("structure", [])]
+        has = lambda p: p in parts  # noqa: E731
+    else:
+        has = lambda p: p in ("cover", "toc", "body")  # noqa: E731
+
     # 封面（仅明标；暗标无封面）
     cover_ok = not dark
     cover_id = cfg.get("cover", "full-block")
@@ -1411,22 +1502,27 @@ def cmd_tech_export(args):
         samples_dir = layout_mod._sample_images()
     except Exception:
         samples_dir = None
-    if cover_ok:
+    if cover_ok and has("cover"):
         _render_cover(doc, cover_id, colors, args.project, enterprise, dark, samples_dir=samples_dir)
+
+    # 扉页（模板 structure 含 colophon 时；P1 部件渲染）
+    if has("colophon"):
+        _render_colophon(doc, colors, tpl_fill, dark)
 
     # 目录 + TOC 域（tocStyle：标题样式 / 页码开关 / 大纲级别）
     toc_parsed = _parse_toc(toc_row)
-    th = doc.add_paragraph()
-    th.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r = th.add_run("目　录")
-    _set_font(r, None, size=toc_parsed["title_size"], bold=(toc_parsed["title_bold"] and not dark),
-              east="黑体" if not dark else "宋体")
-    toc_switches = r"\z" if not toc_parsed["page"] else ""
-    _add_field(doc.add_paragraph(), r'TOC \o "1-%d" \h %s \u' % (toc_parsed["max_level"], toc_switches))
-    doc.add_page_break()
+    if has("toc"):
+        th = doc.add_paragraph()
+        th.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        r = th.add_run("目　录")
+        _set_font(r, None, size=toc_parsed["title_size"], bold=(toc_parsed["title_bold"] and not dark),
+                  east="黑体" if not dark else "宋体")
+        toc_switches = r"\z" if not toc_parsed["page"] else ""
+        _add_field(doc.add_paragraph(), r'TOC \o "1-%d" \h %s \u' % (toc_parsed["max_level"], toc_switches))
+        doc.add_page_break()
 
-    # 页面背景（decoration=rich 明标浅色背景）
-    if decoration_row is not None and decoration_row.get("id") == "rich" and not dark:
+    # 页面背景（decoration=rich 明标浅色背景；随正文部件渲染）
+    if has("body") and decoration_row is not None and decoration_row.get("id") == "rich" and not dark:
         try:
             bg = OxmlElement("w:background")
             bg.set(qn("w:color"), "EAF1F8")
@@ -1441,15 +1537,20 @@ def cmd_tech_export(args):
                          table_row=table_row, caption_row=caption_row, decoration_row=decoration_row,
                          image_layout=image_layout, image_share=image_share, image_rule=image_rule)
     total_chars = 0
-    for idx, ch in enumerate(chapters):
-        cid = ch["id"]
-        title = ch.get("title") or cid
-        body = store.read_chapter_body(tech, ch)
-        total_chars += len(body)
-        if not dark:
-            _render_chapter_title(doc, title, colors, renderer.preset, dark)
-        renderer.begin_chapter(idx + 1)
-        renderer.render_md(body, colors["tableFill"])
+    if has("body"):
+        for idx, ch in enumerate(chapters):
+            cid = ch["id"]
+            title = ch.get("title") or cid
+            body = store.read_chapter_body(tech, ch)
+            total_chars += len(body)
+            if not dark:
+                _render_chapter_title(doc, title, colors, renderer.preset, dark)
+            renderer.begin_chapter(idx + 1)
+            renderer.render_md(body, colors["tableFill"])
+
+    # 结尾页（模板 structure 含 closing 时；P1 部件渲染）
+    if has("closing"):
+        _render_closing(doc, colors, tpl_fill, dark)
 
     # 页眉页脚（headerFooters 方案：模板三态 + 页脚样式 + 角点装饰）
     page_mode = _page_mode(hf)
@@ -1500,14 +1601,14 @@ def cmd_tech_export(args):
 
     doc.save(str(out_docx))
 
-    # 回读校验（契约 §4 验收：可打开 + 段落数>0 + 目录域存在）
+    # 回读校验（契约 §4 验收：可打开 + 段落数>0 + 目录域存在（模板 structure 含 toc 时））
     verify = Document(str(out_docx))
     para_count = len(verify.paragraphs)
     xml = verify.element.xml
     has_toc = ("TOC" in xml and "fldChar" in xml)
     if para_count <= 0:
         raise core.LibraryError("回读校验失败：导出的 docx 段落数为 0：%s" % out_docx)
-    if not has_toc:
+    if has("toc") and not has_toc:
         raise core.LibraryError("回读校验失败：目录域缺失：%s" % out_docx)
 
     pages = _estimate_pages(total_chars, dark)
@@ -1541,4 +1642,6 @@ def add_sub(sub):
     sp.add_argument("--bid-mode", default="", help="暗标显式声明（任何非空值即暗标；缺省从章节树 layout.font=dark-safe 推断）")
     sp.add_argument("--enterprise", default="", help="企业名称（页眉用；缺省取企业目录名）")
     sp.add_argument("--force", action="store_true", help="预留：闸门②存在 error 时强制导出（本次未接入闸门②检查）")
+    sp.add_argument("--template", default="", help="P1 模板驱动：模板描述文件（schema m6.template/v1）——structure 决定部件渲染（封面/扉页/目录/正文/结尾），styleRef 十五组覆盖章节树 layout，rules 暗标铁律先行派生，--override 仍最高")
+    sp.add_argument("--fill", default="", help="P1 占位符填充：'key=值;key2=值2'（enterprise_name/project_name/bid_date 缺省自动注入；未提供键保留原文）")
     sp.set_defaults(handler=cmd_tech_export)
