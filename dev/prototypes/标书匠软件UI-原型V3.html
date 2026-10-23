@@ -174,6 +174,33 @@ body.dark .dark-toggle .sw::after{left:17px}
 .dark-alert b{color:#8a6410}
 .statusbar{display:flex;gap:18px;padding:8px 16px;border-top:1px solid var(--line);background:#fafbfd;border-radius:0 0 12px 12px;font-size:12px;color:var(--dim);flex-wrap:wrap}
 
+/* ===== 风格配置屏 ===== */
+.style-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.style-grid{display:grid;grid-template-columns:330px 1fr;gap:14px;align-items:start}
+.sel-group{border:1px solid var(--line);border-radius:9px;padding:9px 11px;margin-bottom:8px;background:#fff}
+.sel-group h4{font-size:12.3px;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center}
+.sel-group h4 .lock{font-size:10.5px;color:var(--warn);background:#fdf0dc;padding:0 7px;border-radius:7px}
+.sel-group select{width:100%;border:1px solid var(--line);border-radius:7px;padding:5px 8px;font-size:12.3px;background:#fff;color:var(--ink)}
+.sel-group select:disabled{background:#f2f4f9;color:#8a93a8;cursor:not-allowed}
+.sel-group .dim{font-size:11px;color:var(--dim)}
+.a4{width:250px;aspect-ratio:210/297;background:#fff;border:1px solid var(--line);box-shadow:var(--shadow);padding:15px 17px;display:flex;flex-direction:column;gap:9px;margin:0 auto}
+.a4-head{font-size:9px;text-align:center;color:var(--dim);border-bottom:1px solid #d7dbe5;padding-bottom:5px;letter-spacing:2px}
+.a4-title{font-size:12.5px;font-weight:700;padding-bottom:4px;border-bottom:1px solid var(--pal,#243B6B)}
+.a4-para{font-size:8.3px;color:#3a4150;line-height:1.75;text-indent:2em}
+.a4-fig{height:58px;background:#eef1f7;border:1px dashed #c7cfdd;display:flex;align-items:center;justify-content:center;color:#9aa3b8;font-size:9px;border-radius:3px}
+.a4-tb{width:100%;border-collapse:collapse;font-size:8.3px;color:#3a4150}
+.a4-tb.tb1 tr:first-child{border-top:1.6px solid var(--pal,#243B6B);border-bottom:.9px solid var(--pal,#243B6B);font-weight:700}
+.a4-tb.tb1 tr:last-child{border-bottom:1px solid var(--pal,#243B6B)}
+.a4-tb.tb2 td{border:1px solid #c7cfdd;padding:3px 5px}
+.a4-caption{font-size:8.3px;color:var(--dim);text-align:center}
+.a4-foot{font-size:8.3px;color:var(--dim);text-align:center;border-top:1px solid #e6e9f0;padding-top:4px;margin-top:auto}
+.chk{display:flex;gap:8px;align-items:flex-start;font-size:12.3px;padding:7px 0;border-bottom:1px dashed #eef1f7}
+.chk:last-child{border-bottom:none}
+.chk .dot{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex:none;margin-top:1px}
+.chk .dot.ok{background:#e2f4ec;color:#14784f}
+.chk .dot.bad{background:#fbe7e5;color:var(--bad)}
+.chk .k{font-weight:700;margin-right:6px}
+
 /* toast */
 #toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:#1f2937;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;box-shadow:0 6px 22px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:all .25s;z-index:99;max-width:88vw}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -188,6 +215,7 @@ body.dark .dark-toggle .sw::after{left:17px}
 }
 @media (max-width:1080px){
   .editor-grid{grid-template-columns:1fr}
+  .style-grid{grid-template-columns:1fr}
   .top-search{width:120px}
   .top-user .tr{display:none}
 }
@@ -221,6 +249,9 @@ body.dark .dark-toggle .sw::after{left:17px}
     </a>
     <a class="n1" href="#/project">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>项目
+    </a>
+    <a class="n1" href="#/style">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a9 9 0 1 0 9 9c0-1.5-.9-2-1.8-2.4-1-.5-1.4-1.6-.8-2.6.5-.9.3-2.1-.6-2.9C16.6 3.7 14.4 3 12 3z"/><circle cx="8.5" cy="10.5" r="1"/><circle cx="12" cy="15" r="1"/><circle cx="15.5" cy="10.5" r="1"/></svg>风格
     </a>
     <a class="n1" href="javascript:void(0)" onclick="toast('素材库视图在后续迭代实现（规划中）')">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>素材库
@@ -335,6 +366,21 @@ body.dark .dark-toggle .sw::after{left:17px}
       </button>
       <button class="ctx-item" onclick="toast('素材面板在后续迭代实现（规划中）')">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>素材
+      </button>
+    </div>
+  </div>
+
+  <!-- 风格配置上下文 -->
+  <div class="ctx-group" id="ctx-style">
+    <div class="ctx-h">排版预设（15 组 × 10 套）<span class="ctx-tag ok">实时</span></div>
+    <div id="ctxStyleNav" style="margin-top:2px"></div>
+    <div class="ctx-sec">
+      <div class="ctx-h">快捷操作</div>
+      <button class="ctx-item" onclick="resetStyle()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>恢复默认组合
+      </button>
+      <button class="ctx-item" onclick="applyStyle()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>应用此组合
       </button>
     </div>
   </div>
@@ -535,7 +581,52 @@ body.dark .dark-toggle .sw::after{left:17px}
           </div>
         </div>
         <div class="prop-group">
-          <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="toast('完整风格配置器在后续迭代实现（规划中）')">打开完整风格配置（15 组 × 10 套）</button>
+          <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="go('style')">打开完整风格配置（15 组 × 10 套）</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 风格配置 -->
+  <section class="view" id="view-style">
+    <div class="style-head">
+      <div>
+        <div style="font-size:17px;font-weight:800">技术标排版预设 · 风格配置</div>
+        <div style="font-size:12.5px;color:var(--dim)">15 组 × 10 套正交组合 · 数据源 layout-presets.json v1.4 · 组合空间 <span id="comboCount">—</span></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="resetStyle()">恢复默认</button>
+        <button class="btn btn-primary" onclick="applyStyle()">应用此组合</button>
+      </div>
+    </div>
+    <div class="style-grid">
+      <div class="card">
+        <div class="card-h">选择器（15 组）<span class="sub" id="darkModeNote"></span></div>
+        <div class="card-b" id="styleSelects"></div>
+      </div>
+      <div>
+        <div class="card">
+          <div class="card-h">实时 A4 示意 <span class="sub">210×297 等比</span></div>
+          <div class="card-b" style="display:flex;justify-content:center;padding:18px">
+            <div class="a4" id="a4Preview">
+              <div class="a4-head" id="a4Head">安徽某某监理有限公司 · 技术标</div>
+              <div class="a4-title" id="a4Title">第一章 工程概况与监理工作范围</div>
+              <div class="a4-para">本工程位于马鞍山市城区，总建筑面积约 6.8 万平方米，地上十二层、地下两层，框架剪力墙结构，耐火等级一级，抗震设防烈度六度。项目总投资约 4.2 亿元，计划工期 720 日历天。</div>
+              <div class="a4-para">监理工作范围涵盖施工准备、施工及缺陷责任期阶段的全过程监理，包括质量、进度、投资控制，合同信息管理及安全生产管理、组织协调等全部监理工作内容。</div>
+              <div class="a4-fig" id="a4Fig">现场图片占位（按图文比例）</div>
+              <div class="a4-caption" id="a4Cap">图 3-1 现场形象进度</div>
+              <table class="a4-tb tb1" id="a4Tb"><tbody><tr><td>序号</td><td>检验批名称</td><td>验收结果</td></tr><tr><td>1</td><td>地基与基础</td><td>合格</td></tr><tr><td>2</td><td>主体结构</td><td>合格</td></tr></tbody></table>
+              <div class="a4-foot" id="a4Foot">第 12 页</div>
+            </div>
+          </div>
+          <div class="card-b" style="border-top:1px solid var(--line)">
+            <div class="prop-label">当前组合摘要</div>
+            <div id="comboSummary" style="font-size:12px;color:#5c6478;line-height:1.9"></div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:14px">
+          <div class="card-h">暗标合规即时校验 <span class="sub" id="checkMode">明标：无硬约束</span></div>
+          <div class="card-b" id="checkList"></div>
         </div>
       </div>
     </div>
@@ -546,6 +637,8 @@ body.dark .dark-toggle .sw::after{left:17px}
 <div id="toast"></div>
 
 <script>
+window.STYLE_DATA={groups:[{key:"presets",label:"版面版式",items:[{"id":"single-column","n":"单栏流式","p":"","a":"","do":null}, {"id":"tabular","n":"表格化布局","p":"","a":"","do":null}, {"id":"two-column","n":"双栏分栏","p":"","a":"","do":null}, {"id":"card","n":"卡片式布局","p":"","a":"","do":null}, {"id":"image-left","n":"左图右文","p":"","a":"","do":null}, {"id":"divider","n":"章节分隔页","p":"","a":"","do":null}, {"id":"data-row","n":"数据行布局","p":"","a":"","do":null}, {"id":"image-right","n":"右图左文","p":"","a":"","do":null}, {"id":"hybrid-flow","n":"混合流式","p":"","a":"","do":null}, {"id":"minimal-clean","n":"极简留白","p":"","a":"","do":null}]},{key:"palettes",label:"配色方案",items:[{"id":"deep-indigo","n":"深靛蓝","p":"#243B6B","a":"#B08A4B","do":true}, {"id":"warm-bronze","n":"暖棕金","p":"#7A4E2D","a":"#C9A227","do":true}, {"id":"pine-green","n":"松绿","p":"#2F5D50","a":"#A3B18A","do":true}, {"id":"brick-red","n":"砖红","p":"#8C3B32","a":"#C98B6B","do":true}, {"id":"steel-cyan","n":"钢青","p":"#2E5F73","a":"#79A7B8","do":true}, {"id":"charcoal","n":"炭灰极简","p":"#333333","a":"#8C8C8C","do":true}, {"id":"deep-blue-gold","n":"深海蓝金","p":"#17375E","a":"#C8A24A","do":true}, {"id":"ink-green-orange","n":"墨绿暖橙","p":"#21473B","a":"#D07A3A","do":true}, {"id":"mono-red","n":"黑白灰一点红","p":"#2B2B2B","a":"#B3261E","do":true}, {"id":"gradient-blue-cyan","n":"渐变蓝青","p":"#1F5C78","a":"#3FA9C9","do":true}]},{key:"covers",label:"封面样式",items:[{"id":"full-block","n":"满版色块","p":"","a":"","do":true}, {"id":"line-white","n":"留白线条","p":"","a":"","do":true}, {"id":"image-underlay","n":"图底压字","p":"","a":"","do":false}, {"id":"gradient","n":"渐变","p":"","a":"","do":true}, {"id":"frame-corners","n":"四角框线","p":"","a":"","do":true}, {"id":"top-banner","n":"顶部通栏色带","p":"","a":"","do":true}, {"id":"split-diagonal","n":"对角分割","p":"","a":"","do":true}, {"id":"minimal-type","n":"纯文字极简","p":"","a":"","do":true}, {"id":"emblem-center","n":"徽标居中","p":"","a":"","do":false}, {"id":"ribbon-bottom","n":"底部色带","p":"","a":"","do":true}]},{key:"decorations",label:"装饰风格",items:[{"id":"minimal","n":"克制","p":"","a":"","do":null}, {"id":"standard","n":"标准","p":"","a":"","do":null}, {"id":"rich","n":"丰富","p":"","a":"","do":null}, {"id":"none","n":"无装饰","p":"","a":"","do":true}, {"id":"heading-rule","n":"仅标题线","p":"","a":"","do":null}, {"id":"sidebar-tab","n":"侧边页签","p":"","a":"","do":null}, {"id":"corner-dots","n":"四角圆点","p":"","a":"","do":null}, {"id":"section-band","n":"章首色带","p":"","a":"","do":null}, {"id":"icon-accent","n":"图标点缀","p":"","a":"","do":null}, {"id":"table-fill","n":"仅表头底纹","p":"","a":"","do":false}]},{key:"fontSchemes",label:"字体方案",items:[{"id":"gov-gongwen","n":"政务公文风","p":"","a":"","do":false}, {"id":"engineering","n":"工程务实风","p":"","a":"","do":false}, {"id":"modern-business","n":"现代商务风","p":"","a":"","do":false}, {"id":"elegant-classic","n":"典雅书卷风","p":"","a":"","do":false}, {"id":"dark-safe","n":"暗标安全风","p":"","a":"","do":true}, {"id":"gb2312-classic","n":"仿宋GB2312风","p":"","a":"","do":false}, {"id":"hei-song-simplified","n":"黑宋简约风","p":"","a":"","do":false}, {"id":"kai-literary","n":"楷体书卷风","p":"","a":"","do":false}, {"id":"fangsong-official","n":"全仿宋公文风","p":"","a":"","do":false}, {"id":"mixed-safe","n":"混排安全风","p":"","a":"","do":false}]},{key:"imageRatios",label:"图文比例",items:[{"id":"none","n":"无图","p":"","a":"","do":true}, {"id":"low","n":"低图比","p":"","a":"","do":true}, {"id":"mid","n":"中图比","p":"","a":"","do":true}, {"id":"high","n":"高图比","p":"","a":"","do":false}, {"id":"ultra-low","n":"极低图比","p":"","a":"","do":true}, {"id":"low-mid","n":"偏低图比","p":"","a":"","do":true}, {"id":"mid-high","n":"偏高图比","p":"","a":"","do":false}, {"id":"very-high","n":"高强图比","p":"","a":"","do":false}, {"id":"full","n":"整页图版","p":"","a":"","do":false}, {"id":"appendix-only","n":"仅附表","p":"","a":"","do":true}]},{key:"imageRules",label:"配图规则",items:[{"id":"upload-first","n":"上传优先","p":"","a":"","do":true}, {"id":"search-supplement","n":"搜索补图","p":"","a":"","do":false}, {"id":"ai-render","n":"AI 生图","p":"","a":"","do":true}, {"id":"hybrid","n":"混合策略","p":"","a":"","do":false}, {"id":"dark-safe-img","n":"暗标安全","p":"","a":"","do":true}, {"id":"plan-only","n":"仅平面图","p":"","a":"","do":true}, {"id":"photo-only","n":"仅现场照片","p":"","a":"","do":false}, {"id":"chart-only","n":"仅图表","p":"","a":"","do":true}, {"id":"search-verify","n":"搜索+人工核验","p":"","a":"","do":false}, {"id":"no-source","n":"无图源","p":"","a":"","do":true}]},{key:"imageLayouts",label:"配图排版",items:[{"id":"split-h","n":"左右分栏","p":"","a":"","do":true}, {"id":"split-v","n":"上下分栏","p":"","a":"","do":true}, {"id":"inline","n":"图文混排","p":"","a":"","do":true}, {"id":"grid","n":"图组并排","p":"","a":"","do":false}, {"id":"appendix","n":"附图专页","p":"","a":"","do":true}, {"id":"side-note","n":"侧注式","p":"","a":"","do":true}, {"id":"banner","n":"通栏横幅","p":"","a":"","do":false}, {"id":"timeline","n":"时间轴图","p":"","a":"","do":false}, {"id":"card-mix","n":"卡片混排","p":"","a":"","do":false}, {"id":"none","n":"无排版","p":"","a":"","do":true}]},{key:"pageSetups",label:"页面设置",items:[{"id":"p1-standard-a4","n":"标准公文 A4","p":"","a":"","do":true}, {"id":"p2-haikou-25","n":"海南盲评 2.0/2.5","p":"","a":"","do":true}, {"id":"p3-jianyu-商务","n":"剑鱼商务 25/26/22","p":"","a":"","do":false}, {"id":"p4-tongliao-317","n":"通辽 3.17/2.54","p":"","a":"","do":true}, {"id":"p5-nanyang-32","n":"南阳 3/3/2/2","p":"","a":"","do":true}, {"id":"p6-guangxi-215","n":"广西 EPC 2.15","p":"","a":"","do":false}, {"id":"p7-hb-25-20","n":"河北 2.5/2.0","p":"","a":"","do":true}, {"id":"p8-nenu-学位","n":"东师学位 2/2.5","p":"","a":"","do":false}, {"id":"p9-gbt-学位","n":"国标学位 3.8/3.2","p":"","a":"","do":false}, {"id":"p10-symmetric-紧凑","n":"对称紧凑 2.2","p":"","a":"","do":false}]},{key:"headingSystems",label:"标题体系",items:[{"id":"h1-gbt-arabic","n":"GB/T 阿拉伯分级","p":"","a":"","do":false}, {"id":"h2-tender-arabic","n":"招标全阿拉伯","p":"","a":"","do":true}, {"id":"h3-qinghai-hybrid","n":"青海中数混排","p":"","a":"","do":true}, {"id":"h4-nanyang-7level","n":"南阳七级混排","p":"","a":"","do":true}, {"id":"h5-jianyu-bold","n":"剑鱼标书加粗","p":"","a":"","do":false}, {"id":"h6-sci-report","n":"科技报告式","p":"","a":"","do":false}, {"id":"h7-pku-template","n":"北大教学模板","p":"","a":"","do":false}, {"id":"h8-nenu-academic","n":"东师学术式","p":"","a":"","do":false}, {"id":"h9-cas-academic","n":"中科院学术式","p":"","a":"","do":false}, {"id":"h10-tongliao-tender","n":"通辽暗标式","p":"","a":"","do":true}]},{key:"tocStyles",label:"目录版式",items:[{"id":"t1-jianyu-auto","n":"剑鱼自动目录","p":"","a":"","do":false}, {"id":"t2-zol-standard","n":"ZOL 标准目录","p":"","a":"","do":false}, {"id":"t3-qinghai-nopage","n":"青海无页码目录","p":"","a":"","do":true}, {"id":"t4-guangxi-pointline","n":"广西点线目录","p":"","a":"","do":false}, {"id":"t5-nenu-indent","n":"东师缩进目录","p":"","a":"","do":false}, {"id":"t6-cas-rightalign","n":"中科院右对齐目录","p":"","a":"","do":false}, {"id":"t7-xinong-compact","n":"西农紧凑目录","p":"","a":"","do":false}, {"id":"t8-dual-index","n":"图文双目录","p":"","a":"","do":false}, {"id":"t9-wps-tabstop","n":"WPS 制表位目录","p":"","a":"","do":false}, {"id":"t10-minimal-2level","n":"两级紧凑目录","p":"","a":"","do":false}]},{key:"tableStyles",label:"表格样式",items:[{"id":"tb1-three-line","n":"三线表（学术）","p":"","a":"","do":true}, {"id":"tb2-full-line","n":"全线表","p":"","a":"","do":true}, {"id":"tb3-saving-line","n":"省线表","p":"","a":"","do":true}, {"id":"tb4-header-fill","n":"表头底纹+全边框","p":"","a":"","do":false}, {"id":"tb5-grid-fine","n":"网格细线","p":"","a":"","do":false}, {"id":"tb6-no-line","n":"无线表","p":"","a":"","do":false}, {"id":"tb7-dark-0.5","n":"暗标细线表","p":"","a":"","do":true}, {"id":"tb8-center-vh","n":"上下左右居中表","p":"","a":"","do":false}, {"id":"tb9-kpi-row","n":"数据行/KPI 卡","p":"","a":"","do":false}, {"id":"tb10-split-continue","n":"续表重复表头","p":"","a":"","do":false}]},{key:"captionSystems",label:"图表编号",items:[{"id":"c1-gbt-seq","n":"GB/T 全文依序","p":"","a":"","do":false}, {"id":"c2-cy-chapter","n":"CY/T 分章编号","p":"","a":"","do":false}, {"id":"c3-jianyu-neighbor","n":"剑鱼就近编号","p":"","a":"","do":false}, {"id":"c4-nenu-pos","n":"东师位置规范","p":"","a":"","do":false}, {"id":"c5-xinong-chapter","n":"西农分章编号","p":"","a":"","do":false}, {"id":"c6-appendix-letter","n":"附录字母编号","p":"","a":"","do":false}, {"id":"c7-cas-chapter","n":"中科院分章编号","p":"","a":"","do":false}, {"id":"c8-dual-index","n":"图文双目录联动","p":"","a":"","do":false}, {"id":"c9-dark-appendix","n":"暗标附图专页","p":"","a":"","do":true}, {"id":"c10-note-pos","n":"图注表注规范","p":"","a":"","do":false}]},{key:"paragraphStyles",label:"段落样式",items:[{"id":"pa1-qinghai-26","n":"青海固定26磅","p":"","a":"","do":true}, {"id":"pa2-haikou-25","n":"海南固定25磅","p":"","a":"","do":true}, {"id":"pa3-hebei-30","n":"河北固定30磅","p":"","a":"","do":true}, {"id":"pa4-guangxi-15","n":"广西1.5倍行距","p":"","a":"","do":false}, {"id":"pa5-tongliao-30","n":"通辽固定30磅","p":"","a":"","do":true}, {"id":"pa6-ximeng-28","n":"锡盟固定28磅","p":"","a":"","do":true}, {"id":"pa7-jianyu-15","n":"剑鱼1.5倍行距","p":"","a":"","do":false}, {"id":"pa8-xinong-20","n":"西农固定20磅","p":"","a":"","do":false}, {"id":"pa9-degree-15","n":"学位1.5倍行距","p":"","a":"","do":false}, {"id":"pa10-compact-115","n":"紧凑1.15倍","p":"","a":"","do":false}]},{key:"headerFooters",label:"页眉页脚",items:[{"id":"hf1-classic-enterprise","n":"经典企业版","p":"","a":"","do":false}, {"id":"hf2-centered-solemn","n":"居中庄重","p":"","a":"","do":false}, {"id":"hf3-project-oriented","n":"项目导向","p":"","a":"","do":false}, {"id":"hf4-consulting-page","n":"咨询商务","p":"","a":"","do":false}, {"id":"hf5-minimal-clean","n":"极简留白","p":"","a":"","do":false}, {"id":"hf6-chapter-nav","n":"章节导航","p":"","a":"","do":false}, {"id":"hf7-dual-footer","n":"双栏页脚","p":"","a":"","do":false}, {"id":"hf8-full-info-3col","n":"全信息三栏","p":"","a":"","do":false}, {"id":"hf9-dark-none","n":"暗标无页眉页脚","p":"","a":"","do":true}, {"id":"hf10-dark-page-only","n":"暗标仅页码","p":"","a":"","do":true}]},],default:{"preset": "single-column", "palette": "deep-indigo", "cover": "full-block", "decoration": "standard", "font": "gov-gongwen", "imageRatio": "mid", "imageRule": "hybrid", "imageLayout": "split-h", "pageSetup": "p1-standard-a4", "headingSystem": "h1-gbt-arabic", "tocStyle": "t1-jianyu-auto", "tableStyle": "tb1-three-line", "captionSystem": "c2-cy-chapter", "paragraphStyle": "pa7-jianyu-15", "headerFooter": "hf1-classic-enterprise"}};
+
 (function(){
   var darkMode=false;
 
@@ -611,7 +704,7 @@ body.dark .dark-toggle .sw::after{left:17px}
   function go(v){ location.hash='#/'+v; }
   window.go=go;
 
-  var VIEW_CTX={home:'ctx-home',project:'ctx-project',editor:'ctx-editor'};
+  var VIEW_CTX={home:'ctx-home',project:'ctx-project',editor:'ctx-editor',style:'ctx-style'};
 
   function showView(id){
     document.querySelectorAll('.view').forEach(function(s){s.classList.remove('active')});
@@ -628,7 +721,7 @@ body.dark .dark-toggle .sw::after{left:17px}
 
   window.addEventListener('hashchange',function(){
     var h=(location.hash||'#/home').replace('#','').replace(/^\//,'');
-    if(['home','project','editor'].indexOf(h)>-1) showView(h);
+    if(['home','project','editor','style'].indexOf(h)>-1) showView(h);
   });
   if(!location.hash) location.hash='#/home';
 
@@ -640,8 +733,160 @@ body.dark .dark-toggle .sw::after{left:17px}
       var el=document.getElementById(id);
       if(el) el.textContent=on?'暗标':'明标';
     });
+    updateStyleUI();
   }
   document.getElementById('darkToggle').addEventListener('click',function(){ setDarkMode(!document.body.classList.contains('dark')); toast(document.body.classList.contains('dark')?'已切换暗标：版式受招标条款硬约束':'已切换明标：可自由组合风格'); });
+
+  /* ---- 风格配置：15 组 × 10 套 ---- */
+  var SD=window.STYLE_DATA;
+  var cur={}, userSel={};
+  (function(){ var d=SD.default; for(var k in d){ cur[k]=d[k]; userSel[k]=d[k]; } })();
+  var DARK_INJECT={font:'dark-safe',imageRatio:'none',imageRule:'dark-safe-img',imageLayout:'appendix',pageSetup:'p7-hb-25-20',headingSystem:'h2-tender-arabic',tocStyle:'t3-qinghai-nopage',tableStyle:'tb7-dark-0.5',captionSystem:'c9-dark-appendix',paragraphStyle:'pa3-hebei-30',headerFooter:'hf9-dark-none'};
+  var MICRO=['font','imageRatio','imageRule','imageLayout','pageSetup','headingSystem','tocStyle','tableStyle','captionSystem','paragraphStyle','headerFooter'];
+  var SINGULAR={presets:'preset',palettes:'palette',covers:'cover',decorations:'decoration',fontSchemes:'font',imageRatios:'imageRatio',imageRules:'imageRule',imageLayouts:'imageLayout',pageSetups:'pageSetup',headingSystems:'headingSystem',tocStyles:'tocStyle',tableStyles:'tableStyle',captionSystems:'captionSystem',paragraphStyles:'paragraphStyle',headerFooters:'headerFooter'};
+
+  function itemName(key,id){
+    var g=SD.groups.filter(function(x){return x.key===key})[0]; if(!g)return id;
+    var it=g.items.filter(function(x){return x.id===id})[0]; return it?it.n:id;
+  }
+  function selBox(g,label){
+    var box=document.createElement('div'); box.className='sel-group'; box.id='grp-'+g.key;
+    var h=document.createElement('h4');
+    h.innerHTML='<span>'+label+'</span><span class="dim" id="cur-'+g.key+'"></span>';
+    var sel=document.createElement('select'); sel.setAttribute('data-g',g.key);
+    g.items.forEach(function(it){
+      var o=document.createElement('option'); o.value=it.id; o.textContent=it.n+(it.do===false?'（暗标禁）':'');
+      if(it.do===false) o.setAttribute('data-darkbad','1');
+      sel.appendChild(o);
+    });
+    sel.addEventListener('change',function(){ cur[g.key]=sel.value; renderStyle(); });
+    box.appendChild(h); box.appendChild(sel);
+    return box;
+  }
+  function renderSelects(){
+    var wrap=document.getElementById('styleSelects'); if(!wrap) return;
+    wrap.innerHTML='';
+    SD.groups.forEach(function(g){ wrap.appendChild(selBox(g,g.label)); });
+    var nav=document.getElementById('ctxStyleNav');
+    nav.innerHTML='';
+    SD.groups.forEach(function(g){
+      var b=document.createElement('button'); b.className='ctx-item'; b.setAttribute('data-g',g.key); b.textContent=g.label;
+      b.addEventListener('click',function(){
+        var el=document.getElementById('grp-'+g.key);
+        if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
+        document.querySelectorAll('#ctxStyleNav .ctx-item').forEach(function(x){x.classList.remove('active')});
+        b.classList.add('active');
+      });
+      nav.appendChild(b);
+    });
+    document.getElementById('comboCount').textContent='10^15';
+  }
+  function syncSelects(){
+    var selAny=document.querySelectorAll('.sel-group select');
+    Array.prototype.forEach.call(selAny,function(sel){
+      var key=sel.getAttribute('data-g');
+      var g=SD.groups.filter(function(x){return x.key===key})[0];
+      var ck=SINGULAR[key]||key;
+      var darkNow=document.body.classList.contains('dark');
+      sel.value=cur[ck]||userSel[ck];
+      var lockSel=document.querySelector('#grp-'+key+' h4 span .lock');
+      if(darkNow && MICRO.indexOf(ck)>-1){
+        sel.disabled=true;
+        if(!lockSel){ var s=document.createElement('span'); s.className='lock'; s.textContent='暗标锁定'; document.querySelector('#grp-'+key+' h4 span').appendChild(s); }
+      } else {
+        sel.disabled=false;
+        if(lockSel) lockSel.parentNode.removeChild(lockSel);
+        Array.prototype.forEach.call(sel.options,function(o){ o.disabled = darkNow && o.getAttribute('data-darkbad'); });
+      }
+      var cv=document.getElementById('cur-'+key);
+      if(cv) cv.textContent = darkNow&&MICRO.indexOf(ck)>-1 ? '自动注入' : itemName(key,sel.value);
+    });
+  }
+  function renderPreview(){
+    var dark=document.body.classList.contains('dark');
+    var pal=(SD.groups.filter(function(x){return x.key==='palettes'})[0].items.filter(function(x){return x.id===cur.palette})[0]);
+    var pk=pal&&pal.p?pal.p:'#243B6B';
+    document.getElementById('a4Preview').style.setProperty('--pal',pk);
+    var t=document.getElementById('a4Title');
+    var hk=cur.headingSystem||'', prefix='第一章 ', body='工程概况与监理工作范围';
+    if(hk.indexOf('tender')>-1||hk.indexOf('tongliao')>-1) prefix='1 ';
+    else if(hk.indexOf('hybrid')>-1||hk.indexOf('nanyang')>-1) prefix='一、';
+    t.textContent=prefix+body;
+    t.style.fontWeight=dark?'400':'700';
+    var fontName=itemName('fontSchemes',cur.font)||'', ff='SimSun,serif';
+    if(fontName.indexOf('仿')>-1) ff='FangSong,"仿宋",serif';
+    else if(fontName.indexOf('黑')>-1||fontName.indexOf('商务')>-1) ff='"Microsoft YaHei",sans-serif';
+    else if(fontName.indexOf('楷')>-1) ff='KaiTi,"楷体",serif';
+    t.style.fontFamily=ff;
+    var fig=document.getElementById('a4Fig'), cap=document.getElementById('a4Cap');
+    var r=cur.imageRatio||'mid', showFig=true, figH=58, figTxt='现场图片占位（按图文比例）';
+    if(r==='none'){ showFig=false; cap.style.display='none'; }
+    else{
+      cap.style.display='';
+      if(r==='ultra-low'||r==='low') figH=40;
+      else if(r==='mid'||r==='low-mid') figH=58;
+      else if(r==='high'||r==='very-high') figH=86;
+      else if(r==='full'){ figH=200; figTxt='整页图版占位'; }
+      else if(r==='appendix-only') figTxt='附图专页（置于文末）';
+    }
+    if(cur.imageLayout==='appendix' && r!=='none') figTxt='附图专页（置于文末）';
+    fig.style.display=showFig?'flex':'none'; fig.style.height=figH+'px'; fig.textContent=figTxt;
+    var tb=document.getElementById('a4Tb');
+    tb.className='a4-tb ';
+    var tsk=cur.tableStyle||'tb1';
+    if(tsk==='tb2-full-line'||tsk==='tb4-header-fill'||tsk==='tb5-grid-fine') tb.className+='tb2';
+    else tb.className+='tb1';
+    var head=document.getElementById('a4Head'), foot=document.getElementById('a4Foot');
+    var hf=cur.headerFooter||'hf1';
+    head.style.display=''; foot.style.display=''; foot.textContent='第 12 页';
+    if(hf==='hf9-dark-none'){ head.style.display='none'; foot.style.display='none'; }
+    else if(hf==='hf10-dark-page-only'){ head.style.display='none'; foot.textContent='12'; }
+    var sum='';
+    SD.groups.forEach(function(g){
+      var ck=SINGULAR[g.key]||g.key;
+      var v=(dark&&MICRO.indexOf(ck)>-1)?(DARK_INJECT[ck]||userSel[ck]):cur[ck];
+      sum+='<span style="display:inline-block;background:#eef1f7;border-radius:6px;padding:1px 8px;margin:2px 3px 0 0;font-size:11px">'+g.label+' · '+itemName(g.key,v)+'</span>';
+    });
+    document.getElementById('comboSummary').innerHTML=sum;
+  }
+  function darkCheck(){
+    var list=document.getElementById('checkList'); if(!list) return;
+    var d=[];
+    function push(k,ok,msg){ d.push('<div class="chk"><span class="dot '+(ok?'ok':'bad')+'">'+(ok?'合':'差')+'</span><span><b class="k">'+k+'</b>'+msg+'</span></div>'); }
+    function gDo(key,id){ var g=SD.groups.filter(function(x){return x.key===key})[0]; if(!g)return null; var it=g.items.filter(function(x){return x.id===id})[0]; return it?it.do:null; }
+    if(document.body.classList.contains('dark')){
+      document.getElementById('checkMode').textContent='暗标合规（自动注入 + 即时校验）';
+      push('字体', cur.font==='dark-safe', '当前已自动注入宋体常规无加粗');
+      push('图文', cur.imageRatio==='none'||(cur.imageRule==='dark-safe-img'&&cur.imageLayout==='appendix'), '零图或灰度附图（二选一）');
+      push('页眉页脚', cur.headerFooter==='hf9-dark-none'||cur.headerFooter==='hf10-dark-page-only', '无页眉页脚或仅页码');
+      push('标题体系', gDo('headingSystems',cur.headingSystem)===true, '条款式编号、不加粗');
+      push('配色', cur.palette==='charcoal'||cur.palette==='mono-red', '全黑或灰度印刷');
+      push('表格', gDo('tableStyles',cur.tableStyle)===true, '细线表、无色底纹');
+      push('段落', gDo('paragraphStyles',cur.paragraphStyle)===true, '固定行距或条款行距');
+      push('目录', gDo('tocStyles',cur.tocStyle)===true, '无页码或仅页码目录');
+      list.innerHTML=d.join('');
+    } else {
+      document.getElementById('checkMode').textContent='明标：无硬约束';
+      list.innerHTML='<div class="chk"><span class="dot ok">合</span><span>明标模式：正交组合自由选择，页眉页脚/封面/配色均可启用；具体格式以招标文件条款为准。</span></div>';
+    }
+  }
+  function renderStyle(){ syncSelects(); renderPreview(); darkCheck(); }
+  function applyDarkInject(){ if(document.body.classList.contains('dark')){ MICRO.forEach(function(k){ cur[k]=DARK_INJECT[k]; }); } }
+  function updateStyleUI(){ if(!document.getElementById('styleSelects')) return; applyDarkInject(); renderStyle(); }
+  function resetStyle(){
+    var d=SD.default; for(var k in d){ cur[k]=d[k]; userSel[k]=d[k]; }
+    if(document.body.classList.contains('dark')) applyDarkInject();
+    renderStyle(); toast('已恢复默认组合（明标默认）');
+  }
+  window.resetStyle=resetStyle;
+  function applyStyle(){
+    var dark=document.body.classList.contains('dark');
+    var note=document.getElementById('edStyleNote');
+    if(note) note.textContent=dark?'已应用：暗标自动注入组合':'已应用：自定义 15 组 × 10 套组合';
+    toast('组合已应用到当前技术标（导出时由 tech-export 渲染）');
+  }
+  window.applyStyle=applyStyle;
+  renderSelects(); renderStyle();
 
   /* ---- 工作台筛选 ---- */
   document.getElementById('homeChips').addEventListener('click',function(e){
