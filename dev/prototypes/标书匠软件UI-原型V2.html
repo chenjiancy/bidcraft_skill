@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>标书匠软件UI · 原型V2 · 专家中心风格</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%232B5CD9'/%3E%3Cpath d='M8 10h16v3H8zm0 6h10v3H8zm0 6h14v3H8z' fill='%23fff'/%3E%3C/svg%3E">
+<style>
+:root{
+  --brand:#2B5CD9; --brand2:#1c44a8; --acc:#4C82F2; --line:#e6e9f0; --bg:#f7f8fa;
+  --card:#ffffff; --ink:#1f2330; --dim:#7a8193; --ok:#22a06b; --warn:#b7791f; --bad:#d64545;
+  --shadow:0 1px 2px rgba(30,40,80,.05),0 6px 18px rgba(30,40,80,.07);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:"Microsoft YaHei","PingFang SC","Noto Sans SC",system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.6;min-width:320px}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input{font-family:inherit}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:#c8cfdd;border-radius:4px}
+
+.app{display:flex;min-height:100vh}
+
+/* ===== 左侧导航 ===== */
+.sidebar{width:196px;flex:none;background:#fff;border-right:1px solid var(--line);display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+.side-logo{display:flex;align-items:center;gap:8px;padding:16px 18px 14px;font-size:16px;font-weight:800;color:var(--brand2);border-bottom:1px solid var(--line)}
+.side-logo svg{flex:none}
+.side-nav{flex:1;padding:12px 10px;overflow-y:auto}
+.side-menu{margin-bottom:8px}
+.side-sep{font-size:11px;color:var(--dim);padding:10px 10px 6px;letter-spacing:1px}
+.side-item{display:flex;align-items:center;gap:9px;width:100%;padding:9px 11px;border-radius:8px;font-size:13.5px;color:#4a5265;text-align:left}
+.side-item svg{flex:none;color:#9aa3b8}
+.side-item:hover{background:#f2f5fb;color:var(--brand2)}
+.side-item.active{background:#e9effd;color:var(--brand2);font-weight:700}
+.side-item.active svg{color:var(--brand)}
+.side-item .s-badge{margin-left:auto;font-size:10.5px;background:#fdf0dc;color:var(--warn);padding:0 6px;border-radius:8px}
+.side-foot{border-top:1px solid var(--line);padding:12px 10px}
+.side-user{display:flex;align-items:center;gap:9px;padding:6px 8px}
+.side-user .ava{width:32px;height:32px;border-radius:50%;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex:none}
+.side-user .un{font-size:12.5px;font-weight:700}
+.side-user .ur{font-size:11px;color:var(--dim)}
+
+/* ===== 主区 ===== */
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{background:#fff;border-bottom:1px solid var(--line);padding:10px 22px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:40}
+.pagetabs{display:flex;gap:6px}
+.ptab{font-size:14px;font-weight:700;color:#4a5265;padding:6px 12px;border-radius:8px;white-space:nowrap}
+.ptab.active{color:var(--brand2);background:#e9effd}
+.top-search{display:flex;align-items:center;gap:6px;margin-left:auto;border:1px solid var(--line);border-radius:8px;padding:6px 12px;width:220px;background:#f7f8fa}
+.top-search input{border:none;outline:none;background:none;font-size:12.5px;width:100%;color:var(--ink)}
+.top-search input::placeholder{color:#a6adbd}
+.dark-toggle{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:8px;padding:5px 9px;font-size:12px;color:#4a5265;white-space:nowrap;background:#fff}
+.dark-toggle .sw{width:32px;height:17px;border-radius:9px;background:#d7dbe5;position:relative;transition:background .2s}
+.dark-toggle .sw::after{content:"";position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transition:left .2s}
+body.dark .dark-toggle .sw{background:var(--warn)}
+body.dark .dark-toggle .sw::after{left:17px}
+.top-ic{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#6a7285;background:#f2f5fb}
+.top-ic:hover{background:#e9effd}
+
+.content{flex:1;padding:20px 22px 60px;max-width:1280px;width:100%}
+.view{display:none}
+.view.active{display:block}
+
+/* 通用 */
+.tag{display:inline-block;font-size:11px;padding:1px 9px;border-radius:8px;white-space:nowrap}
+.tag.plain{background:#eef1f7;color:#5c6478}
+.tag.ok{background:#e2f4ec;color:#14784f}
+.tag.warn{background:#fdf0dc;color:var(--warn)}
+.tag.bad{background:#fbe7e5;color:var(--bad)}
+.tag.plan{background:#fdf0dc;color:var(--warn);border:1px dashed #d4ab62}
+.tag.dark-tag{background:#e7e9f0;color:var(--brand2)}
+.btn{display:inline-flex;align-items:center;gap:6px;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;transition:all .15s}
+.btn-primary{background:var(--brand);color:#fff}
+.btn-primary:hover{background:var(--brand2)}
+.btn-ghost{border:1px solid var(--line);color:var(--ink);background:#fff}
+.btn-ghost:hover{border-color:var(--brand);color:var(--brand)}
+.btn-plain{color:var(--brand);padding:6px 10px}
+.btn-plain:hover{background:#eef3fd}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.note{font-size:12px;color:var(--dim)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}
+.card-h{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;border-bottom:1px solid var(--line);font-size:14px;font-weight:700}
+.card-h .sub{font-weight:400;color:var(--dim);font-size:12px}
+.card-b{padding:14px 18px}
+
+/* ===== 工作台：banner + chips + 卡片网格 ===== */
+.banner{display:flex;align-items:center;justify-content:space-between;gap:18px;background:linear-gradient(120deg,#2B5CD9 0%,#3E6FE0 55%,#5B8BF0 120%);color:#fff;border-radius:14px;padding:26px 30px;margin-bottom:18px;box-shadow:0 8px 26px rgba(43,92,217,.22)}
+.banner h1{font-size:21px;margin-bottom:6px;letter-spacing:.5px}
+.banner p{font-size:13px;color:rgba(255,255,255,.85);max-width:640px}
+.banner .bb{display:flex;gap:10px;flex-wrap:wrap}
+.banner .btn{border-radius:8px}
+.chips{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.chip{font-size:12.5px;color:#5c6478;background:#fff;border:1px solid var(--line);border-radius:16px;padding:5px 14px;cursor:pointer;transition:all .15s}
+.chip:hover{border-color:var(--brand);color:var(--brand)}
+.chip.active{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:600}
+.chip .c-n{opacity:.75;font-size:11px}
+.expert-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.expert-card{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:18px 18px 14px;display:flex;flex-direction:column;gap:9px;transition:box-shadow .15s,transform .12s;cursor:pointer}
+.expert-card:hover{box-shadow:0 8px 22px rgba(30,40,80,.12);transform:translateY(-2px)}
+.expert-card.hide{display:none}
+.ec-top{display:flex;align-items:center;gap:8px}
+.ec-name{font-size:14.5px;font-weight:800;color:var(--ink)}
+.ec-desc{font-size:12.3px;color:#5c6478;flex:1;line-height:1.7}
+.ec-preview{height:104px;border-radius:8px;background:#f0f3fa;overflow:hidden;position:relative;border:1px solid #eef1f6}
+.ec-preview .pv{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;padding:8px 10px;font-size:10.5px;color:#5c6478}
+.ec-preview .pv-line{height:6px;border-radius:3px;background:#d8dfec;margin:3px 0;width:100%}
+.ec-preview .pv-line.brand{background:var(--brand)}
+.ec-foot{display:flex;align-items:center;justify-content:space-between}
+.ec-call{font-size:12.5px;font-weight:700;color:var(--brand)}
+.ec-call:hover{color:var(--brand2)}
+.pv1{background:linear-gradient(150deg,#eef3fd 0%,#dde7fb 60%,#c9d9f7 100%)}
+.pv2{background:linear-gradient(150deg,#eef2f6 0%,#dde4ea 60%,#ccd6df 100%)}
+.pv3{background:linear-gradient(150deg,#e9f7ef 0%,#d2ecd9 60%,#b7e0c4 100%)}
+.pv4{background:linear-gradient(150deg,#f2f1ee 0%,#e2e0db 60%,#cfccc5 100%)}
+.pv5{background:linear-gradient(150deg,#fdf3e6 0%,#f7e3c6 60%,#ecd0a6 100%)}
+.pv6{background:linear-gradient(150deg,#eaf6f6 0%,#d3e9e9 60%,#b7dcdc 100%)}
+.pv-dot{position:absolute;top:8px;left:10px;font-size:9.5px;color:#8a93a8;letter-spacing:1px}
+
+/* ===== 向导 ===== */
+.stepper{display:flex;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:13px 18px;margin-bottom:16px;overflow-x:auto}
+.step{display:flex;align-items:center;gap:8px;white-space:nowrap;color:var(--dim);font-size:12.5px}
+.step .n{width:23px;height:23px;border-radius:50%;background:#eef1f7;color:var(--dim);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11.5px;flex:none}
+.step.done .n{background:#e2f4ec;color:#14784f}
+.step.cur{color:var(--brand2);font-weight:700}
+.step.cur .n{background:var(--brand);color:#fff}
+.step-line{flex:1;min-width:24px;height:2px;background:var(--line);margin:0 10px}
+.step-line.done{background:#a9d6c4}
+.wiz-body{display:grid;grid-template-columns:1.6fr 1fr;gap:16px;align-items:start}
+.wiz-main .card,.wiz-side .card{margin-bottom:16px}
+.dropzone{border:2px dashed #c3cce0;border-radius:12px;background:#f8fafd;padding:32px 20px;text-align:center;color:var(--dim)}
+.dropzone .dz-ic{color:var(--brand);font-size:12.5px;margin-bottom:8px}
+.file-chip{display:flex;align-items:center;gap:10px;background:#f6f8fd;border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-top:12px}
+.file-chip .fi{flex:none;color:var(--brand)}
+.file-chip .fn{font-weight:700;font-size:13px}
+.choose-card{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--line);border-radius:12px;padding:14px 16px;cursor:pointer;transition:all .15s}
+.choose-card:hover{border-color:var(--acc)}
+.choose-card.sel{border-color:var(--brand);background:#f2f5fd;box-shadow:0 0 0 2px rgba(43,92,217,.12)}
+.choose-card .rd{width:16px;height:16px;border-radius:50%;border:2px solid #c3cade;flex:none;margin-top:3px}
+.choose-card.sel .rd{border-color:var(--brand);background:radial-gradient(circle,var(--brand) 45%,#fff 50%)}
+.clause{background:#fdf6ec;border-left:3px solid #d4ab62;border-radius:0 8px 8px 0;padding:10px 14px;font-size:12.5px;color:#6b5416;margin-top:10px}
+.dir-list{max-height:380px;overflow:auto}
+.dir-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid #f2f4f9;font-size:13px}
+.dir-row:last-child{border-bottom:none}
+.dir-row .chk{width:15px;height:15px;border:1.5px solid #c3cade;border-radius:4px;flex:none;background:#fff}
+.dir-row.on .chk{background:var(--brand);border-color:var(--brand);position:relative}
+.dir-row.on .chk::after{content:"";position:absolute;left:4px;top:1px;width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.dir-row .idx{color:var(--dim);font-size:12px;width:34px;flex:none}
+.dir-row .nm{flex:1}
+.wiz-actions{display:flex;justify-content:space-between;align-items:center;margin-top:16px}
+.dark-alert{background:#fdf6ec;border:1px solid #e5cf9d;border-radius:8px;padding:10px 12px;font-size:12.3px;color:#6b5416}
+.dark-alert b{color:#8a6410}
+
+/* ===== 编辑器 ===== */
+.editor-steps{display:flex;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:10px 16px;margin-bottom:14px;overflow-x:auto}
+.estep{display:flex;align-items:center;gap:7px;white-space:nowrap;font-size:12.5px;color:var(--dim)}
+.estep.cur{color:var(--brand2);font-weight:700}
+.estep.done{color:#14784f}
+.estep .e{width:20px;height:20px;border-radius:50%;background:#eef1f7;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex:none}
+.estep.cur .e{background:var(--brand);color:#fff}
+.estep.done .e{background:#e2f4ec;color:#14784f}
+.editor-grid{display:grid;grid-template-columns:250px 1fr 300px;gap:14px;align-items:start}
+.pane{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}
+.pane-h{padding:10px 14px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:700}
+.tabs{display:flex;border-bottom:1px solid var(--line)}
+.tabs .tab{flex:1;text-align:center;padding:9px 4px;font-size:12.5px;color:var(--dim);border-bottom:2px solid transparent;cursor:pointer}
+.tabs .tab.active{color:var(--brand);font-weight:700;border-bottom-color:var(--brand)}
+.tree{overflow-y:auto;max-height:calc(100vh - 300px)}
+.tree-node{display:flex;align-items:center;gap:6px;padding:7px 10px;font-size:12.8px;color:var(--ink);cursor:pointer}
+.tree-node:hover{background:#f6f8fd}
+.tree-node.active{background:#e9effd;color:var(--brand2);font-weight:600;border-left:3px solid var(--brand)}
+.tree-node .tw{font-size:10px;color:var(--dim);flex:none;width:12px;text-align:center}
+.tree-node.lv1{font-weight:700}
+.tree-node.lv2{padding-left:26px}
+.canvas{min-height:520px;display:flex;flex-direction:column}
+.canvas-body{padding:18px 22px;flex:1}
+.ch-title{font-size:19px;font-weight:800;color:var(--brand2);border-bottom:2px solid var(--brand);padding-bottom:10px;margin-bottom:14px}
+.ch-sub{font-size:13.5px;color:var(--dim);margin-bottom:12px}
+.para{font-size:13.8px;text-indent:2em;margin-bottom:10px;color:#2a3242}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;padding:10px 14px;border-top:1px solid var(--line);background:#fafbfd;border-radius:0 0 12px 12px}
+.toolbar .btn{font-size:12px;padding:6px 12px}
+.prop-group{padding:12px 14px;border-bottom:1px solid #f2f4f9}
+.prop-group:last-child{border-bottom:none}
+.prop-label{font-size:12px;color:var(--dim);margin-bottom:6px;display:flex;justify-content:space-between}
+.prop-val{font-size:13px;font-weight:600}
+.prop-select{width:100%;border:1px solid var(--line);border-radius:7px;padding:6px 8px;font-size:12.5px;background:#fff;color:var(--ink)}
+.statusbar{display:flex;gap:18px;padding:8px 16px;border-top:1px solid var(--line);background:#fafbfd;border-radius:0 0 12px 12px;font-size:12px;color:var(--dim);flex-wrap:wrap}
+
+/* toast */
+#toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:#1f2937;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;box-shadow:0 6px 22px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:all .25s;z-index:99;max-width:88vw}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* 响应式 */
+@media (max-width:1080px){
+  .editor-grid{grid-template-columns:210px 1fr}
+  .editor-grid .pane-right{grid-column:1/-1}
+  .wiz-body{grid-template-columns:1fr}
+  .wiz-side{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+}
+@media (max-width:760px){
+  .sidebar{width:64px}
+  .side-logo{justify-content:center;padding:16px 4px}
+  .side-logo .sl-txt{display:none}
+  .side-item{justify-content:center;padding:10px 4px}
+  .side-item .s-txt,.side-item .s-badge,.side-sep{display:none}
+  .side-user .un,.side-user .ur{display:none}
+  .top-search{width:130px}
+  .expert-grid{grid-template-columns:1fr}
+  .wiz-side{grid-template-columns:1fr}
+  .editor-grid{grid-template-columns:1fr}
+  .banner{flex-direction:column;align-items:flex-start;padding:20px}
+  .banner h1{font-size:17px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ===== 左侧导航 ===== -->
+<aside class="sidebar">
+  <div class="side-logo">
+    <svg width="26" height="26" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#2B5CD9"/><path d="M8 10h16v3H8zm0 6h10v3H8zm0 6h14v3H8z" fill="#fff"/></svg>
+    <span class="sl-txt">标书匠</span>
+  </div>
+  <div class="side-nav">
+    <div class="side-menu">
+      <div class="side-sep">工作空间</div>
+      <a class="side-item active" href="#/home">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10l9-7 9 7v10a1 1 0 0 1-1 1h-4v-7h-8v7H4a1 1 0 0 1-1-1z"/></svg><span class="s-txt">工作台</span>
+      </a>
+      <a class="side-item" href="#/wizard">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg><span class="s-txt">新建标书向导</span>
+      </a>
+      <a class="side-item" href="#/editor">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg><span class="s-txt">标书编辑器</span>
+      </a>
+      <a class="side-item" href="javascript:void(0)" onclick="toast('素材库视图在后续迭代实现（规划中）')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg><span class="s-txt">素材库</span>
+      </a>
+      <a class="side-item" href="javascript:void(0)" onclick="toast('模板库视图在后续迭代实现（规划中）')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg><span class="s-txt">模板库</span>
+      </a>
+      <a class="side-item" href="javascript:void(0)" onclick="toast('全局开发台在后续迭代实现（规划中）')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.7 4.8L18 9.5l-4.3 1.7L12 16l-1.7-4.8L6 9.5l4.3-1.7z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg><span class="s-txt">全局开发台</span><span class="s-badge">DEV</span>
+      </a>
+    </div>
+    <div class="side-menu">
+      <div class="side-sep">快捷操作</div>
+      <button class="side-item" onclick="toast('新建项目流程见向导（规划中）')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg><span class="s-txt">新建项目</span>
+      </button>
+      <button class="side-item" onclick="toast('打开本地文件夹在后续迭代实现（规划中）')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span class="s-txt">打开本地文件夹</span>
+      </button>
+    </div>
+  </div>
+  <div class="side-foot">
+    <div class="side-user">
+      <span class="ava">标</span>
+      <div><div class="un">开发者</div><div class="ur">安徽某某监理有限公司</div></div>
+    </div>
+  </div>
+</aside>
+
+<!-- ===== 主区 ===== -->
+<div class="main">
+  <div class="topbar">
+    <div class="pagetabs">
+      <span class="ptab active" id="pageTitle">工作台</span>
+    </div>
+    <div class="top-search">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9aa3b8" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+      <input placeholder="搜索项目 / 素材 / 模板 / 章节…（规划中）" disabled>
+    </div>
+    <button class="dark-toggle" id="darkToggle">
+      <span class="sw"></span>暗标
+    </button>
+    <button class="top-ic" onclick="toast('通知中心在后续迭代实现（规划中）')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+    </button>
+  </div>
+
+  <div class="content">
+
+    <!-- ===== 工作台 ===== -->
+    <section class="view active" id="view-home">
+      <div class="banner">
+        <div>
+          <h1>把投标经验，变成团队的 AI 生产力</h1>
+          <p>专属流程串起标书全流程：招标解析 → 暗标/明标判定 → 目录 → 分章生成 → 质量检查 → 导出交付。技术标排版预设 15 组 × 10 套，风格即装即用。</p>
+        </div>
+        <div class="bb">
+          <button class="btn btn-ghost" style="background:#fff;border:none;color:var(--brand)" onclick="go('wizard')">新建标书</button>
+          <button class="btn" style="background:rgba(255,255,255,.18);color:#fff" onclick="toast('招标解析入口见向导（规划中）')">导入招标文件</button>
+        </div>
+      </div>
+
+      <div class="chips" id="homeChips">
+        <span class="chip active" data-f="all">全部 <span class="c-n">4</span></span>
+        <span class="chip" data-f="draft">编制中 <span class="c-n">1</span></span>
+        <span class="chip" data-f="check">待检查 <span class="c-n">1</span></span>
+        <span class="chip" data-f="done">已交付 <span class="c-n">1</span></span>
+        <span class="chip" data-f="fix">待补救 <span class="c-n">1</span></span>
+      </div>
+
+      <div class="expert-grid" id="projGrid">
+        <div class="expert-card" data-st="draft" onclick="go('editor')">
+          <div class="ec-top"><span class="ec-name">市政务服务中心项目监理大纲</span><span class="tag dark-tag">暗标</span></div>
+          <div class="ec-desc">MAS-2026-FJ-018 · 综合评估法（技术分 60%）· 2026-10-12 更新</div>
+          <div class="ec-preview pv1"><span class="pv-dot">工程 · 技术标</span><div class="pv"><div class="pv-line brand" style="width:88%"></div><div class="pv-line" style="width:72%"></div><div class="pv-line" style="width:55%"></div></div></div>
+          <div class="ec-foot"><span class="tag warn">编制中</span><span class="ec-call">打开标书 →</span></div>
+        </div>
+        <div class="expert-card" data-st="check" onclick="go('editor')">
+          <div class="ec-top"><span class="ec-name">城东污水处理厂改扩建工程</span><span class="tag plain">明标</span></div>
+          <div class="ec-desc">MAS-2026-SZ-007 · 商务标 + 技术标 · 2026-10-08 更新</div>
+          <div class="ec-preview pv2"><span class="pv-dot">工程 · 商务标</span><div class="pv"><div class="pv-line brand" style="width:92%"></div><div class="pv-line" style="width:80%"></div><div class="pv-line" style="width:64%"></div></div></div>
+          <div class="ec-foot"><span class="tag ok">待检查</span><span class="ec-call">打开标书 →</span></div>
+        </div>
+        <div class="expert-card" data-st="done" onclick="go('editor')">
+          <div class="ec-top"><span class="ec-name">滨江大道管网改造监理</span><span class="tag plain">明标</span></div>
+          <div class="ec-desc">MAS-2026-市-031 · 技术标 · 2026-09-28 更新</div>
+          <div class="ec-preview pv3"><span class="pv-dot">工程 · 技术标</span><div class="pv"><div class="pv-line brand" style="width:96%"></div><div class="pv-line" style="width:88%"></div><div class="pv-line" style="width:76%"></div></div></div>
+          <div class="ec-foot"><span class="tag ok">已交付</span><span class="ec-call">查看交付物 →</span></div>
+        </div>
+        <div class="expert-card" data-st="fix" onclick="go('editor')">
+          <div class="ec-top"><span class="ec-name">安置房二期工程质量监理</span><span class="tag dark-tag">暗标</span></div>
+          <div class="ec-desc">MAS-2026-ZJ-002 · 综合标 · 2026-09-15 更新</div>
+          <div class="ec-preview pv4"><span class="pv-dot">工程 · 综合标</span><div class="pv"><div class="pv-line brand" style="width:70%"></div><div class="pv-line" style="width:48%"></div><div class="pv-line" style="width:30%"></div></div></div>
+          <div class="ec-foot"><span class="tag bad">待补救</span><span class="ec-call">打开标书 →</span></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:18px">
+        <div class="card-h">系统状态 <span class="sub">数据来自全局开发台</span></div>
+        <div class="card-b" style="display:flex;gap:26px;flex-wrap:wrap">
+          <div><div style="font-size:20px;font-weight:800;color:var(--brand)">150</div><div class="note">技术标风格预设（15 组 × 10 套）</div></div>
+          <div><div style="font-size:20px;font-weight:800;color:var(--brand)">C1–C9</div><div class="note">一致性审计全部通过</div></div>
+          <div><div style="font-size:20px;font-weight:800;color:var(--brand)">597</div><div class="note">回归用例全绿（unit 528 + int 69）</div></div>
+          <div><div style="font-size:20px;font-weight:800;color:var(--brand)">v1.4</div><div class="note">排版预设引擎版本（最新）</div></div>
+          <div><div style="font-size:20px;font-weight:800;color:var(--warn)">3</div><div class="note">未提交改动（开发台可查）</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 向导 ===== -->
+    <section class="view" id="view-wizard">
+      <div class="stepper" id="wizSteps">
+        <div class="step done" data-s="1"><span class="n">1</span><span class="lb">导入招标文件</span></div>
+        <div class="step-line done"></div>
+        <div class="step cur" data-s="2"><span class="n">2</span><span class="lb">暗标 / 明标判定</span></div>
+        <div class="step-line"></div>
+        <div class="step" data-s="3"><span class="n">3</span><span class="lb">生成目录</span></div>
+        <div class="step-line"></div>
+        <div class="step" data-s="4"><span class="n">4</span><span class="lb">配置风格</span></div>
+        <div class="step-line"></div>
+        <div class="step" data-s="5"><span class="n">5</span><span class="lb">开始生成</span></div>
+      </div>
+
+      <div class="wiz-body">
+        <div class="wiz-main">
+          <div class="wiz-pane" id="wz1">
+            <div class="card">
+              <div class="card-h">① 导入招标文件 <span class="sub">支持 PDF / DOCX，自动解析条款</span></div>
+              <div class="card-b">
+                <div class="dropzone">
+                  <div class="dz-ic">将招标文件拖到此处，或点击选择文件</div>
+                  <button class="btn btn-ghost" onclick="toast('文件选择器在后续迭代实现（规划中）')">选择文件</button>
+                </div>
+                <div class="file-chip">
+                  <span class="fi"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></span>
+                  <div style="flex:1"><div class="fn">某市政务服务中心项目监理招标文件.pdf</div><div class="note">8.6 MB · 2026-10-22 上传 · 示例文件</div></div>
+                  <span class="tag plan">解析中（规划中）</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="wiz-pane" id="wz2" style="display:none">
+            <div class="card">
+              <div class="card-h">② 暗标 / 明标判定 <span class="sub">解析结果自动判定，可手动修正</span></div>
+              <div class="card-b" style="display:grid;gap:12px">
+                <label class="choose-card sel" id="card-dark">
+                  <span class="rd"></span>
+                  <div><div style="font-weight:700">暗标</div>
+                    <div class="note">评标前不得透露投标人身份；版式受招标条款硬约束，样式选择受限</div>
+                    <div class="clause">条款摘要（示例）：正文一律黑色、宋体或仿宋_GB2312；不得加粗、加色、加页眉页脚；页边距与行距按招标指定；目录不标注页码（青海检测规则口径）。</div>
+                  </div>
+                </label>
+                <label class="choose-card" id="card-ming">
+                  <span class="rd"></span>
+                  <div><div style="font-weight:700">明标</div>
+                    <div class="note">可展示企业信息；版式可自由选择风格组合（正交维度自由搭配）</div>
+                  </div>
+                </label>
+              </div>
+            </div>
+          </div>
+          <div class="wiz-pane" id="wz3" style="display:none">
+            <div class="card">
+              <div class="card-h">③ 生成目录 <span class="sub">按评分办法生成章节，可调整</span></div>
+              <div class="dir-list" id="dirList">
+                <div class="dir-row on"><span class="chk"></span><span class="idx">第一章</span><span class="nm">工程概况与监理工作范围</span></div>
+                <div class="dir-row on"><span class="chk"></span><span class="idx">第二章</span><span class="nm">监理工作依据、目标与内容</span></div>
+                <div class="dir-row on"><span class="chk"></span><span class="idx">第三章</span><span class="nm">项目监理机构及人员配备</span></div>
+                <div class="dir-row on"><span class="chk"></span><span class="idx">第四章</span><span class="nm">监理工作程序与方法</span></div>
+                <div class="dir-row on"><span class="chk"></span><span class="idx">第五章</span><span class="nm">质量控制体系与措施</span></div>
+                <div class="dir-row on"><span class="chk"></span><span class="idx">第六章</span><span class="nm">进度控制体系与措施</span></div>
+                <div class="dir-row on"><span class="chk"></span><span class="idx">第七章</span><span class="nm">投资控制体系与措施</span></div>
+                <div class="dir-row on"><span class="chk"></span><span class="idx">第八章</span><span class="nm">安全文明施工与环境保护监理</span></div>
+                <div class="dir-row on"><span class="chk"></span><span class="idx">第九章</span><span class="nm">合同信息管理与组织协调</span></div>
+                <div class="dir-row on"><span class="chk"></span><span class="idx">第十章</span><span class="nm">监理工作制度与资料管理</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="wiz-pane" id="wz4" style="display:none">
+            <div class="card">
+              <div class="card-h">④ 配置风格 <span class="sub">技术标排版预设引擎 · 15 组 × 10 套</span></div>
+              <div class="card-b">
+                <p class="note" style="margin-bottom:10px">风格配置器（正交维度组合 + 实时预览 + 暗标合规校验）在「风格配置」视图实现，本原型以占位展示入口。</p>
+                <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+                  <span class="tag plain">版面范式 ×10</span><span class="tag plain">配色 ×10</span><span class="tag plain">封面 ×10</span>
+                  <span class="tag plain">装饰 ×10</span><span class="tag plain">字体 ×10</span><span class="tag plain">图文比例 ×10</span>
+                  <span class="tag plain">配图规则 ×10</span><span class="tag plain">配图排版 ×10</span><span class="tag plain">页眉页脚 ×10</span>
+                </div>
+                <button class="btn btn-ghost" onclick="toast('风格配置器在后续迭代实现（规划中）')">打开风格配置器（规划中）</button>
+                <button class="btn btn-plain" onclick="toast('暗标将自动注入安全风格（全黑/无装饰/页码双态）')">暗标安全风格说明</button>
+              </div>
+            </div>
+          </div>
+          <div class="wiz-pane" id="wz5" style="display:none">
+            <div class="card">
+              <div class="card-h">⑤ 开始生成 <span class="sub">AI 分章生成正文，随后进入编辑器</span></div>
+              <div class="card-b">
+                <p class="note" style="margin-bottom:10px">生成引擎按章节调用（工程概况 / 质量控制 / 进度控制…），正文可逐章续写、扩写、改写。</p>
+                <div style="display:flex;gap:10px;flex-wrap:wrap">
+                  <button class="btn btn-primary" onclick="toast('正文生成引擎在后续迭代实现（规划中）')">开始生成（规划中）</button>
+                  <button class="btn btn-ghost" onclick="go('editor')">直接进入编辑器（示例）</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="wiz-actions">
+            <button class="btn btn-ghost" id="wizPrev" onclick="wizPrev()">上一步</button>
+            <button class="btn btn-primary" id="wizNext" onclick="wizNext()">下一步</button>
+          </div>
+        </div>
+
+        <div class="wiz-side">
+          <div class="card">
+            <div class="card-h">判定结果 <span class="sub">自动解析</span></div>
+            <div class="card-b" style="display:grid;gap:8px">
+              <div><span class="tag plain">招标方式</span> 公开招标</div>
+              <div><span class="tag plain">标段</span> 监理标段</div>
+              <div><span class="tag plain">评分办法</span> 综合评估法（技术分 60%）</div>
+              <div><span class="tag dark-tag" id="wizTag">暗标（示例）</span> <span class="note">由条款自动判定</span></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-h">本步骤提示</div>
+            <div class="card-b">
+              <div class="dark-alert" id="wizHint">
+                <b>暗标注意：</b>正文一律黑色；不设页眉页脚；页码按招标条款双态（禁用或仅页码全文连续）；配图默认关闭或转灰度入附录。
+              </div>
+              <div style="margin-top:10px"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#d4ab62;margin-right:6px"></span><span class="note">未实现功能均以「规划中」占位，后续迭代逐一落地</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 编辑器 ===== -->
+    <section class="view" id="view-editor">
+      <div class="editor-steps">
+        <span class="estep done"><span class="e">1</span>解析招标文件</span>
+        <span class="step-line" style="flex:1;min-width:24px;height:2px;background:#a9d6c4;margin:0 10px"></span>
+        <span class="estep done"><span class="e">2</span>生成目录</span>
+        <span class="step-line" style="flex:1;min-width:24px;height:2px;background:#a9d6c4;margin:0 10px"></span>
+        <span class="estep cur"><span class="e">3</span>编写正文（当前）</span>
+        <span class="step-line" style="flex:1;min-width:24px;height:2px;background:var(--line);margin:0 10px"></span>
+        <span class="estep"><span class="e">4</span>质量检查</span>
+        <span class="step-line" style="flex:1;min-width:24px;height:2px;background:var(--line);margin:0 10px"></span>
+        <span class="estep"><span class="e">5</span>导出交付</span>
+      </div>
+
+      <div class="editor-grid">
+        <div class="pane">
+          <div class="pane-h">目录结构 <span class="tag plain" style="font-weight:400">10 章</span></div>
+          <div class="tabs">
+            <div class="tab active" onclick="toast('评分点面板在后续迭代实现（规划中）')">章节</div>
+            <div class="tab" onclick="toast('评分点 tab 规划中')">评分点</div>
+            <div class="tab" onclick="toast('素材 tab 规划中')">素材</div>
+          </div>
+          <div class="tree" id="editorTree">
+            <div class="tree-node lv1 active" data-ch="1"><span class="tw">▾</span>第一章 工程概况与监理工作范围</div>
+            <div class="tree-node lv2" data-ch="1.1">1.1 工程概况</div>
+            <div class="tree-node lv2" data-ch="1.2">1.2 监理工作范围</div>
+            <div class="tree-node lv1" data-ch="2"><span class="tw">▾</span>第二章 监理工作依据、目标与内容</div>
+            <div class="tree-node lv2" data-ch="2.1">2.1 监理工作依据</div>
+            <div class="tree-node lv2" data-ch="2.2">2.2 监理工作目标</div>
+            <div class="tree-node lv1" data-ch="3"><span class="tw">▾</span>第三章 项目监理机构及人员配备</div>
+            <div class="tree-node lv2" data-ch="3.1">3.1 项目监理机构设置</div>
+            <div class="tree-node lv2" data-ch="3.2">3.2 人员配备与岗位职责</div>
+            <div class="tree-node lv1" data-ch="4"><span class="tw">▾</span>第四章 监理工作程序与方法</div>
+            <div class="tree-node lv1" data-ch="5"><span class="tw">▾</span>第五章 质量控制体系与措施</div>
+            <div class="tree-node lv1" data-ch="6"><span class="tw">▾</span>第六章 进度控制体系与措施</div>
+            <div class="tree-node lv1" data-ch="7"><span class="tw">▾</span>第七章 投资控制体系与措施</div>
+            <div class="tree-node lv1" data-ch="8"><span class="tw">▾</span>第八章 安全文明施工与环境保护监理</div>
+            <div class="tree-node lv1" data-ch="9"><span class="tw">▾</span>第九章 合同信息管理与组织协调</div>
+            <div class="tree-node lv1" data-ch="10"><span class="tw">▾</span>第十章 监理工作制度与资料管理</div>
+          </div>
+        </div>
+
+        <div class="pane canvas">
+          <div class="pane-h" style="border-radius:12px 12px 0 0">编辑画布
+            <span style="display:flex;gap:6px"><span class="tag dark-tag" id="edTag">暗标</span><span class="tag plan">AI 生成中（规划中）</span></span>
+          </div>
+          <div class="canvas-body" id="canvasBody">
+            <div class="ch-title" id="chTitle">第一章 工程概况与监理工作范围</div>
+            <div class="ch-sub" id="chSub">本章对应评分点：对项目的理解与认识、监理工作范围描述完整度</div>
+            <div class="para" id="p1">本工程位于马鞍山市城区，总建筑面积约 6.8 万平方米，地上十二层、地下两层，框架剪力墙结构，耐火等级一级，抗震设防烈度六度。项目总投资约 4.2 亿元，计划工期 720 日历天。</div>
+            <div class="para" id="p2">监理工作范围涵盖施工准备阶段、施工阶段及缺陷责任期阶段的全过程监理，包括工程质量、进度、投资控制，合同信息管理及安全生产管理、组织协调等全部监理工作内容。</div>
+            <div class="para" id="p3" style="color:#c3cad8;border-left:3px solid #e5e9f2;padding-left:10px;text-indent:0">[示例占位段落：AI 生成正文引擎在此续写，可插入图表、表格、现场照片（占页 ≤1/3）、图上分散彩色标签等元素 —— 规划中]</div>
+          </div>
+          <div class="toolbar">
+            <button class="btn btn-primary" onclick="toast('AI 正文生成在后续迭代实现（规划中）')">AI 生成 / 续写（规划中）</button>
+            <button class="btn btn-ghost" onclick="toast('插入图表在后续迭代实现（规划中）')">插入图表</button>
+            <button class="btn btn-ghost" onclick="toast('插入表格在后续迭代实现（规划中）')">插入表格</button>
+            <button class="btn btn-ghost" onclick="toast('插入现场图片在后续迭代实现（规划中）')">插入现场图片</button>
+            <button class="btn btn-plain" onclick="toast('整章样式沿用当前预设')">沿用预设</button>
+          </div>
+          <div class="statusbar">
+            <span>章节：1 / 10</span><span>字数：约 3,600</span><span>页数估算：1.5 页 / 章</span><span id="edStyleNote">当前预设：深靛蓝 · 标准公文 A4 · 政务公文风</span>
+          </div>
+        </div>
+
+        <div class="pane pane-right">
+          <div class="pane-h">属性面板 <span class="tag plain">本章</span></div>
+          <div class="prop-group">
+            <div class="prop-label">标题体系 <span class="tag ok">已应用</span></div>
+            <select class="prop-select" onchange="toast('标题体系切换在风格配置视图统一实现（规划中）')">
+              <option>GB/T 阿拉伯分级（h1-gbt-arabic）</option>
+              <option>招标全阿拉伯式（h2-tender-arabic）</option>
+            </select>
+          </div>
+          <div class="prop-group">
+            <div class="prop-label">段落样式</div>
+            <select class="prop-select" onchange="toast('段落样式切换在风格配置视图统一实现（规划中）')">
+              <option>1.5 倍行距 · 首行缩进 2 字符（pa7-jianyu-15）</option>
+              <option>固定 26 磅（青海条款）</option>
+            </select>
+          </div>
+          <div class="prop-group">
+            <div class="prop-label">图文比例</div>
+            <select class="prop-select" onchange="toast('图文比例切换在风格配置视图统一实现（规划中）')">
+              <option>中图比 3:7（mid）</option>
+              <option>低图比 1:9（low）</option>
+              <option>零图模式（暗标推荐）</option>
+            </select>
+          </div>
+          <div class="prop-group">
+            <div class="prop-label">页眉页脚</div>
+            <select class="prop-select" onchange="toast('页眉页脚切换在风格配置视图统一实现（规划中）')">
+              <option>企业经典页眉页脚（明标）</option>
+              <option>无页眉页脚 · 无页码（暗标）</option>
+              <option>仅页码全文连续（暗标）</option>
+            </select>
+          </div>
+          <div class="prop-group">
+            <div class="dark-alert">
+              <b>暗标合规提示：</b>当前标题体系 / 段落样式 / 图文比例均符合暗标条款（全黑、无加粗、无装饰、零图或灰度附图）。切换方案时将即时校验并高亮冲突项。
+            </div>
+          </div>
+          <div class="prop-group">
+            <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="toast('完整风格配置器在后续迭代实现（规划中）')">打开完整风格配置（15 组 × 10 套）</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+(function(){
+  var curStep=2, curCh=1;
+
+  function toast(msg){
+    var t=document.getElementById('toast');
+    t.textContent=msg; t.classList.add('show');
+    clearTimeout(t._h); t._h=setTimeout(function(){t.classList.remove('show')},2400);
+  }
+  window.toast=toast;
+
+  function go(v){ location.hash='#/'+v; }
+  window.go=go;
+
+  var PAGE_TITLES={home:'工作台',wizard:'新建标书向导',editor:'标书编辑器'};
+
+  function showView(id){
+    document.querySelectorAll('.view').forEach(function(s){s.classList.remove('active')});
+    var v=document.getElementById('view-'+id); if(v) v.classList.add('active');
+    document.querySelectorAll('.side-item').forEach(function(n){
+      var href=((n.getAttribute('href')||'').replace('#','')).replace(/^\//,'');
+      n.classList.toggle('active', href===id);
+    });
+    document.getElementById('pageTitle').textContent=PAGE_TITLES[id]||'标书匠';
+    window.scrollTo({top:0});
+  }
+
+  window.addEventListener('hashchange',function(){
+    var h=(location.hash||'#/home').replace('#','').replace(/^\//,'');
+    if(['home','wizard','editor'].indexOf(h)>-1) showView(h);
+  });
+  if(!location.hash) location.hash='#/home';
+
+  /* ---- 向导 stepper ---- */
+  function renderWiz(){
+    document.querySelectorAll('#wizSteps .step').forEach(function(s){
+      var n=parseInt(s.getAttribute('data-s'),10);
+      s.classList.toggle('done', n<curStep);
+      s.classList.toggle('cur', n===curStep);
+    });
+    document.querySelectorAll('#wizSteps .step-line').forEach(function(l){
+      var prev=l.previousElementSibling;
+      l.classList.toggle('done', prev&&parseInt(prev.getAttribute('data-s'),10)<curStep);
+    });
+    for(var i=1;i<=5;i++){
+      var p=document.getElementById('wz'+i); if(p) p.style.display=(i===curStep)?'block':'none';
+    }
+    document.getElementById('wizPrev').disabled=(curStep===1);
+    document.getElementById('wizNext').textContent=(curStep===5)?'完成':'下一步';
+  }
+  window.wizNext=function(){
+    if(curStep<5){curStep++;renderWiz();}
+    else{toast('向导完成：进入编辑器（示例）');go('editor');}
+  };
+  window.wizPrev=function(){ if(curStep>1){curStep--;renderWiz();} };
+
+  /* ---- 暗标/明标 ---- */
+  var cardDark=document.getElementById('card-dark'), cardMing=document.getElementById('card-ming');
+  function setDarkMode(on){
+    document.body.classList.toggle('dark', on);
+    if(cardDark){cardDark.classList.toggle('sel', on);cardMing.classList.toggle('sel', !on);}
+    document.getElementById('wizTag').textContent=on?'暗标（示例）':'明标（示例）';
+    document.getElementById('wizTag').className='tag'+(on?' dark-tag':' plain');
+    document.getElementById('edTag').textContent=on?'暗标':'明标';
+    var hint=document.getElementById('wizHint');
+    if(hint) hint.style.display=on?'block':'none';
+  }
+  if(cardDark){cardDark.addEventListener('click',function(){setDarkMode(true);toast('已切换暗标：版式受招标条款硬约束，风格选择受限')});}
+  if(cardMing){cardMing.addEventListener('click',function(){setDarkMode(false);toast('已切换明标：可自由组合风格')});}
+  document.getElementById('darkToggle').addEventListener('click',function(){ setDarkMode(!document.body.classList.contains('dark')); });
+
+  /* ---- 工作台筛选 chips ---- */
+  document.getElementById('homeChips').addEventListener('click',function(e){
+    var chip=e.target.closest('.chip'); if(!chip) return;
+    document.querySelectorAll('#homeChips .chip').forEach(function(c){c.classList.remove('active')});
+    chip.classList.add('active');
+    var f=chip.getAttribute('data-f');
+    document.querySelectorAll('#projGrid .expert-card').forEach(function(c){
+      c.classList.toggle('hide', f!=='all'&&c.getAttribute('data-st')!==f);
+    });
+  });
+
+  /* ---- 目录树 ---- */
+  var chData={
+    '1':['第一章 工程概况与监理工作范围','本工程位于马鞍山市城区，总建筑面积约 6.8 万平方米，地上十二层、地下两层，框架剪力墙结构，耐火等级一级，抗震设防烈度六度。项目总投资约 4.2 亿元，计划工期 720 日历天。','监理工作范围涵盖施工准备阶段、施工阶段及缺陷责任期阶段的全过程监理，包括工程质量、进度、投资控制，合同信息管理及安全生产管理、组织协调等全部监理工作内容。'],
+    '2':['第二章 监理工作依据、目标与内容','本工程监理依据主要包括：国家现行法律法规、工程建设标准规范、《建设工程监理规范》GB/T 50319-2013、招标文件及其补充文件、监理合同、施工合同、经审批的施工组织设计与施工图。','监理目标：质量合格率 100%，一次验收合格；进度满足合同工期要求；投资控制在批复概算内；安全生产零事故、文明施工达标。'],
+    '3':['第三章 项目监理机构及人员配备','项目监理机构实行总监理工程师负责制，设总监理工程师 1 名、专业监理工程师 6 名、监理员 8 名，覆盖土建、安装、给排水、电气、安全等专业。','监理人员均持证上岗，总监理工程师具有注册监理工程师执业资格，专业监理工程师具备相应专业中级以上技术职称及执业资格。']
+  };
+  document.getElementById('editorTree').addEventListener('click',function(e){
+    var node=e.target.closest('.tree-node'); if(!node) return;
+    document.querySelectorAll('#editorTree .tree-node').forEach(function(n){n.classList.remove('active')});
+    node.classList.add('active');
+    var ch=node.getAttribute('data-ch'); if(!ch) return;
+    var key=ch.split('.')[0], d=chData[key];
+    if(d){
+      document.getElementById('chTitle').textContent=d[0];
+      document.getElementById('chSub').textContent='本章对应评分点：对项目的理解与认识、监理工作范围描述完整度';
+      document.getElementById('p1').textContent=d[1];
+      document.getElementById('p2').textContent=d[2];
+      document.getElementById('p3').innerHTML='[示例占位段落：AI 生成正文引擎在此续写，可插入图表、表格、现场照片（占页 ≤1/3）、图上分散彩色标签等元素 —— 规划中]';
+      toast('已切换章节：'+d[0]);
+    }
+  });
+
+  /* ---- 目录勾选 ---- */
+  document.getElementById('dirList').addEventListener('click',function(e){
+    var row=e.target.closest('.dir-row'); if(!row||!row.querySelector('.chk')) return;
+    if(e.target.classList.contains('chk')||e.target.classList.contains('nm')||e.target.classList.contains('idx')){
+      row.classList.toggle('on');
+      toast(row.classList.contains('on')?'已勾选章节':'已取消章节');
+    }
+  });
+
+  renderWiz(); setDarkMode(false);
+})();
+</script>
+</body>
+</html>
