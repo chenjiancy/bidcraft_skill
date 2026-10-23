@@ -73,6 +73,50 @@ class TestTplDesignCli(unittest.TestCase):
         self.assertIn("端到端企业", text)
         self.assertIn("（以下无正文）", text)
 
+    def _mk_master(self):
+        """迷你 docx 母版（封面/目录/正文/结尾）。"""
+        from docx import Document
+        from docx.enum.text import WD_ALIGN_PARAGRAPH
+        from docx.shared import Pt
+        doc = Document()
+        p = doc.add_paragraph()
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        r = p.add_run(ENT)
+        r.font.size = Pt(16)
+        doc.add_paragraph("目　录")
+        doc.add_paragraph("第一章　工程概况")
+        doc.add_paragraph("（以下无正文）")
+        master = Path(self.tmp) / "母版.docx"
+        doc.save(str(master))
+        return str(master)
+
+    def test_tpl_part_scan_confirm_list_show(self):
+        # P2 部件库 CLI：扫描 dry-run → 确认落盘 → 防覆盖 → 清单 → 展示
+        master = self._mk_master()
+        r = run(str(self.root), self.tmp, "tpl-part", "--scan", master)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("拆解预览", r.stdout)
+        self.assertIn("cover", r.stdout)
+        self.assertIn("确认落盘请加 --confirm", r.stdout)
+        # 确认落盘
+        r = run(str(self.root), self.tmp, "tpl-part", "--scan", master, "--confirm")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("部件落盘", r.stdout)
+        lib = self.root / "共享资源" / "技术标风格" / "部件库"
+        self.assertTrue((lib / "母版.json").is_file())
+        # 防覆盖：同名再确认 → 报错拒绝
+        r = run(str(self.root), self.tmp, "tpl-part", "--scan", master, "--confirm")
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("防覆盖", r.stdout + r.stderr)
+        # 清单与展示
+        r = run(str(self.root), self.tmp, "tpl-part", "--list")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("母版", r.stdout)
+        self.assertIn("cover", r.stdout)
+        r = run(str(self.root), self.tmp, "tpl-part", "--show", "母版")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("目　录", r.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()

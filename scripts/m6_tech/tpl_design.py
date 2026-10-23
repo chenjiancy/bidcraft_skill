@@ -245,8 +245,9 @@ def _validate_rules(rules_doc, issues):
                             % (bm, "/".join(m6rules.BID_MODES))))
 
 
-def validate_template(doc, presets_doc):
-    """模板描述全量校验 → (ok, issues)。presets_doc 可为 None（回退内置清单）。"""
+def validate_template(doc, presets_doc, parts=None):
+    """模板描述全量校验 → (ok, issues)。presets_doc 可为 None（回退内置清单）；
+    parts 为部件清单 {部件名: part_doc}（None 时不校验 partRef 存在性，仅提示需部件库）。"""
     issues = []
     if not isinstance(doc, dict):
         return False, [_issue("err", "doc-type", "模板描述必须是 JSON 对象")]
@@ -255,6 +256,7 @@ def validate_template(doc, presets_doc):
     if not (doc.get("name") or "").strip():
         issues.append(_issue("err", "name", "name 必填（模板用途说明）"))
     _validate_structure(doc.get("structure"), issues)
+    _validate_part_refs(doc.get("structure"), parts, issues)
     _validate_style_ref(doc.get("styleRef"), presets_doc, issues)
     _validate_placeholders(doc.get("placeholders"), issues)
     _validate_rules(doc.get("rules"), issues)
@@ -265,6 +267,26 @@ def validate_template(doc, presets_doc):
     issues.sort(key=lambda i: 0 if i["level"] == "err" else (1 if i["level"] == "warn" else 2))
     ok = not any(i["level"] == "err" for i in issues)
     return ok, issues
+
+
+def _validate_part_refs(structure, parts, issues):
+    """structure 项的 partRef：引用部件必须存在于部件库（tpl-part --list）。"""
+    if not isinstance(structure, list):
+        return
+    for i, item in enumerate(structure):
+        if not isinstance(item, dict):
+            continue
+        ref = item.get("partRef")
+        if not ref:
+            continue
+        if parts is None:
+            issues.append(_issue("warn", "part-lib", "structure[%d].partRef=%r 存在，但未提供部件库（tpl-part --list 查看可用部件）"
+                                % (i, ref)))
+            continue
+        key = ref[:-5] if ref.endswith(".json") else ref
+        if key not in parts:
+            issues.append(_issue("err", "part-ref", "structure[%d].partRef=%r 引用的部件不存在（tpl-part --list 查看部件库）"
+                                % (i, ref)))
 
 
 def _check_dark_compliance(style_ref, presets_doc, issues):
@@ -329,6 +351,13 @@ def dark_derived(doc, presets_doc):
     return layout, notes
 
 
+def _parts_index(args):
+    """部件库索引 {部件名: True}（供 partRef 校验）；部件库缺失返回 None 表示未提供。"""
+    from . import partlib
+    files = partlib.find_part_files(args)
+    return {k: True for k in files} if files else None
+
+
 # ---------------------------------------------------------------------------
 # tpl-design 命令
 # ---------------------------------------------------------------------------
@@ -382,7 +411,7 @@ def _cmd_list(args, jflag):
             doc = core.read_json(str(p), None) or {}
         except Exception:  # noqa: BLE001
             doc = {}
-        ok, issues = validate_template(doc, presets_doc) if isinstance(doc, dict) else (False, [])
+        ok, issues = validate_template(doc, presets_doc, _parts_index(args)) if isinstance(doc, dict) else (False, [])
         errs = sum(1 for i in issues if i["level"] == "err")
         print("  %-28s %s（错误 %d / 提示 %d）" % (p.name, "通过" if ok else "不通过", errs,
                                               sum(1 for i in issues if i["level"] != "err")))
@@ -396,7 +425,7 @@ def _cmd_show(args, jflag):
     except core.LibraryError as e:
         print(str(e))
         return 1
-    ok, issues = validate_template(doc, presets_doc)
+    ok, issues = validate_template(doc, presets_doc, _parts_index(args))
     layout, notes = _full_layout(doc, presets_doc)
     if jflag:
         print(json.dumps({
@@ -435,7 +464,7 @@ def _cmd_validate(args, jflag):
     except core.LibraryError as e:
         print(str(e))
         return 1
-    ok, issues = validate_template(doc, presets_doc)
+    ok, issues = validate_template(doc, presets_doc, _parts_index(args))
     if jflag:
         print(json.dumps({"ok": ok, "path": str(p), "issues": issues}, ensure_ascii=False, indent=2))
         return 0 if ok else 1
@@ -452,7 +481,7 @@ def _cmd_apply(args, jflag):
     except core.LibraryError as e:
         print(str(e))
         return 1
-    ok, issues = validate_template(doc, presets_doc)
+    ok, issues = validate_template(doc, presets_doc, _parts_index(args))
     if not ok:
         if jflag:
             print(json.dumps({"ok": False, "issues": issues}, ensure_ascii=False, indent=2))
@@ -502,7 +531,7 @@ def _cmd_specimen(args, jflag):
     except core.LibraryError as e:
         print(str(e))
         return 1
-    ok, issues = validate_template(doc, presets_doc)
+    ok, issues = validate_template(doc, presets_doc, _parts_index(args))
     if not ok:
         print("校验未通过，拒绝出样张：")
         _print_issues(issues)

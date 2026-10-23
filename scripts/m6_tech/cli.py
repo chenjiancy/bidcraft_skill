@@ -32,6 +32,7 @@ from . import layout
 from . import export
 from . import packs
 from . import tpl_design
+from . import partlib
 from .ctxpack import build_context, fill_score_items
 from .report import cmd_tech_check, cmd_tech_report
 from .writer import cmd_tech_parse
@@ -412,5 +413,14 @@ def register_parser(sub):
     sp.add_argument("--fill", default="", help="配合 --specimen：占位符填充 'key=值;key2=值2'（enterprise_name/project_name/bid_date 缺省自动注入）")
     sp.add_argument("--confirm", action="store_true", help="配合 --apply：确认落盘（写后回读校验）")
     sp.set_defaults(func=tpl_design.cmd_tpl_design)
+
+    sp = sub.add_parser("tpl-part",
+                        help="M6·模板部件库（P2）：docx 母版拆解回流——识别封面/目录/正文样式/结尾 → 部件 JSON（schema m6.part/v1），模板 structure 用 partRef 引用")
+    sp.add_argument("--list", action="store_true", help="列出部件库（默认行为）")
+    sp.add_argument("--scan", default="", help="拆解 docx 母版 → 部件描述（dry-run 预览；--confirm 落盘部件库，防覆盖）")
+    sp.add_argument("--show", default="", help="展示部件内容（部件名或部件文件名）")
+    sp.add_argument("--project", default="", help="配合 --scan：参数化项目名（匹配文本替换为 {{ project_name }}）")
+    sp.add_argument("--confirm", action="store_true", help="配合 --scan：确认落盘部件库（写后回读校验）")
+    sp.set_defaults(func=partlib.cmd_tpl_part)
 
     export.add_sub(sub)

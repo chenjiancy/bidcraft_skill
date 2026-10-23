@@ -1,0 +1,80 @@
+{
+  "schema": "m6.part/v1",
+  "source": "示例-商务标母版.docx",
+  "name": "示例-商务标母版",
+  "scannedAt": "",
+  "parts": {
+    "cover": {
+      "paragraphs": [
+        {
+          "text": "{{ project_name }}",
+          "style": {
+            "east": "仿宋",
+            "size": 26,
+            "bold": false,
+            "align": "center"
+          }
+        },
+        {
+          "text": "投标文件（技术标）",
+          "style": {
+            "east": "仿宋",
+            "size": 16,
+            "bold": false,
+            "align": "center"
+          }
+        },
+        {
+          "text": "{{ enterprise_name }}",
+          "style": {
+            "east": "仿宋",
+            "size": 14,
+            "bold": false,
+            "align": "center"
+          }
+        },
+        {
+          "text": "{{ bid_date }}",
+          "style": {
+            "east": "仿宋",
+            "size": 12,
+            "bold": false,
+            "align": "center"
+          }
+        }
+      ],
+      "pageBreak": true
+    },
+    "colophon": null,
+    "toc": {
+      "title": "目　录",
+      "style": {
+        "east": "黑体",
+        "size": 16,
+        "bold": true,
+        "align": "center"
+      },
+      "pageBreak": true
+    },
+    "body": {
+      "font": {
+        "size": 12,
+        "east": "仿宋"
+      },
+      "headingSizes": {}
+    },
+    "closing": {
+      "paragraphs": [
+        {
+          "text": "（以下无正文）",
+          "style": {
+            "east": "仿宋",
+            "size": 12,
+            "bold": false,
+            "align": "left"
+          }
+        }
+      ]
+    }
+  }
+}

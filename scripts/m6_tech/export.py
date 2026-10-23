@@ -37,7 +37,7 @@ from docx.shared import Cm, Pt, RGBColor
 from _shared import core
 
 from . import layout as layout_mod
-from . import sources, store, tpl_design
+from . import sources, store, tpl_design, partlib
 
 EXPORT_SCHEMA = "m6.export/v1"
 
@@ -1354,6 +1354,26 @@ def _render_closing(doc, colors, fill, dark=False):
     _set_font(r, None, size=Pt(12), east="宋体" if dark else "仿宋")
 
 
+def _render_part(doc, part_spec, fill, colors, dark=False):
+    """按部件渲染（P2 部件库）：逐段文本模板 + 占位符填充 + 样式应用；pageBreak 部件加分页。
+
+    part_spec：m6.part/v1 部件里 cover/colophon/closing 段的 {paragraphs:[{text,style}], pageBreak}。"""
+    paras = (part_spec or {}).get("paragraphs") or []
+    for para in paras:
+        p = doc.add_paragraph()
+        style = para.get("style") or {}
+        align = {"center": WD_ALIGN_PARAGRAPH.CENTER, "right": WD_ALIGN_PARAGRAPH.RIGHT,
+                 "left": WD_ALIGN_PARAGRAPH.LEFT}.get(style.get("align"))
+        if align is not None:
+            p.alignment = align
+        r = p.add_run(_sub_fill(para.get("text", ""), fill))
+        _set_font(r, None, size=Pt(style.get("size") or 12), bold=style.get("bold"),
+                  color=colors["heading"] if style.get("colorHeading") else None,
+                  east=style.get("east") or ("宋体" if dark else "仿宋"))
+    if part_spec.get("pageBreak") and not dark:
+        doc.add_page_break()
+
+
 def cmd_tech_export(args):
     ent = sources.get_ent(args)
     proj = sources.proj_dir(ent, args.project)
@@ -1368,15 +1388,27 @@ def cmd_tech_export(args):
     # 派生 layout 覆盖章节树 layout（--override 仍最高）；暗标铁律由 dark_derived 先行落实
     template_doc = None
     tpl_fill = {}
+    part_by_part = {}
     tpl_path = getattr(args, "template", "") or ""
     if tpl_path:
         _, template_doc = tpl_design.load_template(args, tpl_path)
-        ok, issues = tpl_design.validate_template(template_doc, presets_doc)
+        ok, issues = tpl_design.validate_template(template_doc, presets_doc, tpl_design._parts_index(args))
         if not ok:
             raise core.LibraryError("模板校验未通过，拒绝导出：%s（%s）" % (tpl_path, issues[0]["msg"]))
         tpl_layout, _ = tpl_design.dark_derived(template_doc, presets_doc)
         tree_layout = tpl_layout
         tpl_fill = _fill_map(args, template_doc)
+        # P2 部件库：structure 项的 partRef 引用部件（渲染时按部件版式输出）
+        for it in template_doc.get("structure", []):
+            ref = (it or {}).get("partRef")
+            if not ref:
+                continue
+            part_doc = partlib.load_part(args, ref)
+            key = it.get("part")
+            spec = (part_doc.get("parts") or {}).get(key)
+            if spec is None:
+                raise core.LibraryError("部件 %s 缺少 %s 段（tpl-part --show %s 查看）" % (ref, key, ref))
+            part_by_part[key] = spec
     cfg = resolve_presets(args, presets_doc, tree_layout)
     dark = _is_dark(args, tree_layout, cfg)
     if dark:
@@ -1503,11 +1535,17 @@ def cmd_tech_export(args):
     except Exception:
         samples_dir = None
     if cover_ok and has("cover"):
-        _render_cover(doc, cover_id, colors, args.project, enterprise, dark, samples_dir=samples_dir)
+        if "cover" in part_by_part:
+            _render_part(doc, part_by_part["cover"], tpl_fill, colors, dark)
+        else:
+            _render_cover(doc, cover_id, colors, args.project, enterprise, dark, samples_dir=samples_dir)
 
-    # 扉页（模板 structure 含 colophon 时；P1 部件渲染）
+    # 扉页（模板 structure 含 colophon 时；P1 部件渲染 / P2 部件库 partRef）
     if has("colophon"):
-        _render_colophon(doc, colors, tpl_fill, dark)
+        if "colophon" in part_by_part:
+            _render_part(doc, part_by_part["colophon"], tpl_fill, colors, dark)
+        else:
+            _render_colophon(doc, colors, tpl_fill, dark)
 
     # 目录 + TOC 域（tocStyle：标题样式 / 页码开关 / 大纲级别）
     toc_parsed = _parse_toc(toc_row)
@@ -1548,9 +1586,12 @@ def cmd_tech_export(args):
             renderer.begin_chapter(idx + 1)
             renderer.render_md(body, colors["tableFill"])
 
-    # 结尾页（模板 structure 含 closing 时；P1 部件渲染）
+    # 结尾页（模板 structure 含 closing 时；P1 部件渲染 / P2 部件库 partRef）
     if has("closing"):
-        _render_closing(doc, colors, tpl_fill, dark)
+        if "closing" in part_by_part:
+            _render_part(doc, part_by_part["closing"], tpl_fill, colors, dark)
+        else:
+            _render_closing(doc, colors, tpl_fill, dark)
 
     # 页眉页脚（headerFooters 方案：模板三态 + 页脚样式 + 角点装饰）
     page_mode = _page_mode(hf)
