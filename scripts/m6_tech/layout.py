@@ -179,6 +179,17 @@ def _print_group(doc, group, label, default):
             print("  %-18s %s" % ("", row["docx"]))
 
 
+def _sample_images():
+    """→ 样张配图目录（共享资源/技术标风格/样张素材）；cwd 或其父目录下定位，找不到返回 None。"""
+    from pathlib import Path
+
+    for base in (Path.cwd(), Path.cwd().parent):
+        d = base / "共享资源" / "技术标风格" / "样张素材"
+        if d.is_dir():
+            return d
+    return None
+
+
 def _builtin_preview_fixture(root):
     """内置样张 fixture：共享资源预设 + 预览企业/项目级/预览项目/技术标（3 章精简正文）。"""
     import shutil
@@ -208,6 +219,21 @@ def _builtin_preview_fixture(root):
                          ("ch-03", "第三章 项目监理机构及人员配备"))],
     }
     (tech / "章节树.json").write_text(json.dumps(tree, ensure_ascii=False), encoding="utf-8")
+    img_dir = _sample_images()
+    img = {}
+    if img_dir is not None:
+        for key, fname in (
+            ("site", "样张_施工现场全景.jpg"),
+            ("survey", "样张_水准测量放线.jpg"),
+            ("meeting", "样张_图纸会审.jpg"),
+        ):
+            p = img_dir / fname
+            if p.is_file():
+                img[key] = str(p)
+    def _fig(key, cap):
+        if key not in img:
+            return ""
+        return "![%s](%s)\n" % (cap, img[key])
     bodies = {
         "ch-01": (
             "# 一、工程概况\n"
@@ -220,12 +246,16 @@ def _builtin_preview_fixture(root):
             "| --- | --- | --- |\n"
             "| 1 | 质量目标 | 三检制、样板引路 |\n"
             "| 2 | 进度目标 | 关键线路周报纠偏 |\n"
+            + _fig("site", "施工现场全景")
+            + "现场主体结构已施工至十层，安全防护与绿色施工措施同步落实。\n"
             "### 1. 监理工作范围\n"
             "施工阶段监理，含土建、安装、装饰、智能化、室外工程等全部专业。\n"),
         "ch-02": (
             "# 一、监理工作依据\n"
             "- 国家和地方有关工程建设的法律、法规与规章；\n"
             "- 《建设工程监理规范》GB/T 50319-2013。\n"
+            + _fig("survey", "现场水准测量")
+            + "现场监理人员正在开展水准测量放线复核，实测实量数据同步录入监理台账。\n"
             "## （一）监理工作目标\n"
             "质量达到一次性验收合格标准；进度满足合同节点要求；投资控制在批准概算内。\n"
             "### 1. 监理工作制度\n"
@@ -241,7 +271,9 @@ def _builtin_preview_fixture(root):
             "### 1. 仪器设备配置\n"
             "配备全站仪、水准仪、回弹仪等常规检测仪器及监理信息化管理平台。\n"
             "- 全站仪、水准仪、回弹仪等常规检测仪器\n"
-            "- 监理信息化管理平台\n"),
+            "- 监理信息化管理平台\n"
+            + _fig("meeting", "监理例会图纸会审")
+            + "监理例会与图纸会审制度保障参建各方信息畅通，重大问题及时协调解决。\n"),
     }
     for cid, body in bodies.items():
         (tech / "章节" / cid / "正文.md").write_text(body, encoding="utf-8")

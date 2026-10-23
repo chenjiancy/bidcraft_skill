@@ -10,7 +10,7 @@ ITEMS = [
     ("single-column", "单栏流式（基准）"),
     ("tabular", "表格化布局"),
     ("card", "卡片式布局"),
-    ("image-left", "左图右文（fixture 无图→降级）"),
+    ("image-left", "左图右文（真实配图）"),
 ]
 CELL_W, GAP, COLS = 430, 20, 2
 fonts = []
