@@ -332,6 +332,7 @@ body.dark .dark-toggle .sw::after{left:17px}
 @media (max-width:860px){
   .context{display:none}
   .resizer{display:none}
+  #bridgeBtn{display:none}
   .expert-grid,.book-grid,.act-grid,.asset-grid,.comp-grid{grid-template-columns:1fr}
   .stat-row{grid-template-columns:repeat(2,1fr)}
   .stat-row>*{min-width:0}
@@ -382,6 +383,9 @@ body.dark .dark-toggle .sw::after{left:17px}
       <input placeholder="全局搜索（规划中）" disabled>
     </div>
     <button class="dark-toggle" id="darkToggle"><span class="sw"></span>暗标</button>
+    <button class="top-ic" id="bridgeBtn" onclick="toggleBridge()" title="本地联调开关（CLI 桥）">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>
+    </button>
     <button class="top-ic" onclick="toast('通知中心在后续迭代实现（规划中）')">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
     </button>
@@ -1362,6 +1366,29 @@ body.dark .dark-toggle .sw::after{left:17px}
           <div class="wz-sub">git 分支 feat/tpl-inplace-relax，已提交：a333d0b V1–V3 / 9cc98eb 任务9 M6 收尾 / fa32619 风格屏 / 6513084 素材库 / 0b4be8d 向导+真实流程 / 332c8c5 模板库 / fd46922 公司管理。</div>
         </div>
       </div>
+
+      <!-- P7 本地联调命令台（B：真实 CLI 调用链） -->
+      <div class="dev-panel">
+        <div class="dev-h">P7 · 本地联调命令台<span class="sub">ui_cli_bridge.py → scripts/bidcraft.py</span></div>
+        <div class="dev-b">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <span class="ctx-tag" id="bridgeState" style="background:#9aa3b8">桥未检测</span>
+            <span style="font-size:12px;color:var(--txt2)">先运行：python dev/prototypes/ui_cli_bridge.py --port 8765</span>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+            <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px" onclick="bridgeSetCmd(['tech-status'])">tech-status</button>
+            <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px" onclick="bridgeSetCmd(['tech-layout','--list'])">tech-layout --list</button>
+            <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px" onclick="bridgeSetCmd(['tech-check','--project','市政务服务中心项目'])">tech-check</button>
+            <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px" onclick="bridgeSetCmd(['tech-export','--project','市政务服务中心项目'])">tech-export</button>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <input id="bridgeCmd" value='["tech-status"]' spellcheck="false"
+                   style="flex:1;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;font-family:Consolas,monospace;font-size:12px">
+            <button class="btn btn-primary" onclick="bridgeExec()">执行</button>
+          </div>
+          <div style="background:#0f172a;border-radius:10px;padding:10px 12px;color:#c9d4e8;font-family:Consolas,monospace;font-size:12px;white-space:pre-wrap;max-height:260px;overflow:auto" id="bridgeOut">等待执行…（显示 stdout / err / 产物路径）</div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -1509,6 +1536,45 @@ body.dark .dark-toggle .sw::after{left:17px}
     clearTimeout(t._h); t._h=setTimeout(function(){t.classList.remove('show')},2400);
   }
   window.toast=toast;
+
+  // ---- 本地联调桥（B：真实 CLI 调用链）----
+  var BRIDGE_URL='http://127.0.0.1:8765';
+  var bridgeOn=false;
+  function setBridgeState(txt,on){
+    var el=document.getElementById('bridgeState');
+    if(!el) return;
+    el.textContent=txt;
+    el.style.background=on?'#16a34a':'#9aa3b8';
+  }
+  function checkBridge(){
+    fetch(BRIDGE_URL+'/health').then(function(r){return r.json()}).then(function(j){
+      bridgeOn=!!(j&&j.ok); setBridgeState(bridgeOn?'桥已连接（'+j.root+'）':'桥未连接',bridgeOn);
+    }).catch(function(){bridgeOn=false; setBridgeState('桥未连接（未启动）',false)});
+  }
+  function toggleBridge(){
+    if(bridgeOn){ setBridgeState('已断开（关闭浏览器联调）',false); bridgeOn=false; toast('本地联调已关闭；按钮恢复占位提示'); }
+    else{ checkBridge(); toast(bridgeOn?'本地联调已开启：命令台将真实执行 CLI':'桥未启动，请先运行 ui_cli_bridge.py'); }
+  }
+  window.toggleBridge=toggleBridge; window.checkBridge=checkBridge;
+  function bridgeSetCmd(arr){ var el=document.getElementById('bridgeCmd'); if(el) el.value=JSON.stringify(arr); }
+  window.bridgeSetCmd=bridgeSetCmd;
+  function bridgeExec(){
+    var el=document.getElementById('bridgeCmd'); var out=document.getElementById('bridgeOut');
+    if(!el||!out) return;
+    var arr; try{ arr=JSON.parse(el.value); }catch(e){ out.textContent='参数 JSON 解析失败：'+e; return; }
+    if(!Array.isArray(arr)){ out.textContent='需为命令参数数组，如 ["tech-status"]'; return; }
+    out.textContent='执行中：python scripts/bidcraft.py '+arr.join(' ')+' …';
+    fetch(BRIDGE_URL+'/exec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cmd:arr})})
+      .then(function(r){return r.json()}).then(function(j){
+        if(!j.ok){ out.textContent='桥错误：'+(j.error||'未知'); return; }
+        var t='exit='+j.code+'\n---- stdout ----\n'+j.out;
+        if(j.err){ t+='\n---- stderr ----\n'+j.err; }
+        if(j.artifacts&&j.artifacts.length){ t+='\n---- 产物 ----\n'+j.artifacts.join('\n'); }
+        out.textContent=t;
+      }).catch(function(e){ out.textContent='请求失败（桥未启动？）：'+e; });
+  }
+  window.bridgeExec=bridgeExec;
+  if(document.readyState!=='loading'){ checkBridge(); } else { window.addEventListener('DOMContentLoaded',checkBridge); }
 
   function toggleCtx(){
     var collapsed=ctxBar.classList.toggle('collapsed');
