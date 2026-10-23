@@ -224,6 +224,36 @@ body.dark .dark-toggle .sw::after{left:17px}
 .act-chip.prot{background:#fbe7e5;color:var(--bad)}
 .act-chip.recy{background:#fdf0dc;color:var(--warn)}
 
+/* ===== 向导 ===== */
+.wz-step{display:none}
+.wz-step.active{display:block}
+.dropzone{border:2px dashed #c7cfdd;border-radius:12px;padding:34px 20px;text-align:center;color:#7a8193;background:#fafbfd;cursor:pointer;font-size:13px;transition:border-color .15s,background .15s}
+.dropzone:hover{border-color:var(--brand);background:#f2f6fd;color:var(--brand)}
+.file-row{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:9px;padding:9px 12px;margin-top:8px;font-size:12.5px}
+.file-row .fn{font-weight:700;color:var(--ink)}
+.wz-form{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.wz-field label{display:block;font-size:12px;color:var(--dim);margin-bottom:4px}
+.wz-field input{width:100%;border:1px solid var(--line);border-radius:7px;padding:7px 10px;font-size:12.8px;color:var(--ink);background:#fff}
+.wz-field input:disabled{background:#f2f4f9;color:#8a93a8}
+.wz-judge{border:1px solid var(--line);border-radius:10px;padding:14px 16px;background:#fff;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.wz-judge .jt{font-size:13px;font-weight:700}
+.wz-judge .jd{font-size:12px;color:var(--dim);line-height:1.7}
+.chk-list{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+.chk-row{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid #f0f2f7;font-size:12.8px}
+.chk-row:last-child{border-bottom:none}
+.chk-row input{width:15px;height:15px;accent-color:var(--brand);flex:none}
+.chk-row .score{margin-left:auto;font-size:11px;color:var(--dim);white-space:nowrap}
+.wz-foot{display:flex;justify-content:space-between;margin-top:18px}
+.wz-sub{font-size:12px;color:var(--dim);margin-top:8px;line-height:1.7}
+.wz-opt{display:flex;gap:10px;flex-wrap:wrap}
+.wz-opt .opt{display:flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:9px;padding:9px 14px;font-size:12.8px;background:#fff;cursor:pointer}
+.wz-opt .opt input{accent-color:var(--brand)}
+.wz-opt .opt.on{border-color:var(--brand);background:#f2f6fd}
+.check-mini{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;padding:7px 0;border-bottom:1px dashed #eef1f7}
+.check-mini:last-child{border-bottom:none}
+.check-mini .dot{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex:none;margin-top:1px;background:#eef1f7;color:#5c6478}
+.check-mini .dot.on{background:#e2f4ec;color:#14784f}
+
 /* toast */
 #toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:#1f2937;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;box-shadow:0 6px 22px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:all .25s;z-index:99;max-width:88vw}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -288,7 +318,7 @@ body.dark .dark-toggle .sw::after{left:17px}
     </a>
   </nav>
   <div class="top-right">
-    <button class="btn btn-primary" onclick="toast('新建标书向导在后续迭代实现（规划中）')">＋ 新建标书</button>
+    <button class="btn btn-primary" onclick="go('wizard')">＋ 新建标书</button>
     <div class="top-search">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9aa3b8" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
       <input placeholder="全局搜索（规划中）" disabled>
@@ -310,7 +340,7 @@ body.dark .dark-toggle .sw::after{left:17px}
   <!-- 工作台上下文 -->
   <div class="ctx-group active" id="ctx-home">
     <div class="ctx-h">快捷入口</div>
-    <button class="ctx-item" onclick="toast('新建标书向导在后续迭代实现（规划中）')">
+    <button class="ctx-item" onclick="go('wizard')">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>新建标书
     </button>
     <button class="ctx-item" onclick="toast('导入招标文件在后续迭代实现（规划中）')">
@@ -347,12 +377,18 @@ body.dark .dark-toggle .sw::after{left:17px}
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg>商务标<span class="c-b">—</span>
     </button>
     <div class="ctx-sec">
-      <div class="ctx-h">项目流程</div>
-      <button class="ctx-item" onclick="toast('质量检查面板在后续迭代实现（规划中）')">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>质量检查
+      <div class="ctx-h">项目流程（产物目录）</div>
+      <button class="ctx-item" onclick="go('wizard')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>招标解析<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:6px"><path d="M9 18l6-6-6-6"/></svg>
       </button>
-      <button class="ctx-item" onclick="toast('导出交付在后续迭代实现（规划中）')">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>导出交付
+      <button class="ctx-item" onclick="go('editor')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg>技术标（M6 状态机）<span class="c-b">60%</span>
+      </button>
+      <button class="ctx-item" onclick="toast('标书检查（M7 双通道）在后续迭代实现（规划中）：机器检查 / 检查要点 / 双通道差异 / 检查报告')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>标书检查（M7 双通道）
+      </button>
+      <button class="ctx-item" onclick="toast('模拟评标与补救（M8→M10）在后续迭代实现（规划中）：失分补救任务单——能力问题素材补齐 vs 响应问题')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg>模拟评标 · 补救（M8/M10）
       </button>
     </div>
     <div class="ctx-sec">
@@ -370,18 +406,18 @@ body.dark .dark-toggle .sw::after{left:17px}
     <div class="ctx-h">技术标 · 监理大纲 <span class="ctx-tag dark-tag" id="ctxTag2">暗标</span></div>
     <div class="ctx-h" style="padding-top:4px">章节（10 章）</div>
     <div id="ctxTree" style="margin-top:2px">
-      <div class="ctx-item active" data-ch="1">第一章 工程概况与监理工作范围</div>
-      <div class="ctx-item" data-ch="2" style="padding-left:24px">1.1 工程概况</div>
-      <div class="ctx-item" data-ch="3" style="padding-left:24px">1.2 监理工作范围</div>
-      <div class="ctx-item" data-ch="4">第二章 监理工作依据、目标与内容</div>
-      <div class="ctx-item" data-ch="5">第三章 项目监理机构及人员配备</div>
-      <div class="ctx-item" data-ch="6">第四章 监理工作程序与方法</div>
-      <div class="ctx-item" data-ch="7">第五章 质量控制体系与措施</div>
-      <div class="ctx-item" data-ch="8">第六章 进度控制体系与措施</div>
-      <div class="ctx-item" data-ch="9">第七章 投资控制体系与措施</div>
-      <div class="ctx-item" data-ch="10">第八章 安全文明施工与环境保护监理</div>
-      <div class="ctx-item" data-ch="11">第九章 合同信息管理与组织协调</div>
-      <div class="ctx-item" data-ch="12">第十章 监理工作制度与资料管理</div>
+      <div class="ctx-item active" data-ch="1">第一章 工程概况与监理工作范围<span class="c-b" style="background:#2c8a62">CONFIRMED</span></div>
+      <div class="ctx-item" data-ch="2" style="padding-left:24px">1.1 工程概况<span class="c-b" style="background:#5b79b8">WRITTEN</span></div>
+      <div class="ctx-item" data-ch="3" style="padding-left:24px">1.2 监理工作范围<span class="c-b" style="background:#5b79b8">WRITTEN</span></div>
+      <div class="ctx-item" data-ch="4">第二章 监理工作依据、目标与内容<span class="c-b" style="background:#8a6bc8">CHECKED</span></div>
+      <div class="ctx-item" data-ch="5">第三章 项目监理机构及人员配备<span class="c-b" style="background:#d0883c">CONTEXT_READY</span></div>
+      <div class="ctx-item" data-ch="6">第四章 监理工作程序与方法<span class="c-b">PENDING</span></div>
+      <div class="ctx-item" data-ch="7">第五章 质量控制体系与措施<span class="c-b">PENDING</span></div>
+      <div class="ctx-item" data-ch="8">第六章 进度控制体系与措施<span class="c-b">PENDING</span></div>
+      <div class="ctx-item" data-ch="9">第七章 投资控制体系与措施<span class="c-b">PENDING</span></div>
+      <div class="ctx-item" data-ch="10">第八章 安全文明施工与环境保护监理<span class="c-b">PENDING</span></div>
+      <div class="ctx-item" data-ch="11">第九章 合同信息管理与组织协调<span class="c-b">PENDING</span></div>
+      <div class="ctx-item" data-ch="12">第十章 监理工作制度与资料管理<span class="c-b">PENDING</span></div>
     </div>
     <div class="ctx-sec">
       <div class="ctx-h">评分点 / 素材</div>
@@ -428,20 +464,33 @@ body.dark .dark-toggle .sw::after{left:17px}
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19L20 4M8 20h12M4 16h12"/></svg>图纸图表<span class="c-b" id="libN4"></span>
     </button>
     <div class="ctx-sec">
-      <div class="ctx-h">快捷操作</div>
-      <button class="ctx-item" onclick="toast('批量上传素材在后续迭代实现（规划中）：支持拖拽上传、OCR 自动归档命名')">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4m0 0L8 8m4-4l4 4"/><path d="M4 20h16"/></svg>上传素材
+      <div class="ctx-h">快捷操作（M1 命令）</div>
+      <button class="ctx-item" onclick="toast('收件箱流程在后续迭代实现（规划中）：open-inbox → upload → sync-inbox → close-inbox')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4m0 0L8 8m4-4l4 4"/><path d="M4 20h16"/></svg>收件箱（open / sync / close）
       </button>
-      <button class="ctx-item" onclick="toast('素材归档在后续迭代实现（规划中）：按关键字重命名 + 多页加页码')">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>归档素材
+      <button class="ctx-item" onclick="toast('素材命名与分类在后续迭代实现（规划中）：build-name 按关键字重命名 + classify 分类入库')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>命名与分类（build-name / classify）
       </button>
-      <button class="ctx-item" onclick="toast('回收站在后续迭代实现（规划中）：删除先进回收站，默认保留 30 天')">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>回收站
+      <button class="ctx-item" onclick="toast('变更保护在后续迭代实现（规划中）：归档素材变更须 propose 提议 → apply 应用')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>变更保护（propose / apply）
+      </button>
+      <button class="ctx-item" onclick="toast('回收站在后续迭代实现（规划中）：trash 删除进回收站 → cleanup-trash 默认保留 30 天后清理')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>回收站（trash / cleanup 30 天）
       </button>
     </div>
     <div class="ctx-sec">
       <div class="ctx-h">保护规则</div>
       <div style="padding:4px 11px;font-size:12px;color:var(--dim);line-height:1.8">素材一经归档即受保护，任何变更须走 propose / apply 流程，不得随意改动。</div>
+    </div>
+  </div>
+
+  <!-- 向导上下文 -->
+  <div class="ctx-group" id="ctx-wizard">
+    <div class="ctx-h">新建标书向导</div>
+    <div id="wzNav" style="margin-top:2px"></div>
+    <div class="ctx-sec">
+      <div class="ctx-h">提示</div>
+      <div style="padding:4px 11px;font-size:12px;color:var(--dim);line-height:1.8" id="wzTip">当前项目：新建（尚未关联）</div>
     </div>
   </div>
 </aside>
@@ -463,8 +512,8 @@ body.dark .dark-toggle .sw::after{left:17px}
         <p>专属流程串起标书全流程：招标解析 → 暗标/明标判定 → 目录 → 分章生成 → 质量检查 → 导出交付。技术标排版预设 15 组 × 10 套，风格即装即用。</p>
       </div>
       <div class="bb">
-        <button class="btn btn-ghost" style="background:#fff;border:none;color:var(--brand)" onclick="toast('新建标书向导在后续迭代实现（规划中）')">新建标书</button>
-        <button class="btn" style="background:rgba(255,255,255,.18);color:#fff" onclick="toast('招标解析入口见向导（规划中）')">导入招标文件</button>
+        <button class="btn btn-ghost" style="background:#fff;border:none;color:var(--brand)" onclick="go('wizard')">新建标书</button>
+        <button class="btn" style="background:rgba(255,255,255,.18);color:#fff" onclick="go('wizard')">导入招标文件</button>
       </div>
     </div>
 
@@ -568,15 +617,15 @@ body.dark .dark-toggle .sw::after{left:17px}
   <!-- 编辑器 -->
   <section class="view" id="view-editor">
     <div class="editor-steps">
-      <span class="estep done"><span class="e">1</span>解析招标文件</span>
+      <span class="estep done"><span class="e">1</span>招标解析（M4）</span>
       <span class="step-line" style="flex:1;min-width:24px;height:2px;background:#a9d6c4;margin:0 10px"></span>
-      <span class="estep done"><span class="e">2</span>生成目录</span>
+      <span class="estep done"><span class="e">2</span>章节树与覆盖（tech-outline）</span>
       <span class="step-line" style="flex:1;min-width:24px;height:2px;background:#a9d6c4;margin:0 10px"></span>
-      <span class="estep cur"><span class="e">3</span>编写正文（当前）</span>
+      <span class="estep done"><span class="e">3</span>上下文包（tech-ctx）</span>
       <span class="step-line" style="flex:1;min-width:24px;height:2px;background:var(--line);margin:0 10px"></span>
-      <span class="estep"><span class="e">4</span>质量检查</span>
+      <span class="estep cur"><span class="e">4</span>正文编写与校验（tech-parse，当前）</span>
       <span class="step-line" style="flex:1;min-width:24px;height:2px;background:var(--line);margin:0 10px"></span>
-      <span class="estep"><span class="e">5</span>导出交付</span>
+      <span class="estep"><span class="e">5</span>检查与确认（tech-check / report）</span>
     </div>
 
     <div class="editor-grid">
@@ -592,14 +641,13 @@ body.dark .dark-toggle .sw::after{left:17px}
           <div class="para" id="p3" style="color:#c3cad8;border-left:3px solid #e5e9f2;padding-left:10px;text-indent:0">[示例占位段落：AI 生成正文引擎在此续写，可插入图表、表格、现场照片（占页 ≤1/3）、图上分散彩色标签等元素 —— 规划中]</div>
         </div>
         <div class="toolbar">
-          <button class="btn btn-primary" onclick="toast('AI 正文生成在后续迭代实现（规划中）')">AI 生成 / 续写（规划中）</button>
-          <button class="btn btn-ghost" onclick="toast('插入图表在后续迭代实现（规划中）')">插入图表</button>
-          <button class="btn btn-ghost" onclick="toast('插入表格在后续迭代实现（规划中）')">插入表格</button>
-          <button class="btn btn-ghost" onclick="toast('插入现场图片在后续迭代实现（规划中）')">插入现场图片</button>
-          <button class="btn btn-plain" onclick="toast('整章样式沿用当前预设')">沿用预设</button>
+          <button class="btn btn-primary" onclick="toast('AI 正文生成在后续迭代实现（规划中）：writer 按上下文包生成，旧正文进 .rewrite-trash，回读比对后 WRITTEN')">AI 生成 / 续写（规划中）</button>
+          <button class="btn btn-ghost" onclick="toast('tech-parse 在后续迭代实现（规划中）：非空 / 字数 / 占位符 / 敏感词校验 → 自述块拆出 → 落盘回读 → WRITTEN')">校验正文 → WRITTEN</button>
+          <button class="btn btn-ghost" onclick="toast('tech-check 在后续迭代实现（规划中）：通道A 六项检查——覆盖 / 结构 / 篇幅 / 敏感词 / 一致性 / 占位')">通道A 六项检查</button>
+          <button class="btn btn-plain" onclick="toast('tech-report 在后续迭代实现（规划中）：闸门② HTML 检查报告，--confirm 记 confirmLog → CONFIRMED')">检查报告（闸门②）</button>
         </div>
         <div class="statusbar">
-          <span>章节：1 / 10</span><span>字数：约 3,600</span><span>页数估算：1.5 页 / 章</span><span id="edStyleNote">当前预设：深靛蓝 · 标准公文 A4 · 政务公文风</span>
+          <span>章节：第一章 / 共 10 章</span><span>状态机：<b style="color:var(--brand)">WRITING</b> → WRITTEN</span><span>字数：约 3,600 / 预算 4,000</span><span>页数预算：900（招标抽取）</span><span id="edStyleNote">当前预设：深靛蓝 · 标准公文 A4 · 政务公文风</span>
         </div>
       </div>
 
@@ -700,8 +748,8 @@ body.dark .dark-toggle .sw::after{left:17px}
         <div style="font-size:12.5px;color:var(--dim)">企业级共享素材 · 归档即受保护（propose / apply）· 多页素材自动加页码</div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-ghost" onclick="toast('批量上传在后续迭代实现（规划中）')">上传素材</button>
-        <button class="btn btn-primary" onclick="toast('归档流程在后续迭代实现（规划中）：OCR 识别 → 关键字重命名 → 入库保护')">归档</button>
+        <button class="btn btn-ghost" onclick="toast('上传在后续迭代实现（规划中）：open-inbox → upload → sync-inbox → close-inbox')">上传（upload）</button>
+        <button class="btn btn-primary" onclick="toast('归档入库在后续迭代实现（规划中）：build-name 按关键字重命名（多页加页码）→ classify 分类 → 受保护')">归档入库</button>
       </div>
     </div>
 
@@ -718,6 +766,135 @@ body.dark .dark-toggle .sw::after{left:17px}
     <div class="lib-note">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex:none;margin-top:2px"><path d="M12 3l1.7 4.8L18 9.5l-4.3 1.7L12 16l-1.7-4.8L6 9.5l4.3-1.7z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>
       <div><b>素材保护规则：</b>素材一旦归档即受保护，任何更改必须走标准流程（propose / apply / 回收站）；删除先进回收站，默认保留 30 天后清理。联网搜索素材版权风险高，不用于事实性内容；AI 生成素材统一画风、无版权问题。</div>
+    </div>
+  </section>
+
+  <!-- 新建标书向导 -->
+  <section class="view" id="view-wizard">
+    <div class="editor-steps" id="wzSteps"></div>
+
+    <div class="card" style="margin-top:14px">
+      <div class="card-b" style="padding:20px 22px">
+        <!-- 步骤 1：招标解析（M4 双通道） -->
+        <div class="wz-step active" id="wz1">
+          <div style="font-size:15px;font-weight:800;margin-bottom:4px">步骤 1 · 招标解析（M4 双通道）</div>
+          <div class="wz-sub">通道A 文档解析（确定性抽取）+ 通道B 投标要点（agent 语义）→ 双通道差异 → 投标要点 HTML 人工核对（闸门①），核对通过后才进入下游。</div>
+          <div class="dropzone" onclick="toast('招标文件上传在后续迭代实现（规划中）：tender-parse → tender-diff → tender-report')">拖拽招标文件到此处，或点击选择文件</div>
+          <div class="file-row"><span class="fn">市政务服务中心项目监理招标文件.pdf</span><span style="margin-left:auto;color:var(--ok);font-weight:700">已解析</span></div>
+          <div class="file-row"><span class="fn">答疑纪要（第 1 次）.pdf</span><span style="margin-left:auto;color:var(--warn)">待导入</span></div>
+          <div style="margin-top:10px">
+            <div class="wz-sub" style="margin-bottom:4px">解析产物</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <span class="act-chip arch">文档解析.json · 已生成</span>
+              <span class="act-chip recy">投标要点.json · 待核对</span>
+              <span class="act-chip web">双通道差异.json · 2 项待裁决</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <button class="btn btn-ghost" onclick="toast('投标要点 HTML 核对（闸门①）在后续迭代实现（规划中）：以招标原文为最终依据，裁决双通道差异')">核对投标要点（闸门①）</button>
+            <button class="btn btn-ghost" onclick="toast('重新解析在后续迭代实现（规划中）：tender-parse 重新生成文档解析.json')">重新解析</button>
+          </div>
+        </div>
+
+        <!-- 步骤 2：判定与初始化（tech-init） -->
+        <div class="wz-step" id="wz2">
+          <div style="font-size:15px;font-weight:800;margin-bottom:10px">步骤 2 · 判定与初始化（tech-init）</div>
+          <div class="wz-form">
+            <div class="wz-field"><label>项目名称</label><input value="市政务服务中心项目监理" disabled></div>
+            <div class="wz-field"><label>招标编号</label><input value="MAS-2026-FJ-018" disabled></div>
+            <div class="wz-field"><label>招标解析目录</label><input value="项目级/市政务服务中心项目/招标解析" disabled></div>
+            <div class="wz-field"><label>页数上限（从招标文件抽取）</label><input value="900 页" disabled></div>
+          </div>
+          <div class="wz-judge" style="margin-top:14px">
+            <div>
+              <div class="jt">标书模式判定：<span id="wzJudgeVal" class="ctx-tag dark-tag">暗标</span></div>
+              <div class="jd" id="wzJudgeDesc">判定依据：投标要点文本含「暗标」→ 自动判定暗标；版式受招标条款硬约束（全黑 / 无装饰 / 无页眉页脚），可用 --bid-mode 手动覆盖。</div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn btn-ghost" onclick="toast('重新抽取判定在后续迭代实现（规划中）：重新读取投标要点判定标书模式与页数上限')">重新抽取判定</button>
+              <button class="btn btn-ghost" onclick="manualJudge()">手动覆盖（--bid-mode）</button>
+            </div>
+          </div>
+          <div class="wz-sub" style="margin-top:10px">初始化动作：建技术标目录骨架（章节树 / 上下文包 / 状态文件 m6.state/v1）→ 校验 M4 产物完整 → 落设置。</div>
+        </div>
+
+        <!-- 步骤 3：章节树草案与覆盖矩阵（tech-outline） -->
+        <div class="wz-step" id="wz3">
+          <div style="font-size:15px;font-weight:800;margin-bottom:4px">步骤 3 · 章节树草案与覆盖矩阵（tech-outline）</div>
+          <div class="wz-sub">校验 agent 章节树草案 → 回填系统字段 → 覆盖矩阵（评分点 ↔ 章节）→ 落盘；闸门①：存在未覆盖或页数超限则拒绝，须 --confirm 确认。</div>
+          <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">
+            <span class="act-chip arch">章节树草案.json · 已通过校验</span>
+            <span class="act-chip web">覆盖矩阵 · 评分点覆盖率 90%</span>
+            <span class="act-chip recy">未覆盖 1 项 · BIM 应用（待补充）</span>
+            <span class="act-chip">页数预算：900 页（超限将拒绝）</span>
+          </div>
+          <div class="chk-list" id="wzChk" style="margin-top:12px"></div>
+          <div class="wz-sub" id="wzChCount" style="margin-top:8px">已选 10 章 · 预计成稿约 900–1100 页</div>
+          <button class="btn btn-primary" style="margin-top:12px" onclick="toast('确认章节树（闸门①）在后续迭代实现（规划中）：存在未覆盖/页数超限时需 --confirm 确认，否则拒绝')">确认章节树（闸门①）</button>
+        </div>
+
+        <!-- 步骤 4：上下文包与正文编写（tech-ctx → writer → tech-parse） -->
+        <div class="wz-step" id="wz4">
+          <div style="font-size:15px;font-weight:800;margin-bottom:10px">步骤 4 · 上下文包与正文编写（tech-ctx → writer → tech-parse）</div>
+          <div class="wz-sub">逐章生成 m6.ctx/v1 上下文包（PENDING → CONTEXT_READY）→ AI 编写正文 → 正文校验（非空 / 字数 / 占位符 / 敏感词）→ 落盘回读 → WRITTEN。</div>
+          <div class="chk-list" id="wzCtxList" style="margin-top:12px"></div>
+          <div style="margin-top:14px">
+            <div class="wz-sub" style="margin-bottom:6px">写作模式</div>
+            <div class="wz-opt">
+              <label class="opt on"><input type="radio" name="wzGen" checked onclick="toast('分批生成：逐章 WRITTEN 后继续（规划中）')">分批生成（逐章确认）</label>
+              <label class="opt"><input type="radio" name="wzGen" onclick="toast('整章生成：全量生成后统一检查（规划中）')">整章生成（全量）</label>
+            </div>
+          </div>
+          <div style="margin-top:14px">
+            <div class="wz-sub" style="margin-bottom:6px">排版预设（当前组合）</div>
+            <div class="wz-judge">
+              <div>
+                <div class="jt" id="wzPresetName">深靛蓝 · 单栏流式 · 政务公文风 · 标准公文 A4</div>
+                <div class="jd">页眉页脚：经典企业版（明标）· 图文比例：中图比 3:7 · 表格：三线表</div>
+              </div>
+              <button class="btn btn-ghost" onclick="go('style')">调整预设 →</button>
+            </div>
+          </div>
+          <div style="margin-top:14px" id="wzDarkNote"></div>
+        </div>
+
+        <!-- 步骤 5：检查与确认（tech-check → tech-report → T10 导出） -->
+        <div class="wz-step" id="wz5">
+          <div style="font-size:15px;font-weight:800;margin-bottom:10px">步骤 5 · 检查与确认（tech-check → tech-report → T10 导出）</div>
+          <div class="wz-sub">通道A 六项检查（覆盖 / 结构 / 篇幅 / 敏感词 / 一致性 / 占位）→ 闸门② HTML 检查报告（--confirm 记 confirmLog）→ T10 导出引擎生成可编辑 Word。</div>
+          <div style="margin-top:12px" id="wzCheckList">
+            <div class="check-mini"><span class="dot on">合</span>覆盖检查：章节 ↔ 评分点覆盖矩阵无未覆盖项</div>
+            <div class="check-mini"><span class="dot on">合</span>结构检查：章节树层级 / 编号 / 必填节完整</div>
+            <div class="check-mini"><span class="dot on">合</span>篇幅检查：预算字数与页数上限（招标抽取）达标</div>
+            <div class="check-mini"><span class="dot on" id="wzDarkDot">合</span>敏感词检查：单位名 / 标识 / 禁用表述（暗标项）</div>
+            <div class="check-mini"><span class="dot on">合</span>一致性检查：术语 / 编号 / 预设字段一致</div>
+            <div class="check-mini"><span class="dot on">合</span>占位检查：无残留占位符 / 未生成段落</div>
+          </div>
+          <div style="margin-top:14px">
+            <div class="wz-sub" style="margin-bottom:6px">闸门② 确认（tech-report）</div>
+            <div class="wz-judge">
+              <div>
+                <div class="jt">检查报告：<span class="ctx-tag ok">0 error · 0 warning</span></div>
+                <div class="jd">--confirm 确认后记 confirmLog → CONFIRMED；存在 error 需 --force + --note 备注。</div>
+              </div>
+              <button class="btn btn-ghost" onclick="toast('tech-report 闸门②在后续迭代实现（规划中）：HTML 检查报告 + confirmLog')">生成检查报告</button>
+            </div>
+          </div>
+          <div style="margin-top:14px">
+            <div class="wz-sub" style="margin-bottom:6px">导出选项（T10 导出引擎）</div>
+            <div class="wz-opt">
+              <label class="opt on"><input type="checkbox" checked onclick="toast('T10 导出在后续迭代实现（规划中）：生成可编辑 Word docx')">可编辑 Word（docx）</label>
+              <label class="opt"><input type="checkbox" onclick="toast('T10 导出在后续迭代实现（规划中）')">页眉页脚 / 封面一并生成</label>
+              <label class="opt"><input type="checkbox" onclick="toast('T10 导出在后续迭代实现（规划中）')">暗标条款格式注入</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="wz-foot">
+          <button class="btn btn-ghost" id="wzPrev" onclick="wzGo(curW-1)">上一步</button>
+          <button class="btn btn-primary" id="wzNext" onclick="wzNext()">下一步</button>
+        </div>
+      </div>
     </div>
   </section>
 </main>
@@ -792,7 +969,7 @@ body.dark .dark-toggle .sw::after{left:17px}
   function go(v){ location.hash='#/'+v; }
   window.go=go;
 
-  var VIEW_CTX={home:'ctx-home',project:'ctx-project',editor:'ctx-editor',style:'ctx-style',library:'ctx-library'};
+  var VIEW_CTX={home:'ctx-home',project:'ctx-project',editor:'ctx-editor',style:'ctx-style',library:'ctx-library',wizard:'ctx-wizard'};
 
   function showView(id){
     document.querySelectorAll('.view').forEach(function(s){s.classList.remove('active')});
@@ -809,7 +986,7 @@ body.dark .dark-toggle .sw::after{left:17px}
 
   window.addEventListener('hashchange',function(){
     var h=(location.hash||'#/home').replace('#','').replace(/^\//,'');
-    if(['home','project','editor','style','library'].indexOf(h)>-1) showView(h);
+    if(['home','project','editor','style','library','wizard'].indexOf(h)>-1) showView(h);
   });
   if(!location.hash) location.hash='#/home';
 
@@ -822,6 +999,7 @@ body.dark .dark-toggle .sw::after{left:17px}
       if(el) el.textContent=on?'暗标':'明标';
     });
     updateStyleUI();
+    if(window.wzSyncDark) wzSyncDark();
   }
   document.getElementById('darkToggle').addEventListener('click',function(){ setDarkMode(!document.body.classList.contains('dark')); toast(document.body.classList.contains('dark')?'已切换暗标：版式受招标条款硬约束':'已切换明标：可自由组合风格'); });
 
@@ -1024,6 +1202,122 @@ body.dark .dark-toggle .sw::after{left:17px}
     filterLib(chip.getAttribute('data-lib'),chip);
   });
   renderLib('all');
+
+  /* ---- 新建标书向导 ---- */
+  var curW=1;
+  var WZ_STEPS=['招标解析（M4）','判定与初始化','章节树与覆盖','上下文与正文','检查与确认'];
+  var WZ_CH=[
+    ['第一章 工程概况与监理工作范围','评分点：项目理解'],
+    ['第二章 监理工作依据、目标与内容','评分点：依据齐全性'],
+    ['第三章 项目监理机构及人员配备','评分点：人员配置'],
+    ['第四章 监理工作程序与方法','评分点：程序完整'],
+    ['第五章 质量控制体系与措施','评分点：质量措施'],
+    ['第六章 进度控制体系与措施','评分点：进度措施'],
+    ['第七章 投资控制体系与措施','评分点：投资措施'],
+    ['第八章 安全文明施工与环境保护监理','评分点：安全环保'],
+    ['第九章 合同信息管理与组织协调','评分点：合同信息'],
+    ['第十章 监理工作制度与资料管理','评分点：制度资料']
+  ];
+  var wzSelCh=0;
+  function renderWzSteps(){
+    var s=document.getElementById('wzSteps'); s.innerHTML='';
+    WZ_STEPS.forEach(function(n,i){
+      var sp=document.createElement('span');
+      sp.className='estep '+(i+1<curW?'done':(i+1===curW?'cur':''));
+      sp.innerHTML='<span class="e">'+(i+1<curW?'已':(i+1))+ '</span>'+n;
+      s.appendChild(sp);
+      if(i<WZ_STEPS.length-1){ var ln=document.createElement('span'); ln.className='step-line'; ln.style.cssText='flex:1;min-width:24px;height:2px;background:'+(i+1<curW?'#a9d6c4':'var(--line)')+';margin:0 10px'; s.appendChild(ln); }
+    });
+    var nav=document.getElementById('wzNav'); nav.innerHTML='';
+    WZ_STEPS.forEach(function(n,i){
+      var b=document.createElement('button'); b.className='ctx-item'; b.textContent=(i+1)+' · '+n;
+      if(i+1===curW) b.classList.add('active');
+      b.addEventListener('click',function(){ wzGo(i+1); });
+      nav.appendChild(b);
+    });
+  }
+  function renderWzChk(){
+    var box=document.getElementById('wzChk'); if(!box) return;
+    box.innerHTML='';
+    WZ_CH.forEach(function(c,i){
+      var row=document.createElement('label'); row.className='chk-row';
+      var cb=document.createElement('input'); cb.type='checkbox'; cb.checked=true;
+      cb.addEventListener('change',function(){
+        wzSelCh+=cb.checked?1:-1;
+        document.getElementById('wzChCount').textContent='已选 '+wzSelCh+' 章';
+        toast('目录已调整：'+(cb.checked?'增加':'移除')+'「'+c[0]+'」');
+      });
+      row.appendChild(cb);
+      var txt=document.createElement('span'); txt.textContent=c[0];
+      var sc=document.createElement('span'); sc.className='score'; sc.textContent=c[1];
+      row.appendChild(txt); row.appendChild(sc);
+      box.appendChild(row);
+    });
+    wzSelCh=10;
+  }
+  var WZ_CTX=['CONTEXT_READY','WRITTEN','WRITTEN','CHECKED','CONTEXT_READY','PENDING','PENDING','PENDING','PENDING','PENDING'];
+  function renderWzCtx(){
+    var box=document.getElementById('wzCtxList'); if(!box) return;
+    box.innerHTML='';
+    WZ_CH.forEach(function(c,i){
+      var row=document.createElement('div'); row.className='chk-row';
+      var st=WZ_CTX[i];
+      var badge=document.createElement('span');
+      badge.className='c-b';
+      badge.style.background=st==='CONTEXT_READY'?'#d0883c':st==='WRITTEN'?'#5b79b8':st==='CHECKED'?'#8a6bc8':'#b7bfd0';
+      badge.textContent=st;
+      var txt=document.createElement('span'); txt.textContent=(i+1<=9?'0'+(i+1):(i+1))+'. '+c[0];
+      var sc=document.createElement('span'); sc.className='score'; sc.textContent='上下文包 · 未生成'+(st==='PENDING'?'（待 tech-ctx）':'');
+      row.appendChild(badge); row.appendChild(txt); row.appendChild(sc);
+      box.appendChild(row);
+    });
+  }
+  function wzGo(n){
+    if(n<1||n>5) return;
+    curW=n;
+    document.querySelectorAll('.wz-step').forEach(function(s){s.classList.remove('active')});
+    var el=document.getElementById('wz'+n); if(el) el.classList.add('active');
+    document.getElementById('wzPrev').style.visibility=n===1?'hidden':'visible';
+    document.getElementById('wzNext').textContent=n===5?'生成标书文件（规划中）':'下一步';
+    renderWzSteps();
+    wzSyncDark();
+    window.scrollTo({top:0});
+  }
+  window.wzGo=wzGo;
+  function wzNext(){
+    if(curW<5){ wzGo(curW+1); }
+    else{ toast('T10 导出引擎在后续迭代实现（规划中）：tech-export 生成可编辑 Word（docx）'); }
+  }
+  window.wzNext=wzNext;
+  function manualJudge(){
+    var v=document.getElementById('wzJudgeVal');
+    var desc=document.getElementById('wzJudgeDesc');
+    if(v.textContent==='暗标'){
+      v.textContent='明标'; v.className='ctx-tag';
+      desc.textContent='手动覆盖为明标（--bid-mode=明标）：可自由组合风格（封面/配色/页眉页脚均可启用）；仍建议以投标要点判定为准。';
+      toast('已手动覆盖标书模式为明标');
+    } else {
+      v.textContent='暗标'; v.className='ctx-tag dark-tag';
+      desc.textContent='判定依据：投标要点文本含「暗标」→ 自动判定暗标；版式受招标条款硬约束（全黑 / 无装饰 / 无页眉页脚），可用 --bid-mode 手动覆盖。';
+      toast('已手动覆盖标书模式为暗标');
+    }
+  }
+  window.manualJudge=manualJudge;
+  function wzSyncDark(){
+    var dark=document.body.classList.contains('dark');
+    var note=document.getElementById('wzDarkNote');
+    if(note){
+      note.innerHTML=dark
+        ?'<div class="dark-alert"><b>暗标模式生效：</b>微观排版 11 组已自动锁定（字体 dark-safe / 零图 / 无页眉页脚 / 条款式标题），AI 生成结果将即时合规校验。</div>'
+        :'';
+    }
+    var dot=document.getElementById('wzDarkDot');
+    if(dot){ dot.textContent=dark?'合':'待'; dot.className='dot'+(dark?' on':''); }
+    document.getElementById('wzPresetName').textContent=dark
+      ?'暗标自动注入（宋体常规 · 零图 · 无页眉页脚）'
+      :'深靛蓝 · 单栏流式 · 政务公文风 · 标准公文 A4';
+  }
+  renderWzSteps(); renderWzChk(); renderWzCtx(); wzGo(1);
 
   /* ---- 工作台筛选 ---- */
   document.getElementById('homeChips').addEventListener('click',function(e){
