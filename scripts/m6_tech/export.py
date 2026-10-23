@@ -214,6 +214,19 @@ def _header_line_after(section):
     pPr.append(pBdr)
 
 
+def _table_borders_color(table, color="B7B7B7"):
+    """给已建三线表统一改边框色（minimal-clean 极淡色表线）。"""
+    tbl = table._tbl
+    tblPr = tbl.tblPr
+    borders = tblPr.find(qn("w:tblBorders"))
+    if borders is None:
+        return
+    for edge in ("top", "bottom", "insideH", "left", "right", "insideV"):
+        el = borders.find(qn("w:" + edge))
+        if el is not None:
+            el.set(qn("w:color"), color)
+
+
 def _box_borders(table, color="C9D2E2", sz=4):
     """全边框（卡片式/数据行布局）。"""
     tbl = table._tbl
@@ -258,6 +271,22 @@ class _Renderer:
         self.fig_no = 0
         self._last_list = False
         self._list_seq = 0
+        # two-column：封面/目录之后新建正文节，设双栏（页眉页脚默认继承节 0）
+        if self.preset == "two-column":
+            self._open_two_column_section()
+
+    def _open_two_column_section(self):
+        """正文双栏：doc.add_section(NEW_PAGE) 后写 w:cols num=2。"""
+        from docx.enum.section import WD_SECTION_START
+
+        sec2 = self.doc.add_section(WD_SECTION_START.NEW_PAGE)
+        sectPr = sec2._sectPr
+        cols = sectPr.find(qn("w:cols"))
+        if cols is None:
+            cols = OxmlElement("w:cols")
+            sectPr.append(cols)
+        cols.set(qn("w:num"), "2")
+        cols.set(qn("w:space"), "360")
 
     def _heading(self, level, text):
         sizes = self.sizes or {}
@@ -272,12 +301,26 @@ class _Renderer:
         pf.line_spacing = 1.2
         if level <= 3:
             pf.keep_with_next = True
+        # hybrid-flow：一二级标题左侧色条（区别于默认居中正文标题）
+        if self.preset == "hybrid-flow" and level <= 2 and not self.dark:
+            pf.left_indent = Pt(12)
+            pPr = p._p.get_or_add_pPr()
+            pBdr = OxmlElement("w:pBdr")
+            left = OxmlElement("w:left")
+            left.set(qn("w:val"), "single")
+            left.set(qn("w:sz"), "12")
+            left.set(qn("w:color"), str(self.colors.get("primary", RGBColor.from_string("1B2C52"))))
+            pBdr.append(left)
+            pPr.append(pBdr)
         # 大纲级别（TOC \o "1-3" 按 outlineLvl 收集；level 0-5 对应 H1-H6）
         pPr = p._p.get_or_add_pPr()
         lvl = OxmlElement("w:outlineLvl")
         lvl.set(qn("w:val"), str(max(0, level - 1)))
         pPr.append(lvl)
         r = p.add_run(text)
+        # minimal-clean：标题不加粗、黑体无装饰（极简留白）
+        if self.preset == "minimal-clean" and not self.dark:
+            bold = False
         _set_font(r, None, size=size, color=color, bold=bold,
                   east="黑体" if not self.dark else "宋体")
         return p
@@ -317,6 +360,33 @@ class _Renderer:
         if self.preset == "card":
             self._list_card(text)
             return
+        if self.preset == "data-row":
+            self._list_data_row(self._list_seq, text)
+            return
+        if self.preset == "hybrid-flow":
+            # 混合流式：项目符号段落（与正文散排混排）
+            p = self.doc.add_paragraph()
+            p.style = self.doc.styles["Normal"]
+            pf = p.paragraph_format
+            pf.left_indent = Pt(24)
+            pf.line_spacing = 1.5
+            r0 = p.add_run("•  ")
+            _set_font(r0, None, size=Pt(10.5), color=self.colors.get("primary"), east="宋体")
+            r = p.add_run(text)
+            _set_font(r, None, size=_heading_size(self.sizes, "body", 12) if not self.dark else Pt(14),
+                      east="仿宋" if not self.dark else "宋体")
+            return
+        if self.preset == "minimal-clean":
+            # 极简留白：无符号普通段落（缩进 2 字）
+            p = self.doc.add_paragraph(style="List Paragraph")
+            pf = p.paragraph_format
+            pf.left_indent = Pt(24)
+            pf.line_spacing = 1.6
+            pf.space_after = Pt(3)
+            r = p.add_run(text)
+            _set_font(r, None, size=Pt(12) if not self.dark else Pt(14),
+                      east="仿宋" if not self.dark else "宋体")
+            return
         p = self.doc.add_paragraph(style="List Bullet")
         pf = p.paragraph_format
         pf.line_spacing = 1.5
@@ -336,14 +406,19 @@ class _Renderer:
         table = self.doc.add_table(rows=1 + len(rows), cols=len(header_cells))
         table.alignment = 1  # center
         table.autofit = True
-        _table_borders(table)
+        if self.preset == "minimal-clean":
+            _table_borders(table, top=6, header=4, bottom=6, inside_h=2)
+            _table_borders_color(table, "B7B7B7")
+        else:
+            _table_borders(table)
         for j, h in enumerate(header_cells):
             cell = table.rows[0].cells[j]
             cell.text = ""
             para = cell.paragraphs[0]
             run = para.add_run(h)
             _set_font(run, None, size=Pt(10.5), bold=True, east="宋体")
-            _shade(cell._tc, table_fill or "E8ECF4")
+            if self.preset != "minimal-clean":
+                _shade(cell._tc, table_fill or "E8ECF4")
         for i, row in enumerate(rows):
             for j, v in enumerate(row):
                 cell = table.rows[i + 1].cells[j]
@@ -352,7 +427,7 @@ class _Renderer:
                 _set_font(run, None, size=Pt(10.5), east="宋体")
 
     def _list_row(self, idx, text):
-        """tabular：列表项 → 序号/内容双列数据行。"""
+        """tabular（表格化，含增强：交替行底纹 + 序号加粗）：列表项 → 序号/内容双列数据行。"""
         table = self.doc.add_table(rows=1, cols=2)
         table.autofit = True
         _box_borders(table, "C9D2E2", 4)
@@ -366,12 +441,41 @@ class _Renderer:
         p0 = c0.paragraphs[0]
         p0.alignment = WD_ALIGN_PARAGRAPH.CENTER
         r0 = p0.add_run(str(idx))
-        _set_font(r0, None, size=Pt(10.5), east="宋体")
+        _set_font(r0, None, size=Pt(10.5), bold=True, east="宋体")
         _shade(c0._tc, self.colors.get("tableFill", "E8ECF4"))
         c1 = table.rows[0].cells[1]
         c1.text = ""
         r1 = c1.paragraphs[0].add_run(text)
         _set_font(r1, None, size=Pt(10.5), east="宋体")
+        # 增强：交替行底纹（奇数行浅蓝、偶数行白）区分数据行
+        if idx % 2 == 1:
+            _shade(c1._tc, self.colors.get("tableFill", "E8ECF4"))
+        else:
+            _shade(c1._tc, "FFFFFF")
+
+    def _list_data_row(self, idx, text):
+        """data-row：数据行 —— 序号格深色主底白字 + 内容格浅底纹，行间细线。"""
+        table = self.doc.add_table(rows=1, cols=2)
+        table.autofit = True
+        _box_borders(table, "B9C4D8", 3)
+        try:
+            table.columns[0].width = Cm(1.1)
+            table.columns[1].width = Cm(13.3)
+        except Exception:
+            pass
+        c0 = table.rows[0].cells[0]
+        c0.text = ""
+        p0 = c0.paragraphs[0]
+        p0.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        r0 = p0.add_run(str(idx))
+        _set_font(r0, None, size=Pt(10.5), bold=True,
+                  color=RGBColor(0xFF, 0xFF, 0xFF), east="宋体")
+        _shade(c0._tc, str(self.colors.get("primary", RGBColor.from_string("1B2C52"))))
+        c1 = table.rows[0].cells[1]
+        c1.text = ""
+        r1 = c1.paragraphs[0].add_run(text)
+        _set_font(r1, None, size=Pt(10.5), east="宋体")
+        _shade(c1._tc, "EFF3F9")
 
     def _list_card(self, text):
         """card：列表项 → 单列卡片（边框 + 浅底纹）。"""
@@ -408,6 +512,29 @@ class _Renderer:
             r2 = p2.add_run(right_text)
             _set_font(r2, None, size=_heading_size(self.sizes, "body", 12), east="仿宋")
 
+    def _image_right(self, cap, src, right_text=""):
+        """image-right：右图左文 1×2 无边框表格（左图题+紧跟正文，右图）。"""
+        table = self.doc.add_table(rows=1, cols=2)
+        table.autofit = True
+        _no_borders(table)
+        try:
+            table.columns[0].width = Cm(6.8)
+            table.columns[1].width = Cm(7.6)
+        except Exception:
+            pass
+        c0 = table.rows[0].cells[0]
+        p0 = c0.paragraphs[0]
+        r0 = p0.add_run("图 %d　%s" % (self.fig_no, cap))
+        _set_font(r0, None, size=Pt(9), east="宋体")
+        if right_text:
+            p1 = c0.add_paragraph()
+            r1 = p1.add_run(right_text)
+            _set_font(r1, None, size=_heading_size(self.sizes, "body", 12), east="仿宋")
+        c1 = table.rows[0].cells[1]
+        p2 = c1.paragraphs[0]
+        p2.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p2.add_run().add_picture(str(src), width=Cm(7.2))
+
     def render_md(self, text, table_fill):
         lines = text.splitlines()
         i = 0
@@ -438,6 +565,15 @@ class _Renderer:
                                 right_text = nt
                                 i += 1
                         self._image_left(cap, src, right_text)
+                    elif self.preset == "image-right":
+                        right_text = ""
+                        if i + 1 < len(lines):
+                            nt = lines[i + 1].rstrip()
+                            if (nt and not nt.startswith(("#", "!", "-", "*", "|"))
+                                    and not _MD_TABLE_ROW.match(nt)):
+                                right_text = nt
+                                i += 1
+                        self._image_right(cap, src, right_text)
                     else:
                         self.doc.add_picture(str(src), width=Cm(13))
                         cp = self.doc.add_paragraph()
@@ -493,6 +629,46 @@ def _estimate_pages(chars, dark):
     """字符数 → 页数估算（A4：明标小四 1.5 行距 ≈ 850 字/页；暗标四号 ≈ 600 字/页）。"""
     per = 600 if dark else 850
     return max(1, int(chars / per) + (1 if chars % per else 0))
+
+
+def _chapter_divider(doc, title, colors):
+    """divider：章节分隔页 —— 章标题居中大字号 + 下方主色条（outlineLvl 0 供目录收集）。"""
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    pf = p.paragraph_format
+    pf.page_break_before = True
+    pf.space_before = Pt(54)
+    pf.space_after = Pt(14)
+    pPr = p._p.get_or_add_pPr()
+    lvl = OxmlElement("w:outlineLvl")
+    lvl.set(qn("w:val"), "0")
+    pPr.append(lvl)
+    pBdr = OxmlElement("w:pBdr")
+    bottom = OxmlElement("w:bottom")
+    bottom.set(qn("w:val"), "single")
+    bottom.set(qn("w:sz"), "14")
+    bottom.set(qn("w:color"), str(colors.get("primary", RGBColor.from_string("1B2C52"))))
+    pBdr.append(bottom)
+    pPr.append(pBdr)
+    r = p.add_run(title)
+    _set_font(r, None, size=Pt(22), color=colors["heading"], bold=True, east="黑体")
+
+
+def _render_chapter_title(doc, title, colors, preset, dark):
+    """章标题统一入口：divider 走分隔页样式，其余走默认页首标题。"""
+    if preset == "divider" and not dark:
+        _chapter_divider(doc, title, colors)
+        return
+    p = doc.add_paragraph()
+    r = p.add_run(title)
+    _set_font(r, None, size=Pt(16), color=colors["heading"], bold=True, east="黑体")
+    pf = p.paragraph_format
+    pf.page_break_before = True
+    pf.space_after = Pt(10)
+    pPr = p._p.get_or_add_pPr()
+    lvl = OxmlElement("w:outlineLvl")
+    lvl.set(qn("w:val"), "0")
+    pPr.append(lvl)
 
 
 def cmd_tech_export(args):
@@ -621,16 +797,7 @@ def cmd_tech_export(args):
         body = store.read_chapter_body(tech, ch)
         total_chars += len(body)
         if not dark:
-            p = doc.add_paragraph()
-            r = p.add_run(title)
-            _set_font(r, None, size=Pt(16), color=colors["heading"], bold=True, east="黑体")
-            pf = p.paragraph_format
-            pf.page_break_before = True
-            pf.space_after = Pt(10)
-            pPr = p._p.get_or_add_pPr()
-            lvl = OxmlElement("w:outlineLvl")
-            lvl.set(qn("w:val"), "0")
-            pPr.append(lvl)
+            _render_chapter_title(doc, title, colors, renderer.preset, dark)
         renderer.render_md(body, colors["tableFill"])
 
     # 页眉页脚（pageMode 三态）

@@ -7,6 +7,7 @@ import fitz
 from PIL import Image, ImageDraw, ImageFont
 
 OUT = Path(r"E:\bidcraft_skill\dev\reports\layout-preview")
+ROOT = Path(r"E:\bidcraft_skill")
 PRESETS = [
     ("single-column", "单栏流式"), ("tabular", "表格化布局"), ("two-column", "双栏分栏"),
     ("card", "卡片式布局"), ("image-left", "左图右文"), ("divider", "章节分隔页"),
@@ -27,7 +28,7 @@ for name in ("C:/Windows/Fonts/msyhbd.ttc", "C:/Windows/Fonts/simhei.ttf"):
 
 cells = []
 for pid, label in PRESETS:
-    pdf = OUT / ("%s_技术标样张.pdf" % pid)
+    pdf = ROOT / ("技术标样张_%s.pdf" % pid)
     doc = fitz.open(str(pdf))
     pages = []
     # 版面范式差异体现在正文页：取索引 2、3（p3 起正文；若页面不足则回退 1、2）
@@ -63,3 +64,9 @@ for idx, (cell, pid, label) in enumerate(cells):
     grid.paste(cell, (x, y))
 grid.save(str(OUT / "十版面对比图.jpg"), quality=88)
 print("saved %s  %dx%d" % (OUT / "十版面对比图.jpg", grid.width, grid.height))
+# 超高切两段（>4000px 时 Read 无法加载整图）
+if grid.height > 4000:
+    h2 = grid.height // 2
+    grid.crop((0, 0, grid.width, h2)).save(str(OUT / "十版面对比图_top.jpg"), quality=90)
+    grid.crop((0, h2 - 60, grid.width, grid.height)).save(str(OUT / "十版面对比图_bot.jpg"), quality=90)
+    print("split top/bot")

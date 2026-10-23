@@ -9,7 +9,7 @@ EXPECT = {
     "single-column": (2, "md 表 2 个（列表为段落）"),
     "tabular": (8, "2 md 表 + 6 双列数据行表"),
     "card": (8, "2 md 表 + 6 单列卡片表"),
-    "image-left": (5, "3 图 × 1×2 左图右文表 + 2 md 表"),
+    "image-left": (7, "5 图 × 1×2 左图右文表（3 摄影 + 2 流程图）+ 2 md 表"),
 }
 for pid, (exp_n, desc) in EXPECT.items():
     docx = ROOT / ("技术标样张_%s.docx" % pid)

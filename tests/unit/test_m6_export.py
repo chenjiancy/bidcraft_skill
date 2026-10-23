@@ -16,6 +16,7 @@ PRESETS_SRC = REPO / "共享资源" / "技术标风格" / "layout-presets.json"
 from _shared import core  # noqa: E402
 
 from m6_tech import export  # noqa: E402
+from docx import Document  # noqa: E402
 
 
 def _ent(args):
@@ -197,6 +198,84 @@ class TechExportTest(unittest.TestCase):
         self.assertEqual(len(tables), 2, "暗标必须保持单栏，列表不得转表")
         meta = json.loads((tech / "章节" / ".meta" / "export.json").read_text(encoding="utf-8"))
         self.assertTrue(meta["dark"])
+
+    # ---- 铺开 7 范式（two-column/divider/data-row/image-right/hybrid-flow/minimal-clean/表格化增强）----
+    def test_export_preset_two_column(self):
+        """two-column：正文节 w:cols num=2，节数 ≥2。"""
+        from docx.oxml.ns import qn as _qn
+        tech = _mk_project(self.tmp, dark=False)
+        code = export.cmd_tech_export(_A(self.tmp, override="preset=two-column"))
+        self.assertEqual(code, 0)
+        doc = Document(str(tech / "产出" / "技术标_DEMO项目.docx"))
+        secs = doc.sections
+        self.assertGreaterEqual(len(secs), 2, "two-column 必须有正文新节")
+        last_cols = secs[-1]._sectPr.find(_qn("w:cols"))
+        self.assertEqual(last_cols.get(_qn("w:num")), "2", "正文节必须双栏")
+        first_cols = secs[0]._sectPr.find(_qn("w:cols"))
+        self.assertTrue(first_cols is None or first_cols.get(_qn("w:num")) in (None, "1"),
+                        "封面/目录节必须保持单栏")
+
+    def test_export_preset_divider(self):
+        """divider：至少 3 个章节标题带段落底边框（分隔页色条）+ outlineLvl 0。"""
+        from docx.oxml.ns import qn as _qn
+        tech = _mk_project(self.tmp, dark=False)
+        code = export.cmd_tech_export(_A(self.tmp, override="preset=divider"))
+        self.assertEqual(code, 0)
+        doc = Document(str(tech / "产出" / "技术标_DEMO项目.docx"))
+        hits = 0
+        for p in doc.paragraphs:
+            pPr = p._p.pPr
+            if pPr is not None and pPr.find(_qn("w:pBdr")) is not None and p.text.startswith("第"):
+                hits += 1
+        self.assertGreaterEqual(hits, 2, "divider 章标题必须带分隔色条")
+
+    def test_export_preset_data_row(self):
+        """data-row：列表转数据行表（序号窄列 + 内容列），表格数 > 基准。"""
+        tech = _mk_project(self.tmp, dark=False)
+        code = export.cmd_tech_export(_A(self.tmp, override="preset=data-row"))
+        self.assertEqual(code, 0)
+        tables = self._tables_of(tech)
+        self.assertGreater(len(tables), 2, "data-row 应把列表转为数据行表")
+        self.assertTrue(any(len(t.columns) == 2 for t in tables), "应有双列数据行表")
+
+    def test_export_preset_image_right_degrade(self):
+        """image-right：fixture 无图时安全降级单栏，导出正常且表格数 = 基准。"""
+        tech = _mk_project(self.tmp, dark=False)
+        code = export.cmd_tech_export(_A(self.tmp, override="preset=image-right"))
+        self.assertEqual(code, 0)
+        tables = self._tables_of(tech)
+        self.assertEqual(len(tables), 2, "无图时应保持 md 表格数（降级不引入额外表）")
+
+    def test_export_preset_hybrid_flow(self):
+        """hybrid-flow：列表保持段落散排（不转表），表格数 = 基准；一二级标题带左色条。"""
+        from docx.oxml.ns import qn as _qn
+        tech = _mk_project(self.tmp, dark=False)
+        code = export.cmd_tech_export(_A(self.tmp, override="preset=hybrid-flow"))
+        self.assertEqual(code, 0)
+        doc = Document(str(tech / "产出" / "技术标_DEMO项目.docx"))
+        self.assertEqual(len(doc.tables), 2, "hybrid-flow 列表必须散排，不引入数据行表")
+        hits = 0
+        for p in doc.paragraphs:
+            pPr = p._p.pPr
+            if pPr is not None:
+                bdr = pPr.find(_qn("w:pBdr"))
+                if bdr is not None and bdr.find(_qn("w:left")) is not None:
+                    hits += 1
+        self.assertGreaterEqual(hits, 1, "hybrid-flow 标题应有左侧色条")
+
+    def test_export_preset_minimal_clean(self):
+        """minimal-clean：列表不转表且无项目符号，表格数 = 基准；表头无深色底纹。"""
+        from docx.oxml.ns import qn as _qn
+        tech = _mk_project(self.tmp, dark=False)
+        code = export.cmd_tech_export(_A(self.tmp, override="preset=minimal-clean"))
+        self.assertEqual(code, 0)
+        doc = Document(str(tech / "产出" / "技术标_DEMO项目.docx"))
+        self.assertEqual(len(doc.tables), 2, "minimal-clean 列表必须保持段落")
+        # 表头单元格无底纹（w:shd 缺省）
+        head = doc.tables[0].rows[0].cells[0]._tc
+        shd = head.find(_qn("w:tcPr")).find(_qn("w:shd")) if head.find(_qn("w:tcPr")) is not None else None
+        self.assertTrue(shd is None or shd.get(_qn("w:fill")) in (None, "FFFFFF", "auto"),
+                        "minimal-clean 表头不应有深色底纹")
 
 
 if __name__ == "__main__":
