@@ -31,6 +31,7 @@ from . import sources
 from . import layout
 from . import export
 from . import packs
+from . import tpl_design
 from .ctxpack import build_context, fill_score_items
 from .report import cmd_tech_check, cmd_tech_report
 from .writer import cmd_tech_parse
@@ -398,5 +399,17 @@ def register_parser(sub):
     sp.add_argument("--pack-id", default="", help="新专家包 id（默认 custom-<preset>-<palette>）")
     sp.add_argument("--confirm", action="store_true", help="配合 --apply-combo：确认落盘（写后回读校验）")
     sp.set_defaults(func=layout.cmd_tech_layout)
+
+    sp = sub.add_parser("tpl-design",
+                        help="M6·模板设计器（P0）：模板描述文件（template.json，schema m6.template/v1）校验/落盘/样张；"
+                             "描述层=文档结构编排+样式引用+占位符绑定，docx 只是渲染产物")
+    sp.add_argument("--list", action="store_true", help="列出模板目录模板与校验状态（默认行为）")
+    sp.add_argument("--show", default="", help="展示模板概览 + 校验结果 + 暗标派生（文件路径或模板目录内文件名）")
+    sp.add_argument("--validate", default="", help="只校验并输出问题清单（--json 输出结构化）")
+    sp.add_argument("--apply", default="", help="校验通过后落盘登记模板到 模板/ 目录（需 --confirm；已在目录内则登记回读）")
+    sp.add_argument("--specimen", default="", help="按模板样式引用生成样张 docx（P0 以版面范式 preset 驱动，其余组样式见 --show；P1 全映射）")
+    sp.add_argument("--project", default="", help="配合 --specimen：走真实项目导出（否则内置样例正文）")
+    sp.add_argument("--confirm", action="store_true", help="配合 --apply：确认落盘（写后回读校验）")
+    sp.set_defaults(func=tpl_design.cmd_tpl_design)
 
     export.add_sub(sub)

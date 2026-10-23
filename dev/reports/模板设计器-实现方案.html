@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>模板设计器-实现方案</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%232b4f8f'/%3E%3Cpath d='M8 10h16M8 16h16M8 22h10' stroke='%23fff' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --bg:#f6f4ef; --ink:#1c2430; --sub:#5a6572; --line:#dcd7cb;
+    --brand:#2b4f8f; --brand2:#1f3a66; --accent:#c25e3a; --ok:#2f7d54;
+    --card:#ffffff; --soft:#eef1f5;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{background:var(--bg); color:var(--ink); font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif; line-height:1.65;}
+  .wrap{max-width:1080px; margin:0 auto; padding:28px 18px 72px;}
+  /* hero */
+  .hero{padding:34px 26px 26px; background:linear-gradient(135deg,var(--brand) 0%,var(--brand2) 78%); color:#fff; border-radius:14px;}
+  .hero .kicker{font-size:13px; letter-spacing:2px; opacity:.85;}
+  .hero h1{font-size:30px; margin:10px 0 8px; font-weight:700;}
+  .hero p{font-size:15px; opacity:.92; max-width:780px;}
+  .hero .meta{margin-top:14px; font-size:12.5px; opacity:.8; display:flex; flex-wrap:wrap; gap:6px 18px;}
+  /* sections */
+  section{margin-top:34px;}
+  .sec-h{display:flex; align-items:center; gap:10px; margin-bottom:14px;}
+  .sec-h .no{width:30px;height:30px;border-radius:8px;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;flex:none;}
+  .sec-h h2{font-size:21px;}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px 20px; margin-bottom:14px;}
+  .card h3{font-size:16px; margin-bottom:8px; color:var(--brand2);}
+  .card p{margin-bottom:8px; font-size:14.5px;}
+  .card ul, .card ol{margin:6px 0 8px 20px; font-size:14.5px;}
+  .card li{margin-bottom:4px;}
+  .tag{display:inline-block; background:var(--soft); border:1px solid var(--line); border-radius:20px; padding:2px 10px; font-size:12px; color:var(--sub); margin:2px 4px 2px 0;}
+  .tag.b{background:#e8eef7; border-color:#b9c8e0; color:var(--brand);}
+  /* tables */
+  .tbl{width:100%; border-collapse:collapse; font-size:13.5px; background:#fff; border:1px solid var(--line); border-radius:10px; overflow:hidden; display:block; overflow-x:auto;}
+  .tbl th{background:var(--soft); text-align:left; padding:9px 10px; font-size:13px; color:var(--brand2); border-bottom:2px solid var(--line); white-space:nowrap;}
+  .tbl td{padding:8px 10px; border-bottom:1px solid #e9e5da; vertical-align:top;}
+  .tbl tr:last-child td{border-bottom:none;}
+  .tbl .k{font-weight:600; color:var(--brand2); white-space:nowrap;}
+  .hl{color:var(--accent); font-weight:600;}
+  .ok{color:var(--ok); font-weight:600;}
+  .y{background:#fdf6e3;}
+  /* bars for comparison */
+  .bar{display:inline-block; height:8px; border-radius:4px; vertical-align:middle; background:linear-gradient(90deg,var(--brand),#5d82bd);}
+  .bar3{background:linear-gradient(90deg,var(--accent),#d99a74);}
+  .bar2{background:linear-gradient(90deg,#9aa7b6,#c3cdd9);}
+  .bwrap{min-width:96px; display:inline-block; margin-right:6px; background:#e9e5da; border-radius:4px; height:8px; vertical-align:middle;}
+  /* svg arch */
+  .arch{background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px;}
+  .arch svg{width:100%; height:auto; display:block;}
+  .arch .cap{font-size:12px; color:var(--sub); margin-top:6px;}
+  /* roadmap */
+  .road{list-style:none; margin:8px 0 0;}
+  .road li{position:relative; padding:0 0 16px 22px; border-left:2px solid var(--brand); margin-left:8px;}
+  .road li:last-child{border-left-color:transparent; padding-bottom:0;}
+  .road .dot{position:absolute; left:-7px; top:2px; width:12px; height:12px; border-radius:50%; background:var(--brand); border:2px solid #fff; box-shadow:0 0 0 2px var(--brand);}
+  .road .ph{font-weight:700; color:var(--brand2);}
+  .road p{font-size:14px;}
+  .note{font-size:12.5px; color:var(--sub); background:#f2efe8; border-left:3px solid var(--line); padding:8px 12px; border-radius:6px; margin-top:10px;}
+  .src{font-size:12px; color:var(--sub);}
+  .src a{color:var(--brand); text-decoration:none; word-break:break-all;}
+  .src a:hover{text-decoration:underline;}
+  footer{margin-top:40px; color:var(--sub); font-size:12px; text-align:center;}
+  @media (max-width:600px){
+    .hero h1{font-size:23px;}
+    .sec-h h2{font-size:18px;}
+    .wrap{padding:16px 10px 60px;}
+    .card{padding:14px 14px;}
+    .tbl{font-size:12.5px;}
+    .tbl th,.tbl td{padding:7px 8px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="kicker">BIDCRAFT · M 系列模板设计器可行性调研</div>
+    <h1>模板设计器 · 实现方案</h1>
+    <p>项目现状盘点 + 行业方案联网调研 + 推荐落地架构。核心结论：不依赖 UI 也能完整实现——以「模板描述 JSON」为权威源，python-docx 渲染引擎为执行端，HTML 工作台仅作演示原型，CLI / Agent 对话为全功能通道。</p>
+    <div class="meta">
+      <span>盘点范围：E:\bidcraft_skill（M2 模板库 / M6 版面预设与导出引擎）</span>
+      <span>调研日期：2026-10-23</span>
+      <span>来源：公开网络（GrapesJS / AavanamKit / docxtpl 等）</span>
+    </div>
+  </div>
+
+  <section>
+    <div class="sec-h"><div class="no">1</div><h2>项目现状盘点：已有资产与缺口</h2></div>
+
+    <table class="tbl">
+      <tr><th style="width:150px">现有资产</th><th>能力</th><th>与模板设计器的关系</th></tr>
+      <tr><td class="k">M2 模板库<br><span class="tag">scripts/m2_template</span></td><td>docx 模板文件入库 + 台账（代理机构×方式）+ 占位符扫描登记（tpl-init/import/list/sync/rescan/registry 共 7 命令）</td><td>模板的<b>存量底座</b>：设计器产出的新模板可回流登记；旧 docx 可被拆解成部件供设计器复用</td></tr>
+      <tr><td class="k">M6 版面预设<br><span class="tag">共享资源\技术标风格\layout-presets.json</span></td><td>15 组 × 10 套预设（preset/palette/cover/font/image/headerFooter/微观六组），v1.4 已统一十方案；存组合闭环 + F11 校验</td><td>版面预设 = 模板的<b>样式与版面维度</b>；模板设计器在其上层增加「文档结构编排」</td></tr>
+      <tr><td class="k">M6 导出引擎<br><span class="tag">scripts/m6_tech/export.py</span></td><td>tech-export：md 合并 → python-docx 直写 docx XML（标题样式 / TOC 域 / 页眉页脚三态 / 表格 / 图片占位），回读 + 页数回写</td><td>现成的<b>渲染执行端</b>：模板描述 JSON 可直接驱动它，无需另起炉灶</td></tr>
+      <tr><td class="k">版面设计器 UI<br><span class="tag">dev/prototypes/版面设计器-工作台V1.html</span></td><td>15×10 组合实时预览（封面/扉页/目录/正文/结尾全元素），离线快照回退，演示原型横幅</td><td>模板设计器的<b>预览层前身</b>：扩充「结构编排」即可演化为模板工作台</td></tr>
+      <tr><td class="k">本地只读桥<br><span class="tag">scripts/bidcraft_server.py</span></td><td>/api/capabilities 动态能力清单 + 6 只读接口，UI 与平台侧共用</td><td>模板设计器的<b>数据通道</b>：新增模板相关只读接口即可接入</td></tr>
+    </table>
+
+    <div class="note"><b>盘点结论：</b>项目已具备「预设数据源 → python-docx 渲染 → HTML 预览 → CLI/Agent 通道」四件套；缺的是<b>「模板描述」这一层</b>——能把封面/目录/正文/页眉页脚/样式引用编排成一份可设计、可校验、可持久化的结构化描述，并让设计器/引擎/UI 三方共用。</div>
+  </section>
+
+  <section>
+    <div class="sec-h"><div class="no">2</div><h2>需求定位：模板设计器要解决什么</h2></div>
+
+    <div class="card">
+      <h3>定义（本报告口径）</h3>
+      <p><b>模板设计器</b> = 把「文档模板」作为可设计对象：使用者从部件库（封面 / 扉页 / 目录 / 正文版式 / 页眉页脚 / 结尾）拼装结构、从预设库（版面 / 配色 / 字体 / 图表样式）引用样式、绑定占位符（企业名 / 项目名 / 章节流 / 图片位），最终产出一份<b>模板描述 JSON</b>，由渲染引擎生成正式 docx。</p>
+      <p>它与已有<b>版面设计器</b>的关系：版面设计器管「同一份正文内容换皮」；模板设计器管「整本文档的结构与样式编排」。两者共用同一份预设数据源，模板设计器是版面设计器的<b>结构扩展 + 样式引用</b>。</p>
+      <h3 style="margin-top:14px">三条硬约束（沿用项目既有原则）</h3>
+      <ul>
+        <li><b>无 UI 亦完整可用</b>：所有能力落实在 skill（对话工作流）/ 文档（数据模型与规则）/ 代码（CLI + 引擎 + 校验）三层；UI 只作演示原型。</li>
+        <li><b>JSON 为权威源</b>：模板描述、预设、部件清单都是文件，可入仓、可 diff、可校验，UI 只是它的渲染视图。</li>
+        <li><b>人工确认闸门</b>：设计落盘、应用到项目、导出 docx 均需 --confirm，与 tech-layout --apply-combo 一致。</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-h"><div class="no">3</div><h2>行业方案调研（联网）</h2></div>
+
+    <div class="card">
+      <h3>候选 A：GrapesJS Studio SDK（Document 模式 + Absolute Mode）</h3>
+      <p>多用途 Web Builder 框架，2025 年新增<b>文档工程（Document Projects）</b>：预设 A4/A5/US Letter 等打印幅面、屏幕预览与打印一致、pageBreak 分页组件、Printable 插件；<b>Absolute Mode</b> 插件支持像素级自由定位（固定字段、签名、标签、卡片）。框架无关（vanilla JS 可嵌入），适合做「页面 / 邮件 / 文档」类拖拽编辑器。</p>
+      <ul>
+        <li>优势：文档版式所见即所得成熟度高；社区与文档完善；可嵌入现有 HTML 工作台思路。</li>
+        <li>短板：产物是 HTML/CSS 描述，<b>不直接是 docx</b>，需二次映射到 python-docx XML（项目引擎可承接）；Studio SDK 商业版需授权，开源 GrapesJS 核心需自行组装。</li>
+      </ul>
+      <div class="src">来源：<a href="https://grapesjs.com/blog/release-document-builder">grapesjs.com/blog/release-document-builder</a> · <a href="https://app.grapesjs.com/docs-sdk/plugins/preset/printable">GrapesJS Studio SDK Printable</a> · <a href="https://grapesjs.com/blog/grapes-release-absolute-mode">grapesjs.com/blog/grapes-release-absolute-mode</a></div>
+    </div>
+
+    <div class="card">
+      <h3>候选 B：AavanamKit（designer 组件 + headless engine）</h3>
+      <p>开源文档生成套件：前端是 React 拖拽设计组件（@aavanamkit/designer），后端是 headless Node 引擎（@aavanamkit/engine），同一模板可导出 <b>PDF / DOCX / HTML</b>；带布局感知的表格分页与样式保真。</p>
+      <ul>
+        <li>优势：「设计器 ↔ 渲染引擎分离」的架构与本项目理念一致，多格式导出思路可直接借鉴。</li>
+        <li>短板：技术栈是 React + Node.js，与项目 Python 引擎不同；docx 保真度依赖其实现，交付标的仍是「HTML 派生文档」，对标书式 docx 原生格式（仿宋/行距/域代码）需要重写映射。</li>
+      </ul>
+      <div class="src">来源：<a href="https://www.npmjs.com/package/@aavanamkit/designer">npm @aavanamkit/designer</a> · <a href="https://www.npmjs.com/package/@aavanamkit/engine">npm @aavanamkit/engine</a> · <a href="https://www.producthunt.com/p/aavanamkit/aavanamkit">Product Hunt AavanamKit</a></div>
+    </div>
+
+    <div class="card">
+      <h3>候选 C：docxtpl / python-docx 系（占位符模板引擎）</h3>
+      <p>docxtpl = python-docx + Jinja2：在 Word 里写 {{ 变量 }} / {% 循环 %} 占位符，渲染时填充；docxspec / pymsword 是同族结构化封装。</p>
+      <ul>
+        <li>优势：与项目 tech-export 同栈（python-docx）；docx 原生保真最高；离线零依赖。</li>
+        <li>短板：<b>不是可视化设计器</b>——模板改动要改 Word 文件本身，无法做到「部件编排 + 实时预览」；占位符语法对非技术人员有门槛。</li>
+      </ul>
+      <div class="src">来源：<a href="https://docxtpl.readthedocs.io/en/latest/">python-docx-template 文档</a> · <a href="https://python-docx.readthedocs.io/en/develop/">python-docx 文档</a> · <a href="https://pypi.org/project/docxspec/">docxspec · PyPI</a> · <a href="https://pypi.org/project/pymsword/">pymsword · PyPI</a></div>
+    </div>
+
+    <div class="card">
+      <h3>候选 D：表单设计器启示（Everright-formEditor 等）</h3>
+      <p>字段/区块级拖拽设计器（layui-form-design、vue-form-generator、Everright-formEditor、shadcn Form Builder 等），核心模式是「左组件库 + 中画布 + 右属性面板」三栏布局、拖拽落位、属性联动。</p>
+      <ul>
+        <li>价值：<b>交互范式</b>可直接迁移到版面/模板工作台（左部件库、中页面预览、右属性面板）；组件拖拽 + 属性面板模式经过充分验证。</li>
+        <li>短板：面向表单字段而非文档版面；A4 分页 / 页眉页脚 / 章节流不是它们的模型。</li>
+      </ul>
+      <div class="src">来源：<a href="https://segmentfault.com/a/1190000043670183">Everright-formEditor 介绍</a> · <a href="https://gitee.com/xp-admin/layui-form-design">layui-form-design</a> · <a href="https://i-lafen.github.io/site/web/form-design">vue 表单设计器思路</a></div>
+    </div>
+
+    <div class="card">
+      <h3>对照观察（不推荐引入）</h3>
+      <p>Templatical / vue3-email-template-editor（MJML 邮件模板，面向 HTML 邮件非 docx）；pdf_kit_editor（Flutter 移动端）；shadcn Form Builder（React 生态开发向）。这些与「docx 原生保真 + 本地离线 + Python 栈」约束不匹配，仅作模式参考。</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-h"><div class="no">4</div><h2>方案对比矩阵</h2></div>
+
+    <table class="tbl">
+      <tr>
+        <th style="width:132px">维度</th><th>A · GrapesJS 文档模式</th><th>B · AavanamKit</th><th>C · docxtpl/python-docx</th><th>D · 表单设计器范式</th>
+      </tr>
+      <tr>
+        <td class="k">所见即所得精度</td>
+        <td><span class="bwrap"><span class="bar" style="width:92%"></span></span> A4 打印级</td>
+        <td><span class="bwrap"><span class="bar" style="width:74%"></span></span> 页面级</td>
+        <td><span class="bwrap"><span class="bar2" style="width:30%"></span></span> 无画布（改 Word）</td>
+        <td><span class="bwrap"><span class="bar3" style="width:56%"></span></span> 表单字段级</td>
+      </tr>
+      <tr>
+        <td class="k">docx 原生保真</td>
+        <td class="hl">低（HTML 映射）</td>
+        <td class="hl">中（自研映射）</td>
+        <td><span class="ok">高（原生 XML）</span></td>
+        <td>—（不产出 docx）</td>
+      </tr>
+      <tr>
+        <td class="k">设计 ↔ 渲染分离</td>
+        <td>是（设计 JSON / 导出另做）</td>
+        <td>是（designer + engine）</td>
+        <td>否（模板即 docx 文件）</td>
+        <td>是（表单 schema）</td>
+      </tr>
+      <tr>
+        <td class="k">本地 / 离线</td>
+        <td>开源核心可离线</td>
+        <td>npm 本地可装</td>
+        <td><span class="ok">纯本地</span></td>
+        <td>均可</td>
+      </tr>
+      <tr>
+        <td class="k">无 UI 完整可用</td>
+        <td>否（编辑器本体）</td>
+        <td>否（编辑器本体）</td>
+        <td><span class="ok">是（模板文件+引擎）</span></td>
+        <td>否</td>
+      </tr>
+      <tr>
+        <td class="k">与现有引擎集成</td>
+        <td>需 HTML→docx 映射桥</td>
+        <td>技术栈不符（Node）</td>
+        <td><span class="ok">同栈直接扩展</span></td>
+        <td>仅借鉴交互</td>
+      </tr>
+      <tr>
+        <td class="k">工程成本</td>
+        <td>中高（组装+映射）</td>
+        <td>中（换栈）</td>
+        <td><span class="ok">低</span></td>
+        <td>低（只借鉴）</td>
+      </tr>
+    </table>
+
+    <div class="note"><b>对比结论：</b>没有现成方案同时满足「docx 原生保真 + 无 UI 全功能 + Python 栈 + 本地离线」。因此推荐<b>组合式落地</b>：取 C 的渲染底座（项目 tech-export 已是），取 D 的三栏交互范式用于预览原型，取 A/B 的「设计 JSON 为权威源 + 渲染引擎分离」作为架构骨架——四者的交集正是项目已有四件套的延伸。</div>
+  </section>
+
+  <section>
+    <div class="sec-h"><div class="no">5</div><h2>推荐落地方案：模板描述 JSON + 渲染引擎 + 预览工作台</h2></div>
+
+    <div class="arch">
+      <svg viewBox="0 0 960 300" role="img" aria-label="模板设计器三层架构图">
+        <defs>
+          <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#2b4f8f"/></marker>
+          <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#c25e3a"/></marker>
+        </defs>
+        <!-- 数据源层 -->
+        <rect x="24" y="24" width="900" height="70" rx="10" fill="#eef1f5" stroke="#b9c8e0"/>
+        <text x="48" y="50" font-size="15" font-weight="700" fill="#1f3a66">数据源层（权威源 · 可入仓可 diff）</text>
+        <rect x="48" y="62" width="200" height="26" rx="6" fill="#fff" stroke="#b9c8e0"/><text x="60" y="80" font-size="12" fill="#1c2430">template.json 模板描述</text>
+        <rect x="276" y="62" width="200" height="26" rx="6" fill="#fff" stroke="#b9c8e0"/><text x="288" y="80" font-size="12" fill="#1c2430">layout-presets.json 预设</text>
+        <rect x="504" y="62" width="200" height="26" rx="6" fill="#fff" stroke="#b9c8e0"/><text x="516" y="80" font-size="12" fill="#1c2430">parts/ 部件库（md/占位）</text>
+        <rect x="732" y="62" width="180" height="26" rx="6" fill="#fff" stroke="#b9c8e0"/><text x="744" y="80" font-size="12" fill="#1c2430">占位符台账（M2）</text>
+        <!-- 渲染引擎层 -->
+        <rect x="24" y="128" width="900" height="70" rx="10" fill="#e8eef7" stroke="#8ba6cc"/>
+        <text x="48" y="154" font-size="15" font-weight="700" fill="#1f3a66">渲染引擎层（python-docx · 已有 tech-export 扩展）</text>
+        <rect x="48" y="166" width="250" height="26" rx="6" fill="#fff" stroke="#8ba6cc"/><text x="60" y="184" font-size="12" fill="#1c2430">tpl-design 校验/存组合（CLI）</text>
+        <rect x="326" y="166" width="250" height="26" rx="6" fill="#fff" stroke="#8ba6cc"/><text x="338" y="184" font-size="12" fill="#1c2430">tech-export 模板驱动渲染 → docx</text>
+        <rect x="604" y="166" width="250" height="26" rx="6" fill="#fff" stroke="#8ba6cc"/><text x="616" y="184" font-size="12" fill="#1c2430">回读校验 + 页数回写 + 样张直出</text>
+        <!-- UI 层 -->
+        <rect x="24" y="232" width="900" height="56" rx="10" fill="#fdf3ec" stroke="#d99a74"/>
+        <text x="48" y="256" font-size="15" font-weight="700" fill="#a5502f">UI 层（演示原型 · 实时预览）</text>
+        <rect x="48" y="264" width="300" height="20" rx="5" fill="#fff" stroke="#d99a74"/><text x="60" y="279" font-size="11.5" fill="#1c2430">模板工作台 HTML：部件树+画布+属性面板</text>
+        <rect x="376" y="264" width="260" height="20" rx="5" fill="#fff" stroke="#d99a74"/><text x="388" y="279" font-size="11.5" fill="#1c2430">bidcraft_server 只读桥（/api/template/…）</text>
+        <rect x="664" y="264" width="200" height="20" rx="5" fill="#fff" stroke="#d99a74"/><text x="676" y="279" font-size="11.5" fill="#1c2430">离线快照回退</text>
+        <!-- 箭头 -->
+        <path d="M300 94 L300 126" stroke="#2b4f8f" stroke-width="2" marker-end="url(#ar)"/>
+        <path d="M600 94 L600 126" stroke="#2b4f8f" stroke-width="2" marker-end="url(#ar)"/>
+        <path d="M450 198 L450 230" stroke="#c25e3a" stroke-width="2" marker-end="url(#ar2)"/>
+        <text x="462" y="218" font-size="11" fill="#c25e3a">JSON 视图</text>
+      </svg>
+      <div class="cap">三层架构（示意）：数据源层为权威源；渲染引擎层完成校验 → 渲染 → 回读；UI 层只读视图，无 UI 时功能全走 CLI / Agent 对话。方向箭头表示数据流：模板描述 + 预设 + 部件 → 引擎；引擎状态 → UI 预览。</div>
+    </div>
+
+    <div class="card">
+      <h3>数据模型草案：template.json（v0.1 建议）</h3>
+      <table class="tbl">
+        <tr><th style="width:150px">字段</th><th>说明</th><th>来源/规则</th></tr>
+        <tr><td class="k">schema / version</td><td>模板描述协议号与版本</td><td>与 layout-presets.json 同构，统一由校验器约束</td></tr>
+        <tr><td class="k">structure[]</td><td>文档结构编排：部件序（cover/colophon/toc/body/section-closing），每部件可带 pageMode / 页眉页脚引用</td><td>部件清单来自 parts/ 目录 + M2 台账；缺失校验报错</td></tr>
+        <tr><td class="k">styleRef</td><td>引用版面预设（preset/palette/font/headerFooter/微观六组）</td><td>值域 = layout-presets.json 各组 id，缺省回默认组合</td></tr>
+        <tr><td class="k">placeholders{}</td><td>占位符绑定：企业名/项目名/章节流/图片位 → 部件内锚点</td><td>与 M2 占位符台账对齐；渲染时从项目上下文回填</td></tr>
+        <tr><td class="k">rules{}</td><td>约束声明：暗标双态、图片缺失降级、表格超宽降级等</td><td>复用 rules_base / rules_chapters 现有规则</td></tr>
+        <tr><td class="k">provenance</td><td>来源与历史（基于哪套模板、何时由谁设计）</td><td>写日志，支持回溯</td></tr>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3>落地清单（skill / 文档 / 代码 三层）</h3>
+      <table class="tbl">
+        <tr><th style="width:110px">层</th><th>内容</th></tr>
+        <tr><td class="k">代码</td><td><b>scripts/m6_tech/tpl_design.py</b>：模板描述解析/校验（schema + 值域 + 部件存在性）/存组合闭环（--confirm）/暗标双态派生；<b>export.py</b> 增加「template.json 驱动渲染」分支（structure 逐部件 → python-docx，styleRef 套预设，占位符回填）；<b>cli.py</b> 增 tpl-design 子命令（list / show / apply / validate / export-specimen）；<b>bidcraft_server.py</b> 增只读接口 /api/template/list、/api/template/validate、/api/template/specimen</td></tr>
+        <tr><td class="k">文档</td><td>references 新增《M6-模板设计-数据模型.md》（template.json schema 与字段规则）、《M6-模板设计-操作手册.md》（无 UI 全功能操作路径）；修订《M2-模板库-需求对齐.md》（部件化拆解 + 台账联动）</td></tr>
+        <tr><td class="k">skill</td><td>SKILL.md 新增 §7 模板设计工作流：B 通道（无 UI）：① tpl-design list/show 确认现状 → ② 编辑/生成 template.json（含示例模板）→ ③ tpl-design validate 校验 → ④ apply --confirm 落盘 → ⑤ export-specimen 直出样张 docx → 人工确认 → ⑥ tech-export 正式导出。UI 通道：同一数据流，HTML 工作台实时预览</td></tr>
+        <tr><td class="k">测试</td><td>单元：schema 校验 12 例（结构/值域/占位符/降级）；集成：template.json → 样张 docx 回读断言（仿宋、28 磅、页眉页脚三态、TOC 域）；e2e：UI 工作台 → 存组合 → 引擎 → 回读闭环</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-h"><div class="no">6</div><h2>落地路线图</h2></div>
+
+    <ul class="road">
+      <li><span class="dot"></span><span class="ph">P0 数据模型与引擎</span><p>template.json schema v0.1 + tpl_design.py（校验/存组合/暗标派生）+ export.py 模板驱动分支 + 单测 12 例。产出：《M6-模板设计-数据模型.md》。</p></li>
+      <li><span class="dot"></span><span class="ph">P1 无 UI 闭环</span><p>cli tpl-design 五子命令 + SKILL.md §7 工作流 + 样张直出回读断言（集成测试）+ 操作手册。此阶段<b>无需 UI 即完整可用</b>。</p></li>
+      <li><span class="dot"></span><span class="ph">P2 工作台原型</span><p>版面设计器 HTML 增「模板工作台」视图（部件树 + 画布实时预览 + 属性面板，三栏范式），经 bidcraft_server 只读桥取数，离线快照回退；shot 双态自检交付。</p></li>
+      <li><span class="dot"></span><span class="ph">P3 平台对接</span><p>/api/template/* 接口注册为平台工具（豆包已注册工具 / WorkBuddy 自定义技能），Agent 对话即设计器（对标《UI对接Agent平台方案报告》）。</p></li>
+    </ul>
+  </section>
+
+  <section>
+    <div class="sec-h"><div class="no">7</div><h2>参考来源</h2></div>
+    <div class="card" style="font-size:13px; color:var(--sub);">
+      <p>1. GrapesJS 官方文档与 Document Projects / Printable 插件 / Absolute Mode：<a href="https://grapesjs.com/blog/release-document-builder">grapesjs.com/blog/release-document-builder</a>、<a href="https://app.grapesjs.com/docs-sdk/plugins/preset/printable">app.grapesjs.com/docs-sdk/plugins/preset/printable</a>、<a href="https://grapesjs.com/blog/grapes-release-absolute-mode">grapesjs.com/blog/grapes-release-absolute-mode</a>、<a href="https://grapesjs.com/">grapesjs.com</a></p>
+      <p>2. AavanamKit（designer + engine）：<a href="https://www.npmjs.com/package/@aavanamkit/designer">npm @aavanamkit/designer</a>、<a href="https://www.npmjs.com/package/@aavanamkit/engine">npm @aavanamkit/engine</a>、<a href="https://www.producthunt.com/p/aavanamkit/aavanamkit">Product Hunt</a></p>
+      <p>3. python-docx 与 docxtpl：<a href="https://python-docx.readthedocs.io/en/develop/">python-docx 文档</a>、<a href="https://docxtpl.readthedocs.io/en/latest/">python-docx-template</a>、<a href="https://pypi.org/project/docxspec/">docxspec</a>、<a href="https://pypi.org/project/pymsword/">pymsword</a></p>
+      <p>4. 表单设计器范式：<a href="https://segmentfault.com/a/1190000043670183">Everright-formEditor</a>、<a href="https://gitee.com/xp-admin/layui-form-design">layui-form-design</a>、<a href="https://i-lafen.github.io/site/web/form-design">vue 表单设计器思路</a>、<a href="https://www.shadcn.io/template/strlrd-29-shadcn-ui-form-builder">shadcn Form Builder</a></p>
+      <p>5. 对照项：<a href="https://www.npmjs.com/package/vue3-email-template-editor">vue3-email-template-editor</a>、<a href="https://templatical.com/">Templatical</a>、<a href="https://pub.dev/packages/pdf_kit_editor">pdf_kit_editor</a></p>
+      <p>6. 项目内部：layout-presets.json v1.4（15 组 × 10 套）、scripts/m6_tech（export.py / layout.py / cli.py）、scripts/m2_template、版面设计器-工作台V1.html、references/M2-模板库-操作手册.md</p>
+    </div>
+  </section>
+
+  <footer>bidcraft · 模板设计器实现方案（调研稿） · 2026-10-23 · 本报告为方案建议，落地前请按 P0 阶段确认数据模型</footer>
+</div>
+</body>
+</html>

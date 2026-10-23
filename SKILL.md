@@ -95,7 +95,7 @@ scripts/
 | M4 招标解析 | `references/M4-招标文件解析-操作手册.md`（**v2.6**：9 模块解析框架 + 双通道解析 + 响应文件格式独立文件 + 解析确认闸门（**投标要点 HTML 展示 `tender-report` + 差异逐项明示裁决**）+ 素材清单两分支 + **素材缺口收口（`tender-gap`：文字性→会话输入/图片文件→继续上传/用户豁免，收口后才进商务标生成（fill-tpl，素材清单驱动））** + 补遗/澄清 `tender-annex`；命令速查：tender-init/extract/fmt/rule/diff/parse/check/show/report/annex/gap）+ `references/M4-招标文件解析-提示词.md`（**v1.1：通道B agent 解析必须使用**，分段精读执行流程） | 项目级（`<软件根>/<企业>/项目级/<项目名>/招标解析/` + 同级 `项目资料/`） |
 | M2 模板库 | `references/M2-模板库-需求对齐.md`（v1.8：D1–D25 全流程决策，**2026-10-19 v2.0 布局样板范式变更：企业模板重新启用为布局样板母版，「V5 企业模板废弃」作废**、项目模板三依据/**D25 内容校验铁律**/商务标主体=冻结项目模板/注备注=动态更新源）+ `references/M2-模板库-操作手册.md`（v2.0：样板制作/登记/识别/试生成流程）+ **制作规范 `企业级/模板库/_模板制作规范.md`（v2.4：占位判定=母版↔招标格式双通道比对、键名规范表 key_alias、分批制作、定稿登记基线）** | 企业级（模板库数据目录，入口见操作手册） |
 | M5 项目模板 | `references/M5-项目模板生成-操作手册.md`（**v4.1**：企业模板=布局样板母版→项目模板=母版复制→fill-tpl 类别占位填充（占位索引/样板复制/类别聚合/未列不生成/缺图披露/**未知键白名单 key_alias**）；**V5 深拷贝+format_config 唯一来源已作废并清理**）+ `references/M5-项目模板检查-提示词.md`（**v3.1**：agent 检查强制提示词，依据=母版版面+页面布局规则清单+素材清单，**页面布局双通道**——代码通道逐页对齐+视觉通道核对每页起止/两图一页/间距/居中）+ `scripts/m5_project/key_alias.py`（**键名规范表**：机器键↔中文别名↔取值，fill-tpl 填充与白名单校验唯一键源）+ `fill-tpl` 命令（见模块契约）；产物落盘自动登记基线 | 项目级 `商务标\` |
-| M6 技术标 | `references/M6-技术标制作-需求对齐.md` + `references/module-contracts.md`（M6 节，T3–T13 契约与状态）+ **版面设计器 `dev/prototypes/版面设计器-工作台V1.html`**（全文档实时预览：封面/扉页/目录/正文×3/结尾 + 图库/流程图 + 15 组×10 套，「存组合」下载组合补丁 → `tech-layout --apply-combo <json> --confirm` 生成专家包进入生成链路；无 UI 的对话工作流与本地只读桥见 §6A）；命令速查：tech-init/outline/ctx/status/parse/check/report/layout/export（`--expert-pack` 绑定专家包，layoutCombo 落盘生效） | 项目级 `技术标\` + 共享级 `共享资源/技术标风格\`（layout-presets.json/专家包/样张素材/色卡预览.html） |
+| M6 技术标 | `references/M6-技术标制作-需求对齐.md` + `references/module-contracts.md`（M6 节，T3–T13 契约与状态）+ **版面设计器 `dev/prototypes/版面设计器-工作台V1.html`**（全文档实时预览：封面/扉页/目录/正文×3/结尾 + 图库/流程图 + 15 组×10 套，「存组合」下载组合补丁 → `tech-layout --apply-combo <json> --confirm` 生成专家包进入生成链路；无 UI 的对话工作流与本地只读桥见 §6A）+ **模板设计器 P0 `references/M6-模板设计-数据模型.md`**（template.json schema `m6.template/v1`：structure 部件编排/styleRef 十五组引用/placeholders 占位符/rules 规则 + 暗标派生铁律；命令 `tpl-design --list/--show/--validate/--apply --confirm/--specimen`，无 UI 完整可用）；命令速查：tech-init/outline/ctx/status/parse/check/report/layout/export（`--expert-pack` 绑定专家包，layoutCombo 落盘生效）+ `tpl-design` | 项目级 `技术标\` + 共享级 `共享资源/技术标风格\`（layout-presets.json/专家包/样张素材/色卡预览.html/**模板/**） |
 | 产物反馈机制 | `references/产物反馈机制-需求对齐.md`（v1.0：D14–D16 六步机制）+ `fb-baseline/audit/report/status` 命令 | 企业级 `产物基线.json` + `产物反馈\` |
 | M7 标书检查 | **双通道**：`check-rule` 通道A（机器检查规则引擎，`--out` 目录=项目商务标/上传标书原始目录（**.doc 自动转换 docx**；无项目模板基准时跳过模板对照类检查不误报）/ 单个 doc/docx=上传标书；**--tdir/--tpl 数据源项目内硬校验**（须位于 项目级/<项目>/ 内，禁止指向他项目，项目数据隔离），`--tag` 区分检查对象）→ `check-parse` 通道B（**必须遵循 `references/M7-标书检查-提示词.md` v1.0**，文本+JSON 双份落盘结构校验）→ `check-diff` 双通道差异（人工裁决）→ `check-report` HTML（人工确认闸门）；命令速查与产物命名见模块契约 | 项目级 `标书检查\`（产物带 `_<tag>` 后缀隔离检查对象，默认无 tag=项目生成商务标） |
 | M8 模拟评标 | **双通道**：`eval-run --project <项目> [--quote <报价元>] [--tdir <招标解析>] [--mat <素材清单>]`（通道A：评分标准结构化 + 客观分计算（证据=M4 素材清单，语义脆弱项标参考）+ 报价分反推基准价区间；**铁律：报价金额由用户提供**；--tdir/--mat 数据源项目内硬校验）→ `eval-parse`（通道B 主观分评审落盘，**必须遵循 `references/M8-模拟评标-提示词.md` v1.0**，JSON 结构校验闸门）→ `eval-report` 合并通道A+通道B 渲染完整报告；产物 `模拟评标/模拟评标_<项目>.json/.md + 主观评审_<项目>.json/.md + 模拟评标报告_<项目>.html`（人工确认闸门） | 项目级 `模拟评标\` |
@@ -132,6 +132,14 @@ scripts/
 4. 章节树落盘（布局真正进入项目，暗标仍由注入覆盖微观组/页眉页脚）：
    `python scripts/bidcraft.py tech-outline --project <项目> --file <章节树草案.json> --expert-pack <id> --confirm`
 5. 导出成稿/样张：`python scripts/bidcraft.py tech-export --confirm`（真实项目 docx）；或 `tech-layout --preview <preset>`（不依赖项目直接出样张 docx）。
+
+**模板设计器（P0，template.json 描述层）**：把"文档结构 + 样式引用 + 占位符 + 规则"沉淀为可校验数据（模板=装配单，docx=渲染产物），命令：
+- `tpl-design --list`：模板库清单 + 校验状态；
+- `tpl-design --show <模板.json>`：结构/样式/占位符/规则 + 暗标派生后 15 组样式；
+- `tpl-design --validate <模板.json>`：问题清单（`--json` 机读）；校验失败即拒绝落盘/出样张；
+- `tpl-design --apply <模板.json> --confirm`：落盘登记 + 写后回读校验（防覆盖；不带 --confirm 仅 dry-run）；
+- `tpl-design --specimen <模板.json>`：按模板样式引用出样张 docx（P0 以版面范式 preset 驱动，其余组见 --show；P1 全映射）；
+- 数据模型/校验规则/暗标派生见 `references/M6-模板设计-数据模型.md`。
 
 **示例提示词**：
 - "查看当前排版预设和默认组合"
