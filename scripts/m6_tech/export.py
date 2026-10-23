@@ -993,6 +993,32 @@ class _Renderer:
         else:
             self._image_single(cap, src, w, cap_text, note=right_text)
 
+    def _image_grid_pair(self, cap1, src1, cap2, src2, right_text=""):
+        """grid 图组并排：1×2 无边框表，两图同尺寸并排，图下各自题注，表下可选组注。"""
+        table = self.doc.add_table(rows=2, cols=2)
+        table.autofit = True
+        _no_borders(table)
+        w = 6.8
+        self.fig_no += 1
+        cap_text1 = "%s　%s" % (self._caption_text("fig"), cap1)
+        self.fig_no += 1
+        cap_text2 = "%s　%s" % (self._caption_text("fig"), cap2)
+        for j, (cap_text, src) in enumerate(((cap_text1, src1), (cap_text2, src2))):
+            c0 = table.rows[0].cells[j]
+            p0 = c0.paragraphs[0]
+            p0.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            p0.add_run().add_picture(str(src), width=Cm(w))
+            c1 = table.rows[1].cells[j]
+            pc = c1.paragraphs[0]
+            pc.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            rc = pc.add_run(cap_text)
+            _set_font(rc, None, size=Pt(9), east=self.font_body if not self.dark else "宋体")
+        if right_text:
+            pn = self.doc.add_paragraph()
+            pn.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+            rn = pn.add_run(right_text)
+            _set_font(rn, None, size=_heading_size(self.sizes, "body", 12), east=self.font_body)
+
     def _image_single(self, cap, src, w, cap_text, note=""):
         """全宽/默认单图：图 + 图题（下/上按 captionSystem）。"""
         if self.caption["fig_pos"] == "above":
@@ -1029,6 +1055,23 @@ class _Renderer:
                 if self.cfg.get("imageRatio") != "none" and self.image_layout != "none":
                     cap, src = mimg.group(1), mimg.group(2)
                     if Path(src).is_file() and self._image_rule_ok(cap):
+                        # grid 图组并排：下一行仍是图片引用 → 两张图一组并排
+                        if self.image_layout == "grid" and i + 1 < len(lines):
+                            m2 = _MD_IMG.search(lines[i + 1].rstrip())
+                            if m2:
+                                cap2, src2 = m2.group(1), m2.group(2)
+                                if Path(src2).is_file() and self._image_rule_ok(cap2):
+                                    right_text = ""
+                                    step = 2
+                                    if i + 2 < len(lines):
+                                        nt = lines[i + 2].rstrip()
+                                        if (nt and not nt.startswith(("#", "!", "-", "*", "|"))
+                                                and not _MD_TABLE_ROW.match(nt)):
+                                            right_text = nt
+                                            step = 3
+                                    self._image_grid_pair(cap, src, cap2, src2, right_text)
+                                    i += step
+                                    continue
                         self.fig_no += 1
                         right_text = ""
                         if i + 1 < len(lines):

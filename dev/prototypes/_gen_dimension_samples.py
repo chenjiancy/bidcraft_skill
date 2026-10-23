@@ -48,6 +48,7 @@ SAMPLE_DEFS = [
     ("s28_页面_海口25", BASE.replace("pageSetup=p1-standard-a4", "pageSetup=p2-haikou-25")),
     ("s29_装饰_角点+双栏", BASE.replace("decoration=standard", "decoration=corner-dots").replace("preset=single-column", "preset=two-column")),
     ("s30_分隔页_章首色带", BASE.replace("decoration=standard", "decoration=section-band").replace("preset=single-column", "preset=divider")),
+    ("s31_图排_两图并排", BASE.replace("imageLayout=split-h", "imageLayout=grid").replace("imageRule=hybrid", "imageRule=photo-only")),
 ]
 
 only = sys.argv[1:]
@@ -57,7 +58,7 @@ for name, override in SAMPLE_DEFS:
         continue
     tmp = tempfile.TemporaryDirectory()
     try:
-        ent = layout._builtin_preview_fixture(tmp.name)
+        ent = layout._builtin_preview_fixture(tmp.name, grid_pair=(name == "s31_图排_两图并排"))
         out_dir = ent / "项目级" / "预览项目" / "技术标" / "产出"
         export.cmd_tech_export(SimpleNamespace(
             root=tmp.name, enterprise="预览企业", project="预览项目",

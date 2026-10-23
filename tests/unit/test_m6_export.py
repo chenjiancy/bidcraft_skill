@@ -412,6 +412,32 @@ class TechLayout12DimTest(unittest.TestCase):
         footers = [z.read(p).decode("utf-8", "ignore") for p in z.namelist() if p.startswith("word/footer")]
         self.assertTrue(footers and any("PAGE" in f for f in footers), "hf10 暗标应带页码")
 
+    def test_dim12_grid_pair(self):
+        """grid 图组并排：连续两张照片引用 → 合并为 1×2 并排表格，图题连续编号。"""
+        import re as _re
+        import zipfile as _zip
+        tech = _mk_project(self.tmp, dark=False)
+        img_dir = REPO / "共享资源" / "技术标风格" / "样张素材"
+        f1, f2 = img_dir / "样张_水准测量放线.jpg", img_dir / "样张_图纸会审.jpg"
+        if not (f1.is_file() and f2.is_file()):
+            self.skipTest("样张素材缺失，跳过 grid 并排验证")
+        body_p = tech / "章节" / "ch-01" / "正文.md"
+        body_p.write_text(body_p.read_text(encoding="utf-8")
+                          + "\n![现场水准测量放线](%s)\n![监理例会图纸会审](%s)\n"
+                          "水准测量放线与图纸会审工作对照如下，实测数据实时录入监理台账。\n"
+                          % (f1, f2), encoding="utf-8")
+        self.assertEqual(self._run(tech, override="imageLayout=grid;imageRule=photo-only"), 0)
+        out = tech / "产出" / "技术标_DEMO项目.docx"
+        z = _zip.ZipFile(str(out))
+        xml = z.read("word/document.xml").decode("utf-8")
+        # 图题连续编号（第一章分章 → 图1-1、图1-2）
+        self.assertIn("图1-1　现场水准测量放线", xml, "并排第一图应为 图1-1")
+        self.assertIn("图1-2　监理例会图纸会审", xml, "并排第二图应为 图1-2")
+        # 存在一个表格内两个单元格各含一张图（1×2 并排表）
+        tbls = _re.findall(r"<w:tbl>(.*?)</w:tbl>", xml, flags=_re.S)
+        pair = [t for t in tbls if t.count("<w:drawing>") == 2 and t.count("<w:tc>") >= 2]
+        self.assertEqual(len(pair), 1, "应存在 1 个两图并排表格，实际 %d 个" % len(pair))
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

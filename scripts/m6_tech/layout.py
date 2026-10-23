@@ -190,8 +190,9 @@ def _sample_images():
     return None
 
 
-def _builtin_preview_fixture(root):
-    """内置样张 fixture：共享资源预设 + 预览企业/项目级/预览项目/技术标（3 章精简正文）。"""
+def _builtin_preview_fixture(root, grid_pair=False):
+    """内置样张 fixture：共享资源预设 + 预览企业/项目级/预览项目/技术标（3 章精简正文）。
+    grid_pair=True 时在第一章插入连续两张照片引用（触发 grid 图组并排渲染）。"""
     import shutil
     import tempfile
     from pathlib import Path
@@ -257,6 +258,8 @@ def _builtin_preview_fixture(root):
             "| 2 | 进度目标 | 关键线路周报纠偏 |\n"
             + _fig("site", "施工现场全景")
             + "现场主体结构已施工至十层，安全防护与绿色施工措施同步落实。\n"
+            + (_fig("survey", "现场水准测量放线") + _fig("meeting", "监理例会图纸会审")
+               + "现场水准测量放线与监理例会图纸会审工作对照如下，实测实量数据实时录入监理台账。\n" if grid_pair else "")
             + _fig("flow_quality", "质量控制验收程序流程图")
             + "质量控制执行报验制与旁站制，不合格项限期整改后重新报验，合格后方可进入下道工序。\n"
             "### 1. 监理工作范围\n"
