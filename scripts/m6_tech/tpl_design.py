@@ -358,6 +358,17 @@ def _parts_index(args):
     return {k: True for k in files} if files else None
 
 
+def _quiet(flag, fn):
+    """json 输出模式下吞掉渲染引擎的人类可读 print（只保留命令自身的 json 输出）。"""
+    if not flag:
+        return fn()
+    import contextlib
+    import io
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        return fn()
+
+
 # ---------------------------------------------------------------------------
 # tpl-design 命令
 # ---------------------------------------------------------------------------
@@ -547,13 +558,15 @@ def _cmd_specimen(args, jflag):
     if getattr(args, "project", ""):
         # 真实项目：模板全映射导出成稿（企业名取 --enterprise）
         enterprise = getattr(args, "enterprise", "") or "安徽安硕工程咨询有限公司"
-        _export.cmd_tech_export(SimpleNamespace(
+        _quiet(jflag, lambda: _export.cmd_tech_export(SimpleNamespace(
             root=getattr(args, "root", None), enterprise=enterprise, project=project,
-            template=str(p), fill=fill, override="", bid_mode="", out="", force=True))
+            template=str(p), fill=fill, override="", bid_mode="", out="", force=True)))
         msg = ("项目 %s 已按模板「%s」导出（全映射：structure/styleRef/placeholders/暗标）："
                "技术标/产出/技术标_%s.docx" % (project, doc.get("name", ""), project))
         if jflag:
-            print(json.dumps({"ok": True, "template": p.name, "project": project}, ensure_ascii=False, indent=2))
+            print(json.dumps({"ok": True, "template": p.name, "project": project,
+                              "path": str(sources.tech_dir(ent, project) / "产出" / ("技术标_%s.docx" % project))},
+                             ensure_ascii=False, indent=2))
         else:
             print(msg)
         return 0
@@ -562,13 +575,14 @@ def _cmd_specimen(args, jflag):
         ent = _builtin_preview_fixture(tmp.name)
         out_dir = ent / "项目级" / "预览项目" / "技术标" / "产出"
         # fixture 分支：企业/项目固定为预览企业/预览项目（与 tech-layout --preview 同规）
-        _export.cmd_tech_export(SimpleNamespace(
+        _quiet(jflag, lambda: _export.cmd_tech_export(SimpleNamespace(
             root=tmp.name, enterprise="预览企业", project="预览项目",
-            template=str(p), fill=fill, override="", bid_mode="", out=str(out_dir), force=True))
+            template=str(p), fill=fill, override="", bid_mode="", out=str(out_dir), force=True)))
         target = Path.cwd() / ("技术标样张_%s.docx" % p.stem)
         shutil.copyfile(str(out_dir / ("技术标_%s.docx" % project)), str(target))
         if jflag:
             print(json.dumps({"ok": True, "template": p.name, "preset": (doc.get("styleRef") or {}).get("preset", ""),
+                              "path": str(target),
                               "note": "P1 模板全映射：structure/styleRef/placeholders/暗标派生均生效"},
                              ensure_ascii=False, indent=2))
         else:

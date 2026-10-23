@@ -23,6 +23,11 @@ bidcraft · 本地只读 HTTP 桥（B 方案：UI/平台工具 ↔ CLI 的只读
   /api/layout/validate?<key>=<id>&...   十五组 id F11 校验（缺省回填默认；bidMode=明标|暗标）
   /api/layout/packs         专家包清单（id/name/description/layoutCombo/bidType）
   /api/capabilities         项目能力清单（动态）：layoutGroups / commands / moduleEntries / endpoints / presetsVersion
+  /api/template/list        模板清单 + 校验状态（tpl-design --list --json 机读）
+  /api/template/show?name=X   模板详情（structure/styleRef/placeholders/rules + 暗标派生 15 组 + 校验）
+  /api/template/validate?name=X   模板校验问题清单（err/warn；写操作仍 405 走 CLI）
+  /api/template/parts       部件库清单（tpl-part --list --json）
+  /api/template/specimen?name=X[&fill=k=v;…]   出样张到临时目录（只读派生，不写项目/模板库）
 """
 
 import argparse
@@ -60,6 +65,8 @@ MODULE_PREFIX = (
 ENDPOINTS = (
     "/api/health", "/api/layout/groups", "/api/layout/presets",
     "/api/layout/validate", "/api/layout/packs", "/api/capabilities",
+    "/api/template/list", "/api/template/show", "/api/template/validate",
+    "/api/template/parts", "/api/template/specimen",
 )
 WRITE_HINT = ("bidcraft server 为只读代理，不执行写操作；写/生成请走 CLI 并保留人工确认闸门："
               "python scripts/bidcraft.py tech-layout --apply-combo <组合补丁.json> --confirm（生成专家包）/"
@@ -122,10 +129,22 @@ class _Handler(BaseHTTPRequestHandler):
                 self._send(200, self._packs())
             elif path == "/api/capabilities":
                 self._send(200, self._capabilities())
+            elif path == "/api/template/list":
+                self._send(200, self._template_list())
+            elif path == "/api/template/show":
+                self._send(200, self._template_show(query))
+            elif path == "/api/template/validate":
+                self._send(200, self._template_validate(query))
+            elif path == "/api/template/parts":
+                self._send(200, self._template_parts())
+            elif path == "/api/template/specimen":
+                self._send(200, self._template_specimen(query))
             else:
                 self._send(404, {"ok": False, "error": "未知接口：%s（可用：/api/health /api/layout/groups "
                                                         "/api/layout/presets /api/layout/validate /api/layout/packs "
-                                                        "/api/capabilities）" % path})
+                                                        "/api/capabilities /api/template/list /api/template/show "
+                                                        "/api/template/validate /api/template/parts "
+                                                        "/api/template/specimen）" % path})
         except Exception as e:  # noqa: BLE001 —— 兜底，保证响应始终是 JSON
             self._send(500, {"ok": False, "error": "%s: %s" % (type(e).__name__, e)})
 
@@ -189,6 +208,87 @@ class _Handler(BaseHTTPRequestHandler):
         payload = {"ok": True, "base": str(base), "packs": out, "errors": errors}
         return payload
 
+    # ---- P3 模板设计器（/api/template/*）---------------------------------
+    def _cli_json(self, args_list):
+        """subprocess 调 bidcraft CLI（--json），返回 (payload, error)。单一事实源=CLI。"""
+        import subprocess
+        cli = str(Path(__file__).resolve().parent / "bidcraft.py")
+        cmd = [sys.executable, "-X", "utf8", cli, "--root", str(self.server.root or ""),
+               "--enterprise", (self.server.enterprise or "")] + args_list + ["--json"]
+        try:
+            r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8",
+                               timeout=120, cwd=str(Path(__file__).resolve().parent))
+        except subprocess.TimeoutExpired:
+            return None, "CLI 超时（120s）"
+        out = (r.stdout or "").strip()
+        try:
+            payload = json.loads(out)
+        except ValueError:
+            return None, "CLI 输出非 JSON：%s" % (out[:200] or r.stderr[:200])
+        if r.returncode != 0 and payload.get("ok") is not True:
+            payload["cliExit"] = r.returncode
+        return payload, None
+
+    def _template_list(self):
+        payload, err = self._cli_json(["tpl-design", "--list"])
+        if err:
+            return {"ok": False, "error": err}
+        return payload
+
+    def _template_show(self, query):
+        name = (query.get("name") or [""])[0].strip()
+        if not name:
+            return {"ok": False, "error": "缺少 name 参数（模板名或文件名，tpl-design --list 查看）"}
+        payload, err = self._cli_json(["tpl-design", "--show", name])
+        if err:
+            return {"ok": False, "error": err}
+        return payload
+
+    def _template_validate(self, query):
+        name = (query.get("name") or [""])[0].strip()
+        if not name:
+            return {"ok": False, "error": "缺少 name 参数（模板名或文件名）"}
+        payload, err = self._cli_json(["tpl-design", "--validate", name])
+        if err:
+            return {"ok": False, "error": err}
+        return payload
+
+    def _template_parts(self):
+        payload, err = self._cli_json(["tpl-part", "--list"])
+        if err:
+            return {"ok": False, "error": err}
+        return payload
+
+    def _template_specimen(self, query):
+        """出样张：走 CLI fixture 分支，样张落临时目录并返回绝对路径（只读派生，不写项目/模板库）。"""
+        name = (query.get("name") or [""])[0].strip()
+        if not name:
+            return {"ok": False, "error": "缺少 name 参数（模板名或文件名）"}
+        fill = (query.get("fill") or [""])[0].strip() or ""
+        import tempfile
+        cwd = tempfile.mkdtemp(prefix="bid_tpl_spec_")
+        import subprocess
+        cli = str(Path(__file__).resolve().parent / "bidcraft.py")
+        cmd = [sys.executable, "-X", "utf8", cli, "--root", str(self.server.root or ""),
+               "--enterprise", (self.server.enterprise or ""),
+               "tpl-design", "--specimen", name, "--json"]
+        if fill:
+            cmd += ["--fill", fill]
+        try:
+            r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8",
+                               timeout=180, cwd=cwd)
+        except subprocess.TimeoutExpired:
+            return {"ok": False, "error": "出样张超时（180s）"}
+        out = (r.stdout or "").strip()
+        try:
+            payload = json.loads(out)
+        except ValueError:
+            return {"ok": False, "error": "CLI 输出非 JSON：%s" % (out[:300] or r.stderr[:200])}
+        payload["ok"] = (r.returncode == 0 and payload.get("ok") is True)
+        if not payload["ok"]:
+            payload["cliExit"] = r.returncode
+        return payload
+
     def _capabilities(self):
         """项目能力清单（动态）：UI「功能入口」与实时状态的唯一来源。
         commands 由 bidcraft CLI 的 argparse 子命令表推导——新增命令自动出现在清单里；
@@ -243,7 +343,9 @@ def main(argv=None):
     server.enterprise = args.enterprise
     url = "http://%s:%d" % ("127.0.0.1" if args.host in ("0.0.0.0", "::") else args.host, server.server_address[1])
     print("bidcraft-server 只读桥已启动：%s" % url)
-    print("只读接口：/api/health /api/layout/groups /api/layout/presets /api/layout/validate /api/layout/packs /api/capabilities")
+    print("只读接口：/api/health /api/layout/groups /api/layout/presets /api/layout/validate /api/layout/packs "
+          "/api/capabilities /api/template/list /api/template/show /api/template/validate /api/template/parts "
+          "/api/template/specimen")
     print("写操作一律走 CLI（本服务 405 拒绝）。Ctrl+C 停止。")
     try:
         server.serve_forever()

@@ -184,6 +184,9 @@ scripts/
 
 **UI 实时化（数据+功能入口动态，离线回退）**：`版面设计器-工作台V1.html` 启动先以内联快照渲染（初始可读），随后探测 `API_BASE`（默认 http://127.0.0.1:8765，可 `?api=<url>` 覆盖）——连接成功则用 `/api/layout/presets`+`/api/capabilities`+`/api/layout/packs` **实时数据重渲染**（15 组面板、推荐套餐、专家包清单、预设版本徽标、项目能力卡片：模块/命令速查/桥接口自动随项目扩展）；连接失败回退内联快照并在顶部徽标标注「离线快照·未连接 bidcraft-server」，页面照常可用。**新增命令/模块/预设后刷新页面即同步，无需改 HTML**。
 
+**模板设计器平台工具契约（P3，`/api/template/*` 只读能力桥）**：模板设计器的读能力经桥注册为平台工具（豆包/WorkBuddy 可包装），**CLI 是单一事实源**（`tpl-design`/`tpl-part` 的 `--json` 输出经 `subprocess` 原样转 HTTP JSON；桥不持业务逻辑、不写盘，非 GET 一律 405）。端点：
+`/api/health`、`/api/capabilities`、`/api/template/list`（`tpl-design --list --json`）、`/api/template/show?name=<文件>`（`--show --json`）、`/api/template/validate?name=`、`/api/template/parts`（`tpl-part --list --json`）、`/api/template/specimen?name=&fill=`（`--specimen --json`，输出真实 docx 路径 `path`；直连时用 `_quiet` 吞人类可读 print 防污染 JSON）。三栏演示原型 `dev/prototypes/模板设计器-工作台V2.html`（全元素实时预览：封面/扉页/目录/正文×3/结尾 + 部件来源标注 + 暗标切换，离线内置 FALLBACK_* 兜底）只读展示，写操作一律 CLI + 人工确认闸门。契约细节/测试见 `references/M6-模板设计-数据模型.md` §11。
+
 ## 七、开发纪律：规则对齐闸门（强制，防跑偏）
 **本闸门是生命线**：任何实现/改造/流程变更，动手前必须通过本闸门；未过闸门不得开发。纯问答、纯只读核查不触发。
 

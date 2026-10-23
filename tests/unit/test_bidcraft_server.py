@@ -167,5 +167,66 @@ class PacksEndpointTest(unittest.TestCase):
                 server.server_close()
 
 
+class TemplateEndpointTest(unittest.TestCase):
+    """/api/template/*（P3 模板设计器能力桥）：真实模板库根，验证与 CLI 同源。"""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.server = ThreadingHTTPServer(("127.0.0.1", 0), bidcraft_server._Handler)
+        cls.server.root = str(REPO)
+        cls.server.enterprise = None
+        cls.thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
+        cls.thread.start()
+        cls.base = "http://127.0.0.1:%d" % cls.server.server_address[1]
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.server.shutdown()
+        cls.server.server_close()
+
+    def test_list(self):
+        status, body = _get(self.base + "/api/template/list")
+        self.assertEqual(status, 200)
+        self.assertTrue(body["ok"])
+        files = [t["file"] for t in body["templates"]]
+        self.assertIn("示例-标准技术标.json", files)
+
+    def test_show(self):
+        status, body = _get(self.base + "/api/template/show?name=" + quote("示例-标准技术标.json"))
+        self.assertEqual(status, 200)
+        self.assertTrue(body["ok"])
+        self.assertEqual(body["name"], "示例：标准技术标")
+        self.assertEqual(len(body["structure"]), 5)
+        self.assertEqual(len(body["layout"]), 15)
+
+    def test_validate_ok_and_missing(self):
+        status, body = _get(self.base + "/api/template/validate?name=" + quote("示例-标准技术标.json"))
+        self.assertEqual(status, 200)
+        self.assertTrue(body["ok"])
+        self.assertEqual(body["issues"], [])
+        status, body = _get(self.base + "/api/template/validate")
+        self.assertEqual(status, 200)
+        self.assertFalse(body["ok"])
+        self.assertIn("name", body["error"])
+
+    def test_parts(self):
+        status, body = _get(self.base + "/api/template/parts")
+        self.assertEqual(status, 200)
+        self.assertTrue(body["ok"])
+        names = [p["name"] for p in body["parts"]]
+        self.assertIn("示例-商务标母版", names)
+
+    def test_specimen_returns_path(self):
+        # 出样张到临时目录（只读派生）：返回绝对路径且文件存在
+        status, body = _get(self.base + "/api/template/specimen?name=" + quote("示例-标准技术标.json")
+                            + "&fill=" + quote("enterprise_name=桥测企业;project_name=桥测工程"))
+        self.assertEqual(status, 200)
+        self.assertTrue(body["ok"], body)
+        p = body.get("path") or ""
+        self.assertTrue(p, "样张路径缺失：%s" % body)
+        self.assertTrue(Path(p).is_file(), "样张文件不存在：%s" % p)
+        self.assertTrue(str(Path(p)).endswith(".docx"))
+
+
 if __name__ == "__main__":
     unittest.main()

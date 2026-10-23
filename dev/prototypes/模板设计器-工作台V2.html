@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>模板设计器 · 工作台 V2（三栏 · 全元素实时预览）</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%232B5CD9'/%3E%3Crect x='7' y='8' width='18' height='13' rx='1.5' fill='none' stroke='%23fff' stroke-width='2'/%3E%3Cpath d='M11 14h10M11 17h6' stroke='%23fff' stroke-width='1.6'/%3E%3C/svg%3E">
+<style>
+:root{
+  --brand:#2B5CD9; --brand2:#1c44a8; --acc:#4C82F2; --line:#e6e9f0; --bg:#f7f8fa;
+  --card:#ffffff; --ink:#1f2330; --dim:#7a8193; --ok:#22a06b; --warn:#b7791f; --bad:#d64545;
+  --shadow:0 1px 2px rgba(30,40,80,.05),0 6px 18px rgba(30,40,80,.07);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Microsoft YaHei","PingFang SC","Noto Sans SC",system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.6;min-width:0}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,select{font-family:inherit;font-size:16px}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:#c8cfdd;border-radius:4px}
+.proto-banner{background:#FFF7E8;border-bottom:1px solid #F0DFC2;color:#8a6d3b;font-size:12px;line-height:1.7;padding:7px 16px;text-align:center}
+.proto-banner b{color:#7a5c2c}
+.topbar{position:sticky;top:0;z-index:60;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;padding:0 16px;height:54px}
+.logo{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:800;color:var(--brand2);white-space:nowrap}
+.topbar .sp{flex:1}
+.btn{display:inline-flex;align-items:center;gap:6px;border-radius:8px;padding:7px 13px;font-size:12.5px;font-weight:600;transition:all .15s;white-space:nowrap}
+.btn-primary{background:var(--brand);color:#fff}
+.btn-primary:hover{background:var(--brand2)}
+.btn-ghost{border:1px solid var(--line);color:var(--ink);background:#fff}
+.btn-ghost:hover{border-color:var(--brand);color:var(--brand)}
+.st-badge{font-size:11.5px;padding:3px 10px;border-radius:8px;background:#eef1f7;color:#5c6478;white-space:nowrap}
+.st-badge.live{background:#e6f4ea;color:#1e7e47}
+.st-badge.off{background:#fdf0dc;color:var(--warn)}
+.tpl-shell{display:flex;align-items:stretch;min-height:calc(100vh - 54px)}
+@media (min-width:1024px){ .tpl-shell{min-width:1180px} }
+.tpl-left{width:248px;flex:none;background:#fff;border-right:1px solid var(--line);padding:12px 10px;overflow-y:auto;height:calc(100vh - 54px);position:sticky;top:54px}
+.l-h{font-size:11px;color:var(--dim);padding:8px 10px 6px;letter-spacing:1px;display:flex;justify-content:space-between}
+.tpl-item{display:flex;flex-direction:column;gap:2px;width:100%;padding:8px 10px;border-radius:8px;font-size:12.5px;color:#4a5265;text-align:left;margin-bottom:4px;border:1px solid transparent}
+.tpl-item:hover{background:#f2f5fb}
+.tpl-item.active{background:#e9effd;border-color:#c6d5f8;color:var(--brand2);font-weight:700}
+.tpl-item .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tpl-item .st{font-size:10.5px;color:var(--dim);display:flex;gap:6px}
+.tpl-item .st .err{color:var(--bad)}
+.tpl-item .st .warn{color:var(--warn)}
+.part-item{font-size:11.5px;padding:5px 10px;border-radius:7px;background:#f7f8fb;color:#4a5265;margin-bottom:4px;border:1px dashed var(--line)}
+.part-item b{color:var(--brand2)}
+.part-item .ps{font-size:10px;color:var(--dim)}
+/* 中栏 */
+.tpl-mid{flex:1;min-width:0;padding:14px 16px 40px;overflow-y:auto;height:calc(100vh - 54px)}
+.card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:12px}
+.card-h{font-size:12.5px;font-weight:700;color:var(--brand2);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.card-h .tag{font-size:10px;color:var(--dim);font-weight:400;margin-left:auto}
+.row{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:12px}
+.row label{width:96px;flex:none;color:#4a5265}
+.row .val{flex:1;min-width:0}
+.row select,.row input{width:100%;border:1px solid var(--line);border-radius:7px;padding:6px 9px;font-size:12.5px;background:#fff;color:var(--ink)}
+.struct-item{border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-bottom:8px;background:#fcfdff}
+.struct-top{display:flex;align-items:center;gap:8px;font-size:12.5px}
+.struct-top .pn{font-weight:700;min-width:64px}
+.struct-top .opt{font-size:11px;color:var(--dim)}
+.struct-top .sw{margin-left:auto;display:flex;align-items:center;gap:5px;font-size:11px;color:var(--dim)}
+.struct-src{margin-top:6px;display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--dim)}
+.struct-src select{flex:1;border:1px solid var(--line);border-radius:6px;padding:4px 8px;font-size:11.5px}
+.struct-src .src-tag{font-size:10px;padding:2px 7px;border-radius:6px;background:#eef3fd;color:var(--brand);white-space:nowrap}
+.issue-line{font-size:11.5px;padding:5px 9px;border-radius:7px;margin-bottom:5px}
+.issue-line.err{background:#fbe7e5;color:var(--bad)}
+.issue-line.warn{background:#fdf0dc;color:var(--warn)}
+.issue-line.ok{background:#e2f4ec;color:#14784f}
+.fill-line{display:flex;gap:8px;margin-bottom:6px}
+.fill-line input{flex:1;border:1px solid var(--line);border-radius:7px;padding:6px 9px;font-size:12px}
+.cmd-box{font-family:Consolas,monospace;font-size:11px;background:#0f1829;color:#cfe3ff;border-radius:8px;padding:10px 12px;white-space:pre-wrap;word-break:break-all;margin-top:8px}
+/* 右栏 */
+.tpl-right{width:600px;flex:none;background:#eef1f6;border-left:1px solid var(--line);padding:14px 14px 40px;overflow-y:auto;height:calc(100vh - 54px)}
+.pv-h{font-size:11px;color:var(--dim);padding:4px 2px 10px;letter-spacing:1px;display:flex;align-items:center;gap:8px}
+.pv-h .live-dot{width:7px;height:7px;border-radius:50%;background:var(--ok);display:inline-block}
+.doc-flow{display:flex;flex-direction:column;gap:22px}
+.page{background:#fff;box-shadow:var(--shadow);border:1px solid var(--line);border-radius:6px;padding:30px 34px 34px;position:relative;aspect-ratio:210/297;display:flex;flex-direction:column;overflow:hidden}
+.p-tag{position:absolute;top:8px;left:14px;z-index:5;font-size:10px;letter-spacing:1.5px;color:#8a93a8;cursor:default}
+.p-tag::before{content:"▍";color:#9aa3b8;margin-right:3px}
+.p-tag.opt{color:#a0743a}
+.pg-hd{font-size:9px;color:#7a8193;border-bottom:1px solid var(--line);padding-bottom:4px;margin-bottom:10px;display:flex;justify-content:space-between;gap:8px}
+.pg-ft{position:absolute;bottom:6px;left:0;right:0;text-align:center;font-size:9px;color:#9aa3b8}
+.zhang{font-size:15px;font-weight:700;margin:2px 0 10px}
+.jie{font-size:13px;font-weight:700;margin:8px 0 6px}
+.p-text{font-size:12px;text-indent:2em;margin-bottom:6px}
+.p-text .bar{display:inline-block;width:96%;height:6px;border-radius:3px;background:#e2e6ee;vertical-align:middle}
+.p-text .bar.w{width:78%}
+.p-tbl{width:100%;border-collapse:collapse;font-size:10.5px;margin:8px 0 4px}
+.p-tbl th,.p-tbl td{border:1px solid #cdd4e0;padding:4px 7px;text-align:center}
+.p-tbl th{font-weight:700}
+.flow-box{margin:10px 0 4px;border-radius:4px;display:flex;gap:6px;align-items:center;justify-content:center;color:#9aa3b8;font-size:10.5px;padding:8px}
+.flow-box .fnode{flex:1;border:1.5px solid #c3cbd9;border-radius:4px;padding:8px 4px;text-align:center;font-size:10px;color:#4a5265;background:#f8fafc}
+.flow-box .farrow{color:#9aa3b8;font-weight:700}
+.photo-box{margin:8px 0 4px;display:flex;gap:8px;justify-content:center}
+.photo-box .im{width:96px;height:62px;background:repeating-linear-gradient(45deg,#eef1f6,#eef1f6 6px,#e2e7f0 6px,#e2e7f0 12px);border:1px dashed #c3cbd9;border-radius:3px}
+.fig-cap{font-size:10px;color:#5c6478;text-align:center;margin-top:3px}
+.cover-page{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;padding:26px;z-index:2;background:#fff}
+.cover-page .cp-title{font-size:20px;font-weight:800;text-align:center;line-height:1.45}
+.cover-page .cp-sub{font-size:11px;text-align:center;opacity:.85}
+.cover-page .cp-info{margin-top:16px;font-size:11px;text-align:center;line-height:2.1;opacity:.92}
+.part-src{position:absolute;bottom:8px;right:12px;font-size:9.5px;color:#8a93a8;background:#f2f5fb;border:1px dashed #c3cbd9;border-radius:6px;padding:1px 7px;z-index:4}
+.canvas-note{margin-top:12px;text-align:center;font-size:11px;color:var(--dim)}
+.mini-toast{position:fixed;left:50%;bottom:34px;transform:translateX(-50%);background:#1f2330;color:#fff;font-size:12px;padding:8px 16px;border-radius:8px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:120}
+.mini-toast.show{opacity:.95}
+@media (max-width:1023px){
+  .tpl-shell{flex-direction:column}
+  .tpl-left,.tpl-mid,.tpl-right{width:100%;height:auto;position:static;border:none;border-bottom:1px solid var(--line)}
+  .tpl-right{order:2}
+  .topbar{flex-wrap:wrap;height:auto;padding:8px 12px}
+  .row select,.row input,.fill-line input{font-size:16px;min-height:44px}
+}
+</style>
+</head>
+<body>
+<div class="proto-banner">【演示原型】模板设计器工作台 V2 —— 三栏 · 全元素实时预览（封面/扉页/目录/正文×3/结尾 + 部件库来源）。<b>真实能力在 CLI：</b>tpl-design --apply/--validate/--specimen、tpl-part --scan/--list；本页仅调用只读桥做展示，写操作一律走 CLI + 人工确认闸门。</div>
+<div class="topbar">
+  <div class="logo"><svg width="22" height="22" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#2B5CD9"/><rect x="7" y="8" width="18" height="13" rx="1.5" fill="none" stroke="#fff" stroke-width="2"/><path d="M11 14h10M11 17h6" stroke="#fff" stroke-width="1.6"/></svg>模板设计器 · 工作台 V2</div>
+  <span class="st-badge" id="bridgeBadge">数据桥：检测中…</span>
+  <div class="sp"></div>
+  <button class="btn btn-ghost" id="btnValidate">校验模板</button>
+  <button class="btn btn-primary" id="btnSpecimen">出样张（真实生成 docx）</button>
+</div>
+<div class="tpl-shell">
+  <!-- 左栏 -->
+  <aside class="tpl-left">
+    <div class="l-h">模板清单 <span id="tplCount"></span></div>
+    <div id="tplList"></div>
+    <div class="l-h" style="margin-top:14px">部件库（母版拆解回流）</div>
+    <div id="partList"></div>
+  </aside>
+  <!-- 中栏 -->
+  <main class="tpl-mid">
+    <div class="card">
+      <div class="card-h">模板描述 <span class="tag" id="tplPath"></span></div>
+      <div class="row"><label>名称</label><div class="val" id="tplName">—</div></div>
+      <div class="row"><label>描述</label><div class="val" id="tplDesc">—</div></div>
+      <div class="row"><label>投标模式</label><div class="val" id="tplBidMode">—</div></div>
+    </div>
+    <div class="card">
+      <div class="card-h">文档结构（structure） <span class="tag">部件可引用母版拆解产物</span></div>
+      <div id="structEdit"></div>
+    </div>
+    <div class="card">
+      <div class="card-h">样式引用（styleRef · 十五组） <span class="tag" id="styleCount"></span></div>
+      <div id="styleEdit"></div>
+    </div>
+    <div class="card">
+      <div class="card-h">占位符填充（--fill） <span class="tag">缺省自动注入：企业名/项目名/日期</span></div>
+      <div class="fill-line"><input id="fillEnterprise" placeholder="enterprise_name：企业名"><input id="fillProject" placeholder="project_name：项目名"></div>
+      <div class="fill-line"><input id="fillDate" placeholder="bid_date：日期（缺省当日）"></div>
+    </div>
+    <div class="card">
+      <div class="card-h">校验结果</div>
+      <div id="issueBox"><div class="issue-line ok">尚未校验</div></div>
+    </div>
+    <div class="card">
+      <div class="card-h">等效 CLI 命令（真实能力的唯一入口）</div>
+      <div class="cmd-box" id="cmdBox">—</div>
+    </div>
+  </main>
+  <!-- 右栏 -->
+  <aside class="tpl-right">
+    <div class="pv-h"><span class="live-dot"></span>全文档实时预览（依据当前组合实时重绘）</div>
+    <div class="doc-flow" id="docFlow"></div>
+    <div class="canvas-note" id="pvNote">样式按所选组合实时重绘；「出样张」调用只读桥生成真实 docx（临时目录）。</div>
+  </aside>
+</div>
+<div class="mini-toast" id="toast"></div>
+
+<script>
+'use strict';
+/* ============ 数据桥（B 方案：本地只读 HTTP 桥；?api= 覆盖默认地址） ============ */
+const API_BASE = (function(){ const m=location.search.match(/[?&]api=([^&]+)/); return m?decodeURIComponent(m[1]):"http://127.0.0.1:8765"; })();
+let bridgeOk = false;
+async function fetchJSON(url, fallback){
+  try{
+    const r = await fetch(API_BASE+url, {method:"GET"});
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    return await r.json();
+  }catch(e){
+    if(fallback!==undefined) return fallback;
+    throw e;
+  }
+}
+function toast(msg){ const t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),2600); }
+
+/* ============ 内置回退数据（无桥时演示） ============ */
+const FALLBACK_TEMPLATES = [
+  {file:"示例-标准技术标.json", ok:true},
+  {file:"示例-暗标模板.json", ok:true},
+];
+const FALLBACK_PARTS = [
+  {name:"示例-商务标母版", parts:["cover","toc","body","closing"]},
+];
+const FALLBACK_PRESETS = {
+  preset:[{id:"single-column"},{id:"two-column"}], palette:[{id:"deep-indigo"},{id:"steel-cyan"},{id:"pine-green"}],
+  cover:[{id:"full-block"}], decoration:[{id:"standard"},{id:"rich"}], font:[{id:"gov-gongwen"},{id:"dark-safe"}],
+  imageRatio:[{id:"mid"}], imageRule:[{id:"hybrid"},{id:"dark-safe-img"},{id:"no-source"}], imageLayout:[{id:"split-h"}],
+  pageSetup:[{id:"p1-standard-a4"}], headingSystem:[{id:"h1-gbt-arabic"},{id:"h2-tender-arabic"}],
+  tocStyle:[{id:"t1-jianyu-auto"},{id:"t3-qinghai-nopage"}], tableStyle:[{id:"tb1-three-line"},{id:"tb7-dark-0.5"}],
+  captionSystem:[{id:"c2-cy-chapter"},{id:"c9-dark-appendix"}], paragraphStyle:[{id:"pa7-jianyu-15"},{id:"pa3-hebei-30"}],
+  headerFooter:[{id:"hf1-classic-enterprise"},{id:"hf9-dark-none"},{id:"hf10-dark-page-only"}],
+};
+const FALLBACK_SHOW = {
+  ok:true, name:"示例：标准技术标", description:"P0 示例模板：封面+扉页+目录+正文+结尾，样式引用默认组合。",
+  structure:[
+    {part:"cover",pageMode:"single"},
+    {part:"colophon",pageMode:"single",optional:true},
+    {part:"toc",pageMode:"single"},
+    {part:"body",pageMode:"flow"},
+    {part:"closing",pageMode:"single",optional:true},
+  ],
+  styleRef:{preset:"single-column",palette:"deep-indigo",cover:"full-block",decoration:"standard",font:"gov-gongwen",imageRatio:"mid",imageRule:"hybrid",imageLayout:"split-h",pageSetup:"p1-standard-a4",headingSystem:"h1-gbt-arabic",tocStyle:"t1-jianyu-auto",tableStyle:"tb1-three-line",captionSystem:"c2-cy-chapter",paragraphStyle:"pa7-jianyu-15",headerFooter:"hf1-classic-enterprise"},
+  rules:{bidMode:"明标"},
+  issues:[],
+  placeholders:{enterprise_name:"{{ enterprise_name }}",project_name:"{{ project_name }}",bid_date:"{{ bid_date }}"},
+};
+
+/* ============ 样式元信息（预览渲染映射） ============ */
+const META = {
+  groups:[["preset","版面范式"],["palette","配色"],["cover","封面"],["decoration","装饰"],["font","字体"],["imageRatio","图片比例"],["imageRule","图片规则"],["imageLayout","图文布局"],["pageSetup","页面设置"],["headingSystem","标题体系"],["tocStyle","目录样式"],["tableStyle","表格样式"],["captionSystem","图表题注"],["paragraphStyle","段落样式"],["headerFooter","页眉页脚"]],
+  palette:{ "deep-indigo":"#2B5CD9", "steel-cyan":"#2E7D8B", "pine-green":"#2F7D5C", "slate-blue":"#3A5A8C", "charcoal":"#3A4356", "dark-safe":"#333333" },
+  font:{ "gov-gongwen":"仿宋_GB2312", "dark-safe":"宋体", "fangsong":"仿宋", "heiti":"黑体" },
+  hf:{ "hf1-classic-enterprise":"企业全称 · 页码", "hf9-dark-none":"（暗标·无页眉页脚）", "hf10-dark-page-only":"仅页码（暗标）" },
+};
+let presetsDoc = FALLBACK_PRESETS;
+let partsList = FALLBACK_PARTS;
+let templatesList = FALLBACK_TEMPLATES;
+
+/* ============ 全局状态 ============ */
+let state = {
+  tplName:"", file:"", doc:null,           // 当前模板
+  structure:[],                            // 编辑后的 structure
+  styleRef:{},                             // 编辑后的 styleRef
+  fill:{enterprise_name:"",project_name:"",bid_date:""},
+};
+const PART_LABEL = {cover:"封面",colophon:"扉页",toc:"目录",body:"正文",closing:"结尾"};
+const PART_PARTS = ["cover","colophon","closing"];   // 可引部件库的部件
+
+/* ============ 初始化 ============ */
+async function init(){
+  let bridge = null;
+  try{ bridge = await fetchJSON("/api/health"); }catch(e){ bridge = null; }
+  bridgeOk = !!bridge;
+  if(bridgeOk){
+    const [list, parts, presets] = await Promise.all([
+      fetchJSON("/api/template/list", {ok:true,templates:FALLBACK_TEMPLATES}),
+      fetchJSON("/api/template/parts", {ok:true,parts:FALLBACK_PARTS}),
+      fetchJSON("/api/layout/presets", {ok:true,groups:FALLBACK_PRESETS}),
+    ]);
+    if(presets && presets.groups) presetsDoc = presets.groups;
+    if(parts && parts.parts) partsList = parts.parts;
+    templatesList = (list && list.templates) ? list.templates : FALLBACK_TEMPLATES;
+  } else {
+    presetsDoc = FALLBACK_PRESETS; partsList = FALLBACK_PARTS; templatesList = FALLBACK_TEMPLATES;
+  }
+  document.getElementById("bridgeBadge").textContent = bridgeOk ? "数据桥：已连接（127.0.0.1:8765）" : "数据桥：离线（内置示例演示）";
+  document.getElementById("bridgeBadge").className = "st-badge " + (bridgeOk ? "live" : "off");
+  renderLeft();
+  await selectTemplate(templatesList[0].file);
+}
+
+/* ============ 左栏 ============ */
+function renderLeft(){
+  const tl = document.getElementById("tplList");
+  tl.innerHTML = templatesList.map(t=>{
+    const err = t.errors ? " · <span class='err'>错误"+t.errors+"</span>" : "";
+    const warn = t.warnings ? " · <span class='warn'>提示"+t.warnings+"</span>" : "";
+    return `<button class="tpl-item ${state.file===t.file?"active":""}" data-file="${t.file}">
+      <span class="nm">${t.file}</span><span class="st">${t.ok?"通过":""}${err}${warn}</span></button>`;
+  }).join("");
+  document.getElementById("tplCount").textContent = templatesList.length + " 个";
+  tl.querySelectorAll(".tpl-item").forEach(b=>b.addEventListener("click",()=>selectTemplate(b.dataset.file)));
+  const pl = document.getElementById("partList");
+  pl.innerHTML = partsList.length ? partsList.map(p=>`<div class="part-item"><b>${p.name}</b><div class="ps">部件：${(p.parts||[]).join("、")||"—"}</div></div>`).join("")
+    : `<div class="part-item">（空 —— CLI：tpl-part --scan 母版.docx --confirm）</div>`;
+}
+
+/* ============ 选中模板 ============ */
+async function selectTemplate(file){
+  state.file = file;
+  let doc;
+  try{ doc = await fetchJSON("/api/template/show?name="+encodeURIComponent(file)); }
+  catch(e){ doc = FALLBACK_SHOW; }
+  if(!doc || doc.ok === false){ toast("模板读取失败："+((doc&&doc.error)||"未知")); return; }
+  state.doc = doc;
+  state.tplName = doc.name || file;
+  state.structure = JSON.parse(JSON.stringify(doc.structure || []));
+  state.styleRef = JSON.parse(JSON.stringify(doc.styleRef || {}));
+  document.getElementById("tplName").textContent = doc.name || "—";
+  document.getElementById("tplDesc").textContent = doc.description || "—";
+  document.getElementById("tplBidMode").textContent = (doc.rules||{}).bidMode || "—";
+  document.getElementById("tplPath").textContent = doc.path || "";
+  renderLeft();
+  renderStructEdit();
+  renderStyleEdit();
+  renderIssues(doc.issues);
+  renderPreview();
+  renderCmd();
+}
+
+/* ============ 中栏：structure 编辑 ============ */
+function renderStructEdit(){
+  const box = document.getElementById("structEdit");
+  box.innerHTML = state.structure.map((it,i)=>{
+    const lb = PART_LABEL[it.part] || it.part;
+    const opt = it.optional ? "（可选）" : "";
+    const canPart = PART_PARTS.includes(it.part);
+    const opts = canPart ? `<option value="">内置渲染</option>` + partsList.map(p=>`<option value="${p.name}" ${it.partRef===p.name?"selected":""}>${p.name}（部件）</option>`).join("") : "";
+    return `<div class="struct-item">
+      <div class="struct-top"><span class="pn">${lb}</span><span class="opt">${opt} · ${it.pageMode||""}</span></div>
+      ${canPart?`<div class="struct-src"><span>版式来源</span><select data-i="${i}" data-part="${it.part}">${opts}</select>
+        <span class="src-tag">${it.partRef?("部件·"+it.partRef):"内置"}</span></div>`:""}
+    </div>`;
+  }).join("");
+  box.querySelectorAll("select").forEach(s=>s.addEventListener("change",e=>{
+    const i = +e.target.dataset.i, part = e.target.dataset.part;
+    const v = e.target.value;
+    if(v){ state.structure[i].partRef = v; } else { delete state.structure[i].partRef; }
+    renderStructEdit(); renderPreview(); renderCmd();
+  }));
+}
+
+/* ============ 中栏：styleRef 编辑（15 组） ============ */
+function renderStyleEdit(){
+  const box = document.getElementById("styleEdit");
+  document.getElementById("styleCount").textContent = Object.keys(state.styleRef).length + " 组";
+  box.innerHTML = META.groups.map(([key,label])=>{
+    const list = (presetsDoc[key]||[]).filter(x=>x && x.id);
+    if(!list.length) return "";
+    const cur = state.styleRef[key] || "";
+    return `<div class="row"><label title="${key}">${label}</label><div class="val">
+      <select data-k="${key}">${list.map(o=>`<option value="${o.id}" ${o.id===cur?"selected":""}>${o.id}</option>`).join("")}</select></div></div>`;
+  }).join("");
+  box.querySelectorAll("select").forEach(s=>s.addEventListener("change",e=>{
+    state.styleRef[e.target.dataset.k] = e.target.value;
+    renderPreview(); renderCmd();
+  }));
+}
+
+/* ============ 校验 ============ */
+async function validateCurrent(){
+  const btn = document.getElementById("btnValidate");
+  btn.disabled = true; btn.textContent = "校验中…";
+  try{
+    const r = await fetchJSON("/api/template/validate?name="+encodeURIComponent(state.file));
+    renderIssues(r.issues || [{level:"ok",msg:"通过（与 CLI 同源校验）"}]);
+    toast(r.ok ? "模板校验通过" : "校验发现问题，见中栏");
+  }catch(e){ renderIssues([{level:"warn",msg:"离线：校验请走 CLI tpl-design --validate "+state.file}]); }
+  btn.disabled = false; btn.textContent = "校验模板";
+}
+function renderIssues(issues){
+  const box = document.getElementById("issueBox");
+  box.innerHTML = (issues && issues.length) ? issues.map(i=>`<div class="issue-line ${i.level||"warn"}">[${i.level||"warn"}] ${i.msg||i.code||""}</div>`).join("")
+    : `<div class="issue-line ok">校验通过（0 问题）</div>`;
+}
+
+/* ============ 出样张 ============ */
+async function specimen(){
+  const btn = document.getElementById("btnSpecimen");
+  btn.disabled = true; btn.textContent = "生成中…";
+  const fill = ["enterprise_name="+state.fill.enterprise_name,"project_name="+state.fill.project_name,"bid_date="+state.fill.bid_date].filter(x=>x.split("=")[1]).join(";");
+  try{
+    const r = await fetchJSON("/api/template/specimen?name="+encodeURIComponent(state.file)+(fill?"&fill="+encodeURIComponent(fill):""));
+    if(r.ok && r.path){
+      toast("样张已生成（临时目录）："+r.path);
+      document.getElementById("pvNote").textContent = "样张 docx："+r.path+"（真实生成；CLI 等价：tpl-design --specimen "+state.file+" --fill \""+fill+"\"）";
+    } else toast("出样张失败："+(r.error||"未知"));
+  }catch(e){ toast("离线：出样张请走 CLI tpl-design --specimen "+state.file); }
+  btn.disabled = false; btn.textContent = "出样张（真实生成 docx）";
+}
+
+/* ============ 等效 CLI 命令 ============ */
+function renderCmd(){
+  const bidMode = (state.doc&&state.doc.rules&&state.doc.rules.bidMode)||"明标";
+  const fill = ["enterprise_name="+state.fill.enterprise_name,"project_name="+state.fill.project_name,"bid_date="+state.fill.bid_date].filter(x=>x.split("=")[1]).join(";");
+  document.getElementById("cmdBox").textContent =
+    "python scripts/bidcraft.py tpl-design --validate "+state.file+"\n"+
+    "python scripts/bidcraft.py tpl-design --specimen "+state.file+(fill?" --fill \""+fill+"\"":"")+"\n"+
+    "python scripts/bidcraft.py tech-export --project <项目> --template "+state.file+(fill?" --fill \""+fill+"\"":"")+"   # 成稿（闸门①确认后）\n"+
+    "「"+state.tplName+"」· 模式："+bidMode+" · 当前组合："+Object.keys(state.styleRef).length+" 组";
+}
+
+/* ============ 右栏：全文档实时预览 ============ */
+function esc(s){ return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); }
+function hex(k){ return META.palette[state.styleRef[k]] || "#2B5CD9"; }
+function fontName(k){ return META.font[state.styleRef[k]] || "仿宋"; }
+function renderPreview(){
+  const st = state.styleRef, dark = (state.doc&&state.doc.rules&&state.doc.rules.bidMode)==="暗标";
+  const cMain = hex("palette"), fBody = fontName("font");
+  const hf = st.headerFooter || "hf1-classic-enterprise";
+  const hfText = META.hf[hf] || hf;
+  const has = p => state.structure.some(i=>i.part===p);
+  const partOf = p => { const it = state.structure.find(i=>i.part===p); return (it&&it.partRef)?it.partRef:null; };
+  const hd = (dark?"":`<div class="pg-hd"><span>${hfText.split("·")[0]||""}</span><span>${st.preset||""} · ${st.palette||""}</span></div>`);
+  const ft = (hf==="hf9-dark-none") ? "" : `<div class="pg-ft">— ${"1"} —</div>`;
+  let flow = "";
+
+  // 封面
+  if(has("cover")){
+    const src = partOf("cover");
+    flow += `<div class="page"><span class="p-tag">封面</span>${src?`<span class="part-src">部件：${esc(src)}（母版版式）</span>`:""}
+      <div class="cover-page" style="${dark?"":`background:linear-gradient(160deg,#fff,${cMain}14);border-top:6px solid ${cMain};`}">
+        <div class="cp-title" style="color:${dark?"#333":cMain};font-family:${fBody}">${state.fill.project_name||"{{ project_name }}"}</div>
+        <div class="cp-sub">投标文件（技术标）</div>
+        <div class="cp-info">${dark?"":`${state.fill.enterprise_name||"{{ enterprise_name }}"}<br>`}${state.fill.bid_date||"{{ bid_date }}"}</div>
+      </div>${ft}</div>`;
+  }
+  // 扉页
+  if(has("colophon")){
+    const src = partOf("colophon");
+    flow += `<div class="page"><span class="p-tag opt">扉页 · 可选</span>${src?`<span class="part-src">部件：${esc(src)}（母版版式）</span>`:""}
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:14px">
+        <div style="font-size:16px;font-weight:700;color:${cMain}">${state.fill.project_name||"{{ project_name }}"}</div>
+        <div style="font-size:12px;color:#4a5265">${state.fill.enterprise_name||"{{ enterprise_name }}"}</div>
+        <div style="font-size:11px;color:var(--dim)">${state.fill.bid_date||"{{ bid_date }}"}</div>
+      </div>${ft}</div>`;
+  }
+  // 目录
+  if(has("toc")){
+    const tocStyle = st.tocStyle||"";
+    const noPage = tocStyle.includes("nopage");
+    flow += `<div class="page"><span class="p-tag">目录</span>${hd}
+      <div style="text-align:center;font-size:15px;font-weight:700;margin:4px 0 14px">目　录</div>
+      ${["第一章　工程概况","第二章　施工部署","第三章　重难点分析及对策","第四章　质量保证措施","第五章　安全文明施工"].map((t,i)=>`
+      <div style="display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:7px;border-bottom:1px dotted #c9d0dc;padding-bottom:2px"><span>${t}</span><span>${noPage?"":("第"+(i+1)+"页")}</span></div>`).join("")}
+      ${ft.replace("1","5")}</div>`;
+  }
+  // 正文 ×3
+  if(has("body")){
+    const chapters = [["第一章　工程概况",0,1],["第二章　施工部署",1,2],["第三章　重难点分析及对策",2,3]];
+    chapters.forEach(([title,imgMode,pg])=>{
+      flow += `<div class="page"><span class="p-tag">正文 · ${esc(title)}</span>${hd}
+        <div class="zhang" style="color:${cMain}">${title}</div>
+        <div class="jie">1.1　编制依据</div>
+        <div class="p-text">${state.fill.enterprise_name||"{{ enterprise_name }}"}依据招标文件、图纸及现行规范，结合项目实际情况编制本施工组织设计……<span class="bar"></span></div>
+        <div class="p-text"><span class="bar w"></span></div>
+        ${imgMode===1?`<div class="photo-box"><div class="im"></div><div class="im"></div></div><div class="fig-cap">图 2-1　施工现场布置示意图（示例）</div>`:""}
+        ${imgMode===2?`<div class="flow-box"><div class="fnode">施工准备</div><span class="farrow">→</span><div class="fnode">基础施工</div><span class="farrow">→</span><div class="fnode">主体施工</div><span class="farrow">→</span><div class="fnode">竣工验收</div></div><div class="fig-cap">图 3-1　总体施工流程图（示例）</div>`:""}
+        <table class="p-tbl"><tr class="head"><th>序号</th><th>项目</th><th>措施</th><th>备注</th></tr>
+        <tr><td>1</td><td>质量</td><td>三检制</td><td>—</td></tr><tr><td>2</td><td>安全</td><td>危大工程专项方案</td><td>—</td></tr></table>
+        ${ft.replace("1",pg+1)}</div>`;
+    });
+  }
+  // 结尾
+  if(has("closing")){
+    const src = partOf("closing");
+    flow += `<div class="page"><span class="p-tag opt">结尾 · 可选</span>${src?`<span class="part-src">部件：${esc(src)}（母版版式）</span>`:""}
+      <div style="flex:1;display:flex;align-items:center;justify-content:center"><div style="font-size:13px;color:#4a5265">（以下无正文）</div></div>${ft.replace("1","6")}</div>`;
+  }
+  document.getElementById("docFlow").innerHTML = flow || `<div class="page"><span class="p-tag">空</span><div style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--dim)">structure 未含部件</div></div>`;
+}
+
+/* ============ 事件 ============ */
+document.getElementById("btnValidate").addEventListener("click", validateCurrent);
+document.getElementById("btnSpecimen").addEventListener("click", specimen);
+["fillEnterprise","fillProject","fillDate"].forEach(id=>{
+  const key = {fillEnterprise:"enterprise_name",fillProject:"project_name",fillDate:"bid_date"}[id];
+  document.getElementById(id).addEventListener("input", e=>{ state.fill[key]=e.target.value.trim(); renderPreview(); renderCmd(); });
+});
+init();
+</script>
+</body>
+</html>
