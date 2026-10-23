@@ -10,7 +10,10 @@ from .rules_base import (
     SCHEMA_ID, BID_MODES, STATUSES, GATES, MAX_LEVEL, NO_PATTERN, ID_PATTERN,
     KEYPOINT_MIN, KEYPOINT_MAX, CHAPTER_WORD_SPLIT, DEPENDS_ENUM,
     DEFAULT_LAYOUT, LAYOUT_ALIAS_KEYS, DECORATION_ALIASES, FONT_ALIASES,
-    IMAGE_RATIO_ALIASES, IMAGE_RULE_ALIASES, IMAGE_LAYOUT_ALIASES, COVER_RATIO,
+    IMAGE_RATIO_ALIASES, IMAGE_RULE_ALIASES, IMAGE_LAYOUT_ALIASES, MICRO_LAYOUT_ALIASES,
+    PRESET_ALIASES, COVER_ALIASES, HEADER_FOOTER_ALIASES,
+    PALETTE_ALIASES,
+    COVER_RATIO,
 )
 
 
@@ -353,16 +356,22 @@ def _preset_ids(presets, group):
 
 
 def validate_layout(layout, presets=None, bid_mode="明标"):
-    """八组预设 id 合法性 + 暗标硬约束（禁 image-underlay、强制 dark-safe 字体、图片二选一）→ (ok, issues)。"""
+    """十五组预设 id 合法性 + 暗标硬约束（禁 image-underlay、强制 dark-safe 字体、图片二选一、页眉页脚二选一）→ (ok, issues)。"""
     if not isinstance(layout, dict):
         return False, [_err("layout.type", "layout 必须是对象")]
     issues = []
     chosen = {}
-    alias_map = {"decoration": DECORATION_ALIASES, "font": FONT_ALIASES,
+    alias_map = {"preset": PRESET_ALIASES, "palette": PALETTE_ALIASES, "cover": COVER_ALIASES,
+                 "decoration": DECORATION_ALIASES, "font": FONT_ALIASES,
                  "imageRatio": IMAGE_RATIO_ALIASES, "imageRule": IMAGE_RULE_ALIASES,
-                 "imageLayout": IMAGE_LAYOUT_ALIASES}
+                 "imageLayout": IMAGE_LAYOUT_ALIASES, "pageSetup": MICRO_LAYOUT_ALIASES,
+                 "headingSystem": MICRO_LAYOUT_ALIASES, "tocStyle": MICRO_LAYOUT_ALIASES,
+                 "tableStyle": MICRO_LAYOUT_ALIASES, "captionSystem": MICRO_LAYOUT_ALIASES,
+                 "paragraphStyle": MICRO_LAYOUT_ALIASES, "headerFooter": HEADER_FOOTER_ALIASES}
     for group in ("preset", "palette", "cover", "decoration", "font",
-                  "imageRatio", "imageRule", "imageLayout"):
+                  "imageRatio", "imageRule", "imageLayout",
+                  "pageSetup", "headingSystem", "tocStyle",
+                  "tableStyle", "captionSystem", "paragraphStyle", "headerFooter"):
         val = layout.get(group)
         if not isinstance(val, str) or not val.strip():
             issues.append(_err("layout.missing", "layout.%s 缺失或为空" % group))
@@ -386,8 +395,20 @@ def validate_layout(layout, presets=None, bid_mode="明标"):
                                    "暗标图片二选一：imageRatio=none（零图）或 imageRatio≠none 时须同时 "
                                    "imageRule=dark-safe-img 且 imageLayout=appendix；当前 %r/%r/%r"
                                    % (ratio, chosen.get("imageRule"), chosen.get("imageLayout"))))
+        hf = chosen.get("headerFooter")
+        if hf not in ("hf9-dark-none", "hf10-dark-page-only"):
+            issues.append(_err("layout.dark-header-footer",
+                               "暗标页眉页脚二选一：hf9-dark-none（无页眉页脚无页码）或 "
+                               "hf10-dark-page-only（页眉必须空、仅页码，按招标原文）；当前 %r" % hf))
         if str(chosen.get("palette", "")).lower().startswith("enterprise"):
             issues.append(_warn("layout.enterprise-color", "暗标建议不使用企业配色：%s" % chosen["palette"]))
+        if chosen.get("headingSystem") not in ("h2-tender-arabic", "h3-qinghai-hybrid",
+                                               "h4-nanyang-7level", "h10-tongliao-tender"):
+            issues.append(_warn("layout.dark-heading", "暗标标题体系建议使用招标条款样式（h2/h3/h4/h10），当前 %r"
+                               % chosen.get("headingSystem")))
+        if chosen.get("captionSystem") != "c9-dark-appendix" and chosen.get("imageRatio") != "none":
+            issues.append(_warn("layout.dark-caption", "暗标配图时应使用附图专页编号（c9），当前 %r"
+                               % chosen.get("captionSystem")))
     overrides = layout.get("overrides")
     if overrides is not None:
         if not isinstance(overrides, dict):

@@ -1,8 +1,8 @@
 {
   "schema": "m6.layout-presets/v1",
-  "version": "1.2",
+  "version": "1.4",
   "updated": "2026-10-22",
-  "note": "共享级排版预设（八组均为数组，可增行表）。色值经 T13 色卡预览确认（2026-10-21）；字体方案 5 套（2026-10-22，暗标强制 dark-safe）；配图规范三组（imageRatios/imageRules/imageLayouts，2026-10-22 用户确认，暗标二选一：none 或 dark-safe-img+appendix）。预设只影响 tech-export，不改变正文 md 内容。",
+  "note": "共享级排版预设（十五组均为数组，可增行表，全部统一为 10 种方案）。色值经 T13 色卡预览确认（2026-10-21，11 色）；2026-10-22 v1.4 统一十方案：preset 7→10、palette 11→10（裁 eggplant-silver，如需找回增行即可）、cover 4→10、decoration 3→10、font 5→10、imageRatio 4→10、imageRule 5→10、imageLayout 5→10，新增 headerFooters 10 套（含暗标双态）；微观排版六组（pageSetups/headingSystems/tocStyles/tableStyles/captionSystems/paragraphStyles）各 10 套。暗标：font 强制 dark-safe、图片二选一（none 或 dark-safe-img+appendix）、headerFooter 二选一（hf9/hf10），微观六组按招标条款自动注入不开放选择。预设只影响 tech-export，不改变正文 md 内容。",
   "default": {
     "preset": "single-column",
     "palette": "deep-indigo",
@@ -11,7 +11,14 @@
     "font": "gov-gongwen",
     "imageRatio": "mid",
     "imageRule": "hybrid",
-    "imageLayout": "split-h"
+    "imageLayout": "split-h",
+    "pageSetup": "p1-standard-a4",
+    "headingSystem": "h1-gbt-arabic",
+    "tocStyle": "t1-jianyu-auto",
+    "tableStyle": "tb1-three-line",
+    "captionSystem": "c2-cy-chapter",
+    "paragraphStyle": "pa7-jianyu-15",
+    "headerFooter": "hf1-classic-enterprise"
   },
   "fontDefaults": {
     "heading": "仿宋",
@@ -59,6 +66,24 @@
       "name": "数据行布局",
       "docx": "指标横排（KPI 行）表格化，适合工期/人数/面积等数据章",
       "degrade": "指标超过 6 项时改两行"
+    },
+    {
+      "id": "image-right",
+      "name": "右图左文",
+      "docx": "两列表格：右图占位 + 左文（image-left 镜像）",
+      "degrade": "图缺失时降级 single-column 并披露"
+    },
+    {
+      "id": "hybrid-flow",
+      "name": "混合流式",
+      "docx": "段落+表格+图片按内容自由混排，标题层级贯穿",
+      "degrade": "图片/表格过宽时降级单栏居中"
+    },
+    {
+      "id": "minimal-clean",
+      "name": "极简留白",
+      "docx": "宽页边距、轻网格、无装饰，正文信息密度低",
+      "degrade": ""
     }
   ],
   "palettes": [
@@ -120,7 +145,9 @@
       "coverBg": "#1C3A47",
       "onPrimary": "#FFFFFF",
       "darkOk": true,
-      "recommendedFor": ["暗标"],
+      "recommendedFor": [
+        "暗标"
+      ],
       "note": "冷色低辨识度，暗标推荐"
     },
     {
@@ -133,7 +160,9 @@
       "coverBg": "#262626",
       "onPrimary": "#FFFFFF",
       "darkOk": true,
-      "recommendedFor": ["暗标"],
+      "recommendedFor": [
+        "暗标"
+      ],
       "note": "无彩色，暗标最稳妥"
     },
     {
@@ -161,18 +190,6 @@
       "note": "冷暖对比明显，适合重点标注"
     },
     {
-      "id": "eggplant-silver",
-      "name": "茄子紫银灰",
-      "primary": "#4B3A5A",
-      "accent": "#A7A9AC",
-      "heading": "#362A42",
-      "tableFill": "#EDE9F0",
-      "coverBg": "#2E2437",
-      "onPrimary": "#FFFFFF",
-      "darkOk": true,
-      "note": "少见配色，适合差异化"
-    },
-    {
       "id": "mono-red",
       "name": "黑白灰一点红",
       "primary": "#2B2B2B",
@@ -182,7 +199,9 @@
       "coverBg": "#1C1C1C",
       "onPrimary": "#FFFFFF",
       "darkOk": true,
-      "recommendedFor": ["暗标"],
+      "recommendedFor": [
+        "暗标"
+      ],
       "note": "黑白灰主调 + 一点红强调，暗标推荐"
     },
     {
@@ -224,6 +243,44 @@
       "name": "渐变",
       "docx": "两段色块近似渐变（python-docx 无原生渐变）",
       "darkOk": true
+    },
+    {
+      "id": "frame-corners",
+      "name": "四角框线",
+      "docx": "白底 + 四角细线框 + 中部标题/单位/日期",
+      "darkOk": true
+    },
+    {
+      "id": "top-banner",
+      "name": "顶部通栏色带",
+      "docx": "页首通栏色块 + 下方留白标题区",
+      "darkOk": true
+    },
+    {
+      "id": "split-diagonal",
+      "name": "对角分割",
+      "docx": "斜向两色块分割 + 文字置于浅色区",
+      "darkOk": true
+    },
+    {
+      "id": "minimal-type",
+      "name": "纯文字极简",
+      "docx": "无图形元素，仅标题/单位/日期三行文字",
+      "darkOk": true,
+      "note": "无任何图形/图片，暗标最稳"
+    },
+    {
+      "id": "emblem-center",
+      "name": "徽标居中",
+      "docx": "企业 LOGO 居中 + 下方标题/单位（明标）",
+      "darkOk": false,
+      "note": "含企业标识，暗标禁用"
+    },
+    {
+      "id": "ribbon-bottom",
+      "name": "底部色带",
+      "docx": "白底 + 底部色带 + 右上竖排标题",
+      "darkOk": true
     }
   ],
   "decorations": [
@@ -241,6 +298,45 @@
       "id": "rich",
       "name": "丰富",
       "docx": "章首装饰带 + 图标 + 强调底色"
+    },
+    {
+      "id": "none",
+      "name": "无装饰",
+      "docx": "无任何装饰元素，纯文本+表格",
+      "darkOk": true,
+      "note": "零装饰，暗标安全"
+    },
+    {
+      "id": "heading-rule",
+      "name": "仅标题线",
+      "docx": "各级标题下方细横线，正文无装饰"
+    },
+    {
+      "id": "sidebar-tab",
+      "name": "侧边页签",
+      "docx": "页面外侧色块页签导航（章号）"
+    },
+    {
+      "id": "corner-dots",
+      "name": "四角圆点",
+      "docx": "页四角小圆点/圆角符号点缀"
+    },
+    {
+      "id": "section-band",
+      "name": "章首色带",
+      "docx": "仅章节首页顶部装饰带，内页无装饰"
+    },
+    {
+      "id": "icon-accent",
+      "name": "图标点缀",
+      "docx": "章节标题前小图标，无底纹无色带"
+    },
+    {
+      "id": "table-fill",
+      "name": "仅表头底纹",
+      "docx": "只对表格表头使用配色底纹，其余零装饰",
+      "darkOk": false,
+      "note": "表头底纹带色，暗标禁用（暗标表头无底纹）"
     }
   ],
   "fontSchemes": [
@@ -250,7 +346,14 @@
       "heading": "黑体",
       "body": "仿宋",
       "western": "Times New Roman",
-      "sizes": {"chapter": "16pt 三号 居中", "section": "14pt 四号", "item": "12pt 小四", "body": "12pt 小四", "table": "10.5pt 五号", "caption": "9pt 小五"},
+      "sizes": {
+        "chapter": "16pt 三号 居中",
+        "section": "14pt 四号",
+        "item": "12pt 小四",
+        "body": "12pt 小四",
+        "table": "10.5pt 五号",
+        "caption": "9pt 小五"
+      },
       "lineSpacing": 1.5,
       "system": "系统自带",
       "darkOk": false,
@@ -262,7 +365,14 @@
       "heading": "黑体",
       "body": "宋体",
       "western": "Times New Roman",
-      "sizes": {"chapter": "16pt 三号 居中", "section": "14pt 四号", "item": "12pt 小四", "body": "12pt 小四", "table": "10.5pt 五号", "caption": "9pt 小五"},
+      "sizes": {
+        "chapter": "16pt 三号 居中",
+        "section": "14pt 四号",
+        "item": "12pt 小四",
+        "body": "12pt 小四",
+        "table": "10.5pt 五号",
+        "caption": "9pt 小五"
+      },
       "lineSpacing": 1.5,
       "system": "系统自带",
       "darkOk": false,
@@ -274,7 +384,14 @@
       "heading": "微软雅黑（加粗）",
       "body": "微软雅黑",
       "western": "Calibri / Arial",
-      "sizes": {"chapter": "16pt 居中 加粗", "section": "14pt 加粗", "item": "12pt 加粗", "body": "12pt", "table": "10.5pt", "caption": "9pt"},
+      "sizes": {
+        "chapter": "16pt 居中 加粗",
+        "section": "14pt 加粗",
+        "item": "12pt 加粗",
+        "body": "12pt",
+        "table": "10.5pt",
+        "caption": "9pt"
+      },
       "lineSpacing": 1.4,
       "system": "Win8+ 自带",
       "darkOk": false,
@@ -286,7 +403,14 @@
       "heading": "华文中宋",
       "body": "楷体",
       "western": "Georgia / Times New Roman",
-      "sizes": {"chapter": "16pt 三号 居中", "section": "14pt 四号", "item": "12pt 小四 加粗", "body": "12pt 小四", "table": "10.5pt 五号", "caption": "9pt 小五"},
+      "sizes": {
+        "chapter": "16pt 三号 居中",
+        "section": "14pt 四号",
+        "item": "12pt 小四 加粗",
+        "body": "12pt 小四",
+        "table": "10.5pt 五号",
+        "caption": "9pt 小五"
+      },
       "lineSpacing": 1.5,
       "system": "系统自带",
       "darkOk": false,
@@ -298,11 +422,113 @@
       "heading": "宋体 四号 常规",
       "body": "宋体 四号 常规",
       "western": "同正文",
-      "sizes": {"chapter": "14pt 四号 常规", "section": "14pt 四号 常规", "item": "14pt 四号 常规", "body": "14pt 四号 常规", "table": "10.5pt 五号 常规", "caption": "9pt 小五 常规"},
+      "sizes": {
+        "chapter": "14pt 四号 常规",
+        "section": "14pt 四号 常规",
+        "item": "14pt 四号 常规",
+        "body": "14pt 四号 常规",
+        "table": "10.5pt 五号 常规",
+        "caption": "9pt 小五 常规"
+      },
       "lineSpacing": 1.5,
       "system": "系统自带",
       "darkOk": true,
       "note": "全黑统一，无加粗/斜体/下划线/加色；变体：招标点名仿宋_GB2312 小四时按条款切换；不设封面/页眉页脚/页码"
+    },
+    {
+      "id": "gb2312-classic",
+      "name": "仿宋GB2312风",
+      "heading": "仿宋_GB2312",
+      "body": "仿宋_GB2312",
+      "western": "Times New Roman",
+      "sizes": {
+        "chapter": "18pt 小四 常规",
+        "section": "18pt 小四 常规",
+        "item": "18pt 小四 常规",
+        "body": "18pt 小四 常规",
+        "table": "10.5pt 五号",
+        "caption": "9pt 小五"
+      },
+      "lineSpacing": 1.5,
+      "system": "Win10/11 无 GB2312 版本，缺失回退仿宋",
+      "darkOk": false,
+      "note": "招标点名仿宋_GB2312 小四时按条款切换（南通监理条款）；以 overrides 覆盖"
+    },
+    {
+      "id": "hei-song-simplified",
+      "name": "黑宋简约风",
+      "heading": "黑体",
+      "body": "宋体",
+      "western": "Times New Roman",
+      "sizes": {
+        "chapter": "16pt 三号 居中",
+        "section": "14pt 四号",
+        "item": "12pt 小四",
+        "body": "12pt 小四",
+        "table": "10.5pt 五号",
+        "caption": "9pt 小五"
+      },
+      "lineSpacing": 1.5,
+      "system": "系统自带",
+      "darkOk": false,
+      "note": "黑体标题+宋体正文，评标识别度最高"
+    },
+    {
+      "id": "kai-literary",
+      "name": "楷体书卷风",
+      "heading": "黑体",
+      "body": "楷体",
+      "western": "Times New Roman",
+      "sizes": {
+        "chapter": "16pt 三号 居中",
+        "section": "14pt 四号",
+        "item": "12pt 小四",
+        "body": "12pt 小四",
+        "table": "10.5pt 五号",
+        "caption": "9pt 小五"
+      },
+      "lineSpacing": 1.5,
+      "system": "系统自带",
+      "darkOk": false,
+      "note": "正文楷体，适用于文字性章节/前言；篇幅约+5%"
+    },
+    {
+      "id": "fangsong-official",
+      "name": "全仿宋公文风",
+      "heading": "仿宋",
+      "body": "仿宋",
+      "western": "Times New Roman",
+      "sizes": {
+        "chapter": "22pt 二号 居中",
+        "section": "16pt 三号",
+        "item": "16pt 三号",
+        "body": "16pt 三号",
+        "table": "12pt 四号",
+        "caption": "10.5pt 五号"
+      },
+      "lineSpacing": 1.5,
+      "system": "系统自带",
+      "darkOk": false,
+      "note": "对标 GB/T 9704-2012 党政机关公文：全仿宋、章二号居中"
+    },
+    {
+      "id": "mixed-safe",
+      "name": "混排安全风",
+      "heading": "黑体",
+      "body": "宋体",
+      "western": "Times New Roman",
+      "sizes": {
+        "chapter": "16pt 三号 居中",
+        "section": "14pt 四号",
+        "item": "12pt 小四",
+        "body": "12pt 小四",
+        "table": "10.5pt 五号",
+        "caption": "9pt 小五"
+      },
+      "lineSpacing": 1.5,
+      "system": "系统自带",
+      "darkOk": false,
+      "note": "无加色/无装饰字，明标低风险；与 dark-safe 区别：标题保留黑体不加粗"
     }
   ],
   "imageRatios": [
@@ -337,6 +563,54 @@
       "imageShare": 0.5,
       "darkOk": false,
       "note": "图占版心约 50%；图证型章节（现场平面布置/安全文明施工/样板引路）；流程图每页 1 张；暗标须转灰度+附图专页"
+    },
+    {
+      "id": "ultra-low",
+      "name": "极低图比",
+      "ratio": "1:19",
+      "imageShare": 0.05,
+      "darkOk": true,
+      "note": "图占版心约5%；仅关键证据位（业绩/资质/荣誉证书）"
+    },
+    {
+      "id": "low-mid",
+      "name": "偏低图比",
+      "ratio": "2:8",
+      "imageShare": 0.2,
+      "darkOk": true,
+      "note": "图占版心约20%；理论密集型章节适度配图"
+    },
+    {
+      "id": "mid-high",
+      "name": "偏高图比",
+      "ratio": "4:6",
+      "imageShare": 0.4,
+      "darkOk": false,
+      "note": "图占版心约40%；过程照片+文字混合章节"
+    },
+    {
+      "id": "very-high",
+      "name": "高强图比",
+      "ratio": "6:4",
+      "imageShare": 0.6,
+      "darkOk": false,
+      "note": "图占版心约60%；图证型章节（平面布置/安全文明/样板引路）"
+    },
+    {
+      "id": "full",
+      "name": "整页图版",
+      "ratio": "7:3",
+      "imageShare": 0.7,
+      "darkOk": false,
+      "note": "图占版心约70%；现场鸟瞰/总平面图专页"
+    },
+    {
+      "id": "appendix-only",
+      "name": "仅附表",
+      "ratio": "0:10(正文)",
+      "imageShare": 0,
+      "darkOk": true,
+      "note": "正文零图，图表全部集中附末（明标版暗标式）；对应 imageLayout=appendix"
     }
   ],
   "imageRules": [
@@ -374,6 +648,41 @@
       "source": "任一来源",
       "darkOk": true,
       "note": "无论来源一律过安全闸：转灰度/黑白、人脸不可辨识、招牌/品牌/文字遮盖、EXIF 与文件名清洗"
+    },
+    {
+      "id": "plan-only",
+      "name": "仅平面图",
+      "source": "CAD 图纸转图片",
+      "darkOk": true,
+      "note": "施工总平面/进度计划/工艺流程图（CAD→JPG 等比缩放不超页边距，剑鱼指南）；图表文字五号宋体黑字"
+    },
+    {
+      "id": "photo-only",
+      "name": "仅现场照片",
+      "source": "现场/搜索实景照",
+      "darkOk": false,
+      "note": "真实场景照片为主；须人工核验真实性与版权，避免人脸/品牌"
+    },
+    {
+      "id": "chart-only",
+      "name": "仅图表",
+      "source": "流程图/曲线/表格化图",
+      "darkOk": true,
+      "note": "无实景图；组织结构/网络计划/检测曲线（图表内五号宋体黑字常规可暗标）"
+    },
+    {
+      "id": "search-verify",
+      "name": "搜索+人工核验",
+      "source": "联网搜索后人工确认",
+      "darkOk": false,
+      "note": "搜索结果必须人工确认真实性/版权/清晰度后方可使用（国家版权局 2020 通知口径）"
+    },
+    {
+      "id": "no-source",
+      "name": "无图源",
+      "source": "不配图",
+      "darkOk": true,
+      "note": "与 imageRatio=none 联动：不生成/不插入任何图表"
     }
   ],
   "imageLayouts": [
@@ -406,6 +715,792 @@
       "name": "附图专页",
       "darkOk": true,
       "note": "图集中章节末/文末附表，正文用见附图 X 引用；暗标强制（青海/安庆条款：附图依次附于标书最后）"
+    },
+    {
+      "id": "side-note",
+      "name": "侧注式",
+      "darkOk": true,
+      "note": "窄图+右侧注文（图注规范）；图小、可灰度，暗标可用"
+    },
+    {
+      "id": "banner",
+      "name": "通栏横幅",
+      "darkOk": false,
+      "note": "整页宽图置于章首/节首（视野图）；图占版心宽 100%"
+    },
+    {
+      "id": "timeline",
+      "name": "时间轴图",
+      "darkOk": false,
+      "note": "进度/里程碑图沿时间轴排布（横道图/网络计划）"
+    },
+    {
+      "id": "card-mix",
+      "name": "卡片混排",
+      "darkOk": false,
+      "note": "图卡+文字卡混排（数据行布局配套）；docx 无圆角以直角呈现"
+    },
+    {
+      "id": "none",
+      "name": "无排版",
+      "darkOk": true,
+      "note": "不排图（与 imageRatio=none 联动）；tech-export 跳过图片阶段"
+    }
+  ],
+  "pageSetups": [
+    {
+      "id": "p1-standard-a4",
+      "name": "标准公文 A4",
+      "margin": "上2.54 下2.54 左3.18 右3.18cm",
+      "gutter": "装订线0",
+      "note": "Word/WPS 默认页边距，青海检测规则采用；通用最稳",
+      "darkOk": true
+    },
+    {
+      "id": "p2-haikou-25",
+      "name": "海南盲评 2.0/2.5",
+      "margin": "上2.0 下2.5 左2.5 右2.5cm",
+      "gutter": "装订线0",
+      "note": "海南/济南/贵州盲评规范口径；招标硬约束常见值",
+      "darkOk": true
+    },
+    {
+      "id": "p3-jianyu-商务",
+      "name": "剑鱼商务 25/26/22",
+      "margin": "左25 右25 上26 下22mm",
+      "gutter": "装订线0；页眉距顶20 页脚距底15mm",
+      "note": "高分标书排版指南口径；装订余量充裕",
+      "darkOk": false
+    },
+    {
+      "id": "p4-tongliao-317",
+      "name": "通辽 3.17/2.54",
+      "margin": "左3.17 右2.54 上2.54 下2.54cm",
+      "gutter": "装订线0（误差≤10%）",
+      "note": "通辽住建局暗标制条款；左侧加宽为装订留量",
+      "darkOk": true
+    },
+    {
+      "id": "p5-nanyang-32",
+      "name": "南阳 3/3/2/2",
+      "margin": "上3.0 下3.0 左2.0 右2.0cm",
+      "gutter": "装订线0",
+      "note": "南阳暗标自动清标条款；竖向留白大",
+      "darkOk": true
+    },
+    {
+      "id": "p6-guangxi-215",
+      "name": "广西 EPC 2.15",
+      "margin": "上2.15 下2.15 左2.15 右2.15cm",
+      "gutter": "装订线0",
+      "note": "广西森林博物馆 EPC 明标条款；对称紧凑",
+      "darkOk": false
+    },
+    {
+      "id": "p7-hb-25-20",
+      "name": "河北 2.5/2.0",
+      "margin": "上2.5 下2.0 左2.0 右2.0cm",
+      "gutter": "装订线0",
+      "note": "石家庄/吉林/邯郸暗标条款主流值",
+      "darkOk": true
+    },
+    {
+      "id": "p8-nenu-学位",
+      "name": "东师学位 2/2.5",
+      "margin": "上2.0 下2.0 左2.5 右2.5cm",
+      "gutter": "装订线左侧0；页眉1.5 页脚1.75cm",
+      "note": "东北师大学位论文页面设置；学术出版口径",
+      "darkOk": false
+    },
+    {
+      "id": "p9-gbt-学位",
+      "name": "国标学位 3.8/3.2",
+      "margin": "上3.8 下3.8 左3.2 右3.2cm",
+      "gutter": "装订线0；页眉页脚3.0cm",
+      "note": "GB/T 7713 系列学位论文惯例（南昌大学规范）；版心紧凑",
+      "darkOk": false
+    },
+    {
+      "id": "p10-symmetric-紧凑",
+      "name": "对称紧凑 2.2",
+      "margin": "上2.0 下2.0 左2.2 右2.2cm",
+      "gutter": "装订线0",
+      "note": "对称等宽，适合双面印刷对页美观",
+      "darkOk": false
+    }
+  ],
+  "headingSystems": [
+    {
+      "id": "h1-gbt-arabic",
+      "name": "GB/T 阿拉伯分级",
+      "levels": "章小4黑体 节5号黑体 正文5号宋体",
+      "numbering": "1 / 2.1 / 3.2.1 顶格+空1字，≤4级（GB/T 7713.2-2022 + CY/T 35）",
+      "note": "学术标准；技术标默认（默认档）",
+      "darkOk": false
+    },
+    {
+      "id": "h2-tender-arabic",
+      "name": "招标全阿拉伯",
+      "levels": "标题正文宋体四号常规 图表内五号宋体",
+      "numbering": "1 / 1.1 / 1.1.1 逐级顺延（济南/海南盲评条款）",
+      "note": "暗标主流式：禁加粗/加色/倾斜/下划线",
+      "darkOk": true
+    },
+    {
+      "id": "h3-qinghai-hybrid",
+      "name": "青海中数混排",
+      "levels": "一级三号黑体非斜 二级及以下四号宋体 图表内五号宋体",
+      "numbering": "一、/ 1.1 / 1.1.1（一级中文+顿号，以下阿拉伯）",
+      "note": "青海暗标检测规则式",
+      "darkOk": true
+    },
+    {
+      "id": "h4-nanyang-7level",
+      "name": "南阳七级混排",
+      "levels": "各级黑字宋体常规",
+      "numbering": "一、/（一）/ 1. /（1）/ 1）/ a. / a）最多7级（南阳暗标）",
+      "note": "深层次结构专用；暗标清标条款",
+      "darkOk": true
+    },
+    {
+      "id": "h5-jianyu-bold",
+      "name": "剑鱼标书加粗",
+      "levels": "章三号加粗黑体 节1.1小三加粗宋体 段1.1.2小四加粗宋体 正文小四宋体",
+      "numbering": "一、/ 1.1 / 1.1.2；英文数字 Arial",
+      "note": "高分标书指南式；层级视觉最清晰",
+      "darkOk": false
+    },
+    {
+      "id": "h6-sci-report",
+      "name": "科技报告式",
+      "levels": "章五号黑体（印刷） 节同章 正文五号宋体",
+      "numbering": "CY/T 35 阿拉伯分级，≤4级，编号后空1字",
+      "note": "GB/T 7713.3 科技报告；信息密度高",
+      "darkOk": false
+    },
+    {
+      "id": "h7-pku-template",
+      "name": "北大教学模板",
+      "levels": "一、小四黑体 1.五号黑体 (1)三级",
+      "numbering": "一、/ 1. / (1) 混合（北京大学教学发展中心模板）",
+      "note": "教育教学类文档惯例",
+      "darkOk": false
+    },
+    {
+      "id": "h8-nenu-academic",
+      "name": "东师学术式",
+      "levels": "章黑体三号居中段前48段后24磅 节黑体小四顶左",
+      "numbering": "1 / 1.1 / 1.1.1（章另起页）",
+      "note": "东北师大学位规范；正式学术出版",
+      "darkOk": false
+    },
+    {
+      "id": "h9-cas-academic",
+      "name": "中科院学术式",
+      "levels": "章黑体四号加粗居中 节黑体小四顶左 正文宋体小四",
+      "numbering": "1 / 1.1 / 1.1.1 段前12-24磅",
+      "note": "中科院学位规范；章名居中醒目",
+      "darkOk": false
+    },
+    {
+      "id": "h10-tongliao-tender",
+      "name": "通辽暗标式",
+      "levels": "一级宋体三号黑字 二级及以下宋体四号常规",
+      "numbering": "1、/ 1.1 / 1.1.1（阿拉伯后加顿号）",
+      "note": "通辽住建局暗标制条款；编号带顿号特色",
+      "darkOk": true
+    }
+  ],
+  "tocStyles": [
+    {
+      "id": "t1-jianyu-auto",
+      "name": "剑鱼自动目录",
+      "title": "三号加粗黑体",
+      "levels": "一级小四加粗 二三级小四宋体，3-4级",
+      "leading": "点线页码右对齐 自动生成可更新",
+      "note": "高分标书指南默认；行距2倍/1.5倍/固定23磅按量",
+      "darkOk": false
+    },
+    {
+      "id": "t2-zol-standard",
+      "name": "ZOL 标准目录",
+      "title": "标题1黑体三号加粗",
+      "levels": "逐级小一号不加粗，显示3级",
+      "leading": "显示页码+页码右对齐+超链接",
+      "note": "Word/WPS 操作通行做法",
+      "darkOk": false
+    },
+    {
+      "id": "t3-qinghai-nopage",
+      "name": "青海无页码目录",
+      "title": "按大纲级别自动",
+      "levels": "设目录但不得标页码",
+      "leading": "无页码 无页眉页脚",
+      "note": "青海暗标检测规则：目录不标注页码",
+      "darkOk": true
+    },
+    {
+      "id": "t4-guangxi-pointline",
+      "name": "广西点线目录",
+      "title": "宋体三号居中",
+      "levels": "条目宋体四号左端对齐",
+      "leading": "章点名称与页数间点划线，页数放末列",
+      "note": "广西 EPC 明标条款：目录不编页码",
+      "darkOk": false
+    },
+    {
+      "id": "t5-nenu-indent",
+      "name": "东师缩进目录",
+      "title": "「目录」二字间空2字 三号黑体居中 段前48段后24磅",
+      "levels": "一级黑体 二三级宋体 小四 两端对齐",
+      "leading": "一级缩进0 二级缩1字 三级缩2字；1.5倍行距",
+      "note": "东北师大学位规范；层级缩进最规范",
+      "darkOk": false
+    },
+    {
+      "id": "t6-cas-rightalign",
+      "name": "中科院右对齐目录",
+      "title": "黑体四号加粗居中",
+      "levels": "章目录黑体四号 一级节黑体小四左缩1字 二级节黑体小四左缩2字",
+      "leading": "页码右对齐 单倍行距 段前6磅",
+      "note": "中科院学位规范",
+      "darkOk": false
+    },
+    {
+      "id": "t7-xinong-compact",
+      "name": "西农紧凑目录",
+      "title": "三号居中 段前1.5行段后1行",
+      "levels": "一级小四顶头 二三级五号 逐级缩1字符",
+      "leading": "1.15倍行距；独立大写罗马页码",
+      "note": "西农本科规范；紧凑型适用多章节",
+      "darkOk": false
+    },
+    {
+      "id": "t8-dual-index",
+      "name": "图文双目录",
+      "title": "正文目录+插图目录+附表目录各另起页",
+      "levels": "目录列至三级",
+      "leading": "图表目录含图序/图题/表序/表题+页码",
+      "note": "东北师大学位规范；图多/表多时专用",
+      "darkOk": false
+    },
+    {
+      "id": "t9-wps-tabstop",
+      "name": "WPS 制表位目录",
+      "title": "0.1字符级制表位对齐",
+      "levels": "1-9级大纲独立样式",
+      "leading": "点线/虚线/实线前导符 页码右对齐或居中",
+      "note": "WPS 智能目录工程实现；千页级秒级更新",
+      "darkOk": false
+    },
+    {
+      "id": "t10-minimal-2level",
+      "name": "两级紧凑目录",
+      "title": "小四宋体",
+      "levels": "仅章+节两级",
+      "leading": "1.5倍行距 页码右对齐",
+      "note": "评委快速导航；适用于页数较少或结构简单",
+      "darkOk": false
+    }
+  ],
+  "tableStyles": [
+    {
+      "id": "tb1-three-line",
+      "name": "三线表（学术）",
+      "lines": "顶线底线1.5磅 表头线1磅 无竖线（CY/T 170-2019）",
+      "headerFill": "无底纹",
+      "note": "表题置于表上方居中；学术/技术标默认",
+      "darkOk": true
+    },
+    {
+      "id": "tb2-full-line",
+      "name": "全线表",
+      "lines": "表框线+行线+栏线（CY/T 170 正式表）",
+      "headerFill": "无底纹",
+      "note": "数据密集对照表；全书一致",
+      "darkOk": true
+    },
+    {
+      "id": "tb3-saving-line",
+      "name": "省线表",
+      "lines": "省略墙线或部分行/栏线",
+      "headerFill": "无底纹",
+      "note": "比全线表简洁 比三线表信息分层",
+      "darkOk": true
+    },
+    {
+      "id": "tb4-header-fill",
+      "name": "表头底纹+全边框",
+      "lines": "全框0.5pt 表头 palette.tableFill 底纹",
+      "headerFill": "配色表头底纹",
+      "note": "商务标书通行；与配色联动",
+      "darkOk": false
+    },
+    {
+      "id": "tb5-grid-fine",
+      "name": "网格细线",
+      "lines": "全框0.5pt 单实线 表头加粗",
+      "headerFill": "无底纹 表头加粗",
+      "note": "常规网格表；适用清单/台账",
+      "darkOk": false
+    },
+    {
+      "id": "tb6-no-line",
+      "name": "无线表",
+      "lines": "无框线 无线表/栏线（非正式）",
+      "headerFill": "无",
+      "note": "CY/T 170 列为非正式表格，慎用",
+      "darkOk": false
+    },
+    {
+      "id": "tb7-dark-0.5",
+      "name": "暗标细线表",
+      "lines": "边框0.5磅黑色单实直线",
+      "headerFill": "无底纹",
+      "note": "锡林郭勒暗标条款；表内文字五号宋体黑字常规",
+      "darkOk": true
+    },
+    {
+      "id": "tb8-center-vh",
+      "name": "上下左右居中表",
+      "lines": "随内容选线型",
+      "headerFill": "可选",
+      "note": "表头/表身上下左右居中，内容多时上下居中靠左；避免跨页（剑鱼指南）",
+      "darkOk": false
+    },
+    {
+      "id": "tb9-kpi-row",
+      "name": "数据行/KPI 卡",
+      "lines": "横排指标行 首列加粗 表头底纹",
+      "headerFill": "配色表头底纹",
+      "note": "配套数据行布局；工期/人数/面积等指标章",
+      "darkOk": false
+    },
+    {
+      "id": "tb10-split-continue",
+      "name": "续表重复表头",
+      "lines": "转页接排 重复表头+（续）",
+      "headerFill": "随基表",
+      "note": "学位规范：续表重复表头与单位陈述；跨页并合",
+      "darkOk": false
+    }
+  ],
+  "captionSystems": [
+    {
+      "id": "c1-gbt-seq",
+      "name": "GB/T 全文依序",
+      "numbering": "图1/表1/式(1) 全文连续（GB/T 7713.2-2022）",
+      "figPos": "图题图下",
+      "tablePos": "表题表上",
+      "note": "期刊论文式；全书统一",
+      "darkOk": false
+    },
+    {
+      "id": "c2-cy-chapter",
+      "name": "CY/T 分章编号",
+      "numbering": "表1-1 或 表1.1，与插图/公式编号方式一致（CY/T 170）",
+      "figPos": "图题图下",
+      "tablePos": "表题表上",
+      "note": "图书/技术标默认；分章依序，全书统一（默认档）",
+      "darkOk": false
+    },
+    {
+      "id": "c3-jianyu-neighbor",
+      "name": "剑鱼就近编号",
+      "numbering": "图3-1 紧邻对应段落（四面环绕）",
+      "figPos": "图题图下居中",
+      "tablePos": "表题表上",
+      "note": "正文须'见图X-X'呼应（高分标书指南）",
+      "darkOk": false
+    },
+    {
+      "id": "c4-nenu-pos",
+      "name": "东师位置规范",
+      "numbering": "图1.1/图1-1（.或-全文统一）",
+      "figPos": "图序图题图下居中 五号宋体 图序图名间空2半角",
+      "tablePos": "表序表题表上居中",
+      "note": "东北师大学位规范；图题后不加标点",
+      "darkOk": false
+    },
+    {
+      "id": "c5-xinong-chapter",
+      "name": "西农分章编号",
+      "numbering": "图3-1/表4-2 按一级标题连续编号",
+      "figPos": "图序图题图下居中 5号",
+      "tablePos": "表序表题表上居中 5号",
+      "note": "西农规范；图表尽量不与题分页",
+      "darkOk": false
+    },
+    {
+      "id": "c6-appendix-letter",
+      "name": "附录字母编号",
+      "numbering": "附录A/B；图A-1、表B-2、式(C-3)",
+      "figPos": "随附录",
+      "tablePos": "随附录",
+      "note": "国标/西农：附录内图表另行编号",
+      "darkOk": false
+    },
+    {
+      "id": "c7-cas-chapter",
+      "name": "中科院分章编号",
+      "numbering": "图1.1 分章依序编码",
+      "figPos": "图题图下",
+      "tablePos": "表题表上",
+      "note": "中科院学位规范；与公式/附注区分",
+      "darkOk": false
+    },
+    {
+      "id": "c8-dual-index",
+      "name": "图文双目录联动",
+      "numbering": "正文目录+插图目录+附表目录独立成页",
+      "figPos": "插图目录含图序图题页码",
+      "tablePos": "附表目录含表序表题页码",
+      "note": "东北师大：图多/表多时与目录联动",
+      "darkOk": false
+    },
+    {
+      "id": "c9-dark-appendix",
+      "name": "暗标附图专页",
+      "numbering": "附表一/附图一；正文'见附表X'",
+      "figPos": "图表集中章末/文末",
+      "tablePos": "表内五号宋体黑字常规",
+      "note": "青海/安庆暗标条款：正文不得插图表，附图附于最后",
+      "darkOk": true
+    },
+    {
+      "id": "c10-note-pos",
+      "name": "图注表注规范",
+      "numbering": "表注底线下方左齐 图注图题下方",
+      "figPos": "图注紧随图题",
+      "tablePos": "表注排在底线下方 宽不超表宽",
+      "note": "CY/T 170/学位规范；注文多则加序号",
+      "darkOk": false
+    }
+  ],
+  "paragraphStyles": [
+    {
+      "id": "pa1-qinghai-26",
+      "name": "青海固定26磅",
+      "indent": "首行缩进2字符",
+      "lineSpacing": "固定值26磅",
+      "align": "两端对齐",
+      "note": "青海暗标检测规则；段前后0（默认暗标候选）",
+      "darkOk": true
+    },
+    {
+      "id": "pa2-haikou-25",
+      "name": "海南固定25磅",
+      "indent": "首行缩进2字符",
+      "lineSpacing": "固定值25磅",
+      "align": "左对齐",
+      "note": "海南/济南/贵州盲评条款；段落前后无空行",
+      "darkOk": true
+    },
+    {
+      "id": "pa3-hebei-30",
+      "name": "河北固定30磅",
+      "indent": "首行缩进2字符",
+      "lineSpacing": "固定值30磅",
+      "align": "左对齐",
+      "note": "石家庄/吉林/邯郸条款；字距标准",
+      "darkOk": true
+    },
+    {
+      "id": "pa4-guangxi-15",
+      "name": "广西1.5倍行距",
+      "indent": "开始段落空2字符",
+      "lineSpacing": "1.5倍",
+      "align": "两端对齐",
+      "note": "广西 EPC 明标条款；字符间距100%标准",
+      "darkOk": false
+    },
+    {
+      "id": "pa5-tongliao-30",
+      "name": "通辽固定30磅",
+      "indent": "首行缩进2字符",
+      "lineSpacing": "固定值30磅",
+      "align": "两端对齐",
+      "note": "通辽住建局条款；不得有空格",
+      "darkOk": true
+    },
+    {
+      "id": "pa6-ximeng-28",
+      "name": "锡盟固定28磅",
+      "indent": "首行缩进2字符",
+      "lineSpacing": "固定值28磅",
+      "align": "两端对齐",
+      "note": "锡林郭勒暗标条款；全文不允许空行空页",
+      "darkOk": true
+    },
+    {
+      "id": "pa7-jianyu-15",
+      "name": "剑鱼1.5倍行距",
+      "indent": "首行缩进2字符",
+      "lineSpacing": "1.5倍",
+      "align": "两端对齐",
+      "note": "高分标书指南默认（明标默认档）",
+      "darkOk": false
+    },
+    {
+      "id": "pa8-xinong-20",
+      "name": "西农固定20磅",
+      "indent": "首行缩进2字符",
+      "lineSpacing": "固定值20磅",
+      "align": "两端对齐",
+      "note": "西农规范；信息密度最高",
+      "darkOk": false
+    },
+    {
+      "id": "pa9-degree-15",
+      "name": "学位1.5倍行距",
+      "indent": "首行缩进2字符",
+      "lineSpacing": "1.5倍 段前后0",
+      "align": "两端对齐",
+      "note": "学位论文通行；正文小四宋体",
+      "darkOk": false
+    },
+    {
+      "id": "pa10-compact-115",
+      "name": "紧凑1.15倍",
+      "indent": "首行缩进2字符",
+      "lineSpacing": "1.15倍 段前后0",
+      "align": "两端对齐",
+      "note": "多章节紧凑排版（西农目录式行距）",
+      "darkOk": false
+    }
+  ],
+  "headerFooters": [
+    {
+      "id": "hf1-classic-enterprise",
+      "name": "经典企业版",
+      "header": "左 LOGO+企业名，右章节名，0.5pt 分隔线",
+      "footer": "页脚居中 -N-",
+      "pageMode": "with-page",
+      "darkOk": false,
+      "note": "默认；小五号宋体/仿宋，palette.heading 色；LOGO 缺失降级仅文字"
+    },
+    {
+      "id": "hf2-centered-solemn",
+      "name": "居中庄重",
+      "header": "页眉居中企业名（小五）",
+      "footer": "页脚居中页码",
+      "pageMode": "with-page",
+      "darkOk": false,
+      "note": "对称居中，庄重正式"
+    },
+    {
+      "id": "hf3-project-oriented",
+      "name": "项目导向",
+      "header": "左企业名，右项目名",
+      "footer": "页脚居中 -N-",
+      "pageMode": "with-page",
+      "darkOk": false,
+      "note": "突出项目归属"
+    },
+    {
+      "id": "hf4-consulting-page",
+      "name": "咨询商务",
+      "header": "页眉右页码，下细线",
+      "footer": "页脚第 N 页 共 M 页",
+      "pageMode": "with-page",
+      "darkOk": false,
+      "note": "咨询/设计院惯用"
+    },
+    {
+      "id": "hf5-minimal-clean",
+      "name": "极简留白",
+      "header": "无页眉",
+      "footer": "页脚居中 -N-",
+      "pageMode": "with-page",
+      "darkOk": false,
+      "note": "无企业信息，弱品牌"
+    },
+    {
+      "id": "hf6-chapter-nav",
+      "name": "章节导航",
+      "header": "左 LOGO+企业名，右完整章名",
+      "footer": "页脚居中 -N-",
+      "pageMode": "with-page",
+      "darkOk": false,
+      "note": "右侧随章动态更新，导航性强"
+    },
+    {
+      "id": "hf7-dual-footer",
+      "name": "双栏页脚",
+      "header": "页眉企业名+项目名",
+      "footer": "页脚左项目简称，右页码",
+      "pageMode": "with-page",
+      "darkOk": false,
+      "note": "信息分布均衡"
+    },
+    {
+      "id": "hf8-full-info-3col",
+      "name": "全信息三栏",
+      "header": "LOGO+企业名｜项目名｜章节名",
+      "footer": "页脚居中 -N-",
+      "pageMode": "with-page",
+      "darkOk": false,
+      "note": "须确认招标文件不禁页眉企业信息"
+    },
+    {
+      "id": "hf9-dark-none",
+      "name": "暗标无页眉页脚",
+      "header": "无页眉",
+      "footer": "无页码无页脚",
+      "pageMode": "none",
+      "darkOk": true,
+      "note": "青海/海南/贵州/济南主流：不编页码、不设页眉页脚"
+    },
+    {
+      "id": "hf10-dark-page-only",
+      "name": "暗标仅页码",
+      "header": "页眉必须空",
+      "footer": "页脚纯页码，全文连续",
+      "pageMode": "page-only",
+      "darkOk": true,
+      "note": "通辽 -N- 底端居中；雄县 Times New Roman 小五居中；实际格式按招标原文"
+    }
+  ],
+  "recommendedCombos": [
+    {
+      "id": "official-engineering-default",
+      "name": "工程标·默认稳健",
+      "bidType": "engineering",
+      "source": {
+        "expertGroupId": 1,
+        "expertGroupName": "链企官方技术标专家团",
+        "statsNote": "31 团统计：工程标 20/21 选 code=3 基础版式；宋体 12pt 为 78% 主流；默认封面 99% 团选"
+      },
+      "layoutCombo": {
+        "preset": "single-column",
+        "palette": "deep-indigo",
+        "cover": "full-block",
+        "decoration": "standard",
+        "font": "engineering",
+        "imageRatio": "mid",
+        "imageRule": "hybrid",
+        "imageLayout": "split-h",
+        "pageSetup": "p1-standard-a4",
+        "headingSystem": "h1-gbt-arabic",
+        "tocStyle": "t1-jianyu-auto",
+        "tableStyle": "tb1-three-line",
+        "captionSystem": "c2-cy-chapter",
+        "paragraphStyle": "pa7-jianyu-15",
+        "headerFooter": "hf1-classic-enterprise"
+      },
+      "why": "链企官方团默认搭配；宋体12pt 主流+默认封面+深靛蓝稳健配色；工程监理/施工/设计类通用首选"
+    },
+    {
+      "id": "engineering-premium-flow",
+      "name": "工程标·精品图文",
+      "bidType": "engineering",
+      "source": {
+        "expertGroupId": null,
+        "expertGroupName": null,
+        "statsNote": "17/21 工程团选 code=9300 增强版版式；链企'精品版式A/B+宋体'系列；图文增强"
+      },
+      "layoutCombo": {
+        "preset": "hybrid-flow",
+        "palette": "deep-indigo",
+        "cover": "full-block",
+        "decoration": "rich",
+        "font": "engineering",
+        "imageRatio": "high",
+        "imageRule": "hybrid",
+        "imageLayout": "split-h",
+        "pageSetup": "p1-standard-a4",
+        "headingSystem": "h5-jianyu-bold",
+        "tocStyle": "t1-jianyu-auto",
+        "tableStyle": "tb4-header-fill",
+        "captionSystem": "c3-jianyu-neighbor",
+        "paragraphStyle": "pa7-jianyu-15",
+        "headerFooter": "hf6-chapter-nav"
+      },
+      "why": "链企'精品版式A/B+宋体'系列；图文增强适合施工/监理大纲现场照片密集型章节；高分标书视觉层级更清晰"
+    },
+    {
+      "id": "service-general-graphic",
+      "name": "服务标·通用图文",
+      "bidType": "service",
+      "source": {
+        "expertGroupId": 198,
+        "expertGroupName": "通用服务类技术标专家团",
+        "statsNote": "9 个服务团里 6 个选 code=3；链企'通用服务图文排版-粉蓝色'系列"
+      },
+      "layoutCombo": {
+        "preset": "tabular",
+        "palette": "gradient-blue-cyan",
+        "cover": "full-block",
+        "decoration": "standard",
+        "font": "engineering",
+        "imageRatio": "mid",
+        "imageRule": "hybrid",
+        "imageLayout": "split-v",
+        "pageSetup": "p1-standard-a4",
+        "headingSystem": "h1-gbt-arabic",
+        "tocStyle": "t1-jianyu-auto",
+        "tableStyle": "tb9-kpi-row",
+        "captionSystem": "c2-cy-chapter",
+        "paragraphStyle": "pa7-jianyu-15",
+        "headerFooter": "hf4-consulting-page"
+      },
+      "why": "链企'通用服务图文排版-粉蓝色'系列；服务类项目（物业/绿化/保安）主流；表格化布局适配服务承诺清单"
+    },
+    {
+      "id": "service-full-chart",
+      "name": "服务标·全文图表化",
+      "bidType": "service",
+      "source": {
+        "expertGroupId": null,
+        "expertGroupName": null,
+        "statsNote": "链企'通用服务高级全文图表-粉蓝色'系列；表格密集型"
+      },
+      "layoutCombo": {
+        "preset": "data-row",
+        "palette": "gradient-blue-cyan",
+        "cover": "line-white",
+        "decoration": "rich",
+        "font": "engineering",
+        "imageRatio": "low",
+        "imageRule": "hybrid",
+        "imageLayout": "inline",
+        "pageSetup": "p1-standard-a4",
+        "headingSystem": "h1-gbt-arabic",
+        "tocStyle": "t1-jianyu-auto",
+        "tableStyle": "tb2-full-line",
+        "captionSystem": "c1-gbt-seq",
+        "paragraphStyle": "pa7-jianyu-15",
+        "headerFooter": "hf4-consulting-page"
+      },
+      "why": "链企'通用服务高级全文图表-粉蓝色'系列；食堂/配送/设备清单类表格密集型服务标；指标横排+全线表"
+    },
+    {
+      "id": "dark-safe-minimal",
+      "name": "暗标·极简安全",
+      "bidType": "dark",
+      "source": {
+        "expertGroupId": 219,
+        "expertGroupName": "内蒙古暗标专家团",
+        "statsNote": "链企内蒙古暗标团只选 code=3 基础版式；零配图零装饰纯文字宋体"
+      },
+      "layoutCombo": {
+        "preset": "single-column",
+        "palette": "charcoal",
+        "cover": "minimal-type",
+        "decoration": "none",
+        "font": "dark-safe",
+        "imageRatio": "none",
+        "imageRule": "no-source",
+        "imageLayout": "none",
+        "pageSetup": "p1-standard-a4",
+        "headingSystem": "h2-tender-arabic",
+        "tocStyle": "t3-qinghai-nopage",
+        "tableStyle": "tb7-dark-0.5",
+        "captionSystem": "c9-dark-appendix",
+        "paragraphStyle": "pa1-qinghai-26",
+        "headerFooter": "hf9-dark-none"
+      },
+      "why": "链企内蒙古暗标专家团原型；零配图零装饰纯文字宋体；覆盖青海/海南/济南/通辽盲评条款；palette 炭灰最稳妥"
     }
   ]
 }

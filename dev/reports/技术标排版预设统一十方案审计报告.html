@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>技术标排版预设 · 统一十方案审计报告</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231B2A5B'/%3E%3Ctext x='16' y='23' font-size='18' fill='%23fff' text-anchor='middle' font-family='sans-serif'%3E%E2%88%91%3C/text%3E%3C/svg%3E">
+<style>
+:root{--ink:#16233f;--brand:#1B2A5B;--brand2:#2E4E8F;--acc:#3E7CB1;--line:#d7dce6;--bg:#f6f7fa;--card:#ffffff;--ok:#1e7f4f;--no:#c0392b;--dim:#6b7280;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Noto Serif SC","Songti SC","SimSun",serif;background:var(--bg);color:var(--ink);line-height:1.75;font-size:16px}
+.wrap{max-width:1060px;margin:0 auto;padding:0 20px}
+.hero{background:linear-gradient(135deg,var(--brand) 0%,var(--brand2) 60%,var(--acc) 130%);color:#fff;padding:64px 20px 48px}
+.hero .wrap{max-width:1060px}
+.hero .kicker{font-family:"Noto Sans SC","Microsoft YaHei",sans-serif;letter-spacing:.35em;font-size:13px;opacity:.85;text-transform:uppercase}
+.hero h1{font-size:clamp(26px,4.6vw,42px);line-height:1.3;margin:14px 0 10px;font-weight:900;letter-spacing:.02em}
+.hero .sub{font-size:15px;opacity:.9;max-width:760px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:30px}
+.kpi{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.22);border-radius:10px;padding:14px 16px}
+.kpi b{font-family:"Noto Sans SC","Microsoft YaHei",sans-serif;font-size:30px;font-weight:800;display:block;line-height:1.1}
+.kpi span{font-size:12.5px;opacity:.88}
+.verdict{background:#eaf3ef;border:1px solid #bfd8c9;border-left:5px solid var(--ok);border-radius:8px;padding:14px 18px;margin:-24px auto 0;position:relative;max-width:1060px;font-weight:600}
+.verdict small{display:block;font-weight:400;color:var(--dim);margin-top:4px}
+section{padding:44px 0 8px}
+.sec-head{display:flex;align-items:baseline;gap:14px;border-bottom:2px solid var(--brand);padding-bottom:10px;margin-bottom:22px}
+.sec-head .no{font-family:"Noto Sans SC",sans-serif;font-weight:900;color:var(--brand);font-size:26px}
+.sec-head h2{font-size:22px;color:var(--brand);font-weight:800}
+.sec-head .cn{font-size:13px;color:var(--dim)}
+p.lead{max-width:860px;margin-bottom:16px}
+.tablewrap{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:8px;margin:14px 0 20px}
+table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:14px;min-width:640px}
+th{background:#eef1f7;color:var(--brand);font-family:"Noto Sans SC",sans-serif;font-weight:700;text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);font-size:13px}
+td{padding:8px 12px;border-bottom:1px solid #e8ecf3;vertical-align:top;word-break:break-word}
+tr:last-child td{border-bottom:none}
+.mono{font-family:Consolas,"Microsoft YaHei",monospace;font-size:12.5px;color:#33425f;word-break:break-all}
+.chk{display:inline-block;font-family:"Noto Sans SC",sans-serif;font-size:11px;line-height:1;padding:3px 7px;border-radius:999px;margin:1px 2px;white-space:nowrap}
+.chk.ok{background:#e2f2e9;color:var(--ok);border:1px solid #b7ddc6}
+.chk.no{background:#fbe9e7;color:var(--no);border:1px solid #f0c4bf}
+.tag{display:inline-block;font-size:10.5px;line-height:1;padding:3px 6px;border-radius:4px;margin-left:6px;font-family:"Noto Sans SC",sans-serif;vertical-align:middle}
+.dft-tag{background:var(--brand);color:#fff}
+.dark-tag{background:#5b2a2a;color:#ffd9d9}
+.group-block{margin:0 0 34px}
+.group-block h3{font-size:17px;color:var(--brand);margin-bottom:2px}
+.group-block .gmeta{font-size:13px;color:var(--dim);margin-bottom:10px}
+.group-block .carriers{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:760px){.grid2{grid-template-columns:1fr}}
+.cons-ok{color:var(--ok);font-weight:700}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:16px 18px;margin-bottom:14px}
+.card h4{font-family:"Noto Sans SC",sans-serif;font-size:15px;color:var(--brand);margin-bottom:6px}
+.list{margin:8px 0 0 20px}
+.list li{margin-bottom:6px}
+code{font-family:Consolas,monospace;font-size:12.5px;background:#eef1f7;padding:1px 5px;border-radius:4px}
+.darkbox{background:#0f1b33;color:#dbe4f5;border-radius:8px;padding:16px 18px;font-family:Consolas,"Microsoft YaHei",monospace;font-size:13px;line-height:1.9;overflow-x:auto}
+.darkbox b{color:#7fd4a8}
+footer{border-top:1px solid var(--line);margin-top:40px;padding:26px 0 40px;color:var(--dim);font-size:13px}
+.gitchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.gitchips span{font-family:Consolas,monospace;font-size:11px;background:#eef1f7;border:1px solid var(--line);border-radius:4px;padding:3px 8px;max-width:100%;overflow-wrap:anywhere;word-break:break-all}
+@media print{.hero{background:var(--brand)}body{background:#fff}}
+</style>
+</head>
+<body>
+<div class="hero"><div class="wrap">
+<div class="kicker">M6 Technical Bid · Layout Presets Audit</div>
+<h1>技术标排版预设 · 统一十方案审计报告</h1>
+<div class="sub">将 M6 技术标（监理大纲）排版预设引擎的全部设计元素统一为 <b>15 组 × 10 套 = 150 个方案</b>，并逐载体核验落实、逐项交叉校验一致性。数据源：layout-presets.json v1.4（2026-10-22）与 audit_report.json。</div>
+<div class="kpis">
+<div class="kpi"><b>15</b><span>设计元素组（正交可组合）</span></div>
+<div class="kpi"><b>150</b><span>可选方案（每组 10 套）</span></div>
+<div class="kpi"><b>15</b><span>默认组合字段（含 headerFooter）</span></div>
+<div class="kpi"><b>9/9</b><span>一致性检查 C1–C9 全部通过</span></div>
+<div class="kpi"><b>597</b><span>回归用例全绿（unit 528 + int 69）</span></div>
+</div>
+</div></div>
+<div class="wrap">
+<div class="verdict">三项任务完成：① 全部设计元素已统一为 10 种方案；② 150 个方案在数据 / 代码 / 别名 / 校验 / 测试 / 文档六个载体层全部落实，缺失 0 项；③ 一致性检查 C1–C9 全部通过。
+<small>audit 输出：groups=15 · schemes=150 · all_ten=True · consistency=True · carrier_missing=0（可复跑：python scripts/m6_tech/audit_presets.py）</small></div>
+
+<section>
+<div class="sec-head"><span class="no">01</span><h2>任务与范围</h2><span class="cn">本轮三连任务</span></div>
+<p class="lead">用户下达三项连续任务，逐项完成、无需确认：<b>① 把全部设计元素统一到 10 种方案</b>；<b>② 检查所有设计元素是否全部实现落实</b>（包括但不限于 skill、文档、代码）；<b>③ 一致性检查</b>。完成后交付本份 HTML 报告。落实检查覆盖六个载体：数据 JSON、代码内置常量、中文别名表、CLI/校验/测试组载体、两份需求文档；渲染层（T10 tech-export）为已知未开发项，缺口如实披露于第 6 节。</p>
+</section>
+
+<section>
+<div class="sec-head"><span class="no">02</span><h2>① 统一为 10 种方案</h2><span class="cn">layout-presets.json v1.3 → v1.4</span></div>
+<p class="lead">此前 15 组中前八组数量不齐（版面 7 / 配色 11 / 封面 4 / 装饰 3 / 字体 5 / 图文比例 4 / 配图规则 5 / 配图排版 5）。本轮用一次性脚本 <code>dev/notes/presets_v1.4_extend.py</code> 扩编 / 裁剪 / 新增并回写校验（id 唯一、每组 10、name 非空，全部 OK）。配色由 11 裁至 10（裁出「茄子紫银灰」，增行可找回）；新增第 15 组「页眉页脚 headerFooters」10 套（明标 8 + 暗标 2，此前已设计但未落库）。</p>
+<div class="tablewrap"><table>
+<colgroup><col style="width:16%"><col style="width:12%"><col style="width:12%"><col style="width:22%"><col style="width:38%"></colgroup>
+<tr><th>组（JSON 键）</th><th>字段键</th><th>数量</th><th>默认值</th><th>本批变化</th></tr>
+<tr><td class="mono">presets</td><td class="mono">preset</td><td>10</td><td class="mono">single-column</td><td>7→10：新增 image-right（右图左文）、hybrid-flow（混合流式）、minimal-clean（极简留白）</td></tr>
+<tr><td class="mono">palettes</td><td class="mono">palette</td><td>10</td><td class="mono">deep-indigo</td><td>11→10：裁出 eggplant-silver（茄子紫银灰，增行可找回），色卡预览同步删卡重编号</td></tr>
+<tr><td class="mono">covers</td><td class="mono">cover</td><td>10</td><td class="mono">full-block</td><td>4→10：新增 frame-corners、top-banner、split-diagonal、minimal-type、emblem-center、ribbon-bottom</td></tr>
+<tr><td class="mono">decorations</td><td class="mono">decoration</td><td>10</td><td class="mono">standard</td><td>3→10：新增 none、heading-rule、sidebar-tab、corner-dots、section-band、icon-accent、table-fill</td></tr>
+<tr><td class="mono">fontSchemes</td><td class="mono">font</td><td>10</td><td class="mono">gov-gongwen</td><td>5→10：新增 gb2312-classic、hei-song-simplified、kai-literary、fangsong-official、mixed-safe</td></tr>
+<tr><td class="mono">imageRatios</td><td class="mono">imageRatio</td><td>10</td><td class="mono">mid</td><td>4→10：新增 ultra-low(1:19)、low-mid(2:8)、mid-high(4:6)、very-high(6:4)、full(7:3)、appendix-only</td></tr>
+<tr><td class="mono">imageRules</td><td class="mono">imageRule</td><td>10</td><td class="mono">hybrid</td><td>5→10：新增 plan-only、photo-only、chart-only、search-verify、no-source</td></tr>
+<tr><td class="mono">imageLayouts</td><td class="mono">imageLayout</td><td>10</td><td class="mono">split-h</td><td>5→10：新增 side-note、banner、timeline、card-mix、none</td></tr>
+<tr><td class="mono">pageSetups</td><td class="mono">pageSetup</td><td>10</td><td class="mono">p1-standard-a4</td><td>数量不变（10）；与其余组统一为 10</td></tr>
+<tr><td class="mono">headingSystems</td><td class="mono">headingSystem</td><td>10</td><td class="mono">h1-gbt-arabic</td><td>数量不变（10）；与其余组统一为 10</td></tr>
+<tr><td class="mono">tocStyles</td><td class="mono">tocStyle</td><td>10</td><td class="mono">t1-jianyu-auto</td><td>数量不变（10）；与其余组统一为 10</td></tr>
+<tr><td class="mono">tableStyles</td><td class="mono">tableStyle</td><td>10</td><td class="mono">tb1-three-line</td><td>数量不变（10）；与其余组统一为 10</td></tr>
+<tr><td class="mono">captionSystems</td><td class="mono">captionSystem</td><td>10</td><td class="mono">c2-cy-chapter</td><td>数量不变（10）；与其余组统一为 10</td></tr>
+<tr><td class="mono">paragraphStyles</td><td class="mono">paragraphStyle</td><td>10</td><td class="mono">pa7-jianyu-15</td><td>数量不变（10）；与其余组统一为 10</td></tr>
+<tr><td class="mono">headerFooters</td><td class="mono">headerFooter</td><td>10</td><td class="mono">hf1-classic-enterprise</td><td>新增组 10 套：明标 hf1–hf8（含默认 hf1-classic-enterprise），暗标 hf9-dark-none / hf10-dark-page-only（二选一 error）</td></tr>
+</table></div>
+</section>
+
+<section>
+<div class="sec-head"><span class="no">03</span><h2>② 落实检查 · 150 方案 × 六载体</h2><span class="cn">carrier_missing = 0</span></div>
+<p class="lead">每个方案 id 需同时在：数据 JSON、代码内置常量（DEFAULT_LAYOUT）、中文别名表、CLI 组载体、校验循环、测试组载体、两份文档中可定位。逐组状态如下（全部通过）；下方为 15 组 × 10 套完整清单，含默认与暗标禁用标记。</p>
+<div class="group-block"><h3>版面范式 <span class="mono" style="font-size:12px">preset</span></h3><div class="gmeta">正文版面骨架：单栏/表格化/分栏/卡片/图文/分隔页/数据行/镜像/混合/极简 · 默认 <code>single-column</code></div><div class="carriers"><span class="chk ok">数据 JSON</span><span class="chk ok">内置 DEFAULT</span><span class="chk ok">JSON↔内置逐 id</span><span class="chk ok">CLI 组载体</span><span class="chk ok">校验循环</span><span class="chk ok">测试组载体</span><span class="chk ok">中文别名</span><span class="chk ok">文档（契约/需求）</span></div><div class="tablewrap"><table><colgroup><col style="width:24%"><col style="width:34%"><col style="width:42%"></colgroup><tr><th>id</th><th>名称</th><th>说明</th></tr><tr><td class="mono">single-column</td><td>单栏流式 <span class="tag dft-tag">默认</span> </td><td>标题层级 + 段落流（默认）</td></tr>
+<tr><td class="mono">tabular</td><td>表格化布局  </td><td>人员/进度/设备/指标强制转表格；正文段落保留</td></tr>
+<tr><td class="mono">two-column</td><td>双栏分栏  </td><td>section sectPr 设 w:cols；仅正文段分栏，标题跨栏</td></tr>
+<tr><td class="mono">card</td><td>卡片式布局  </td><td>单元格底纹 + 边框模拟卡片（docx 无圆角）；每卡一个要点</td></tr>
+<tr><td class="mono">image-left</td><td>左图右文  </td><td>两列表格：左图占位 + 右文</td></tr>
+<tr><td class="mono">divider</td><td>章节分隔页  </td><td>每章前分页 + 大号章号/章名页；页眉不显示章名</td></tr>
+<tr><td class="mono">data-row</td><td>数据行布局  </td><td>指标横排（KPI 行）表格化，适合工期/人数/面积等数据章</td></tr>
+<tr><td class="mono">image-right</td><td>右图左文  </td><td>两列表格：右图占位 + 左文（image-left 镜像）</td></tr>
+<tr><td class="mono">hybrid-flow</td><td>混合流式  </td><td>段落+表格+图片按内容自由混排，标题层级贯穿</td></tr>
+<tr><td class="mono">minimal-clean</td><td>极简留白  </td><td>宽页边距、轻网格、无装饰，正文信息密度低</td></tr></table></div></div>
+<div class="group-block"><h3>配色方案 <span class="mono" style="font-size:12px">palette</span></h3><div class="gmeta">每套 5 组色值 primary/accent/heading/tableFill/coverBg（+渐变端色） · 默认 <code>deep-indigo</code></div><div class="carriers"><span class="chk ok">数据 JSON</span><span class="chk ok">内置 DEFAULT</span><span class="chk ok">JSON↔内置逐 id</span><span class="chk ok">CLI 组载体</span><span class="chk ok">校验循环</span><span class="chk ok">测试组载体</span><span class="chk ok">中文别名</span><span class="chk ok">文档（契约/需求）</span></div><div class="tablewrap"><table><colgroup><col style="width:24%"><col style="width:34%"><col style="width:42%"></colgroup><tr><th>id</th><th>名称</th><th>说明</th></tr><tr><td class="mono">deep-indigo</td><td>深靛蓝 <span class="tag dft-tag">默认</span> </td><td>默认方案，稳重通用</td></tr>
+<tr><td class="mono">warm-bronze</td><td>暖棕金  </td><td>偏传统工程气质</td></tr>
+<tr><td class="mono">pine-green</td><td>松绿  </td><td>环保/园林/水利类项目适用</td></tr>
+<tr><td class="mono">brick-red</td><td>砖红  </td><td>偏建筑/市政气质</td></tr>
+<tr><td class="mono">steel-cyan</td><td>钢青  </td><td>冷色低辨识度，暗标推荐</td></tr>
+<tr><td class="mono">charcoal</td><td>炭灰极简  </td><td>无彩色，暗标最稳妥</td></tr>
+<tr><td class="mono">deep-blue-gold</td><td>深海蓝金  </td><td>比深靛蓝更正式、对比更强</td></tr>
+<tr><td class="mono">ink-green-orange</td><td>墨绿暖橙  </td><td>冷暖对比明显，适合重点标注</td></tr>
+<tr><td class="mono">mono-red</td><td>黑白灰一点红  </td><td>黑白灰主调 + 一点红强调，暗标推荐</td></tr>
+<tr><td class="mono">gradient-blue-cyan</td><td>渐变蓝青  </td><td>docx 不支持原生渐变填充，以两段色块拼接近似</td></tr></table></div></div>
+<div class="group-block"><h3>封面版式 <span class="mono" style="font-size:12px">cover</span></h3><div class="gmeta">封页视觉：满版/留白/图底/渐变/四角框/通栏/对角/纯文字/徽标/底带 · 默认 <code>full-block</code></div><div class="carriers"><span class="chk ok">数据 JSON</span><span class="chk ok">内置 DEFAULT</span><span class="chk ok">JSON↔内置逐 id</span><span class="chk ok">CLI 组载体</span><span class="chk ok">校验循环</span><span class="chk ok">测试组载体</span><span class="chk ok">中文别名</span><span class="chk ok">文档（契约/需求）</span></div><div class="tablewrap"><table><colgroup><col style="width:24%"><col style="width:34%"><col style="width:42%"></colgroup><tr><th>id</th><th>名称</th><th>说明</th></tr><tr><td class="mono">full-block</td><td>满版色块 <span class="tag dft-tag">默认</span> </td><td>整页底色块 + 标题反白</td></tr>
+<tr><td class="mono">line-white</td><td>留白线条  </td><td>白底 + 细线框/分隔线</td></tr>
+<tr><td class="mono">image-underlay</td><td>图底压字  <span class="tag dark-tag">暗标禁</span></td><td>背景图 + 标题叠压</td></tr>
+<tr><td class="mono">gradient</td><td>渐变  </td><td>两段色块近似渐变（python-docx 无原生渐变）</td></tr>
+<tr><td class="mono">frame-corners</td><td>四角框线  </td><td>白底 + 四角细线框 + 中部标题/单位/日期</td></tr>
+<tr><td class="mono">top-banner</td><td>顶部通栏色带  </td><td>页首通栏色块 + 下方留白标题区</td></tr>
+<tr><td class="mono">split-diagonal</td><td>对角分割  </td><td>斜向两色块分割 + 文字置于浅色区</td></tr>
+<tr><td class="mono">minimal-type</td><td>纯文字极简  </td><td>无图形元素，仅标题/单位/日期三行文字</td></tr>
+<tr><td class="mono">emblem-center</td><td>徽标居中  <span class="tag dark-tag">暗标禁</span></td><td>企业 LOGO 居中 + 下方标题/单位（明标）</td></tr>
+<tr><td class="mono">ribbon-bottom</td><td>底部色带  </td><td>白底 + 底部色带 + 右上竖排标题</td></tr></table></div></div>
+<div class="group-block"><h3>装饰强度 <span class="mono" style="font-size:12px">decoration</span></h3><div class="gmeta">章节装饰密度与手法，克制→丰富→零装饰；带色项暗标禁用 · 默认 <code>standard</code></div><div class="carriers"><span class="chk ok">数据 JSON</span><span class="chk ok">内置 DEFAULT</span><span class="chk ok">JSON↔内置逐 id</span><span class="chk ok">CLI 组载体</span><span class="chk ok">校验循环</span><span class="chk ok">测试组载体</span><span class="chk ok">中文别名</span><span class="chk ok">文档（契约/需求）</span></div><div class="tablewrap"><table><colgroup><col style="width:24%"><col style="width:34%"><col style="width:42%"></colgroup><tr><th>id</th><th>名称</th><th>说明</th></tr><tr><td class="mono">minimal</td><td>克制  </td><td>仅标题色 + 细线</td></tr>
+<tr><td class="mono">standard</td><td>标准 <span class="tag dft-tag">默认</span> </td><td>标题色块 + 表头底纹</td></tr>
+<tr><td class="mono">rich</td><td>丰富  </td><td>章首装饰带 + 图标 + 强调底色</td></tr>
+<tr><td class="mono">none</td><td>无装饰  </td><td>无任何装饰元素，纯文本+表格</td></tr>
+<tr><td class="mono">heading-rule</td><td>仅标题线  </td><td>各级标题下方细横线，正文无装饰</td></tr>
+<tr><td class="mono">sidebar-tab</td><td>侧边页签  </td><td>页面外侧色块页签导航（章号）</td></tr>
+<tr><td class="mono">corner-dots</td><td>四角圆点  </td><td>页四角小圆点/圆角符号点缀</td></tr>
+<tr><td class="mono">section-band</td><td>章首色带  </td><td>仅章节首页顶部装饰带，内页无装饰</td></tr>
+<tr><td class="mono">icon-accent</td><td>图标点缀  </td><td>章节标题前小图标，无底纹无色带</td></tr>
+<tr><td class="mono">table-fill</td><td>仅表头底纹  <span class="tag dark-tag">暗标禁</span></td><td>只对表格表头使用配色底纹，其余零装饰</td></tr></table></div></div>
+<div class="group-block"><h3>字体方案 <span class="mono" style="font-size:12px">font</span></h3><div class="gmeta">标题/正文/西文字族 + 字号骨架 + 行距 + 暗标安全性 · 默认 <code>gov-gongwen</code></div><div class="carriers"><span class="chk ok">数据 JSON</span><span class="chk ok">内置 DEFAULT</span><span class="chk ok">JSON↔内置逐 id</span><span class="chk ok">CLI 组载体</span><span class="chk ok">校验循环</span><span class="chk ok">测试组载体</span><span class="chk ok">中文别名</span><span class="chk ok">文档（契约/需求）</span></div><div class="tablewrap"><table><colgroup><col style="width:24%"><col style="width:34%"><col style="width:42%"></colgroup><tr><th>id</th><th>名称</th><th>说明</th></tr><tr><td class="mono">gov-gongwen</td><td>政务公文风 <span class="tag dft-tag">默认</span> <span class="tag dark-tag">暗标禁</span></td><td>对标 GB/T 9704 公文版式，监理大纲正统首选</td></tr>
+<tr><td class="mono">engineering</td><td>工程务实风  <span class="tag dark-tag">暗标禁</span></td><td>全宋体系，与多地暗标条款（宋体四号常规）天然接近</td></tr>
+<tr><td class="mono">modern-business</td><td>现代商务风  <span class="tag dark-tag">暗标禁</span></td><td>屏幕阅读友好；字重偏粗，暗标禁用</td></tr>
+<tr><td class="mono">elegant-classic</td><td>典雅书卷风  <span class="tag dark-tag">暗标禁</span></td><td>差异化竞争，文化/教育/园林类；楷体篇幅约+5%</td></tr>
+<tr><td class="mono">dark-safe</td><td>暗标安全风  </td><td>全黑统一，无加粗/斜体/下划线/加色；变体：招标点名仿宋_GB2312 小四时按条款切换；不设封面/页眉页脚/页码</td></tr>
+<tr><td class="mono">gb2312-classic</td><td>仿宋GB2312风  <span class="tag dark-tag">暗标禁</span></td><td>招标点名仿宋_GB2312 小四时按条款切换（南通监理条款）；以 overrides 覆盖</td></tr>
+<tr><td class="mono">hei-song-simplified</td><td>黑宋简约风  <span class="tag dark-tag">暗标禁</span></td><td>黑体标题+宋体正文，评标识别度最高</td></tr>
+<tr><td class="mono">kai-literary</td><td>楷体书卷风  <span class="tag dark-tag">暗标禁</span></td><td>正文楷体，适用于文字性章节/前言；篇幅约+5%</td></tr>
+<tr><td class="mono">fangsong-official</td><td>全仿宋公文风  <span class="tag dark-tag">暗标禁</span></td><td>对标 GB/T 9704-2012 党政机关公文：全仿宋、章二号居中</td></tr>
+<tr><td class="mono">mixed-safe</td><td>混排安全风  <span class="tag dark-tag">暗标禁</span></td><td>无加色/无装饰字，明标低风险；与 dark-safe 区别：标题保留黑体不加粗</td></tr></table></div></div>
+<div class="group-block"><h3>图文比例 <span class="mono" style="font-size:12px">imageRatio</span></h3><div class="gmeta">图占版心 0%→70%，10 档；none=零图（暗标推荐） · 默认 <code>mid</code></div><div class="carriers"><span class="chk ok">数据 JSON</span><span class="chk ok">内置 DEFAULT</span><span class="chk ok">JSON↔内置逐 id</span><span class="chk ok">CLI 组载体</span><span class="chk ok">校验循环</span><span class="chk ok">测试组载体</span><span class="chk ok">中文别名</span><span class="chk ok">文档（契约/需求）</span></div><div class="tablewrap"><table><colgroup><col style="width:24%"><col style="width:34%"><col style="width:42%"></colgroup><tr><th>id</th><th>名称</th><th>说明</th></tr><tr><td class="mono">none</td><td>无图  </td><td>零图模式：不生成/不插入任何图表，纯文字排版；暗标推荐（切断人脸/品牌/水印/版权全部图片风险）；tech-export 跳过图片、image-left 降级单栏、页数按纯文字折算</td></tr>
+<tr><td class="mono">low</td><td>低图比  </td><td>图占版心约 10%；理论密集型章节（质量/进度/投资控制、监理程序）；近纯文字页</td></tr>
+<tr><td class="mono">mid</td><td>中图比 <span class="tag dft-tag">默认</span> </td><td>默认档；图占版心约 30%；现场照片每页≤2 张（行业口径）</td></tr>
+<tr><td class="mono">high</td><td>高图比  <span class="tag dark-tag">暗标禁</span></td><td>图占版心约 50%；图证型章节（现场平面布置/安全文明施工/样板引路）；流程图每页 1 张；暗标须转灰度+附图专页</td></tr>
+<tr><td class="mono">ultra-low</td><td>极低图比  </td><td>图占版心约5%；仅关键证据位（业绩/资质/荣誉证书）</td></tr>
+<tr><td class="mono">low-mid</td><td>偏低图比  </td><td>图占版心约20%；理论密集型章节适度配图</td></tr>
+<tr><td class="mono">mid-high</td><td>偏高图比  <span class="tag dark-tag">暗标禁</span></td><td>图占版心约40%；过程照片+文字混合章节</td></tr>
+<tr><td class="mono">very-high</td><td>高强图比  <span class="tag dark-tag">暗标禁</span></td><td>图占版心约60%；图证型章节（平面布置/安全文明/样板引路）</td></tr>
+<tr><td class="mono">full</td><td>整页图版  <span class="tag dark-tag">暗标禁</span></td><td>图占版心约70%；现场鸟瞰/总平面图专页</td></tr>
+<tr><td class="mono">appendix-only</td><td>仅附表  </td><td>正文零图，图表全部集中附末（明标版暗标式）；对应 imageLayout=appendix</td></tr></table></div></div>
+<div class="group-block"><h3>配图规则 <span class="mono" style="font-size:12px">imageRule</span></h3><div class="gmeta">图片来源与安全策略：上传/搜索/AI/混合/暗标安全等 10 套 · 默认 <code>hybrid</code></div><div class="carriers"><span class="chk ok">数据 JSON</span><span class="chk ok">内置 DEFAULT</span><span class="chk ok">JSON↔内置逐 id</span><span class="chk ok">CLI 组载体</span><span class="chk ok">校验循环</span><span class="chk ok">测试组载体</span><span class="chk ok">中文别名</span><span class="chk ok">文档（契约/需求）</span></div><div class="tablewrap"><table><colgroup><col style="width:24%"><col style="width:34%"><col style="width:42%"></colgroup><tr><th>id</th><th>名称</th><th>说明</th></tr><tr><td class="mono">upload-first</td><td>上传优先  </td><td>上传图只放关键证据位（业绩/资质/人员/荣誉）；仅等比缩放+质量检查，不改内容</td></tr>
+<tr><td class="mono">search-supplement</td><td>搜索补图  <span class="tag dark-tag">暗标禁</span></td><td>搜真实工程场景图；短边≥600px、无水印优先、尽量无人脸/品牌；标注示意图；版权风险高，不用于事实陈述</td></tr>
+<tr><td class="mono">ai-render</td><td>AI 生图  </td><td>工程场景示意图作主力：统一画风、无版权、可控（指定无人脸/无文字标识/无品牌）；嵌入 docx 前重编码标准 JPEG；标注示意图</td></tr>
+<tr><td class="mono">hybrid</td><td>混合策略 <span class="tag dft-tag">默认</span> <span class="tag dark-tag">暗标禁</span></td><td>默认；关键证据→上传图，真实场景→搜索图，风格补全→AI 图；三源混排时边框/色调统一</td></tr>
+<tr><td class="mono">dark-safe-img</td><td>暗标安全  </td><td>无论来源一律过安全闸：转灰度/黑白、人脸不可辨识、招牌/品牌/文字遮盖、EXIF 与文件名清洗</td></tr>
+<tr><td class="mono">plan-only</td><td>仅平面图  </td><td>施工总平面/进度计划/工艺流程图（CAD→JPG 等比缩放不超页边距，剑鱼指南）；图表文字五号宋体黑字</td></tr>
+<tr><td class="mono">photo-only</td><td>仅现场照片  <span class="tag dark-tag">暗标禁</span></td><td>真实场景照片为主；须人工核验真实性与版权，避免人脸/品牌</td></tr>
+<tr><td class="mono">chart-only</td><td>仅图表  </td><td>无实景图；组织结构/网络计划/检测曲线（图表内五号宋体黑字常规可暗标）</td></tr>
+<tr><td class="mono">search-verify</td><td>搜索+人工核验  <span class="tag dark-tag">暗标禁</span></td><td>搜索结果必须人工确认真实性/版权/清晰度后方可使用（国家版权局 2020 通知口径）</td></tr>
+<tr><td class="mono">no-source</td><td>无图源  </td><td>与 imageRatio=none 联动：不生成/不插入任何图表</td></tr></table></div></div>
+<div class="group-block"><h3>配图排版 <span class="mono" style="font-size:12px">imageLayout</span></h3><div class="gmeta">图文排布：左右/上下/混排/图组/附图专页/侧注/横幅/时间轴/卡片/无 · 默认 <code>split-h</code></div><div class="carriers"><span class="chk ok">数据 JSON</span><span class="chk ok">内置 DEFAULT</span><span class="chk ok">JSON↔内置逐 id</span><span class="chk ok">CLI 组载体</span><span class="chk ok">校验循环</span><span class="chk ok">测试组载体</span><span class="chk ok">中文别名</span><span class="chk ok">文档（契约/需求）</span></div><div class="tablewrap"><table><colgroup><col style="width:24%"><col style="width:34%"><col style="width:42%"></colgroup><tr><th>id</th><th>名称</th><th>说明</th></tr><tr><td class="mono">split-h</td><td>左右分栏 <span class="tag dft-tag">默认</span> </td><td>左图右文/左文右图，两列表格承载；图不跨栏不折行，文字对齐图顶部或中部；通用最稳</td></tr>
+<tr><td class="mono">split-v</td><td>上下分栏  </td><td>上图下文：横图+图注+正文段落；适合过程照片/案例展示</td></tr>
+<tr><td class="mono">inline</td><td>图文混排  </td><td>图嵌段落中文字环绕，小图穿插正文；图不跨栏不折行不被文字覆盖</td></tr>
+<tr><td class="mono">grid</td><td>图组并排  <span class="tag dark-tag">暗标禁</span></td><td>2 张同尺寸图并排+组注；前后对照/多工序对比；暗标须附图专页</td></tr>
+<tr><td class="mono">appendix</td><td>附图专页  </td><td>图集中章节末/文末附表，正文用见附图 X 引用；暗标强制（青海/安庆条款：附图依次附于标书最后）</td></tr>
+<tr><td class="mono">side-note</td><td>侧注式  </td><td>窄图+右侧注文（图注规范）；图小、可灰度，暗标可用</td></tr>
+<tr><td class="mono">banner</td><td>通栏横幅  <span class="tag dark-tag">暗标禁</span></td><td>整页宽图置于章首/节首（视野图）；图占版心宽 100%</td></tr>
+<tr><td class="mono">timeline</td><td>时间轴图  <span class="tag dark-tag">暗标禁</span></td><td>进度/里程碑图沿时间轴排布（横道图/网络计划）</td></tr>
+<tr><td class="mono">card-mix</td><td>卡片混排  <span class="tag dark-tag">暗标禁</span></td><td>图卡+文字卡混排（数据行布局配套）；docx 无圆角以直角呈现</td></tr>
+<tr><td class="mono">none</td><td>无排版  </td><td>不排图（与 imageRatio=none 联动）；tech-export 跳过图片阶段</td></tr></table></div></div>
+<div class="group-block"><h3>页面设置 <span class="mono" style="font-size:12px">pageSetup</span></h3><div class="gmeta">H1 页边距/幅面：标准公文、地区暗标条款、学位规范等 10 套 · 默认 <code>p1-standard-a4</code></div><div class="carriers"><span class="chk ok">数据 JSON</span><span class="chk ok">内置 DEFAULT</span><span class="chk ok">JSON↔内置逐 id</span><span class="chk ok">CLI 组载体</span><span class="chk ok">校验循环</span><span class="chk ok">测试组载体</span><span class="chk ok">中文别名</span><span class="chk ok">文档（契约/需求）</span></div><div class="tablewrap"><table><colgroup><col style="width:24%"><col style="width:34%"><col style="width:42%"></colgroup><tr><th>id</th><th>名称</th><th>说明</th></tr><tr><td class="mono">p1-standard-a4</td><td>标准公文 A4 <span class="tag dft-tag">默认</span> </td><td>Word/WPS 默认页边距，青海检测规则采用；通用最稳</td></tr>
+<tr><td class="mono">p2-haikou-25</td><td>海南盲评 2.0/2.5  </td><td>海南/济南/贵州盲评规范口径；招标硬约束常见值</td></tr>
+<tr><td class="mono">p3-jianyu-商务</td><td>剑鱼商务 25/26/22  <span class="tag dark-tag">暗标禁</span></td><td>高分标书排版指南口径；装订余量充裕</td></tr>
+<tr><td class="mono">p4-tongliao-317</td><td>通辽 3.17/2.54  </td><td>通辽住建局暗标制条款；左侧加宽为装订留量</td></tr>
+<tr><td class="mono">p5-nanyang-32</td><td>南阳 3/3/2/2  </td><td>南阳暗标自动清标条款；竖向留白大</td></tr>
+<tr><td class="mono">p6-guangxi-215</td><td>广西 EPC 2.15  <span class="tag dark-tag">暗标禁</span></td><td>广西森林博物馆 EPC 明标条款；对称紧凑</td></tr>
+<tr><td class="mono">p7-hb-25-20</td><td>河北 2.5/2.0  </td><td>石家庄/吉林/邯郸暗标条款主流值</td></tr>
+<tr><td class="mono">p8-nenu-学位</td><td>东师学位 2/2.5  <span class="tag dark-tag">暗标禁</span></td><td>东北师大学位论文页面设置；学术出版口径</td></tr>
+<tr><td class="mono">p9-gbt-学位</td><td>国标学位 3.8/3.2  <span class="tag dark-tag">暗标禁</span></td><td>GB/T 7713 系列学位论文惯例（南昌大学规范）；版心紧凑</td></tr>
+<tr><td class="mono">p10-symmetric-紧凑</td><td>对称紧凑 2.2  <span class="tag dark-tag">暗标禁</span></td><td>对称等宽，适合双面印刷对页美观</td></tr></table></div></div>
+<div class="group-block"><h3>标题体系 <span class="mono" style="font-size:12px">headingSystem</span></h3><div class="gmeta">H2 章→条编号与字体：GB/T 阿拉伯、招标条款式、学术模板等 10 套 · 默认 <code>h1-gbt-arabic</code></div><div class="carriers"><span class="chk ok">数据 JSON</span><span class="chk ok">内置 DEFAULT</span><span class="chk ok">JSON↔内置逐 id</span><span class="chk ok">CLI 组载体</span><span class="chk ok">校验循环</span><span class="chk ok">测试组载体</span><span class="chk ok">中文别名</span><span class="chk ok">文档（契约/需求）</span></div><div class="tablewrap"><table><colgroup><col style="width:24%"><col style="width:34%"><col style="width:42%"></colgroup><tr><th>id</th><th>名称</th><th>说明</th></tr><tr><td class="mono">h1-gbt-arabic</td><td>GB/T 阿拉伯分级 <span class="tag dft-tag">默认</span> <span class="tag dark-tag">暗标禁</span></td><td>学术标准；技术标默认（默认档）</td></tr>
+<tr><td class="mono">h2-tender-arabic</td><td>招标全阿拉伯  </td><td>暗标主流式：禁加粗/加色/倾斜/下划线</td></tr>
+<tr><td class="mono">h3-qinghai-hybrid</td><td>青海中数混排  </td><td>青海暗标检测规则式</td></tr>
+<tr><td class="mono">h4-nanyang-7level</td><td>南阳七级混排  </td><td>深层次结构专用；暗标清标条款</td></tr>
+<tr><td class="mono">h5-jianyu-bold</td><td>剑鱼标书加粗  <span class="tag dark-tag">暗标禁</span></td><td>高分标书指南式；层级视觉最清晰</td></tr>
+<tr><td class="mono">h6-sci-report</td><td>科技报告式  <span class="tag dark-tag">暗标禁</span></td><td>GB/T 7713.3 科技报告；信息密度高</td></tr>
+<tr><td class="mono">h7-pku-template</td><td>北大教学模板  <span class="tag dark-tag">暗标禁</span></td><td>教育教学类文档惯例</td></tr>
+<tr><td class="mono">h8-nenu-academic</td><td>东师学术式  <span class="tag dark-tag">暗标禁</span></td><td>东北师大学位规范；正式学术出版</td></tr>
+<tr><td class="mono">h9-cas-academic</td><td>中科院学术式  <span class="tag dark-tag">暗标禁</span></td><td>中科院学位规范；章名居中醒目</td></tr>
+<tr><td class="mono">h10-tongliao-tender</td><td>通辽暗标式  </td><td>通辽住建局暗标制条款；编号带顿号特色</td></tr></table></div></div>
+<div class="group-block"><h3>目录版式 <span class="mono" style="font-size:12px">tocStyle</span></h3><div class="gmeta">H3 目录结构与页码呈现：剑鱼自动、无页码目录、双目录等 10 套 · 默认 <code>t1-jianyu-auto</code></div><div class="carriers"><span class="chk ok">数据 JSON</span><span class="chk ok">内置 DEFAULT</span><span class="chk ok">JSON↔内置逐 id</span><span class="chk ok">CLI 组载体</span><span class="chk ok">校验循环</span><span class="chk ok">测试组载体</span><span class="chk ok">中文别名</span><span class="chk ok">文档（契约/需求）</span></div><div class="tablewrap"><table><colgroup><col style="width:24%"><col style="width:34%"><col style="width:42%"></colgroup><tr><th>id</th><th>名称</th><th>说明</th></tr><tr><td class="mono">t1-jianyu-auto</td><td>剑鱼自动目录 <span class="tag dft-tag">默认</span> <span class="tag dark-tag">暗标禁</span></td><td>高分标书指南默认；行距2倍/1.5倍/固定23磅按量</td></tr>
+<tr><td class="mono">t2-zol-standard</td><td>ZOL 标准目录  <span class="tag dark-tag">暗标禁</span></td><td>Word/WPS 操作通行做法</td></tr>
+<tr><td class="mono">t3-qinghai-nopage</td><td>青海无页码目录  </td><td>青海暗标检测规则：目录不标注页码</td></tr>
+<tr><td class="mono">t4-guangxi-pointline</td><td>广西点线目录  <span class="tag dark-tag">暗标禁</span></td><td>广西 EPC 明标条款：目录不编页码</td></tr>
+<tr><td class="mono">t5-nenu-indent</td><td>东师缩进目录  <span class="tag dark-tag">暗标禁</span></td><td>东北师大学位规范；层级缩进最规范</td></tr>
+<tr><td class="mono">t6-cas-rightalign</td><td>中科院右对齐目录  <span class="tag dark-tag">暗标禁</span></td><td>中科院学位规范</td></tr>
+<tr><td class="mono">t7-xinong-compact</td><td>西农紧凑目录  <span class="tag dark-tag">暗标禁</span></td><td>西农本科规范；紧凑型适用多章节</td></tr>
+<tr><td class="mono">t8-dual-index</td><td>图文双目录  <span class="tag dark-tag">暗标禁</span></td><td>东北师大学位规范；图多/表多时专用</td></tr>
+<tr><td class="mono">t9-wps-tabstop</td><td>WPS 制表位目录  <span class="tag dark-tag">暗标禁</span></td><td>WPS 智能目录工程实现；千页级秒级更新</td></tr>
+<tr><td class="mono">t10-minimal-2level</td><td>两级紧凑目录  <span class="tag dark-tag">暗标禁</span></td><td>评委快速导航；适用于页数较少或结构简单</td></tr></table></div></div>
+<div class="group-block"><h3>表格样式 <span class="mono" style="font-size:12px">tableStyle</span></h3><div class="gmeta">H4 三线表/全线/网格/无底线/暗标细线/KPI 行/续表等 10 套 · 默认 <code>tb1-three-line</code></div><div class="carriers"><span class="chk ok">数据 JSON</span><span class="chk ok">内置 DEFAULT</span><span class="chk ok">JSON↔内置逐 id</span><span class="chk ok">CLI 组载体</span><span class="chk ok">校验循环</span><span class="chk ok">测试组载体</span><span class="chk ok">中文别名</span><span class="chk ok">文档（契约/需求）</span></div><div class="tablewrap"><table><colgroup><col style="width:24%"><col style="width:34%"><col style="width:42%"></colgroup><tr><th>id</th><th>名称</th><th>说明</th></tr><tr><td class="mono">tb1-three-line</td><td>三线表（学术） <span class="tag dft-tag">默认</span> </td><td>表题置于表上方居中；学术/技术标默认</td></tr>
+<tr><td class="mono">tb2-full-line</td><td>全线表  </td><td>数据密集对照表；全书一致</td></tr>
+<tr><td class="mono">tb3-saving-line</td><td>省线表  </td><td>比全线表简洁 比三线表信息分层</td></tr>
+<tr><td class="mono">tb4-header-fill</td><td>表头底纹+全边框  <span class="tag dark-tag">暗标禁</span></td><td>商务标书通行；与配色联动</td></tr>
+<tr><td class="mono">tb5-grid-fine</td><td>网格细线  <span class="tag dark-tag">暗标禁</span></td><td>常规网格表；适用清单/台账</td></tr>
+<tr><td class="mono">tb6-no-line</td><td>无线表  <span class="tag dark-tag">暗标禁</span></td><td>CY/T 170 列为非正式表格，慎用</td></tr>
+<tr><td class="mono">tb7-dark-0.5</td><td>暗标细线表  </td><td>锡林郭勒暗标条款；表内文字五号宋体黑字常规</td></tr>
+<tr><td class="mono">tb8-center-vh</td><td>上下左右居中表  <span class="tag dark-tag">暗标禁</span></td><td>表头/表身上下左右居中，内容多时上下居中靠左；避免跨页（剑鱼指南）</td></tr>
+<tr><td class="mono">tb9-kpi-row</td><td>数据行/KPI 卡  <span class="tag dark-tag">暗标禁</span></td><td>配套数据行布局；工期/人数/面积等指标章</td></tr>
+<tr><td class="mono">tb10-split-continue</td><td>续表重复表头  <span class="tag dark-tag">暗标禁</span></td><td>学位规范：续表重复表头与单位陈述；跨页并合</td></tr></table></div></div>
+<div class="group-block"><h3>图表编号 <span class="mono" style="font-size:12px">captionSystem</span></h3><div class="gmeta">H5 图题表题编号与位置：分章/依序/就近/附录字母/暗标附图等 10 套 · 默认 <code>c2-cy-chapter</code></div><div class="carriers"><span class="chk ok">数据 JSON</span><span class="chk ok">内置 DEFAULT</span><span class="chk ok">JSON↔内置逐 id</span><span class="chk ok">CLI 组载体</span><span class="chk ok">校验循环</span><span class="chk ok">测试组载体</span><span class="chk ok">中文别名</span><span class="chk ok">文档（契约/需求）</span></div><div class="tablewrap"><table><colgroup><col style="width:24%"><col style="width:34%"><col style="width:42%"></colgroup><tr><th>id</th><th>名称</th><th>说明</th></tr><tr><td class="mono">c1-gbt-seq</td><td>GB/T 全文依序  <span class="tag dark-tag">暗标禁</span></td><td>期刊论文式；全书统一</td></tr>
+<tr><td class="mono">c2-cy-chapter</td><td>CY/T 分章编号 <span class="tag dft-tag">默认</span> <span class="tag dark-tag">暗标禁</span></td><td>图书/技术标默认；分章依序，全书统一（默认档）</td></tr>
+<tr><td class="mono">c3-jianyu-neighbor</td><td>剑鱼就近编号  <span class="tag dark-tag">暗标禁</span></td><td>正文须'见图X-X'呼应（高分标书指南）</td></tr>
+<tr><td class="mono">c4-nenu-pos</td><td>东师位置规范  <span class="tag dark-tag">暗标禁</span></td><td>东北师大学位规范；图题后不加标点</td></tr>
+<tr><td class="mono">c5-xinong-chapter</td><td>西农分章编号  <span class="tag dark-tag">暗标禁</span></td><td>西农规范；图表尽量不与题分页</td></tr>
+<tr><td class="mono">c6-appendix-letter</td><td>附录字母编号  <span class="tag dark-tag">暗标禁</span></td><td>国标/西农：附录内图表另行编号</td></tr>
+<tr><td class="mono">c7-cas-chapter</td><td>中科院分章编号  <span class="tag dark-tag">暗标禁</span></td><td>中科院学位规范；与公式/附注区分</td></tr>
+<tr><td class="mono">c8-dual-index</td><td>图文双目录联动  <span class="tag dark-tag">暗标禁</span></td><td>东北师大：图多/表多时与目录联动</td></tr>
+<tr><td class="mono">c9-dark-appendix</td><td>暗标附图专页  </td><td>青海/安庆暗标条款：正文不得插图表，附图附于最后</td></tr>
+<tr><td class="mono">c10-note-pos</td><td>图注表注规范  <span class="tag dark-tag">暗标禁</span></td><td>CY/T 170/学位规范；注文多则加序号</td></tr></table></div></div>
+<div class="group-block"><h3>段落样式 <span class="mono" style="font-size:12px">paragraphStyle</span></h3><div class="gmeta">H6 行距与缩进：1.5 倍、固定磅值条款、紧凑等 10 套 · 默认 <code>pa7-jianyu-15</code></div><div class="carriers"><span class="chk ok">数据 JSON</span><span class="chk ok">内置 DEFAULT</span><span class="chk ok">JSON↔内置逐 id</span><span class="chk ok">CLI 组载体</span><span class="chk ok">校验循环</span><span class="chk ok">测试组载体</span><span class="chk ok">中文别名</span><span class="chk ok">文档（契约/需求）</span></div><div class="tablewrap"><table><colgroup><col style="width:24%"><col style="width:34%"><col style="width:42%"></colgroup><tr><th>id</th><th>名称</th><th>说明</th></tr><tr><td class="mono">pa1-qinghai-26</td><td>青海固定26磅  </td><td>青海暗标检测规则；段前后0（默认暗标候选）</td></tr>
+<tr><td class="mono">pa2-haikou-25</td><td>海南固定25磅  </td><td>海南/济南/贵州盲评条款；段落前后无空行</td></tr>
+<tr><td class="mono">pa3-hebei-30</td><td>河北固定30磅  </td><td>石家庄/吉林/邯郸条款；字距标准</td></tr>
+<tr><td class="mono">pa4-guangxi-15</td><td>广西1.5倍行距  <span class="tag dark-tag">暗标禁</span></td><td>广西 EPC 明标条款；字符间距100%标准</td></tr>
+<tr><td class="mono">pa5-tongliao-30</td><td>通辽固定30磅  </td><td>通辽住建局条款；不得有空格</td></tr>
+<tr><td class="mono">pa6-ximeng-28</td><td>锡盟固定28磅  </td><td>锡林郭勒暗标条款；全文不允许空行空页</td></tr>
+<tr><td class="mono">pa7-jianyu-15</td><td>剑鱼1.5倍行距 <span class="tag dft-tag">默认</span> <span class="tag dark-tag">暗标禁</span></td><td>高分标书指南默认（明标默认档）</td></tr>
+<tr><td class="mono">pa8-xinong-20</td><td>西农固定20磅  <span class="tag dark-tag">暗标禁</span></td><td>西农规范；信息密度最高</td></tr>
+<tr><td class="mono">pa9-degree-15</td><td>学位1.5倍行距  <span class="tag dark-tag">暗标禁</span></td><td>学位论文通行；正文小四宋体</td></tr>
+<tr><td class="mono">pa10-compact-115</td><td>紧凑1.15倍  <span class="tag dark-tag">暗标禁</span></td><td>多章节紧凑排版（西农目录式行距）</td></tr></table></div></div>
+<div class="group-block"><h3>页眉页脚 <span class="mono" style="font-size:12px">headerFooter</span></h3><div class="gmeta">明标 8 套 + 暗标 2 套（无痕/仅页码），pageMode 三态 · 默认 <code>hf1-classic-enterprise</code></div><div class="carriers"><span class="chk ok">数据 JSON</span><span class="chk ok">内置 DEFAULT</span><span class="chk ok">JSON↔内置逐 id</span><span class="chk ok">CLI 组载体</span><span class="chk ok">校验循环</span><span class="chk ok">测试组载体</span><span class="chk ok">中文别名</span><span class="chk ok">文档（契约/需求）</span></div><div class="tablewrap"><table><colgroup><col style="width:24%"><col style="width:34%"><col style="width:42%"></colgroup><tr><th>id</th><th>名称</th><th>说明</th></tr><tr><td class="mono">hf1-classic-enterprise</td><td>经典企业版 <span class="tag dft-tag">默认</span> <span class="tag dark-tag">暗标禁</span></td><td>左 LOGO+企业名，右章节名，0.5pt 分隔线｜页脚居中 -N-｜pageMode=with-page</td></tr>
+<tr><td class="mono">hf2-centered-solemn</td><td>居中庄重  <span class="tag dark-tag">暗标禁</span></td><td>页眉居中企业名（小五）｜页脚居中页码｜pageMode=with-page</td></tr>
+<tr><td class="mono">hf3-project-oriented</td><td>项目导向  <span class="tag dark-tag">暗标禁</span></td><td>左企业名，右项目名｜页脚居中 -N-｜pageMode=with-page</td></tr>
+<tr><td class="mono">hf4-consulting-page</td><td>咨询商务  <span class="tag dark-tag">暗标禁</span></td><td>页眉右页码，下细线｜页脚第 N 页 共 M 页｜pageMode=with-page</td></tr>
+<tr><td class="mono">hf5-minimal-clean</td><td>极简留白  <span class="tag dark-tag">暗标禁</span></td><td>无页眉｜页脚居中 -N-｜pageMode=with-page</td></tr>
+<tr><td class="mono">hf6-chapter-nav</td><td>章节导航  <span class="tag dark-tag">暗标禁</span></td><td>左 LOGO+企业名，右完整章名｜页脚居中 -N-｜pageMode=with-page</td></tr>
+<tr><td class="mono">hf7-dual-footer</td><td>双栏页脚  <span class="tag dark-tag">暗标禁</span></td><td>页眉企业名+项目名｜页脚左项目简称，右页码｜pageMode=with-page</td></tr>
+<tr><td class="mono">hf8-full-info-3col</td><td>全信息三栏  <span class="tag dark-tag">暗标禁</span></td><td>LOGO+企业名｜项目名｜章节名｜页脚居中 -N-｜pageMode=with-page</td></tr>
+<tr><td class="mono">hf9-dark-none</td><td>暗标无页眉页脚  </td><td>无页眉｜无页码无页脚｜pageMode=none</td></tr>
+<tr><td class="mono">hf10-dark-page-only</td><td>暗标仅页码  </td><td>页眉必须空｜页脚纯页码，全文连续｜pageMode=page-only</td></tr></table></div></div>
+</section>
+
+<section>
+<div class="sec-head"><span class="no">04</span><h2>③ 一致性检查 C1–C9</h2><span class="cn">9 项全部通过</span></div>
+<div class="tablewrap"><table>
+<colgroup><col style="width:22%"><col style="width:18%"><col style="width:48%"><col style="width:12%"></colgroup>
+<tr><th>检查项</th><th>名称</th><th>说明</th><th>结果</th></tr>
+<tr><td class="mono">C1_json_vs_builtin</td><td>数据 ↔ 内置常量</td><td>layout-presets.json 与 rules_base.DEFAULT_LAYOUT 的 15 组 id 集合及顺序完全一致</td><td><span class="chk ok">通过</span></td></tr>
+<tr><td class="mono">C2_default_valid</td><td>默认组合合法</td><td>default 15 字段的取值全部落在对应组内（含 headerFooter=hf1-classic-enterprise）</td><td><span class="chk ok">通过</span></td></tr>
+<tr><td class="mono">C3_dark_inject_valid</td><td>暗标注入合法</td><td>sources.DARK_LAYOUT_INJECT 9 键全部为合法组内 id（font/imageRatio/微观六组/headerFooter）</td><td><span class="chk ok">通过</span></td></tr>
+<tr><td class="mono">C4_group_keys_aligned</td><td>组键三表对齐</td><td>GROUPS(layout.py) = LAYOUT_ALIAS_KEYS(rules_base) = COMBO_KEYS(packs)，均为 15 键</td><td><span class="chk ok">通过</span></td></tr>
+<tr><td class="mono">C5_alias_values_valid</td><td>中文别名合法</td><td>全部独立别名表值落在组内；微观共享表 MICRO_LAYOUT_ALIASES 全局无 stray</td><td><span class="chk ok">通过</span></td></tr>
+<tr><td class="mono">C6_dark_semantics</td><td>暗标语义正确</td><td>image-underlay 与 table-fill darkOk=false（暗标禁用）；dark-safe/hf9/hf10 darkOk=true；注入项无冲突</td><td><span class="chk ok">通过</span></td></tr>
+<tr><td class="mono">C7_all_groups_ten</td><td>全组统一 10 套</td><td>15 组每组恰好 10 套，合计 150 个方案</td><td><span class="chk ok">通过</span></td></tr>
+<tr><td class="mono">C8_pack_combo_matches_default</td><td>专家包对齐默认</td><td>official-tech 包.json layoutCombo 15 键与 default 完全一致</td><td><span class="chk ok">通过</span></td></tr>
+<tr><td class="mono">C9_docs_cover_ten_and_hf</td><td>文档口径收敛</td><td>契约草案 v1.0 / 需求对齐 v1.3 均已覆盖 15 组、10 套、headerFooter 与暗标二选一</td><td><span class="chk ok">通过</span></td></tr>
+</table></div>
+<div class="grid2">
+<div class="card"><h4>暗标注入（sources.DARK_LAYOUT_INJECT，9 键）</h4><div class="darkbox"><b>font</b> = dark-safe
+<b>imageRatio</b> = none
+<b>pageSetup</b> = p7-hb-25-20
+<b>headingSystem</b> = h2-tender-arabic
+<b>tocStyle</b> = t3-qinghai-nopage
+<b>tableStyle</b> = tb7-dark-0.5
+<b>captionSystem</b> = c9-dark-appendix
+<b>paragraphStyle</b> = pa3-hebei-30
+<b>headerFooter</b> = hf9-dark-none</div></div>
+<div class="card"><h4>默认组合与页脚模式</h4><p style="font-size:13.5px">默认组合 15 字段见右（与专家包 official-tech 一致）；headerFooter 的 <code>pageMode</code> 三态：<b>none, page-only, with-page</b>。暗标二选一（校验 error）：<code>hf9-dark-none</code>（无页眉页脚无页码，默认注入）或 <code>hf10-dark-page-only</code>（页眉必须空、仅页码全文连续）。</p></div>
+</div>
+</section>
+
+<section>
+<div class="sec-head"><span class="no">05</span><h2>回归与冒烟验证</h2><span class="cn">改动后复跑，全部通过</span></div>
+<div class="tablewrap"><table>
+<colgroup><col style="width:30%"><col style="width:30%"><col style="width:40%"></colgroup>
+<tr><th>验证项</th><th>结果</th><th>说明</th></tr>
+<tr><td>M6 单元测试（6 个测试文件）</td><td class="cons-ok">166 项通过</td><td>layout / rules / store / cli / packs / write；夹具已补 headerFooter 键</td></tr>
+<tr><td>全量单元回归</td><td class="cons-ok">unit 528 通过</td><td>含新增 PALETTE_ALIASES 后的复跑</td></tr>
+<tr><td>全量集成回归</td><td class="cons-ok">int 69 通过</td><td>—</td></tr>
+<tr><td>tech-layout --list --json 冒烟</td><td class="cons-ok">groups=15 · default 15 字段</td><td>各 group count=10；headerFooter=hf1-classic-enterprise</td></tr>
+<tr><td>审计脚本可复跑</td><td class="cons-ok">consistency=True</td><td>python scripts/m6_tech/audit_presets.py</td></tr>
+</table></div>
+</section>
+
+<section>
+<div class="sec-head"><span class="no">06</span><h2>已知缺口与待办</h2><span class="cn">如实披露</span></div>
+<div class="card"><h4>未完成项 / 待办</h4><ul class="list">
+<li><b>T9 SKILL.md M6 行回填</b>：skill 层入口是否已回填 15 组口径未最终确认——本轮落实检查已覆盖"文档 / 代码 / 数据 / 测试"，SKILL.md 若未同步须在 T9 统一回填（报告中如实标注为 skill 层待确认项）。</li>
+<li><b>T10 tech-export 渲染层未开发</b>：15 组方案在 docx 的最终渲染落实（页边距、标题样式、三线表、页眉页脚 pageMode 三态、暗标页码双态）依赖 T10；本次落实检查到数据 / 代码 / 测试 / 文档层，渲染层为已知缺口。</li>
+<li><b>git 工作区未提交</b>：本批改动（含 layout-presets.json v1.4、色卡预览.html、rules_* / layout / sources / packs / cli、audit_presets.py、测试 4 文件、契约草案 v1.0、需求对齐 v1.3）尚未 commit / push，分支 feat/tpl-inplace-relax。</li>
+</ul></div>
+<div class="card"><h4>当前工作区变更（git status --porcelain）</h4><div class="gitchips"><span> M "references/M6-\346\212\200\346\234\257\346\240\207\345\210\266\344\275\234-\345\245\221\347\272\246\350\215\211\346\241\210.md"</span><span> M "references/M6-\346\212\200\346\234\257\346\240\207\345\210\266\344\275\234-\351\234\200\346\261\202\345\257\271\351\275\220.md"</span><span> M scripts/m6_tech/cli.py</span><span> M scripts/m6_tech/layout.py</span><span> M scripts/m6_tech/packs.py</span><span> M scripts/m6_tech/rules.py</span><span> M scripts/m6_tech/rules_base.py</span><span> M scripts/m6_tech/rules_chapters.py</span><span> M scripts/m6_tech/sources.py</span><span> M tests/unit/test_m6_layout.py</span><span> M tests/unit/test_m6_packs.py</span><span> M tests/unit/test_m6_rules.py</span><span> M tests/unit/test_m6_store.py</span><span> M "\345\205\261\344\272\253\350\265\204\346\272\220/\346\212\200\346\234\257\346\240\207\351\243\216\346\240\274/layout-presets.json"</span><span> M "\345\205\261\344\272\253\350\265\204\346\272\220/\346\212\200\346\234\257\346\240\207\351\243\216\346\240\274/\344\270\223\345\256\266\345\214\205/official-tech/\345\214\205.json"</span><span> M "\345\205\261\344\272\253\350\265\204\346\272\220/\346\212\200\346\234\257\346\240\207\351\243\216\346\240\274/\350\211\262\345\215\241\351\242\204\350\247\210.html"</span><span>?? dev/notes/audit_report.json</span><span>?? dev/notes/gen_audit_html.py</span><span>?? dev/notes/presets_v1.4_extend.py</span><span>?? dev/reports/</span><span>?? scripts/m6_tech/audit_presets.py</span></div></div>
+</section>
+
+<footer>
+报告生成时间：2026-10-22 · 数据源：共享资源/技术标风格/layout-presets.json（v1.4）、dev/notes/audit_report.json（m6.audit/v1）· 审计脚本：scripts/m6_tech/audit_presets.py · 可复现：重跑审计脚本与本报告生成脚本即可刷新。
+</footer>
+</div>
+</body>
+</html>

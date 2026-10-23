@@ -59,7 +59,7 @@ def cmd_tech_init(args):
         if settings["bidMode"] == "暗标":
             for k, v in sources.DARK_LAYOUT_INJECT.items():
                 settings["layout"][k] = v
-            settings["notes"].append("暗标：排版预设默认被暗标条款覆盖（字体/图文/微观六组），具体以招标原文为准")
+            settings["notes"].append("暗标：排版预设默认被暗标条款覆盖（字体/图文/微观六组/页眉页脚），具体以招标原文为准")
     tree_exists = store.tree_path(tech).is_file()
     if tree_exists:
         settings["notes"].append("已存在章节树，设置.json 未覆写（章节树为权威）")

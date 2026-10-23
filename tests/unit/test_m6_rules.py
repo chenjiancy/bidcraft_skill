@@ -28,7 +28,11 @@ def tree(**kw):
         "style": {"id": "strict", "name": "严谨正式", "promptRef": "styles.json#strict"},
         "layout": {"preset": "single-column", "palette": "deep-indigo",
                    "cover": "full-block", "decoration": "standard", "font": "gov-gongwen",
-                   "imageRatio": "mid", "imageRule": "hybrid", "imageLayout": "split-h"},
+                   "imageRatio": "mid", "imageRule": "hybrid", "imageLayout": "split-h",
+                   "pageSetup": "p1-standard-a4", "headingSystem": "h1-gbt-arabic",
+                   "tocStyle": "t1-jianyu-auto", "tableStyle": "tb1-three-line",
+                   "captionSystem": "c2-cy-chapter", "paragraphStyle": "pa7-jianyu-15",
+                   "headerFooter": "hf1-classic-enterprise"},
         "terminology": {"招标人": "和县住建局", "项目名称": "和县2026"},
         "personnel": [{"name": "张三", "post": "总监理工程师", "source": "素材清单#personnel[0]"}],
         "chapters": [dict(ch(), status="PENDING",
@@ -348,7 +352,11 @@ class TestLayout(unittest.TestCase):
     BASE = {"preset": "card", "palette": "pine-green",
             "cover": "line-white", "decoration": "克制",
             "font": "elegant-classic",
-            "imageRatio": "mid", "imageRule": "hybrid", "imageLayout": "split-h"}
+            "imageRatio": "mid", "imageRule": "hybrid", "imageLayout": "split-h",
+            "pageSetup": "p1-standard-a4", "headingSystem": "h1-gbt-arabic",
+            "tocStyle": "t1-jianyu-auto", "tableStyle": "tb1-three-line",
+            "captionSystem": "c2-cy-chapter", "paragraphStyle": "pa7-jianyu-15",
+            "headerFooter": "hf1-classic-enterprise"}
 
     def test_default_valid(self):
         ok, issues = m6.validate_layout(dict(self.BASE))
@@ -368,50 +376,68 @@ class TestLayout(unittest.TestCase):
     def test_custom_presets(self):
         presets = {"presets": ["only"], "palettes": ["p1"], "covers": ["c1"],
                    "decorations": ["d1"], "fonts": ["f1"],
-                   "imageRatios": ["r1"], "imageRules": ["ru1"], "imageLayouts": ["l1"]}
+                   "imageRatios": ["r1"], "imageRules": ["ru1"], "imageLayouts": ["l1"],
+                   "pageSetups": ["ps1"], "headingSystems": ["hs1"], "tocStyles": ["tc1"],
+                   "tableStyles": ["ta1"], "captionSystems": ["cs1"], "paragraphStyles": ["pa1"],
+                   "headerFooters": ["hf1"]}
         ok, _ = m6.validate_layout({"preset": "only", "palette": "p1", "cover": "c1",
                                     "decoration": "d1", "font": "f1",
-                                    "imageRatio": "r1", "imageRule": "ru1", "imageLayout": "l1"}, presets)
+                                    "imageRatio": "r1", "imageRule": "ru1", "imageLayout": "l1",
+                                    "pageSetup": "ps1", "headingSystem": "hs1", "tocStyle": "tc1",
+                                    "tableStyle": "ta1", "captionSystem": "cs1", "paragraphStyle": "pa1",
+                                    "headerFooter": "hf1"},
+                                   presets)
         self.assertTrue(ok)
         ok, issues = m6.validate_layout({"preset": "card", "palette": "p1", "cover": "c1",
                                          "decoration": "d1", "font": "f1",
-                                         "imageRatio": "r1", "imageRule": "ru1", "imageLayout": "l1"}, presets)
+                                         "imageRatio": "r1", "imageRule": "ru1", "imageLayout": "l1",
+                                         "pageSetup": "ps1", "headingSystem": "hs1", "tocStyle": "tc1",
+                                         "tableStyle": "ta1", "captionSystem": "cs1", "paragraphStyle": "pa1",
+                                         "headerFooter": "hf1"},
+                                        presets)
         self.assertFalse(ok)
 
     def test_dark_image_cover(self):
-        ok, issues = m6.validate_layout(dict(self.BASE, cover="image-underlay", font="dark-safe"), None, "暗标")
+        ok, issues = m6.validate_layout(dict(self.BASE, cover="image-underlay", font="dark-safe",
+                                             headerFooter="hf9-dark-none"), None, "暗标")
         self.assertFalse(ok)
         self.assertIn("layout.mixcover", codes(issues))
 
     def test_dark_font_forced(self):
-        ok, issues = m6.validate_layout(dict(self.BASE, font="gov-gongwen"), None, "暗标")
+        ok, issues = m6.validate_layout(dict(self.BASE, font="gov-gongwen",
+                                             headerFooter="hf9-dark-none"), None, "暗标")
         self.assertFalse(ok)
         self.assertIn("layout.mixfont", codes(issues))
 
     def test_dark_font_safe(self):
         ok, issues = m6.validate_layout(dict(self.BASE, font="dark-safe", palette="steel-cyan",
-                                             decoration="minimal", imageRatio="none"), None, "暗标")
+                                             decoration="minimal", imageRatio="none",
+                                             headerFooter="hf9-dark-none"), None, "暗标")
         self.assertTrue(ok, issues)
 
     def test_dark_image_zero_ok(self):
         ok, issues = m6.validate_layout(dict(self.BASE, font="dark-safe", imageRatio="none",
-                                             imageRule="hybrid", imageLayout="split-h"), None, "暗标")
+                                             imageRule="hybrid", imageLayout="split-h",
+                                             headerFooter="hf9-dark-none"), None, "暗标")
         self.assertTrue(ok, issues)
 
     def test_dark_image_safe_combo(self):
         ok, issues = m6.validate_layout(dict(self.BASE, font="dark-safe", imageRatio="mid",
-                                             imageRule="dark-safe-img", imageLayout="appendix"), None, "暗标")
+                                             imageRule="dark-safe-img", imageLayout="appendix",
+                                             headerFooter="hf9-dark-none"), None, "暗标")
         self.assertTrue(ok, issues)
 
     def test_dark_image_mix_rejected(self):
         ok, issues = m6.validate_layout(dict(self.BASE, font="dark-safe", imageRatio="mid",
-                                             imageRule="hybrid", imageLayout="split-h"), None, "暗标")
+                                             imageRule="hybrid", imageLayout="split-h",
+                                             headerFooter="hf9-dark-none"), None, "暗标")
         self.assertFalse(ok)
         self.assertIn("layout.dark-image-mix", codes(issues))
 
     def test_dark_image_high_ratio_safe_combo(self):
         ok, issues = m6.validate_layout(dict(self.BASE, font="dark-safe", imageRatio="high",
-                                             imageRule="dark-safe-img", imageLayout="appendix"), None, "暗标")
+                                             imageRule="dark-safe-img", imageLayout="appendix",
+                                             headerFooter="hf9-dark-none"), None, "暗标")
         self.assertTrue(ok, issues)
 
     def test_image_ratio_chinese_alias(self):
@@ -426,6 +452,83 @@ class TestLayout(unittest.TestCase):
         ok, issues = m6.validate_layout(dict(self.BASE, overrides={"bodyFont": "仿宋", "x": 1}))
         self.assertTrue(ok)
         self.assertIn("layout.overrides-key", codes(issues))
+
+    def test_micro_missing(self):
+        ok, issues = m6.validate_layout({"preset": "card"})
+        self.assertFalse(ok)
+        self.assertIn("layout.missing", codes(issues))
+
+    def test_micro_chinese_alias(self):
+        ok, issues = m6.validate_layout(dict(self.BASE, pageSetup="标准公文", headingSystem="GB阿拉伯",
+                                             tocStyle="剑鱼目录", tableStyle="三线表",
+                                             captionSystem="分章编号", paragraphStyle="剑鱼1.5倍"))
+        self.assertTrue(ok, issues)
+
+    def test_micro_unknown(self):
+        ok, issues = m6.validate_layout(dict(self.BASE, tableStyle="神秘样式"))
+        self.assertFalse(ok)
+        self.assertIn("layout.unknown", codes(issues))
+        self.assertTrue(any("tableStyle" in i.get("message", "") for i in issues))
+
+    def test_micro_dark_headings_warn(self):
+        ok, issues = m6.validate_layout(dict(self.BASE, font="dark-safe", imageRatio="none",
+                                             headingSystem="h5-jianyu-bold",
+                                             headerFooter="hf9-dark-none"), None, "暗标")
+        self.assertTrue(ok)
+        self.assertIn("layout.dark-heading", codes(issues))
+
+    def test_micro_dark_headings_safe(self):
+        ok, issues = m6.validate_layout(dict(self.BASE, font="dark-safe", imageRatio="none",
+                                             headingSystem="h2-tender-arabic",
+                                             captionSystem="c9-dark-appendix",
+                                             headerFooter="hf9-dark-none"), None, "暗标")
+        self.assertTrue(ok, issues)
+
+    def test_micro_dark_caption_warn(self):
+        ok, issues = m6.validate_layout(dict(self.BASE, font="dark-safe", imageRatio="mid",
+                                             imageRule="dark-safe-img", imageLayout="appendix",
+                                             headingSystem="h2-tender-arabic",
+                                             captionSystem="c2-cy-chapter",
+                                             headerFooter="hf9-dark-none"), None, "暗标")
+        self.assertTrue(ok)
+        self.assertIn("layout.dark-caption", codes(issues))
+
+    def test_header_footer_chinese_alias(self):
+        ok, issues = m6.validate_layout(dict(self.BASE, headerFooter="经典企业版"))
+        self.assertTrue(ok, issues)
+
+    def test_dark_header_footer_rejected(self):
+        ok, issues = m6.validate_layout(dict(self.BASE, font="dark-safe", imageRatio="none",
+                                             headerFooter="hf1-classic-enterprise"), None, "暗标")
+        self.assertFalse(ok)
+        self.assertIn("layout.dark-header-footer", codes(issues))
+
+    def test_dark_header_footer_page_only_ok(self):
+        ok, issues = m6.validate_layout(dict(self.BASE, font="dark-safe", imageRatio="none",
+                                             headerFooter="hf10-dark-page-only"), None, "暗标")
+        self.assertTrue(ok, issues)
+
+    def test_dark_header_footer_none_ok(self):
+        ok, issues = m6.validate_layout(dict(self.BASE, font="dark-safe", imageRatio="none",
+                                             headerFooter="hf9-dark-none"), None, "暗标")
+        self.assertTrue(ok, issues)
+
+
+class TestDarkLayoutInject(unittest.TestCase):
+    def test_inject_keys(self):
+        from scripts.m6_tech.sources import DARK_LAYOUT_INJECT
+        for k in ("font", "imageRatio", "pageSetup", "headingSystem", "tocStyle",
+                  "tableStyle", "captionSystem", "paragraphStyle", "headerFooter"):
+            self.assertIn(k, DARK_LAYOUT_INJECT)
+        self.assertEqual(DARK_LAYOUT_INJECT["font"], "dark-safe")
+        self.assertEqual(DARK_LAYOUT_INJECT["imageRatio"], "none")
+        self.assertEqual(DARK_LAYOUT_INJECT["headerFooter"], "hf9-dark-none")
+
+    def test_inject_values_valid(self):
+        from m6_tech.sources import DARK_LAYOUT_INJECT
+        from m6_tech.rules_base import DEFAULT_LAYOUT
+        for k, v in DARK_LAYOUT_INJECT.items():
+            self.assertIn(v, DEFAULT_LAYOUT[k], k)
 
 
 if __name__ == "__main__":

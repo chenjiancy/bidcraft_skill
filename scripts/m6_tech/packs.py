@@ -9,7 +9,7 @@ bidcraft · M6 技术标制作 —— 专家包读取与注入（R-T3，契约 �
 共享资源在素材库根或其父目录下均可见（对齐 layout / ctxpack 风格库的解析规则）。
 
 校验纪律（吸收链企 C5-2「静默兜底官方团」教训的反面）：
-包 id / layoutCombo 十四组 id / taxonomy 类目——缺失即报错，不做任何静默兜底。
+包 id / layoutCombo 十五组 id / taxonomy 类目——缺失即报错，不做任何静默兜底。
 """
 import re
 
@@ -26,7 +26,7 @@ TAXONOMY_FILE = "taxonomy.json"
 COMBO_KEYS = ("preset", "palette", "cover", "decoration", "font",
               "imageRatio", "imageRule", "imageLayout",
               "pageSetup", "headingSystem", "tocStyle",
-              "tableStyle", "captionSystem", "paragraphStyle")
+              "tableStyle", "captionSystem", "paragraphStyle", "headerFooter")
 
 
 def find_pack_dir(args, pack_id):
@@ -49,7 +49,7 @@ def load_pack(args, pack_id):
     任何缺失/非法即抛 LibraryError（不静默兜底）：
       - 目录 / 包.json / taxonomy.json 不存在，schema 不符；
       - 包 id 与目录名不一致；classes 非数组或类目缺 name；
-      - layoutCombo 十四组 id 缺失或不在排版预设清单（复用 F11 validate_layout）。
+      - layoutCombo 十五组 id 缺失或不在排版预设清单（复用 F11 validate_layout）。
     styles.json（T6）未交付时 styleRef 不生效 → notes 披露，不报错。
     """
     pdir = find_pack_dir(args, pack_id)
@@ -73,7 +73,7 @@ def load_pack(args, pack_id):
 
     combo = manifest.get("layoutCombo")
     if not isinstance(combo, dict) or any(not str(combo.get(k) or "").strip() for k in COMBO_KEYS):
-        raise core.LibraryError("专家包 %s：layoutCombo 必须含十四组 id（%s）" % (pack_id, "/".join(COMBO_KEYS)))
+        raise core.LibraryError("专家包 %s：layoutCombo 必须含十五组 id（%s）" % (pack_id, "/".join(COMBO_KEYS)))
     ok, issues = m6rules.validate_layout(dict(combo), layout.load_presets(args), "明标")
     if not ok:
         raise core.LibraryError("专家包 %s 的 layoutCombo 非法：\n%s"

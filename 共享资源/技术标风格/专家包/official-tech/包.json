@@ -21,7 +21,8 @@
     "tocStyle": "t1-jianyu-auto",
     "tableStyle": "tb1-three-line",
     "captionSystem": "c2-cy-chapter",
-    "paragraphStyle": "pa7-jianyu-15"
+    "paragraphStyle": "pa7-jianyu-15",
+    "headerFooter": "hf1-classic-enterprise"
   },
   "styleRef": "styles.json#default",
   "source": {

@@ -3,7 +3,7 @@
 bidcraft · M6 技术标制作 —— 排版预设读取与 tech-layout 命令（T13，契约 §3.2/§7）
 
 预设文件：共享级 `<软件根>/共享资源/技术标风格/layout-presets.json`
-  八组均为数组（可增行表）：presets / palettes / covers / decorations / fontSchemes / imageRatios / imageRules / imageLayouts
+  十五组均为数组（可增行表，全部统一为 10 套）：presets / palettes / covers / decorations / fontSchemes / imageRatios / imageRules / imageLayouts / pageSetups / headingSystems / tocStyles / tableStyles / captionSystems / paragraphStyles / headerFooters
 缺失时：回退 `rules.DEFAULT_LAYOUT` 内置清单，并在输出中标注「内置兜底」
 `--preview`：样张 docx 依赖 T10 导出排版引擎，未实现前显式报错（不静默跳过）
 """
@@ -25,6 +25,13 @@ GROUPS = (
     ("imageRatio", "图文比例"),
     ("imageRule", "配图规则"),
     ("imageLayout", "配图排版"),
+    ("pageSetup", "页面设置"),
+    ("headingSystem", "标题体系"),
+    ("tocStyle", "目录版式"),
+    ("tableStyle", "表格样式"),
+    ("captionSystem", "图表编号"),
+    ("paragraphStyle", "段落样式"),
+    ("headerFooter", "页眉页脚"),
 )
 
 
@@ -74,12 +81,11 @@ def entries(doc, group):
 
 
 def default_entry(doc):
-    """八组默认 id → {preset, palette, cover, decoration, font, imageRatio, imageRule, imageLayout}。"""
+    """十五组默认 id → {preset, palette, cover, decoration, font, imageRatio, imageRule, imageLayout, pageSetup, headingSystem, tocStyle, tableStyle, captionSystem, paragraphStyle, headerFooter}。"""
     out = dict(sources.DEFAULT_LAYOUT)
     src = doc.get("default") if isinstance(doc, dict) else None
     if isinstance(src, dict):
-        for g in ("preset", "palette", "cover", "decoration", "font",
-                  "imageRatio", "imageRule", "imageLayout"):
+        for g, _ in GROUPS:
             v = src.get(g)
             if isinstance(v, str) and v.strip():
                 out[g] = v.strip()
@@ -155,6 +161,20 @@ def _print_group(doc, group, label, default):
             if row.get("note"):
                 flags.append(row["note"])
             print("  %-18s %s" % ("", "；".join(flags)))
+        elif group in ("pageSetup", "headingSystem", "tocStyle", "tableStyle",
+                       "captionSystem", "paragraphStyle", "headerFooter"):
+            flags = []
+            for k in ("margin", "gutter", "levels", "numbering", "title", "leading",
+                      "lines", "headerFill", "figPos", "tablePos", "indent",
+                      "lineSpacing", "align", "header", "footer", "pageMode"):
+                v = row.get(k)
+                if isinstance(v, str) and v:
+                    flags.append(v)
+            if row.get("darkOk") is False:
+                flags.append("暗标禁用")
+            if row.get("note"):
+                flags.append(row["note"])
+            print("  %-18s %s" % ("", "｜".join(flags)))
         elif row.get("docx"):
             print("  %-18s %s" % ("", row["docx"]))
 
@@ -182,7 +202,7 @@ def cmd_tech_layout(args):
         print("⚠ 未找到共享级排版预设（%s），已回退内置清单" % PRESETS_FILE)
     else:
         print("排版预设 · %s" % path)
-    print("默认：%s %s / %s %s / %s %s / %s %s / 图文 %s(%s)：%s + %s + %s" % (
+    print("默认：%s %s / %s %s / %s %s / %s %s / 图文 %s(%s)：%s + %s + %s / 微观 %s(%s) %s(%s) %s(%s) %s(%s) %s(%s) %s(%s) / 页眉页脚 %s(%s)" % (
         default["preset"], _name(doc, "preset", default["preset"]),
         default["palette"], _name(doc, "palette", default["palette"]),
         default["cover"], _name(doc, "cover", default["cover"]),
@@ -190,9 +210,16 @@ def cmd_tech_layout(args):
         default.get("font", "gov-gongwen"), _name(doc, "font", default.get("font", "gov-gongwen")),
         _name(doc, "imageRatio", default.get("imageRatio", "mid")),
         _name(doc, "imageRule", default.get("imageRule", "hybrid")),
-        _name(doc, "imageLayout", default.get("imageLayout", "split-h"))))
+        _name(doc, "imageLayout", default.get("imageLayout", "split-h")),
+        default.get("pageSetup", "p1-standard-a4"), _name(doc, "pageSetup", default.get("pageSetup", "p1-standard-a4")),
+        default.get("headingSystem", "h1-gbt-arabic"), _name(doc, "headingSystem", default.get("headingSystem", "h1-gbt-arabic")),
+        default.get("tocStyle", "t1-jianyu-auto"), _name(doc, "tocStyle", default.get("tocStyle", "t1-jianyu-auto")),
+        default.get("tableStyle", "tb1-three-line"), _name(doc, "tableStyle", default.get("tableStyle", "tb1-three-line")),
+        default.get("captionSystem", "c2-cy-chapter"), _name(doc, "captionSystem", default.get("captionSystem", "c2-cy-chapter")),
+        default.get("paragraphStyle", "pa7-jianyu-15"), _name(doc, "paragraphStyle", default.get("paragraphStyle", "pa7-jianyu-15")),
+        default.get("headerFooter", "hf1-classic-enterprise"), _name(doc, "headerFooter", default.get("headerFooter", "hf1-classic-enterprise"))))
     for group, label in GROUPS:
         _print_group(doc, group, label, default)
     print("\n提示：暗标禁用 cover=image-underlay；渐变蓝青在 docx 中以两段色块近似。")
-    print("      章节树 layout 八组 id 须在上表内（tech-outline 落盘前校验；暗标强制 font=dark-safe、图片二选一：none 或 dark-safe-img+appendix）。")
+    print("      章节树 layout 十五组 id 须在上表内（tech-outline 落盘前校验；暗标强制 font=dark-safe、图片二选一：none 或 dark-safe-img+appendix、页眉页脚二选一：hf9/hf10；微观六组按招标条款自动注入、不开放选择）。")
     return 0

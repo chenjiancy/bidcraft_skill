@@ -15,6 +15,8 @@ from .rules_base import (
     SCHEMA_ID, BID_MODES, STATUSES, STATUS_FLOW, GATES, DEPENDS_ENUM,
     DEFAULT_LAYOUT, LAYOUT_ALIAS_KEYS, COVER_RATIO, FONT_ALIASES,
     IMAGE_RATIO_ALIASES, IMAGE_RULE_ALIASES, IMAGE_LAYOUT_ALIASES,
+    PRESET_ALIASES, COVER_ALIASES, DECORATION_ALIASES,
+    MICRO_LAYOUT_ALIASES, HEADER_FOOTER_ALIASES, PALETTE_ALIASES,
 )
 from .rules_chapters import (
     validate_chapters_draft, validate_chapters_final, build_coverage, validate_layout,
@@ -30,6 +32,8 @@ __all__ = [
     "SCHEMA_ID", "BID_MODES", "STATUSES", "STATUS_FLOW", "GATES", "DEPENDS_ENUM",
     "DEFAULT_LAYOUT", "LAYOUT_ALIAS_KEYS", "COVER_RATIO", "FONT_ALIASES",
     "IMAGE_RATIO_ALIASES", "IMAGE_RULE_ALIASES", "IMAGE_LAYOUT_ALIASES",
+    "PRESET_ALIASES", "COVER_ALIASES", "DECORATION_ALIASES",
+    "MICRO_LAYOUT_ALIASES", "HEADER_FOOTER_ALIASES", "PALETTE_ALIASES",
     # F1–F3 / F11
     "validate_chapters_draft", "validate_chapters_final", "build_coverage", "validate_layout",
     # F4–F10

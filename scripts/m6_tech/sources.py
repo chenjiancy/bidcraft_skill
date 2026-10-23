@@ -25,6 +25,22 @@ DEFAULT_LAYOUT = {
     "preset": "single-column", "palette": "deep-indigo",
     "cover": "full-block", "decoration": "standard", "font": "gov-gongwen",
     "imageRatio": "mid", "imageRule": "hybrid", "imageLayout": "split-h",
+    "pageSetup": "p1-standard-a4", "headingSystem": "h1-gbt-arabic",
+    "tocStyle": "t1-jianyu-auto", "tableStyle": "tb1-three-line",
+    "captionSystem": "c2-cy-chapter", "paragraphStyle": "pa7-jianyu-15",
+    "headerFooter": "hf1-classic-enterprise",
+}
+# 暗标默认注入：微观六组 + 页眉页脚按招标条款自动匹配（默认占位为多地区通行值，条款解析后须覆盖）
+DARK_LAYOUT_INJECT = {
+    "font": "dark-safe",
+    "imageRatio": "none",
+    "pageSetup": "p7-hb-25-20",
+    "headingSystem": "h2-tender-arabic",
+    "tocStyle": "t3-qinghai-nopage",
+    "tableStyle": "tb7-dark-0.5",
+    "captionSystem": "c9-dark-appendix",
+    "paragraphStyle": "pa3-hebei-30",
+    "headerFooter": "hf9-dark-none",
 }
 
 RE_PAGES = [
@@ -231,8 +247,10 @@ def build_settings(project, points, tdir_path, bid_mode=None, pages=None):
         notes.append("未抽取到页数约束，暂按 %d 页处理（可 tech-init --pages 覆盖）" % pc["max"])
     layout = dict(DEFAULT_LAYOUT)
     if mode == "暗标":
-        layout["font"] = "dark-safe"
-        layout["imageRatio"] = "none"
+        for k, v in DARK_LAYOUT_INJECT.items():
+            layout[k] = v
+        notes.append("暗标：微观排版六组 + 页眉页脚已按通用条款注入默认（%s），具体以招标原文为准，条款解析后须覆盖"
+                     % "、".join(sorted(DARK_LAYOUT_INJECT)))
     return {
         "schema": SETTINGS_SCHEMA,
         "project": project,

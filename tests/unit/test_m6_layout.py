@@ -32,19 +32,20 @@ class PresetFileTest(unittest.TestCase):
     def test_schema_and_counts(self):
         doc = _doc()
         self.assertEqual(doc.get("schema"), layout.PRESETS_SCHEMA)
-        self.assertEqual(len(layout.entries(doc, "preset")), 7)
-        self.assertEqual(len(layout.entries(doc, "palette")), 11)
-        self.assertEqual(len(layout.entries(doc, "cover")), 4)
-        self.assertEqual(len(layout.entries(doc, "decoration")), 3)
-        self.assertEqual(len(layout.entries(doc, "font")), 5)
-        self.assertEqual(len(layout.entries(doc, "imageRatio")), 4)
-        self.assertEqual(len(layout.entries(doc, "imageRule")), 5)
-        self.assertEqual(len(layout.entries(doc, "imageLayout")), 5)
+        for group in ("preset", "palette", "cover", "decoration", "font",
+                      "imageRatio", "imageRule", "imageLayout",
+                      "pageSetup", "headingSystem", "tocStyle",
+                      "tableStyle", "captionSystem", "paragraphStyle",
+                      "headerFooter"):
+            self.assertEqual(len(layout.entries(doc, group)), 10, group)
 
     def test_ids_match_builtin(self):
         doc = _doc()
         for group in ("preset", "palette", "cover", "decoration", "font",
-                      "imageRatio", "imageRule", "imageLayout"):
+                      "imageRatio", "imageRule", "imageLayout",
+                      "pageSetup", "headingSystem", "tocStyle",
+                      "tableStyle", "captionSystem", "paragraphStyle",
+                      "headerFooter"):
             got = [r["id"] for r in layout.entries(doc, group)]
             self.assertEqual(got, list(rules.DEFAULT_LAYOUT[group]), group)
 
@@ -55,7 +56,24 @@ class PresetFileTest(unittest.TestCase):
                                    "cover": "full-block", "decoration": "standard",
                                    "font": "gov-gongwen",
                                    "imageRatio": "mid", "imageRule": "hybrid",
-                                   "imageLayout": "split-h"})
+                                   "imageLayout": "split-h",
+                                   "pageSetup": "p1-standard-a4",
+                                   "headingSystem": "h1-gbt-arabic",
+                                   "tocStyle": "t1-jianyu-auto",
+                                   "tableStyle": "tb1-three-line",
+                                   "captionSystem": "c2-cy-chapter",
+                                   "paragraphStyle": "pa7-jianyu-15",
+                                   "headerFooter": "hf1-classic-enterprise"})
+
+    def test_every_micro_row_has_id_and_note(self):
+        doc = _doc()
+        for group in ("pageSetup", "headingSystem", "tocStyle",
+                      "tableStyle", "captionSystem", "paragraphStyle",
+                      "headerFooter"):
+            for row in layout.entries(doc, group):
+                self.assertTrue(row.get("id"), "%s row missing id" % group)
+                self.assertTrue(row.get("name"), "%s.%s missing name" % (group, row["id"]))
+                self.assertTrue(row.get("note"), "%s.%s missing note" % (group, row["id"]))
 
     def test_every_palette_has_five_colors(self):
         doc = _doc()
@@ -105,7 +123,7 @@ class LoadAndValidateTest(unittest.TestCase):
         p = self._install()
         self.assertEqual(layout.find_presets(self._args()), p)
         doc = layout.load_presets(self._args())
-        self.assertEqual(len(layout.entries(doc, "palette")), 11)
+        self.assertEqual(len(layout.entries(doc, "palette")), 10)
 
     def test_bad_json_raises(self):
         p = self._install()
@@ -167,7 +185,7 @@ class CommandTest(unittest.TestCase):
             json.dumps(_doc(), ensure_ascii=False), encoding="utf-8")
         code, out, _ = self._run("tech-layout", "--list")
         self.assertEqual(code, 0)
-        self.assertIn("配色方案 · 11 种", out)
+        self.assertIn("配色方案 · 10 种", out)
         self.assertIn("深靛蓝", out)
         self.assertIn("[默认]", out)
         self.assertIn("暗标禁用", out)
@@ -177,7 +195,8 @@ class CommandTest(unittest.TestCase):
         self.assertEqual(code, 0)
         payload = json.loads(out)
         self.assertEqual(payload["default"]["palette"], "deep-indigo")
-        self.assertEqual(len(payload["groups"]["palette"]), 11)
+        self.assertEqual(len(payload["groups"]["palette"]), 10)
+        self.assertEqual(len(payload["groups"]["headerFooter"]), 10)
 
     def test_preview_not_implemented(self):
         code, _, err = self._run("tech-layout", "--preview", "single-column")

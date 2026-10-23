@@ -88,7 +88,8 @@ MANIFEST = {
                     "imageRule": "hybrid", "imageLayout": "split-h",
                     "pageSetup": "p1-standard-a4", "headingSystem": "h1-gbt-arabic",
                     "tocStyle": "t1-jianyu-auto", "tableStyle": "tb1-three-line",
-                    "captionSystem": "c2-cy-chapter", "paragraphStyle": "pa7-jianyu-15"},
+                    "captionSystem": "c2-cy-chapter", "paragraphStyle": "pa7-jianyu-15",
+                    "headerFooter": "hf1-classic-enterprise"},
     "styleRef": "styles.json#default",
     "source": {"kind": "test"},
 }

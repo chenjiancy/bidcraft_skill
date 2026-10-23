@@ -1,0 +1,864 @@
+{
+  "schema": "m6.audit/v1",
+  "version": "1.4",
+  "groups": [
+    {
+      "group": "preset",
+      "label": "版面范式",
+      "n": 10,
+      "carriers": {
+        "json": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "builtin": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "cli(GROUPS)": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "validate": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "test": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "json↔builtin": {
+          "count": 10,
+          "missing": [],
+          "ok": true
+        },
+        "alias-chinese": {
+          "count": 0,
+          "missing": [],
+          "ok": true
+        },
+        "docs": {
+          "契约草案": {
+            "ok": true
+          },
+          "需求对齐": {
+            "ok": true
+          }
+        }
+      }
+    },
+    {
+      "group": "palette",
+      "label": "配色方案",
+      "n": 10,
+      "carriers": {
+        "json": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "builtin": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "cli(GROUPS)": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "validate": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "test": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "json↔builtin": {
+          "count": 10,
+          "missing": [],
+          "ok": true
+        },
+        "alias-chinese": {
+          "count": 0,
+          "missing": [],
+          "ok": true
+        },
+        "docs": {
+          "契约草案": {
+            "ok": true
+          },
+          "需求对齐": {
+            "ok": true
+          }
+        }
+      }
+    },
+    {
+      "group": "cover",
+      "label": "封面版式",
+      "n": 10,
+      "carriers": {
+        "json": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "builtin": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "cli(GROUPS)": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "validate": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "test": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "json↔builtin": {
+          "count": 10,
+          "missing": [],
+          "ok": true
+        },
+        "alias-chinese": {
+          "count": 0,
+          "missing": [],
+          "ok": true
+        },
+        "docs": {
+          "契约草案": {
+            "ok": true
+          },
+          "需求对齐": {
+            "ok": true
+          }
+        }
+      }
+    },
+    {
+      "group": "decoration",
+      "label": "装饰强度",
+      "n": 10,
+      "carriers": {
+        "json": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "builtin": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "cli(GROUPS)": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "validate": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "test": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "json↔builtin": {
+          "count": 10,
+          "missing": [],
+          "ok": true
+        },
+        "alias-chinese": {
+          "count": 0,
+          "missing": [],
+          "ok": true
+        },
+        "docs": {
+          "契约草案": {
+            "ok": true
+          },
+          "需求对齐": {
+            "ok": true
+          }
+        }
+      }
+    },
+    {
+      "group": "font",
+      "label": "字体方案",
+      "n": 10,
+      "carriers": {
+        "json": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "builtin": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "cli(GROUPS)": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "validate": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "test": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "json↔builtin": {
+          "count": 10,
+          "missing": [],
+          "ok": true
+        },
+        "alias-chinese": {
+          "count": 0,
+          "missing": [],
+          "ok": true
+        },
+        "docs": {
+          "契约草案": {
+            "ok": true
+          },
+          "需求对齐": {
+            "ok": true
+          }
+        }
+      }
+    },
+    {
+      "group": "imageRatio",
+      "label": "图文比例",
+      "n": 10,
+      "carriers": {
+        "json": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "builtin": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "cli(GROUPS)": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "validate": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "test": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "json↔builtin": {
+          "count": 10,
+          "missing": [],
+          "ok": true
+        },
+        "alias-chinese": {
+          "count": 0,
+          "missing": [],
+          "ok": true
+        },
+        "docs": {
+          "契约草案": {
+            "ok": true
+          },
+          "需求对齐": {
+            "ok": true
+          }
+        }
+      }
+    },
+    {
+      "group": "imageRule",
+      "label": "配图规则",
+      "n": 10,
+      "carriers": {
+        "json": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "builtin": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "cli(GROUPS)": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "validate": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "test": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "json↔builtin": {
+          "count": 10,
+          "missing": [],
+          "ok": true
+        },
+        "alias-chinese": {
+          "count": 0,
+          "missing": [],
+          "ok": true
+        },
+        "docs": {
+          "契约草案": {
+            "ok": true
+          },
+          "需求对齐": {
+            "ok": true
+          }
+        }
+      }
+    },
+    {
+      "group": "imageLayout",
+      "label": "配图排版",
+      "n": 10,
+      "carriers": {
+        "json": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "builtin": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "cli(GROUPS)": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "validate": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "test": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "json↔builtin": {
+          "count": 10,
+          "missing": [],
+          "ok": true
+        },
+        "alias-chinese": {
+          "count": 0,
+          "missing": [],
+          "ok": true
+        },
+        "docs": {
+          "契约草案": {
+            "ok": true
+          },
+          "需求对齐": {
+            "ok": true
+          }
+        }
+      }
+    },
+    {
+      "group": "pageSetup",
+      "label": "页面设置",
+      "n": 10,
+      "carriers": {
+        "json": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "builtin": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "cli(GROUPS)": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "validate": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "test": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "json↔builtin": {
+          "count": 10,
+          "missing": [],
+          "ok": true
+        },
+        "alias-chinese": {
+          "count": 0,
+          "missing": [],
+          "ok": true
+        },
+        "docs": {
+          "契约草案": {
+            "ok": true
+          },
+          "需求对齐": {
+            "ok": true
+          }
+        }
+      }
+    },
+    {
+      "group": "headingSystem",
+      "label": "标题体系",
+      "n": 10,
+      "carriers": {
+        "json": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "builtin": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "cli(GROUPS)": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "validate": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "test": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "json↔builtin": {
+          "count": 10,
+          "missing": [],
+          "ok": true
+        },
+        "alias-chinese": {
+          "count": 0,
+          "missing": [],
+          "ok": true
+        },
+        "docs": {
+          "契约草案": {
+            "ok": true
+          },
+          "需求对齐": {
+            "ok": true
+          }
+        }
+      }
+    },
+    {
+      "group": "tocStyle",
+      "label": "目录版式",
+      "n": 10,
+      "carriers": {
+        "json": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "builtin": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "cli(GROUPS)": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "validate": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "test": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "json↔builtin": {
+          "count": 10,
+          "missing": [],
+          "ok": true
+        },
+        "alias-chinese": {
+          "count": 0,
+          "missing": [],
+          "ok": true
+        },
+        "docs": {
+          "契约草案": {
+            "ok": true
+          },
+          "需求对齐": {
+            "ok": true
+          }
+        }
+      }
+    },
+    {
+      "group": "tableStyle",
+      "label": "表格样式",
+      "n": 10,
+      "carriers": {
+        "json": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "builtin": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "cli(GROUPS)": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "validate": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "test": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "json↔builtin": {
+          "count": 10,
+          "missing": [],
+          "ok": true
+        },
+        "alias-chinese": {
+          "count": 0,
+          "missing": [],
+          "ok": true
+        },
+        "docs": {
+          "契约草案": {
+            "ok": true
+          },
+          "需求对齐": {
+            "ok": true
+          }
+        }
+      }
+    },
+    {
+      "group": "captionSystem",
+      "label": "图表编号",
+      "n": 10,
+      "carriers": {
+        "json": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "builtin": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "cli(GROUPS)": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "validate": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "test": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "json↔builtin": {
+          "count": 10,
+          "missing": [],
+          "ok": true
+        },
+        "alias-chinese": {
+          "count": 0,
+          "missing": [],
+          "ok": true
+        },
+        "docs": {
+          "契约草案": {
+            "ok": true
+          },
+          "需求对齐": {
+            "ok": true
+          }
+        }
+      }
+    },
+    {
+      "group": "paragraphStyle",
+      "label": "段落样式",
+      "n": 10,
+      "carriers": {
+        "json": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "builtin": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "cli(GROUPS)": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "validate": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "test": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "json↔builtin": {
+          "count": 10,
+          "missing": [],
+          "ok": true
+        },
+        "alias-chinese": {
+          "count": 0,
+          "missing": [],
+          "ok": true
+        },
+        "docs": {
+          "契约草案": {
+            "ok": true
+          },
+          "需求对齐": {
+            "ok": true
+          }
+        }
+      }
+    },
+    {
+      "group": "headerFooter",
+      "label": "页眉页脚",
+      "n": 10,
+      "carriers": {
+        "json": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "builtin": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "cli(GROUPS)": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "validate": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "test": {
+          "count": 1,
+          "missing": [],
+          "ok": true
+        },
+        "json↔builtin": {
+          "count": 10,
+          "missing": [],
+          "ok": true
+        },
+        "alias-chinese": {
+          "count": 0,
+          "missing": [],
+          "ok": true
+        },
+        "docs": {
+          "契约草案": {
+            "ok": true
+          },
+          "需求对齐": {
+            "ok": true
+          }
+        }
+      }
+    }
+  ],
+  "consistency": {
+    "C1_json_vs_builtin": {
+      "ok": true,
+      "detail": "全部一致（顺序也一致）"
+    },
+    "C2_default_valid": {
+      "ok": true,
+      "detail": "15 字段全部在组内"
+    },
+    "C3_dark_inject_valid": {
+      "ok": true,
+      "detail": "9 键全部合法（font/imageRatio/6 微观/headerFooter）"
+    },
+    "C4_group_keys_aligned": {
+      "ok": true,
+      "detail": "三表 15 键一致"
+    },
+    "C5_alias_values_valid": {
+      "ok": true,
+      "detail": "所有独立别名表值均在组内；微观共享表全局无 stray"
+    },
+    "C6_dark_semantics": {
+      "ok": true,
+      "detail": "暗标注入 9 项中 8 项 darkOk=true（font 单独以 dark-safe 方案核验通过）",
+      "checks": {
+        "image-underlay_darkOk": false,
+        "dark-safe_darkOk": true,
+        "hf9_darkOk": true,
+        "hf10_darkOk": true
+      }
+    },
+    "C7_all_groups_ten": {
+      "ok": true,
+      "detail": {
+        "preset": 10,
+        "palette": 10,
+        "cover": 10,
+        "decoration": 10,
+        "font": 10,
+        "imageRatio": 10,
+        "imageRule": 10,
+        "imageLayout": 10,
+        "pageSetup": 10,
+        "headingSystem": 10,
+        "tocStyle": 10,
+        "tableStyle": 10,
+        "captionSystem": 10,
+        "paragraphStyle": 10,
+        "headerFooter": 10
+      }
+    },
+    "C8_pack_combo_matches_default": {
+      "ok": true,
+      "detail": "official-tech layoutCombo 15 键与 default 完全一致"
+    },
+    "C9_docs_cover_ten_and_hf": {
+      "ok": true,
+      "detail": {
+        "契约草案": "headerFooter/页眉页脚 提及=True，10 套=True",
+        "需求对齐": "headerFooter/页眉页脚 提及=True，10 套=True"
+      }
+    }
+  },
+  "summary": {
+    "groups_total": 15,
+    "schemes_total": 150,
+    "all_ten": true,
+    "consistency_passed": true,
+    "carrier_missing": 0,
+    "failures": []
+  },
+  "microAliasGlobal": {
+    "ok": true,
+    "stray": []
+  },
+  "footerModes": [
+    "none",
+    "page-only",
+    "with-page"
+  ],
+  "default": {
+    "preset": "single-column",
+    "palette": "deep-indigo",
+    "cover": "full-block",
+    "decoration": "standard",
+    "font": "gov-gongwen",
+    "imageRatio": "mid",
+    "imageRule": "hybrid",
+    "imageLayout": "split-h",
+    "pageSetup": "p1-standard-a4",
+    "headingSystem": "h1-gbt-arabic",
+    "tocStyle": "t1-jianyu-auto",
+    "tableStyle": "tb1-three-line",
+    "captionSystem": "c2-cy-chapter",
+    "paragraphStyle": "pa7-jianyu-15",
+    "headerFooter": "hf1-classic-enterprise"
+  },
+  "darkInject": {
+    "font": "dark-safe",
+    "imageRatio": "none",
+    "pageSetup": "p7-hb-25-20",
+    "headingSystem": "h2-tender-arabic",
+    "tocStyle": "t3-qinghai-nopage",
+    "tableStyle": "tb7-dark-0.5",
+    "captionSystem": "c9-dark-appendix",
+    "paragraphStyle": "pa3-hebei-30",
+    "headerFooter": "hf9-dark-none"
+  }
+}
