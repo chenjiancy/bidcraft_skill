@@ -8,7 +8,9 @@ import tempfile
 import time
 import unittest
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "scripts"))
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_SCRIPTS = os.path.abspath(os.path.join(_HERE, "..", "..", "scripts"))
+sys.path.insert(0, _SCRIPTS)
 
 from _shared import core  # noqa: E402
 from _shared.core import lock  # noqa: E402
@@ -104,13 +106,15 @@ class TestFileLock(unittest.TestCase):
         """子进程持锁时本进程拿不到；子进程退出后 stale 抢占可拿到。"""
         p = os.path.join(self.tmp, "data.json")
         code = (
-            "import sys, os, time\n"
-            "sys.path.insert(0, r'E:\\bidcraft_skill\\scripts')\n"
+            "import os, sys, time\n"
+            "sys.path.insert(0, os.environ['BIDCRAFT_SCRIPTS'])\n"
             "from _shared.core import lock\n"
             "with lock.file_lock(r'%s', timeout=5.0):\n"
             "    time.sleep(2.0)\n" % p
         )
-        proc = subprocess.Popen([sys.executable, "-c", code])
+        env = dict(os.environ)
+        env["BIDCRAFT_SCRIPTS"] = _SCRIPTS
+        proc = subprocess.Popen([sys.executable, "-c", code], env=env)
         time.sleep(0.8)  # 子进程已持锁
         self.assertTrue(os.path.exists(p + ".lock"))
         try:
