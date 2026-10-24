@@ -21,6 +21,7 @@ import m0_env                       # noqa: E402
 import m1_assets                    # noqa: E402
 import m2_template                  # noqa: E402
 import m4_tender                    # noqa: E402
+import m_img                        # noqa: E402
 import m_feedback                   # noqa: E402
 import m5_project                   # noqa: E402
 import m6_tech                      # noqa: E402
@@ -55,6 +56,7 @@ def build_parser():
     m1_assets.register_parser(sub)      # 挂载 M1 素材库全部子命令
     m2_template.register_parser(sub)        # 挂载 M2 模板库全部子命令
     m4_tender.register_parser(sub)          # 挂载 M4 招标解析子命令
+    m_img.register_parser(sub)              # 挂载 AI 配图管道（img-plan/img-save/img-status）
     m_feedback.register_parser(sub)         # 挂载产物反馈机制（跨模块）
     m5_project.register_parser(sub)         # 挂载 M5 项目模板生成器
     m6_tech.register_parser(sub)            # 挂载 M6 技术标制作（首批 4 命令）
