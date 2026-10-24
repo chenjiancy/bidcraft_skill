@@ -343,6 +343,92 @@ def cmd_img_status(args):
 
 
 # --------------------------------------------------------------------------
+# img-embed：技术标 AI 配图嵌入（非商务标引擎消费 img-save 产物，写操作）
+# --------------------------------------------------------------------------
+def _tech_match(section, title):
+    """section ↔ 章节 title 双向包含匹配（任一方向命中即中）。"""
+    s = (section or "").strip()
+    t = (title or "").strip()
+    return bool(s and t and (s in t or t in s))
+
+
+def cmd_img_embed(args):
+    """AI 配图 → 技术标正文嵌入（写操作，执行桥须 confirm：true）。
+
+    读 配图/配图清单_<项目>.json 的 saved 项 → 按 section 匹配技术标章节树
+    （章节 title 双向包含）→ 在章节正文标题后插入 `![图题](图片绝对路径)`
+    （m6 export 渲染语法；Path.is_file 校验）→ 幂等（已含该图片引用则跳过）。
+    未匹配章节 / 未 saved 项 → 披露不嵌入。暗标提示：export 暗标自动切图。
+    """
+    ent = get_ent(args)
+    project = args.project
+    plan = _load_plan(ent, project, must=True)
+    saved = [it for it in plan.get("items", [])
+             if it.get("status") == "saved" and it.get("file")]
+    from m6_tech import store as tech_store          # noqa: E402
+    tech = tech_store.tech_path(ent, project)
+    tree = tech_store.read_tree(tech)
+    chapters = tech_store.list_chapters(tree)
+    proj_dir = Path(ent) / PROJECT_SUBDIR / project
+    embedded, skipped, unmatched = [], [], []
+    for it in saved:
+        img_abs = (proj_dir / str(it.get("file"))).resolve()
+        if not img_abs.is_file():
+            unmatched.append({"id": it.get("id"), "section": it.get("section"),
+                              "reason": "图片文件不存在（配图清单 saved 但本体缺失）：%s" % it.get("file")})
+            continue
+        ch = next((c for c in chapters if _tech_match(it.get("section"), c.get("title"))), None)
+        if ch is None:
+            unmatched.append({"id": it.get("id"), "section": it.get("section"),
+                              "reason": "技术标章节树无匹配章节（section 与章节 title 双向包含未命中）"})
+            continue
+        body_path = tech_store.chapter_body_path(tech, ch)
+        if not body_path.is_file():
+            unmatched.append({"id": it.get("id"), "section": it.get("section"),
+                              "reason": "章节正文不存在：%s（先 tech-parse 落盘）" % body_path})
+            continue
+        text = body_path.read_text(encoding="utf-8")
+        if str(img_abs) in text:
+            skipped.append({"id": it.get("id"), "section": it.get("section"),
+                            "chapter": ch.get("id"), "reason": "已嵌入（幂等跳过）"})
+            continue
+        cap = it.get("subject") or it.get("section") or it.get("id")
+        ref = "![%s](%s)" % (cap, img_abs)
+        lines = text.splitlines()
+        # 在首个标题行后插入图片引用；无标题则文件开头
+        idx = next((i for i, ln in enumerate(lines) if ln.strip().startswith("#")), None)
+        if idx is None:
+            new_text = ref + "\n\n" + text
+        else:
+            lines.insert(idx + 1, "")
+            lines.insert(idx + 2, ref)
+            new_text = "\n".join(lines)
+        body_path.write_text(new_text, encoding="utf-8")
+        # 回读校验
+        back = body_path.read_text(encoding="utf-8")
+        if str(img_abs) not in back:
+            raise core.LibraryError("img-embed 回读校验失败（引用未写入）：%s" % body_path)
+        embedded.append({"id": it.get("id"), "section": it.get("section"),
+                         "chapter": ch.get("id"), "file": str(img_abs)})
+    obj = {"project": project, "saved": len(saved),
+           "embedded": len(embedded), "skipped": len(skipped), "unmatched": len(unmatched),
+           "details": {"embedded": embedded, "skipped": skipped, "unmatched": unmatched}}
+    if getattr(args, "json", False):
+        print(json.dumps(obj, ensure_ascii=False, indent=2))
+        return 0
+    print("img-embed：技术标 AI 配图嵌入（写操作）\n")
+    print("配图清单 saved %d 项｜嵌入 %d｜幂等跳过 %d｜未匹配/未嵌 %d"
+          % (len(saved), len(embedded), len(skipped), len(unmatched)))
+    for r in embedded:
+        print("  [嵌] %s → 章节 %s（%s）" % (r["id"], r["chapter"], r["section"]))
+    for r in skipped:
+        print("  [跳] %s → %s（%s）" % (r["id"], r["chapter"], r["reason"]))
+    for r in unmatched:
+        print("  [未] %s → %s" % (r["id"], r["reason"]))
+    return 0
+
+
+# --------------------------------------------------------------------------
 # 注册
 # --------------------------------------------------------------------------
 def register_parser(sub):
@@ -368,3 +454,7 @@ def register_parser(sub):
     sp = sub.add_parser("img-status", help="AI 配图：查看配图清单状态（待生成/已落盘 计数 + 明细）")
     sp.add_argument("--project", required=True)
     sp.set_defaults(func=cmd_img_status)
+
+    sp = sub.add_parser("img-embed", help="AI 配图：技术标正文嵌入（非商务标引擎消费 img-save 产物；写操作，执行桥须 confirm）——saved 项按 section 匹配章节树 → 章节标题后插入 ![图题](绝对路径)，幂等")
+    sp.add_argument("--project", required=True)
+    sp.set_defaults(func=cmd_img_embed)
