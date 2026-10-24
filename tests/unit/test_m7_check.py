@@ -163,8 +163,11 @@ class TestCheckSensitive(unittest.TestCase):
 
 class TestRunChecks(unittest.TestCase):
     def test_report_written(self):
-        with tempfile.TemporaryDirectory() as td:
-            out, tpl = Path(td) / "out", Path(td) / "tpl"
+        # Word COM 冒烟打开 docx 后，Windows 延迟释放句柄（0.6s kill 等待 + 杀软
+        # 扫描仍可能短暂持锁）→ cleanup 前等待 + 重试删除，避免 WinError 32 偶发。
+        td = tempfile.TemporaryDirectory()
+        try:
+            out, tpl = Path(td.name) / "out", Path(td.name) / "tpl"
             out.mkdir(); tpl.mkdir()
             from docx import Document
             for name in ("a.docx", "b.docx"):
@@ -172,9 +175,20 @@ class TestRunChecks(unittest.TestCase):
                 d.add_paragraph("正文")
                 d.save(str(out / name))
                 d.save(str(tpl / name))
-            res = m7.run_checks(Path(td), Path(td), out_dir=out, tpl_dir=tpl)
+            res = m7.run_checks(Path(td.name), Path(td.name), out_dir=out, tpl_dir=tpl)
             self.assertTrue(res["ok"])
             self.assertTrue((out / "M7检查报告.md").is_file())
+        finally:
+            import time
+            time.sleep(1.2)
+            for _attempt in range(3):
+                try:
+                    td.cleanup()
+                    break
+                except PermissionError:
+                    time.sleep(1.0)
+            else:
+                td.cleanup()
 
 
 if __name__ == "__main__":

@@ -429,6 +429,96 @@ def cmd_img_embed(args):
 
 
 # --------------------------------------------------------------------------
+# img-audit：技术标 AI 配图暗标合规审计（只读）
+# --------------------------------------------------------------------------
+# 暗标红线违规词表（清单 subject/style 文本命中即不合规；可增行）
+AUDIT_WORDS = ["公司", "有限", "集团", "股份", "LOGO", "logo", "水印", "AI 生成", "AI生成",
+               "WORKBUD", "WorkBuddy", "企业名称", "人名", "签名"]
+
+# OCR 探测（图内文字核验：有 OCR 引擎则真扫；无则披露需人工核验）
+def _has_ocr():
+    for mod in ("paddleocr", "easyocr", "pytesseract"):
+        try:
+            __import__(mod)
+            return True
+        except Exception:
+            continue
+    import shutil
+    return shutil.which("tesseract") is not None
+
+
+def _has_aigc_marker(path):
+    """AIGC 元数据残留检测：JPEG APP11 'AIGC{' / PNG 全文件 'AIGC{'（img-save 应已剥离）。"""
+    try:
+        data = path.read_bytes()
+    except OSError:
+        return False
+    return b"AIGC{" in data
+
+
+def cmd_img_audit(args):
+    """AI 配图暗标合规审计（只读）：对配图清单 saved 项逐图检查——
+    a) 图片文件存在（缺失=不合规）；b) AIGC 元数据残留（img-save 清洗失败=不合规）；
+    c) 清单 subject/style 含暗标红线词（公司/LOGO/水印/AI 标识等=不合规）；
+    d) 来源 source 标注（空=披露）；e) 图内文字：环境有 OCR 则真扫，无 OCR 明确披露
+    「图内文字需人工核验」不假装检查。输出 pass/fail 三态 + 明细（--json 机读）。"""
+    ent = get_ent(args)
+    project = args.project
+    plan = _load_plan(ent, project, must=True)
+    saved = [it for it in plan.get("items", []) if it.get("status") == "saved"]
+    proj_dir = Path(ent) / PROJECT_SUBDIR / project
+    ocr = _has_ocr()
+    results = []
+    for it in saved:
+        p = it.get("file") or ""
+        abs_p = (proj_dir / p).resolve() if p else None
+        issues = []
+        if abs_p is None or not abs_p.is_file():
+            issues.append("图片文件缺失：%s" % (p or "(file 为空)"))
+        else:
+            if _has_aigc_marker(abs_p):
+                issues.append("AIGC 元数据段残留（img-save 清洗失败，须重新 img-save）")
+            if not it.get("source"):
+                issues.append("来源 source 未标注（暗标可追溯性弱，建议补齐）")
+            subj = "%s %s" % (it.get("subject") or "", it.get("style") or "")
+            hits = [w for w in AUDIT_WORDS if w in subj]
+            if hits:
+                issues.append("清单 subject/style 含暗标红线词：%s" % "/".join(hits))
+        status = "fail" if issues else "pass"
+        note = []
+        if abs_p and abs_p.is_file() and not ocr:
+            note.append("图内文字需人工核验（本机无 OCR 引擎）")
+        results.append({
+            "id": it.get("id"), "section": it.get("section"), "status": status,
+            "file": p, "issues": issues, "note": note,
+            "source": it.get("source") or "",
+        })
+    counts = {"pass": 0, "fail": 0}
+    for r in results:
+        counts[r["status"]] = counts.get(r["status"], 0) + 1
+    obj = {
+        "project": project, "saved": len(saved),
+        "pass": counts["pass"], "fail": counts["fail"],
+        "ocr": "available" if ocr else "unavailable（图内文字需人工核验）",
+        "items": results,
+    }
+    if getattr(args, "json", False):
+        print(json.dumps(obj, ensure_ascii=False, indent=2))
+        return 0
+    print("img-audit：AI 配图暗标合规审计（只读）\n")
+    print("配图清单 saved %d 项｜通过 %d｜不合规 %d" % (len(saved), counts["pass"], counts["fail"]))
+    print("OCR：%s" % obj["ocr"])
+    for r in results:
+        mark = "PASS" if r["status"] == "pass" else "FAIL"
+        print("  [%s] %s %s｜%s" % (mark, r["id"], r["section"], r["file"]))
+        for i in r["issues"]:
+            print("        - %s" % i)
+        for n in r["note"]:
+            print("        ~ %s" % n)
+    return 0
+
+
+# --------------------------------------------------------------------------
 # 注册
 # --------------------------------------------------------------------------
 def register_parser(sub):
@@ -458,3 +548,7 @@ def register_parser(sub):
     sp = sub.add_parser("img-embed", help="AI 配图：技术标正文嵌入（非商务标引擎消费 img-save 产物；写操作，执行桥须 confirm）——saved 项按 section 匹配章节树 → 章节标题后插入 ![图题](绝对路径)，幂等")
     sp.add_argument("--project", required=True)
     sp.set_defaults(func=cmd_img_embed)
+
+    sp = sub.add_parser("img-audit", help="AI 配图：技术标暗标合规审计（只读）——saved 项逐图检查 文件存在/AIGC 残留/subject-style 红线词/来源标注；图内文字无 OCR 环境披露人工核验")
+    sp.add_argument("--project", required=True)
+    sp.set_defaults(func=cmd_img_audit)
