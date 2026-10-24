@@ -156,6 +156,47 @@ def run_checks(proj_dir, project):
     return checks, overall, conclusion, _now()
 
 
+def run_checks_all(ent_dir):
+    """企业级多项目体检（T20）：枚举 项目级/ 下全部项目目录，逐个 run_checks →
+    汇总红绿灯表 + 企业统计。纯逻辑无 I/O。返回 {projects, summary, 生成时间}。"""
+    ent = Path(ent_dir)
+    pj_root = ent / "项目级"
+    if not pj_root.is_dir():
+        return {"projects": [], "summary": {"项目总数": 0, "绿灯": 0, "黄灯": 0, "红灯": 0, "含红灯项目": []},
+                "结论": "企业目录无 项目级/ 子目录", "生成时间": _now()}
+    rows = []
+    for proj_dir in sorted(pj_root.iterdir()):
+        if not proj_dir.is_dir():
+            continue
+        project = proj_dir.name
+        checks, overall, _concl, ts = run_checks(proj_dir, project)
+        n_pass = sum(1 for c in checks if c["状态"] == "pass")
+        n_warn = sum(1 for c in checks if c["状态"] == "warn")
+        n_fail = sum(1 for c in checks if c["状态"] == "fail")
+        rows.append({"project": project, "总评": overall, "通过": n_pass, "可整改": n_warn,
+                     "必做未做": n_fail,
+                     "未通过项": [c["id"] for c in checks if c["状态"] == "fail"],
+                     "可整改项": [c["id"] for c in checks if c["状态"] == "warn"],
+                     "检查时间": ts})
+    n_green = sum(1 for r in rows if r["总评"] == "绿灯")
+    n_amber = sum(1 for r in rows if r["总评"] == "黄灯")
+    n_red = sum(1 for r in rows if r["总评"] == "红灯")
+    red_projects = [r["project"] for r in rows if r["总评"] == "红灯"]
+    if not rows:
+        summary = {"项目总数": 0, "绿灯": 0, "黄灯": 0, "红灯": 0, "含红灯项目": []}
+        conclusion = "企业目录 项目级/ 下无项目"
+    elif n_red:
+        conclusion = "有 %d 个项目红灯（%s）；补齐必做项后重跑 m9-verify --all" % (
+            n_red, "、".join(red_projects))
+    elif n_amber:
+        conclusion = "全部项目产物齐备，%d 个黄灯待整改；整改后重跑 m9-verify --all 复核" % n_amber
+    else:
+        conclusion = "全部 %d 个项目绿灯，可进入投标决策（人工确认闸门：以评标委员会评审为准）" % n_green
+    summary = {"项目总数": len(rows), "绿灯": n_green, "黄灯": n_amber, "红灯": n_red,
+               "含红灯项目": red_projects}
+    return {"projects": rows, "summary": summary, "结论": conclusion, "生成时间": _now()}
+
+
 def collect_evidence(proj_dir, project):
     """投标留痕包：全过程产物索引（模块/相对路径/存在/大小/摘要）。"""
     pdir = Path(proj_dir)
