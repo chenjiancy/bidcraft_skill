@@ -1104,13 +1104,15 @@ body.dark .dark-toggle .sw::after{left:17px}
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-ghost" onclick="toast('tender-fmt 在后续迭代实现（规划中）：响应文件格式_<项目>.txt 一字不改提取')">提取格式章节</button>
-        <button class="btn btn-primary" onclick="toast('投标要点 HTML 核对（闸门①）在后续迭代实现（规划中）：tender-report 渲染')">核对投标要点（闸门①）</button>
+        <button class="btn btn-ghost" onclick="execBridge('tender-agent-parse',{project:'市政务服务中心项目'},false)">通道B 语义解析（agent 桥）</button>
+        <button class="btn btn-primary" onclick="execBridge('tender-report',{project:'市政务服务中心项目'},false)">核对投标要点（闸门①）</button>
       </div>
     </div>
 
     <div class="mline"><span class="sn">init</span><span class="st">tender-init：初始化项目级招标解析目录（幂等）</span><span class="sg">已执行</span></div>
     <div class="mline"><span class="sn">extract</span><span class="st">tender-extract：归档原件（源文件/）+ 提取原文（PDF 表格/多栏感知）</span><span class="sg">已执行 · 招标文件.pdf 4.2MB</span></div>
     <div class="mline"><span class="sn">parse</span><span class="st">tender-parse：提交 agent 解析产物落盘（投标要点.md/json + 素材清单.md/json）</span><span class="sg">已落盘</span></div>
+    <div class="mline"><span class="sn">agent</span><span class="st">tender-agent-parse：通道B 语义解析自动化（本机 CodeBuddy CLI headless → 投标要点 md+json 校验落盘，耗时长）</span><span class="sg" style="color:var(--warn)">需 CLI 已登录（dev/登录CodeBuddy-CLI.bat）</span></div>
     <div class="mline"><span class="sn">rule</span><span class="st">tender-rule：通道A 文档解析规则引擎 → 文档解析_<项目>.json（确定性字段）</span><span class="sg">已生成</span></div>
     <div class="mline"><span class="sn">diff</span><span class="st">tender-diff：双通道差异比对 → 双通道差异_<项目>.json/.md</span><span class="sg" style="color:var(--warn)">2 项待裁决</span></div>
     <div class="mline"><span class="sn">report</span><span class="st">tender-report：投标要点 HTML 渲染（闸门① 人工核对形态）</span><span class="sg" style="color:var(--warn)">待核对</span></div>
