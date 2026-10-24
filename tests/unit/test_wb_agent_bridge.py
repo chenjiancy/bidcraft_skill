@@ -151,7 +151,7 @@ class RunAgentTest(unittest.TestCase):
 
     def test_run_agent_auth_required(self):
         res = run_agent("hi", timeout=30, cli=[sys.executable, "-c",
-                                               "print('Authentication required. Please use /login command', file=sys.stderr)"])
+                                               "import sys; print('Authentication required. Please use /login command', file=sys.stderr)"])
         self.assertFalse(res["ok"])
         self.assertIn("/login", res["error"])
 

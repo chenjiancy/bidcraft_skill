@@ -70,7 +70,8 @@ class ExecBridgeUnitTest(unittest.TestCase):
             proj.mkdir(parents=True)
             resolved = bidcraft_server._project_dir(str(root), "执行桥单测企业", "示例项目")
             self.assertIsNotNone(resolved)
-            self.assertEqual(Path(resolved), proj)
+            # CI runner 的 Temp 可能解析为 8.3 短路径（RUNNER~1 vs runneradmin），两侧统一 resolve 后比较
+            self.assertEqual(Path(resolved).resolve(), proj.resolve())
 
     def test_project_dir_rejects_traversal(self):
         with tempfile.TemporaryDirectory() as tmp:
