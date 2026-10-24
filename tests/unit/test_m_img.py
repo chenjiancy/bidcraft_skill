@@ -167,6 +167,52 @@ class ImgSaveTest(MImgBase):
         with self.assertRaises(core.LibraryError):
             m_img.cmd_img_save(self._mk_args(id="img_001"))
 
+    # ---- v1.2 清洗落盘：真实格式扩展名 + AIGC 元数据剥离 ----
+    def _mk_jpeg(self, path, with_aigc_segment=False):
+        """PIL 生成最小 JPEG；with_aigc_segment=True 时在 SOI 后插入 APP11 'AIGC{...}' 元数据段。"""
+        from PIL import Image
+        import io
+        buf = io.BytesIO()
+        Image.new("RGB", (8, 8), (37, 99, 235)).save(buf, format="JPEG", quality=95)
+        data = bytearray(buf.getvalue())
+        if with_aigc_segment:
+            seg = b"\xff\xeb" + (26).to_bytes(2, "big") + b'AIGC{"Labe_meta":"x"}'  # APP11
+            data = data[:2] + seg + data[2:]
+        Path(path).write_bytes(bytes(data))
+        return len(data)
+
+    def test_save_arch_ext_follows_real_format(self):
+        # 扩展名 .png 但内容为 JPEG → 落盘 img_001.jpg（而非错配 .png）
+        src = Path(self._tmp.name) / "fake.png"
+        self._mk_jpeg(src)
+        m_img.cmd_img_save(self._mk_args(id="img_001", file=str(src), source="豆包"))
+        dst = m_img.img_dir(self.ent, self.project) / "img_001.jpg"
+        self.assertTrue(dst.exists())
+        self.assertFalse((m_img.img_dir(self.ent, self.project) / "img_001.png").exists())
+        item = next(it for it in m_img._load_plan(self.ent, self.project)["items"] if it["id"] == "img_001")
+        self.assertEqual(item["file"], "配图/img_001.jpg")
+        self.assertTrue(dst.read_bytes()[:2] == b"\xff\xd8")  # JPEG 真实头
+
+    def test_clean_copy_strips_aigc_segment(self):
+        # 平台产物内嵌 APP11 'AIGC{...}' 段（python-docx 无法解析）→ 清洗后剥离
+        src = Path(self._tmp.name) / "p.png"
+        self._mk_jpeg(src, with_aigc_segment=True)
+        m_img.cmd_img_save(self._mk_args(id="img_002", file=str(src), source="豆包"))
+        dst = m_img.img_dir(self.ent, self.project) / "img_002.jpg"
+        self.assertTrue(dst.exists())
+        raw = dst.read_bytes()
+        self.assertNotIn(b"AIGC", raw)          # 元数据已剥离
+        self.assertTrue(raw[:2] == b"\xff\xd8")  # 仍是标准 JPEG
+        from docx import Document                 # 清洗后必须可被 python-docx 识别
+        d = Document()
+        d.add_picture(str(dst))
+        self.assertTrue(True)
+
+    def test_arch_ext_fallback(self):
+        self.assertEqual(m_img._arch_ext_for(Path("a.png"), ".png"), "png")
+        self.assertEqual(m_img._arch_ext_for(Path("a.jpeg"), ".jpeg"), "jpg")
+        self.assertEqual(m_img._arch_ext_for(Path("a.jpg"), ".jpg"), "jpg")
+
     def test_gen_agent_prompt_contract(self):
         # 不真调 CodeBuddy：验证提示词契约（无公司名/无水印/固定落点）
         tmp = m_img.img_dir(self.ent, self.project) / "临时"

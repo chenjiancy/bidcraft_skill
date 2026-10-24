@@ -181,6 +181,39 @@ def cmd_img_plan(args):
 # --------------------------------------------------------------------------
 # img-save：图片收口落盘（写操作；执行桥侧须 confirm:true）
 # --------------------------------------------------------------------------
+def _arch_ext_for(src, ext):
+    """按真实图片格式决定归档扩展名：PIL 识别（png→png，jpeg/jpg→jpg）；
+    PIL 不可用或识别失败 → 回退源扩展名映射（.jpeg→jpg）。"""
+    try:
+        from PIL import Image
+        with Image.open(src) as im:
+            fmt = (im.format or "").lower()
+        if fmt == "png":
+            return "png"
+        if fmt in ("jpeg", "jpg"):
+            return "jpg"
+    except Exception:
+        pass
+    return IMG_EXTS.get(ext, "png")
+
+
+def _clean_copy(src, dst, arch_ext):
+    """PIL 重编码清洗落盘：丢弃平台产物内嵌的 AIGC/EXIF 等元数据段，
+    产出 python-docx / Word 可直接识别的标准 PNG/JPEG。失败 → 拒绝不落盘。"""
+    try:
+        from PIL import Image
+        with Image.open(src) as im:
+            im.load()
+            if arch_ext == "png":
+                im.save(str(dst), format="PNG")
+            else:
+                im.save(str(dst), format="JPEG", quality=95)
+    except Exception as e:
+        if dst.exists():
+            dst.unlink()
+        raise core.LibraryError("图片清洗落盘失败（平台产物可能损坏/格式异常），已拒绝：%s" % e)
+
+
 def cmd_img_save(args):
     ent = get_ent(args)
     project = args.project
@@ -213,14 +246,19 @@ def cmd_img_save(args):
     if size <= 0 or size > IMG_MAX_BYTES:
         raise core.LibraryError("图片大小不合法：%d 字节（上限 %d 字节）" % (size, IMG_MAX_BYTES))
 
+    # 真实格式判定（防"扩展名 .png 实为 JPEG"的错配落盘）：PIL 识别优先，
+    # 不可用/不可读时回退源扩展名映射。归档扩展名与真实格式一致。
+    arch_ext = _arch_ext_for(src, ext)
     d = img_dir(ent, project)
     d.mkdir(parents=True, exist_ok=True)
     # 防重复：同 id 已有不同扩展名的落盘 → 拒绝
     for existing in d.glob(args.id + ".*"):
         raise core.LibraryError("配图项 %s 已有落盘文件：%s（先清理再保存）" % (args.id, existing.name))
 
-    dst = d / ("%s.%s" % (args.id, IMG_EXTS[ext]))
-    shutil.copy2(str(src), str(dst))
+    dst = d / ("%s.%s" % (args.id, arch_ext))
+    # 清洗落盘：平台产物常内嵌 AIGC/EXIF 元数据段（如 APP11 'AIGC{...}'），
+    # python-docx 无法解析会 UnrecognizedImageError → 统一 PIL 重编码为干净标准文件。
+    _clean_copy(src, dst, arch_ext)
     item["status"] = "saved"
     item["file"] = "配图/%s" % dst.name
     item["source"] = args.source or "用户提供"
