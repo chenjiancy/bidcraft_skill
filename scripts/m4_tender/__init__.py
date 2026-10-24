@@ -32,6 +32,7 @@ import argparse
 import json
 import os
 import sys
+import tempfile
 from pathlib import Path
 
 from _shared import core            # noqa: E402
@@ -147,6 +148,63 @@ def cmd_tender_parse(args):
         "  素材清单：%s\n          %s\n"
         "下一步：tender-check --project \"%s\" 对照素材库（缺料标红）"
         % (md_p, json_p, md_l, json_l, args.project)
+    ))
+
+
+def cmd_tender_agent_parse(args):
+    """v3.0（agent 桥）：通道B 语义解析自动化——本机 CodeBuddy CLI 执行 M4 提示词
+    产出投标要点 md + JSON 骨架 → 复用 save_points 校验落盘（与 tender-parse 同契约）。
+    前置：CLI 已登录（codebuddy /login）；原文已提取（tender-extract）或 --text-file。"""
+    ent = get_ent(args)
+    tdir = tender.ensure_project_dir(ent, args.project)
+    # 1) 原文：--text-file 优先，否则扫描 招标解析/原文_*.txt
+    if args.text_file:
+        original = tender.read_text(args.text_file)
+        src_label = str(Path(args.text_file).name)
+    else:
+        cands = sorted(tdir.glob("原文_*.txt"), key=lambda p: p.stat().st_size, reverse=True)
+        if not cands:
+            raise core.LibraryError(
+                "招标解析目录未找到 原文_*.txt（先执行 tender-extract，或补传 --text-file）")
+        p0 = cands[0]
+        original = p0.read_text(encoding="utf-8")
+        src_label = p0.name
+    # 2) 提示词模板：默认 M4-招标文件解析-提示词.md（通道B 强制），--prompt-file 可覆盖
+    if args.prompt_file:
+        template = tender.read_text(args.prompt_file)
+    else:
+        tpl = Path(__file__).resolve().parents[2] / "references" / "M4-招标文件解析-提示词.md"
+        if not tpl.exists():
+            raise core.LibraryError("默认提示词模板不存在：%s（--prompt-file 可指定）" % tpl)
+        template = tpl.read_text(encoding="utf-8")
+    # 3) 组装 prompt 并调用 CodeBuddy CLI（headless 单次）
+    import wb_agent_bridge as bridge
+    prompt = bridge.compose_prompt(template, original, args.project,
+                                   extra="本次解析源文件：%s（%d 字符）" % (src_label, len(original)))
+    res = bridge.run_agent(prompt, timeout=getattr(args, "timeout", 900), cli=getattr(args, "cli", None))
+    if not res.get("ok"):
+        raise core.LibraryError("agent 桥调用失败：%s" % bridge.render_error(res.get("error")))
+    text = res.get("text") or ""
+    # 4) 提取 JSON 骨架 → 临时双份 → 校验落盘（与 tender-parse 同契约）
+    obj, err = bridge.extract_json_block(text)
+    if obj is None:
+        raise core.LibraryError("agent 输出缺少 JSON 骨架：%s\n（输出前 400 字符：%s）"
+                                % (err, text[:400].replace("\n", " ")))
+    with tempfile.TemporaryDirectory() as tmp:
+        md_tmp = Path(tmp) / "points.md"
+        json_tmp = Path(tmp) / "points.json"
+        md_tmp.write_text(text, encoding="utf-8")
+        json_tmp.write_text(json.dumps(obj, ensure_ascii=False, indent=2), encoding="utf-8")
+        md_p, json_p = tender.save_points(tdir, args.project, str(md_tmp), str(json_tmp))
+    obj2 = {"ok": True, "project": args.project,
+            "channel": "B(agent 桥·CodeBuddy CLI)", "source": src_label,
+            "elapsed_s": res.get("elapsed_s"), "cli": res.get("cli"),
+            "points_md": str(md_p), "points_json": str(json_p)}
+    dump(obj2, args, human=(
+        "通道B 语义解析已由 agent 桥自动完成（CodeBuddy CLI，%.0fs，源：%s）：\n"
+        "  投标要点：%s\n          %s\n"
+        "下一步：tender-check --project \"%s\" 对照素材库（缺料标红）；tender-report 核对闸门①。"
+        % (res.get("elapsed_s", 0), src_label, md_p, json_p, args.project)
     ))
 
 
@@ -352,6 +410,14 @@ def register_parser(sub):
     sp.add_argument("--list-md", required=True, help="素材清单.md 路径（agent 产出）")
     sp.add_argument("--list-json", required=True, help="素材清单.json 路径（机读）")
     sp.set_defaults(func=cmd_tender_parse)
+
+    sp = sub.add_parser("tender-agent-parse", help="M4·agent 桥：通道B 语义解析自动化——本机 CodeBuddy CLI 执行 M4 提示词 → 投标要点 md+json 校验落盘（前置：CLI 已 /login 登录、原文已提取）")
+    sp.add_argument("--project", required=True)
+    sp.add_argument("--text-file", help="已提取原文文本路径（缺省自动扫描 招标解析/原文_*.txt）")
+    sp.add_argument("--prompt-file", help="提示词模板路径（缺省 references/M4-招标文件解析-提示词.md）")
+    sp.add_argument("--cli", help="CodeBuddy CLI 路径（缺省 BIDCRAFT_AGENT_CLI/PATH/默认安装）")
+    sp.add_argument("--timeout", type=int, default=900, help="CLI 超时秒数（默认 900；长文档可加长）")
+    sp.set_defaults(func=cmd_tender_agent_parse)
 
     sp = sub.add_parser("tender-check", help="M4：素材清单逐项对照素材库 → 对照表 CSV + 缺料标红")
     sp.add_argument("--project", required=True)

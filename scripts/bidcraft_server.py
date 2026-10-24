@@ -66,8 +66,8 @@ except Exception:
     pass
 
 SERVER_NAME = "bidcraft-server"
-SERVER_VERSION = "3.0"
-EXEC_BRIDGE_VERSION = "3.0"
+SERVER_VERSION = "3.1"
+EXEC_BRIDGE_VERSION = "3.1"
 PACK_BASE_REL = Path("共享资源") / "技术标风格" / "专家包"
 
 # ---- 执行桥：白名单（唯一入口）------------------------------------------
@@ -92,6 +92,7 @@ EXEC_COMMANDS = {
     "m9-evidence":          {"mode": "write", "json": False, "timeout": 300, "cmd": ["m9-evidence", "--project", "@project"]},
     "tender-report":        {"mode": "write", "json": False, "timeout": 300, "cmd": ["tender-report", "--project", "@project"]},
     "tender-rule":          {"mode": "write", "json": False, "timeout": 300, "cmd": ["tender-rule", "--project", "@project"]},
+    "tender-agent-parse":   {"mode": "write", "json": False, "timeout": 900, "cmd": ["tender-agent-parse", "--project", "@project"]},
 }
 
 # 高风险命令清单（说明性 + capabilities 展示）：应用/覆盖/删除/状态推进类——
@@ -116,6 +117,7 @@ EXEC_DESCRIPTIONS = {
     "tech-status": "技术标写作状态表", "m9-verify": "项目自检体检（红绿灯）",
     "m9-evidence": "投标留痕包（取证链）", "tender-report": "投标要点 HTML 报告",
     "tender-rule": "通道A 文档解析（规则引擎落盘，write 需确认）",
+    "tender-agent-parse": "通道B 语义解析（agent 桥·CodeBuddy CLI，耗时长，write 需确认）",
 }
 
 
