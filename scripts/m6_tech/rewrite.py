@@ -105,7 +105,7 @@ def cmd_tech_rewrite(args):
     new_lines = body.splitlines()
     summary = _diff_summary(old_lines, new_lines)
 
-    store.write_chapter_body(tech, ch, body)          # backup=True → .rewrite-trash 自动备份旧稿
+    store.write_chapter_body(tech, ch, body, reason="rewrite")  # backup=True → .rewrite-trash 备份 + .history 快照
     if info:
         store.write_revise(tech, args.chapter, info)
     back = store.read_chapter_body(tech, ch)

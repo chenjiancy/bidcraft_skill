@@ -640,6 +640,8 @@ def cmd_tech_draft(args):
         dst = tech / "章节" / ("%s.draft.md" % cid)
         if dst.is_file():
             store.backup_rewrite(tech, dst)
+            from . import history
+            history.snapshot(tech, cid, store._read_text(dst), reason="draft")
         store.write_text_inside(tech, "章节/%s.draft.md" % cid, md)
         back = store._read_text(tech / "章节" / ("%s.draft.md" % cid))
         if back != md:
