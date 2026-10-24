@@ -20,6 +20,7 @@ from pathlib import Path
 from _shared import core, naming as nm
 from m4_tender import rules as t_rules
 from . import eval_std, evaluator, eval_report, rules as m8rules
+from . import tech_text as tech_text_mod
 
 OUT_DIR_NAME = "模拟评标"
 
@@ -140,6 +141,11 @@ def cmd_eval_run(args):
 
     objective = evaluator.calc_objective(standard, mat)
 
+    # T16 技术标文本发现（M6 交付后）：通道B 评审依据 + outline 项章节注入
+    tech_text = tech_text_mod.discover_tech_text(proj_dir, args.project)
+    if tech_text["found"]:
+        tech_text_mod.attach_tech_to_standard(standard, tech_text)
+
     # 报价分
     quote = None
     if args.quote:
@@ -162,10 +168,12 @@ def cmd_eval_run(args):
         "objective": objective,
         "quote": qa,
         "summary": summary,
+        "techText": tech_text,     # T16：M6 技术标文本清单（found=False 时通道B 输出"无文本"）
     }
     core.write_json(str(json_path), payload)
     md_path.write_text(_to_md(args.project, standard, objective, qa, summary), encoding="utf-8")
-    eval_report.render_report(args.project, standard, objective, quote, qa, summary, html_path)
+    eval_report.render_report(args.project, standard, objective, quote, qa, summary, html_path,
+                              tech_text=tech_text)
     back = core.read_json(str(json_path), None)
     if not back or back.get("project") != args.project:
         raise core.LibraryError("模拟评标 JSON 写后回读失败：%s" % json_path)
@@ -175,8 +183,13 @@ def cmd_eval_run(args):
     print("模拟评标（通道A）已生成：%s" % json_path)
     print("文本版：%s" % md_path)
     print("HTML 报告：%s（浏览器打开，人工确认闸门）" % html_path)
-    print("客观分估分：%.1f / %.1f；报价分：反推参考；主观分：待 M6 精评" % (
-        summary["objective_score"], summary["objective_max"]))
+    if tech_text["found"]:
+        print("客观分估分：%.1f / %.1f；报价分：反推参考；主观分：M6 技术标文本已发现（%d 章 %d 字），通道B 可精评（techText 已入产物）" % (
+            summary["objective_score"], summary["objective_max"],
+            len(tech_text["chapters"]), tech_text["totalChars"]))
+    else:
+        print("客观分估分：%.1f / %.1f；报价分：反推参考；主观分：未发现技术标文本（%s），通道B 输出「无方案文本待 M6 精评」" % (
+            summary["objective_score"], summary["objective_max"], tech_text["note"]))
 
 
 def cmd_eval_parse(args):
@@ -248,7 +261,8 @@ def cmd_eval_report(args):
     html_path = out_dir / ("%s.html" % report_base(args.project))
     eval_report.render_report(args.project, a["standard"], a["objective"],
                               a["quote"].get("quote") if a.get("quote") else None,
-                              a.get("quote", {}), a["summary"], html_path, subjective=subjective)
+                              a.get("quote", {}), a["summary"], html_path, subjective=subjective,
+                              tech_text=a.get("techText"))
     if not html_path.exists():
         raise core.LibraryError("模拟评标报告渲染失败：%s" % html_path)
 
