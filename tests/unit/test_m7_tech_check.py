@@ -74,8 +74,10 @@ def _settings(bid_mode="明标", pages=10):
 
 class TechChecksTable(unittest.TestCase):
     def test_tech_checks_schema(self):
+        # T17：检查项 3→6（图表位置/空白页/引用一致性）
         self.assertEqual([c["id"] for c in R.TECH_CHECKS],
-                         ["tech_structure", "anbiao_leak", "tech_pages"])
+                         ["tech_structure", "anbiao_leak", "tech_pages",
+                          "tech_figure_placement", "tech_blank_pages", "tech_ref_consistency"])
         for item in R.TECH_CHECKS:
             self.assertTrue(callable(getattr(R, item["fn"], None)),
                             "检查实现缺失: %s" % item["fn"])
@@ -237,6 +239,11 @@ class RunRuleChecksTechTest(unittest.TestCase):
         out.mkdir(parents=True)
         self.docx = out / ("技术标_%s.docx" % PROJECT)
         _mk_tech_docx(self.docx)
+        # T17：明标正文含清单业绩名/人员名（引用一致性正路径；暗标用例走 anbiao 专属 fixture）
+        from docx import Document as _Doc
+        _d = _Doc(str(self.docx))
+        _d.add_paragraph("本工程由总监理工程师张三负责，企业近三年完成某小区改造监理项目。")
+        _d.save(str(self.docx))
         # 素材落盘（material 检查：业绩 path 必须存在，用绝对路径规避 CWD 依赖）
         (self.proj / "业绩").mkdir(exist_ok=True)
         self._perf_path = str(self.proj / "业绩" / "某小区.pdf")

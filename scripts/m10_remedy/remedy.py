@@ -191,6 +191,45 @@ def gen_tasks(eval_doc, subjective_doc=None):
     }
 
 
+def gen_check_tasks(check_doc):
+    """M7 机器检查 json（含技术标检查 kind=tech）→ 检查整改任务（T17：与失分补救并列来源）。
+
+    确定性映射：检查项 ok=False 且 issues 非空 → 一条「格式合规/标书检查整改」任务，
+    动作步骤=修复 issues 逐条，验证方式=重跑 check-rule + check-report 人工确认闸门。
+    不臆造：仅把机器已检出的问题转成任务，不做语义判断。
+    """
+    tasks = []
+    is_tech = (check_doc or {}).get("kind") == "tech"
+    for c in (check_doc or {}).get("检查") or []:
+        if c.get("ok"):
+            continue
+        iss = c.get("issues") or []
+        if not iss:
+            continue
+        name = c.get("name") or c.get("id") or "?"
+        act = "技术标检查整改" if is_tech else "标书检查整改"
+        src = "M7-%s" % (check_doc.get("tag") or "机器检查")
+        tasks.append({
+            "id": "C%02d" % len(tasks),
+            "类型": "格式合规",
+            "动作": act,
+            "标题": "%s（%d 处问题）" % (name, len(iss)),
+            "来源": src,
+            "评分项": name,
+            "当前状态": iss[0] + ((" 等 %d 条" % len(iss)) if len(iss) > 1 else ""),
+            "目标状态": "整改后重跑 check-rule --kind tech 复核通过（check-report 人工确认闸门）" if is_tech
+                        else "整改后重跑 check-rule 复核通过（check-report 人工确认闸门）",
+            "动作步骤": ["修复：%s" % x for x in iss[:6]],
+            "涉及素材": None,
+            "优先级": "高",
+            "预期加分": None,
+            "验证方式": ("重跑 check-rule --project <项目> --out 技术标/产出/技术标_<项目>.docx --kind tech"
+                          "；check-report 人工确认闸门") if is_tech
+                        else "重跑 check-rule --project <项目>；check-report 人工确认闸门",
+        })
+    return tasks
+
+
 def to_md(doc):
     lines = ["# 失分补救任务单 · %s" % doc.get("project", ""), ""]
     s = doc.get("summary", {})

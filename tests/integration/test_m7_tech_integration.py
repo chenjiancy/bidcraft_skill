@@ -153,6 +153,26 @@ class M7TechIntegrationTest(unittest.TestCase):
         self.assertIn("anbiao_leak", ids)
         self.assertTrue(ids["anbiao_leak"]["ok"], ids["anbiao_leak"]["issues"])
 
+    def test_real_tech_docx_t17_checks_pass(self):
+        """T17 真实导出 docx（明标）：图表位置/空白页/引用一致性三项均通过（M6 导出天然合规）。"""
+        self._prep()
+        docx = self._chain_to_export()
+        res = self._check_tech(docx)
+        ids = {c["id"]: c for c in res["检查"]}
+        for cid in ("tech_figure_placement", "tech_blank_pages", "tech_ref_consistency"):
+            self.assertIn(cid, ids, "T17 检查项未挂载：%s" % cid)
+            self.assertTrue(ids[cid]["ok"], "%s issues: %s" % (cid, ids[cid]["issues"]))
+
+    def test_real_tech_docx_t17_anbiao_ref_skips(self):
+        """T17 暗标真实导出 docx：引用一致性按暗标去名口径跳过（anbiao_leak 反向覆盖）。"""
+        self._prep("暗标")
+        docx = self._chain_to_export()
+        res = self._check_tech(docx)
+        ids = {c["id"]: c for c in res["检查"]}
+        self.assertIn("tech_ref_consistency", ids)
+        self.assertTrue(ids["tech_ref_consistency"]["ok"])
+        self.assertTrue(any("跳过" in x for x in ids["tech_ref_consistency"]["issues"]))
+
 
 if __name__ == "__main__":
     unittest.main()
