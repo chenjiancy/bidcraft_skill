@@ -106,6 +106,74 @@ def cmd_proj_material(args):
         print("  %-24s %d 项（已解析路径 %d/%d）" % (sec, len(items), n_path, len(items)))
 
 
+# 素材配图通道图片类类别（与 image_spec.IMG_SPEC / fill_from_tpl._spec_key 对齐；
+# 新增模板图片类别须同步本表）
+MAT_IMG_CATS = (
+    "总监注册监理工程师证书", "注册监理工程师证书", "高级工程师职称证书", "总监高级工程师职称证书",
+    "职称证书", "其他监理人员职称证书", "小型职称证书", "岗位证书", "注册一级建造师证书",
+    "注册证书_横版", "身份证", "法定代表人身份证", "委托代理人身份证", "社保证明",
+    "业绩材料", "业绩合同验收报告_竖版", "业绩合同验收报告_横版",
+    "企业资质证书", "企业法人营业执照", "营业执照扫描件", "开户许可证", "开户许可证扫描件",
+    "存款信息", "三体系认证证书", "先进监理企业证书", "先进优秀监理企业证书", "监理示范工程",
+    "监理示范优质工程", "优秀总监证书", "其他荣誉证书", "荣誉证书年度标签", "承诺函", "组织机构框图",
+)
+
+
+def cmd_mat_status(args):
+    """M5（v2.1）素材清单状态（配图通道视角，**只读不落盘**）：
+    读素材清单（fill 结构，_load_material 同款兼容）→ 对每个图片类类别调
+    aggregate_category（fill-tpl 真实消费逻辑）→ 路径数与文件存在性 → 状态：
+      has=素材清单已列且文件存在（fill-tpl 可嵌） / broken=已列但路径文件缺失 /
+      empty=素材清单未列（商务标红线：不生成）
+    供执行桥 read 白名单 + UI 素材清单卡片实时显示。"""
+    ent = get_ent(args)
+    proj = ent / "项目级" / args.project
+    if not proj.is_dir():
+        raise core.LibraryError("项目目录不存在：%s" % proj)
+    material = ftpl._load_material(proj)
+    if not material:
+        raise core.LibraryError("素材清单 JSON 不存在/为空（素材清单.json / 素材清单_<项目>.json）：先执行 M4 tender-parse 落盘产物")
+    _tdir = proj / "招标解析"
+    _list_path = str(_tdir / "素材清单.json") if (_tdir / "素材清单.json").is_file() \
+        else (str(sorted(_tdir.glob("素材清单_*.json"))[0]) if sorted(_tdir.glob("素材清单_*.json")) else str(_tdir))
+    cats = {}
+    for cat in MAT_IMG_CATS:
+        paths = ftpl.aggregate_category(material, cat)
+        exist, broken = [], []
+        for p in paths:
+            rp = Path(ftpl.R(p, proj))
+            (exist if rp.is_file() else broken).append(str(rp))
+        st = "has" if exist else ("broken" if broken else "empty")
+        cats[cat] = {"listed": len(paths), "exist": len(exist), "broken": len(broken), "status": st}
+    obj = {
+        "ok": True, "project": args.project,
+        "list_file": _list_path,
+        "image_categories": len(cats),
+        "image_total": sum(c["listed"] for c in cats.values()),
+        "image_exist": sum(c["exist"] for c in cats.values()),
+        "image_broken": sum(c["broken"] for c in cats.values()),
+        "summary": {
+            "has": sum(1 for c in cats.values() if c["status"] == "has"),
+            "broken": sum(1 for c in cats.values() if c["status"] == "broken"),
+            "empty": sum(1 for c in cats.values() if c["status"] == "empty"),
+        },
+        "categories": cats,
+        "missing": [{"category": k, "status": c["status"]} for k, c in sorted(cats.items()) if c["status"] != "has"],
+    }
+    if args.json:
+        print(json.dumps(obj, ensure_ascii=False, indent=2))
+        return
+    print("项目：%s　素材清单状态（配图通道视角，只读）\n" % args.project)
+    print("素材清单：%s" % _list_path)
+    print("图片类类别 %d 个｜素材路径 %d 条｜文件存在 %d｜路径断裂 %d｜未列（红线不生成）%d" % (
+        len(cats), obj["image_total"], obj["image_exist"], obj["image_broken"], obj["summary"]["empty"]))
+    print("\n%s" % "─" * 66)
+    for k, c in sorted(cats.items()):
+        mark = {"has": "✅", "broken": "⚠️", "empty": "—"}[c["status"]]
+        print("  %s %-22s 已列 %d｜存在 %d｜断裂 %d" % (mark, k, c["listed"], c["exist"], c["broken"]))
+    print("\n商务标红线：素材清单未列（—）的类别 fill-tpl 不生成（删框+披露）。")
+
+
 def register_parser(sub):
     sp = sub.add_parser("proj-mat", help="M5：素材清单表组装为生成器结构素材清单 JSON（v2.0 数据源）")
     sp.add_argument("--project", required=True, help="项目名（项目级/<项目>）")
@@ -120,3 +188,7 @@ def register_parser(sub):
     sp.add_argument("--agent", default="", help="代理机构（默认从素材清单『招标代理机构』读取）")
     sp.add_argument("--out", default="", help="商务标输出目录（默认 项目级/<项目>/商务标）")
     sp.set_defaults(func=cmd_fill_tpl)
+
+    sp = sub.add_parser("mat-status", help="M5（v2.1）：素材清单状态（配图通道视角，只读不落盘）——类别聚合+素材库对照+图片类标注")
+    sp.add_argument("--project", required=True, help="项目名（项目级/<项目>）")
+    sp.set_defaults(func=cmd_mat_status)
