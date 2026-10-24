@@ -44,7 +44,7 @@
 ④ 交图   img-save        图片 → <项目>/配图/<id>.<png|jpg>，清单回填 saved（交接协议核心）
 ⑤ 嵌图   img-embed(技术标) saved 项按 section 匹配章节树 → 章节标题后插入 ![图题](绝对路径)（v1.4，幂等）
          fill-tpl(商务标)   【图片占位：AI配图-<section>】一律删框+披露（v1.3 红线：商务标禁 AI 配图）
-⑥ 审计   img-audit(技术标) 暗标合规审计（v1.5，只读）：文件存在/AIGC 残留/subject·style 红线词/source；无 OCR 披露人工核验
+⑥ 审计   img-audit(技术标) 暗标合规审计（v1.6，只读）：文件存在/AIGC 残留/subject·style 红线词/source；图内文字 paddleocr 真扫（OCR 引擎不可用则披露人工核验）
 ```
 
 **技术标嵌图（v1.4 新增）**：`img-embed --project <名>` 读配图清单 **status=saved** 项，
@@ -54,12 +54,17 @@
 未匹配章节 / 章节正文缺失 / 图片本体缺失 → 披露不嵌入，不报错。暗标提示：tech-export
 暗标模式自动切断全部图片（imageRatio=none），明标才实际嵌图。
 
-**技术标暗标合规审计（v1.5 新增）**：`img-audit --project <名>`（只读）对 saved 项逐图检查
+**技术标暗标合规审计（v1.6）**：`img-audit --project <名>`（只读）对 saved 项逐图检查
 —— ① 图片文件存在（缺失=不合规）；② **AIGC 元数据残留**（img-save 清洗失败=不合规）；
 ③ 清单 subject/style 含**暗标红线词**（公司/LOGO/水印/AI 标识等，`AUDIT_WORDS` 可增）；
-④ source 来源标注（空=披露）；⑤ **图内文字**：本机有 OCR（paddleocr/easyocr/pytesseract/
-tesseract）则真扫，**无 OCR 则明确披露"图内文字需人工核验"，不假装检查**。输出 pass/fail
-明细（--json 机读）；暗标红线原文：图内禁公司名/LOGO/人名/水印/AI 标识。
+④ source 来源标注（空=披露）；⑤ **图内文字真扫**：优先调 **paddleocr**（独立 OCR venv，
+默认 `仓库根/.ocr_venv`，可用 `BIDCRAFT_OCR_PY` 环境变量指向其 python.exe；首次加载模型较慢，
+单图超时 180s）。OCR 检出文字命中红线词（如"公司"）→ 判不合规并列出命中词与 OCR 文本；
+OCR 引擎不可用或本次调用异常 → 明确披露"图内文字需人工核验"，**不假装检查**。
+输出 pass/fail 明细（--json 机读）；暗标红线原文：图内禁公司名/LOGO/人名/水印/AI 标识。
+OCR venv 安装（一次性，需可写目录）：`python -m venv <仓库根>/.ocr_venv` 后
+`<仓库根>/.ocr_venv/Scripts/python -m pip install paddlepaddle paddleocr`（Windows 推理默认关 oneDNN，
+见 `scripts/m_img/_ocr_worker.py` 内 `FLAGS_use_mkldnn=0`）。
 
 **商务标红线（v1.3）**：fill-tpl 识别 `【图片占位：AI配图-<section>】` 类别一律
 **删框 + 披露"商务标禁 AI 配图（素材清单无则不生成）"**，不消费配图清单、不触发 AI 生成；
@@ -117,7 +122,7 @@ tesseract）则真扫，**无 OCR 则明确披露"图内文字需人工核验"�
 | `img-plan --project <名>` | 从投标要点生成/合并配图清单（幂等：已有项不重复） | 否（生成清单产物） |
 | `img-save --project <名> --id <img_00x> --file <图片路径> [--source <来源>]` | 图片收口落盘：校验（png/jpg/jpeg、≤10MB）→ **PIL 清洗重编码（剥离 AIGC 元数据段，v1.2）** → 按真实格式归档 `配图/<id>.<png|jpg>` → 回填 `saved` | **是**（执行桥须 `confirm:true`） |
 | `img-status --project <名> [--json]` | 查看清单状态（待生成/已落盘 计数 + 明细） | 否 |
-| `img-audit --project <名> [--json]` | **技术标暗标合规审计（v1.5，只读）**：saved 项逐图检查——文件存在 / AIGC 元数据残留（img-save 清洗失败）/ 清单 subject·style 含暗标红线词（公司/LOGO/水印/AI 标识等，AUDIT_WORDS 可增）/ source 标注；**图内文字：本机无 OCR（paddleocr/easyocr/pytesseract/tesseract）则明确披露"需人工核验"，不假装检查**；输出 pass/fail 明细 | 否 |
+| `img-audit --project <名> [--json]` | **技术标暗标合规审计（v1.6，只读）**：saved 项逐图检查——文件存在 / AIGC 元数据残留（img-save 清洗失败）/ 清单 subject·style 含暗标红线词（公司/LOGO/水印/AI 标识等，AUDIT_WORDS 可增）/ source 标注；**图内文字真扫（paddleocr venv，`BIDCRAFT_OCR_PY` 可指定）：检出红线词判不合规并附 OCR 文本；引擎不可用/异常则披露"需人工核验"，不假装检查**；输出 pass/fail 明细 | 否 |
 | `img-embed --project <名> [--json]` | **技术标嵌图（v1.4）**：saved 项按 `section` 匹配技术标章节树（章节 title 双向包含）→ 章节正文标题后插入 `![图题](图片绝对路径)`（m6 tech-export 渲染语法）→ **幂等**（已含该引用则跳过）→ 未匹配/缺正文/缺图披露不嵌入 | **是**（写操作，执行桥须 `confirm:true`） |
 | `fill-tpl --project <名> [--agent <代理>]` | M5 商务标嵌图：**商务标红线（v1.3）——`AI配图-` 类别一律删框+披露"商务标禁 AI 配图（素材清单无则不生成）"**，不消费配图清单；商务标配图必须全部来自素材清单（`mat-status` 查看素材清单配图通道状态） | **是**（CLI 人工确认闸门） |
 
