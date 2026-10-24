@@ -1189,6 +1189,7 @@ body.dark .dark-toggle .sw::after{left:17px}
           <button class="ctx-item" onclick="imgGenAgent()">③ CodeBuddy 生图（img-gen-agent）【仅技术标】</button>
           <button class="ctx-item" onclick="imgSaveTemp()">④ 临时区归档（img-save）【仅技术标】</button>
           <button class="ctx-item" onclick="imgEmbed()">⑤ 技术标嵌图（img-embed）【仅技术标】</button>
+          <button class="ctx-item" onclick="imgAudit()">⑥ 暗标合规审计（img-audit）</button>
         </div>
         <div id="imgStateBox" style="font-size:12px;color:var(--dim);margin-top:8px;font-family:ui-monospace,Consolas,monospace">配图清单状态：待查询（点击「查看清单状态」或先生成清单）</div>
       </div>
@@ -1713,7 +1714,11 @@ window.STYLE_DATA={groups:[{key:"presets",label:"版面版式",items:[{"id":"sin
     var p=imgProject(); if(!p) return;
     execBridge('img-embed',{project:p},false).then(imgRefresh);
   }
-  window.imgStatus=imgStatus; window.imgGenAgent=imgGenAgent; window.imgSaveTemp=imgSaveTemp; window.imgEmbed=imgEmbed; window.imgRefresh=imgRefresh;
+  function imgAudit(){
+    var p=imgProject(); if(!p) return;
+    execBridge('img-audit',{project:p},false).then(imgRefresh);
+  }
+  window.imgStatus=imgStatus; window.imgGenAgent=imgGenAgent; window.imgSaveTemp=imgSaveTemp; window.imgEmbed=imgEmbed; window.imgAudit=imgAudit; window.imgRefresh=imgRefresh;
 
   /* ---- 执行桥统一引擎：任何视图按钮都可复用 ----
      execBridge(command, args, confirm, opts)

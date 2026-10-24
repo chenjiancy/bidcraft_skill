@@ -84,6 +84,7 @@ EXEC_COMMANDS = {
     "tech-layout--list":    {"mode": "read",  "json": False, "timeout": 120, "cmd": ["tech-layout", "--list"]},
     "tech-status":          {"mode": "read",  "json": False, "timeout": 120, "cmd": ["tech-status", "--project", "@project"]},
     "img-status":           {"mode": "read",  "json": True,  "timeout": 120, "cmd": ["img-status", "--project", "@project", "--json"]},
+    "img-audit":            {"mode": "read",  "json": True,  "timeout": 120, "cmd": ["img-audit", "--project", "@project", "--json"]},
     "mat-status":           {"mode": "read",  "json": True,  "timeout": 120, "cmd": ["mat-status", "--project", "@project", "--json"]},
     # —— 写（可逆产物，必须 confirm:true；样张/体检/留痕/报告）——
     "img-plan":             {"mode": "write", "json": False, "timeout": 120, "cmd": ["img-plan", "--project", "@project"]},
@@ -130,6 +131,7 @@ EXEC_DESCRIPTIONS = {
     "img-save--temp": "AI 配图：临时区图片校验归档回填（write 需确认）",
     "img-embed": "AI 配图：技术标正文嵌入（write 需确认；saved 项按 section 匹配章节树插入引用，幂等）",
     "img-status": "AI 配图：配图清单状态（只读）",
+    "img-audit": "AI 配图：技术标暗标合规审计（只读：文件存在/AIGC 残留/红线词/source；无 OCR 披露人工核验）",
     "mat-status": "素材清单状态（配图通道视角，只读：类别聚合+对照+图片类标注）",
 }
 

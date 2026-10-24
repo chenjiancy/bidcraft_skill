@@ -1,4 +1,4 @@
-# AI 配图 · 操作手册（m_img，v1.4）
+# AI 配图 · 操作手册（m_img，v1.5）
 
 > 定位：跨 M4/M5 的**素材生产管道**——从投标要点（M4 产物）确定配图需求，双通道生图，
 > 图片**必须落盘**到项目级 `配图/` 目录并回填清单，供非商务标生成引擎（技术标等）按清单
@@ -15,7 +15,7 @@
 - 模板『【图片占位：AI配图-<section>】』在商务标文档中**不消费配图清单、不触发 AI 生成**，
   一律按"素材清单无则不生成"处理（删框 + 披露"商务标禁 AI 配图"）。
 
-本手册的 m_img 管道（img-plan/img-gen-agent/img-save/img-status/**img-embed v1.4**）仅用于**技术标等非商务标
+本手册的 m_img 管道（img-plan/img-gen-agent/img-save/img-status/**img-embed v1.4 / img-audit v1.5**）仅用于**技术标等非商务标
 场景**的配图准备；fill-tpl（商务标引擎）不消费 m_img 产物。
 
 ---
@@ -44,6 +44,7 @@
 ④ 交图   img-save        图片 → <项目>/配图/<id>.<png|jpg>，清单回填 saved（交接协议核心）
 ⑤ 嵌图   img-embed(技术标) saved 项按 section 匹配章节树 → 章节标题后插入 ![图题](绝对路径)（v1.4，幂等）
          fill-tpl(商务标)   【图片占位：AI配图-<section>】一律删框+披露（v1.3 红线：商务标禁 AI 配图）
+⑥ 审计   img-audit(技术标) 暗标合规审计（v1.5，只读）：文件存在/AIGC 残留/subject·style 红线词/source；无 OCR 披露人工核验
 ```
 
 **技术标嵌图（v1.4 新增）**：`img-embed --project <名>` 读配图清单 **status=saved** 项，
@@ -52,6 +53,13 @@
 `Path.is_file` 校验后嵌入）；**幂等**（章节 md 已含该图片引用则跳过，可安全重跑）。
 未匹配章节 / 章节正文缺失 / 图片本体缺失 → 披露不嵌入，不报错。暗标提示：tech-export
 暗标模式自动切断全部图片（imageRatio=none），明标才实际嵌图。
+
+**技术标暗标合规审计（v1.5 新增）**：`img-audit --project <名>`（只读）对 saved 项逐图检查
+—— ① 图片文件存在（缺失=不合规）；② **AIGC 元数据残留**（img-save 清洗失败=不合规）；
+③ 清单 subject/style 含**暗标红线词**（公司/LOGO/水印/AI 标识等，`AUDIT_WORDS` 可增）；
+④ source 来源标注（空=披露）；⑤ **图内文字**：本机有 OCR（paddleocr/easyocr/pytesseract/
+tesseract）则真扫，**无 OCR 则明确披露"图内文字需人工核验"，不假装检查**。输出 pass/fail
+明细（--json 机读）；暗标红线原文：图内禁公司名/LOGO/人名/水印/AI 标识。
 
 **商务标红线（v1.3）**：fill-tpl 识别 `【图片占位：AI配图-<section>】` 类别一律
 **删框 + 披露"商务标禁 AI 配图（素材清单无则不生成）"**，不消费配图清单、不触发 AI 生成；
@@ -109,6 +117,7 @@
 | `img-plan --project <名>` | 从投标要点生成/合并配图清单（幂等：已有项不重复） | 否（生成清单产物） |
 | `img-save --project <名> --id <img_00x> --file <图片路径> [--source <来源>]` | 图片收口落盘：校验（png/jpg/jpeg、≤10MB）→ **PIL 清洗重编码（剥离 AIGC 元数据段，v1.2）** → 按真实格式归档 `配图/<id>.<png|jpg>` → 回填 `saved` | **是**（执行桥须 `confirm:true`） |
 | `img-status --project <名> [--json]` | 查看清单状态（待生成/已落盘 计数 + 明细） | 否 |
+| `img-audit --project <名> [--json]` | **技术标暗标合规审计（v1.5，只读）**：saved 项逐图检查——文件存在 / AIGC 元数据残留（img-save 清洗失败）/ 清单 subject·style 含暗标红线词（公司/LOGO/水印/AI 标识等，AUDIT_WORDS 可增）/ source 标注；**图内文字：本机无 OCR（paddleocr/easyocr/pytesseract/tesseract）则明确披露"需人工核验"，不假装检查**；输出 pass/fail 明细 | 否 |
 | `img-embed --project <名> [--json]` | **技术标嵌图（v1.4）**：saved 项按 `section` 匹配技术标章节树（章节 title 双向包含）→ 章节正文标题后插入 `![图题](图片绝对路径)`（m6 tech-export 渲染语法）→ **幂等**（已含该引用则跳过）→ 未匹配/缺正文/缺图披露不嵌入 | **是**（写操作，执行桥须 `confirm:true`） |
 | `fill-tpl --project <名> [--agent <代理>]` | M5 商务标嵌图：**商务标红线（v1.3）——`AI配图-` 类别一律删框+披露"商务标禁 AI 配图（素材清单无则不生成）"**，不消费配图清单；商务标配图必须全部来自素材清单（`mat-status` 查看素材清单配图通道状态） | **是**（CLI 人工确认闸门） |
 

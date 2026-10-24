@@ -117,7 +117,7 @@ class WordCOM:
         if self._pid is not None:
             _kill_pid(self._pid)
             self._pid = None
-            time.sleep(0.6)        # 等待 Word 进程句柄释放（否则紧随删除会 WinError 32）
+            time.sleep(1.0)        # 等待 Word 进程句柄释放（否则紧随删除会 WinError 32；杀软/索引可能延长锁窗）
         try:
             pythoncom.CoUninitialize()
         except Exception:
