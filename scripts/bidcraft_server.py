@@ -66,8 +66,8 @@ except Exception:
     pass
 
 SERVER_NAME = "bidcraft-server"
-SERVER_VERSION = "3.1"
-EXEC_BRIDGE_VERSION = "3.1"
+SERVER_VERSION = "3.2"
+EXEC_BRIDGE_VERSION = "3.2"
 PACK_BASE_REL = Path("共享资源") / "技术标风格" / "专家包"
 
 # ---- 执行桥：白名单（唯一入口）------------------------------------------
@@ -83,7 +83,12 @@ EXEC_COMMANDS = {
     "tpl-part--show":       {"mode": "read",  "json": True,  "timeout": 120, "cmd": ["tpl-part", "--show", "@name"]},
     "tech-layout--list":    {"mode": "read",  "json": False, "timeout": 120, "cmd": ["tech-layout", "--list"]},
     "tech-status":          {"mode": "read",  "json": False, "timeout": 120, "cmd": ["tech-status", "--project", "@project"]},
+    "img-status":           {"mode": "read",  "json": True,  "timeout": 120, "cmd": ["img-status", "--project", "@project", "--json"]},
     # —— 写（可逆产物，必须 confirm:true；样张/体检/留痕/报告）——
+    "img-plan":             {"mode": "write", "json": False, "timeout": 120, "cmd": ["img-plan", "--project", "@project"]},
+    "img-gen-agent":        {"mode": "write", "json": False, "timeout": 900, "cmd": ["img-gen-agent", "--project", "@project", "--id", "@id"]},
+    "img-save--temp":       {"mode": "write", "json": False, "timeout": 120, "cmd": ["img-save", "--project", "@project", "--id", "@id", "--temp", "@file"],
+                             "optional": [("--source", "@source")]},
     "tpl-design--specimen": {"mode": "write", "json": True,  "timeout": 300, "cmd": ["tpl-design", "--specimen", "@name"],
                              "optional": [("--fill", "@fill")]},
     "tech-layout--preview": {"mode": "write", "json": False, "timeout": 300, "cmd": ["tech-layout", "--preview"],
@@ -118,6 +123,10 @@ EXEC_DESCRIPTIONS = {
     "m9-evidence": "投标留痕包（取证链）", "tender-report": "投标要点 HTML 报告",
     "tender-rule": "通道A 文档解析（规则引擎落盘，write 需确认）",
     "tender-agent-parse": "通道B 语义解析（agent 桥·CodeBuddy CLI，耗时长，write 需确认）",
+    "img-plan": "AI 配图：生成/合并配图清单（write 需确认）",
+    "img-gen-agent": "AI 配图：CodeBuddy ImageGen 生图→临时区（write 需确认，耗时长）",
+    "img-save--temp": "AI 配图：临时区图片校验归档回填（write 需确认）",
+    "img-status": "AI 配图：配图清单状态（只读）",
 }
 
 
@@ -210,6 +219,7 @@ MODULE_PREFIX = (
     ("tender", "M4 招标解析"), ("fill", "M5 商务标"), ("proj", "M5 商务标"),
     ("tech", "M6 技术标"), ("check", "M7 标书检查"), ("eval", "M8 模拟评标"),
     ("remedy", "M10 失分补救"), ("docx", "共享 docx 工具"),
+    ("img", "AI 配图"),
 )
 ENDPOINTS = (
     "/api/health", "/api/layout/groups", "/api/layout/presets",
