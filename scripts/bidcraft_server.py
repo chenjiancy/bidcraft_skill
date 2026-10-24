@@ -90,6 +90,7 @@ EXEC_COMMANDS = {
     "img-gen-agent":        {"mode": "write", "json": False, "timeout": 900, "cmd": ["img-gen-agent", "--project", "@project", "--id", "@id"]},
     "img-save--temp":       {"mode": "write", "json": False, "timeout": 120, "cmd": ["img-save", "--project", "@project", "--id", "@id", "--temp", "@file"],
                              "optional": [("--source", "@source")]},
+    "img-embed":            {"mode": "write", "json": True,  "timeout": 120, "cmd": ["img-embed", "--project", "@project", "--json"]},
     "tpl-design--specimen": {"mode": "write", "json": True,  "timeout": 300, "cmd": ["tpl-design", "--specimen", "@name"],
                              "optional": [("--fill", "@fill")]},
     "tech-layout--preview": {"mode": "write", "json": False, "timeout": 300, "cmd": ["tech-layout", "--preview"],
@@ -127,6 +128,7 @@ EXEC_DESCRIPTIONS = {
     "img-plan": "AI 配图：生成/合并配图清单（write 需确认）",
     "img-gen-agent": "AI 配图：CodeBuddy ImageGen 生图→临时区（write 需确认，耗时长）",
     "img-save--temp": "AI 配图：临时区图片校验归档回填（write 需确认）",
+    "img-embed": "AI 配图：技术标正文嵌入（write 需确认；saved 项按 section 匹配章节树插入引用，幂等）",
     "img-status": "AI 配图：配图清单状态（只读）",
     "mat-status": "素材清单状态（配图通道视角，只读：类别聚合+对照+图片类标注）",
 }

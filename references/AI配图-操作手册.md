@@ -1,4 +1,4 @@
-# AI 配图 · 操作手册（m_img，v1.3）
+# AI 配图 · 操作手册（m_img，v1.4）
 
 > 定位：跨 M4/M5 的**素材生产管道**——从投标要点（M4 产物）确定配图需求，双通道生图，
 > 图片**必须落盘**到项目级 `配图/` 目录并回填清单，供非商务标生成引擎（技术标等）按清单
@@ -15,7 +15,7 @@
 - 模板『【图片占位：AI配图-<section>】』在商务标文档中**不消费配图清单、不触发 AI 生成**，
   一律按"素材清单无则不生成"处理（删框 + 披露"商务标禁 AI 配图"）。
 
-本手册的 m_img 管道（img-plan/img-gen-agent/img-save/img-status）仅用于**技术标等非商务标
+本手册的 m_img 管道（img-plan/img-gen-agent/img-save/img-status/**img-embed v1.4**）仅用于**技术标等非商务标
 场景**的配图准备；fill-tpl（商务标引擎）不消费 m_img 产物。
 
 ---
@@ -42,13 +42,20 @@
 ② 要图   清单即需求       {哪一章、多大、什么内容、什么风格}
 ③ 生图   双通道          豆包 agent 原生生图 / CodeBuddy ImageGen / 即梦 API（备选）
 ④ 交图   img-save        图片 → <项目>/配图/<id>.<png|jpg>，清单回填 saved（交接协议核心）
-⑤ 嵌图   fill-tpl(M5)    模板「【图片占位：AI配图-<section>】」按清单 saved 项嵌入 docx（v1.1 已实现）
+⑤ 嵌图   img-embed(技术标) saved 项按 section 匹配章节树 → 章节标题后插入 ![图题](绝对路径)（v1.4，幂等）
+         fill-tpl(商务标)   【图片占位：AI配图-<section>】一律删框+披露（v1.3 红线：商务标禁 AI 配图）
 ```
 
-**嵌图通道（v1.1 新增）**：fill-tpl 识别 `【图片占位：AI配图-<section>】` 类别（section =
-配图清单项的章节名，如「项目概况与监理工作内容」），从 `配图/配图清单_<项目>.json` 取
-**status=saved** 且 section 匹配的项嵌入（宽 16cm 全宽、高按原图等比）；pending/未匹配
-→ 删框并在缺图清单披露。与证书/执照素材通道（aggregate_category）完全并列，互不影响。
+**技术标嵌图（v1.4 新增）**：`img-embed --project <名>` 读配图清单 **status=saved** 项，
+按 `section` 与技术标章节树（`技术标/章节树.json`，tech-outline 产物）章节 title **双向包含匹配**，
+命中则在章节正文标题后插入 `![图题](图片绝对路径)`（m6 tech-export 渲染语法，export 时
+`Path.is_file` 校验后嵌入）；**幂等**（章节 md 已含该图片引用则跳过，可安全重跑）。
+未匹配章节 / 章节正文缺失 / 图片本体缺失 → 披露不嵌入，不报错。暗标提示：tech-export
+暗标模式自动切断全部图片（imageRatio=none），明标才实际嵌图。
+
+**商务标红线（v1.3）**：fill-tpl 识别 `【图片占位：AI配图-<section>】` 类别一律
+**删框 + 披露"商务标禁 AI 配图（素材清单无则不生成）"**，不消费配图清单、不触发 AI 生成；
+商务标配图必须全部来自素材清单（`mat-status` 查看素材清单配图通道状态：has/broken/empty 三态）。
 
 **交接协议（硬规则）**：任何通道生出的图，**必须**经 `img-save` 落盘并回填 `saved`，
 才算"配图完成"；只把图发给用户看、未落盘的，视为未完成（agent 不得声称完成）。
@@ -102,7 +109,8 @@
 | `img-plan --project <名>` | 从投标要点生成/合并配图清单（幂等：已有项不重复） | 否（生成清单产物） |
 | `img-save --project <名> --id <img_00x> --file <图片路径> [--source <来源>]` | 图片收口落盘：校验（png/jpg/jpeg、≤10MB）→ **PIL 清洗重编码（剥离 AIGC 元数据段，v1.2）** → 按真实格式归档 `配图/<id>.<png|jpg>` → 回填 `saved` | **是**（执行桥须 `confirm:true`） |
 | `img-status --project <名> [--json]` | 查看清单状态（待生成/已落盘 计数 + 明细） | 否 |
-| `fill-tpl --project <名> [--agent <代理>]` | M5 嵌图：模板含 `【图片占位：AI配图-<section>】` 时按清单 saved 项嵌入商务标 | **是**（CLI 人工确认闸门） |
+| `img-embed --project <名> [--json]` | **技术标嵌图（v1.4）**：saved 项按 `section` 匹配技术标章节树（章节 title 双向包含）→ 章节正文标题后插入 `![图题](图片绝对路径)`（m6 tech-export 渲染语法）→ **幂等**（已含该引用则跳过）→ 未匹配/缺正文/缺图披露不嵌入 | **是**（写操作，执行桥须 `confirm:true`） |
+| `fill-tpl --project <名> [--agent <代理>]` | M5 商务标嵌图：**商务标红线（v1.3）——`AI配图-` 类别一律删框+披露"商务标禁 AI 配图（素材清单无则不生成）"**，不消费配图清单；商务标配图必须全部来自素材清单（`mat-status` 查看素材清单配图通道状态） | **是**（CLI 人工确认闸门） |
 
 前置：项目已完成 M4 双通道解析（`招标解析/投标要点_<项目>.json` 存在）。
 
