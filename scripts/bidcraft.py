@@ -26,6 +26,7 @@ import m5_project                   # noqa: E402
 import m6_tech                      # noqa: E402
 import m7_check                     # noqa: E402
 import m8_eval                      # noqa: E402
+import m9_verify                    # noqa: E402
 import m10_remedy                    # noqa: E402
 from _shared import core            # noqa: E402
 from _shared import naming as nm    # noqa: E402
@@ -59,6 +60,7 @@ def build_parser():
     m6_tech.register_parser(sub)            # 挂载 M6 技术标制作（首批 4 命令）
     m7_check.register_parser(sub)           # 挂载 M7 交标前质量检查
     m8_eval.register_parser(sub)            # 挂载 M8 AI模拟评标
+    m9_verify.register_parser(sub)          # 挂载 M9 取证/自检（m9-verify / m9-evidence）
     m10_remedy.register_parser(sub)          # 挂载 M10 失分补救指引
     docx_tools.register_parser(sub)          # 挂载 docx-read / docx-audit 共享工具（不占 m* 序号）
     # 让全局 --json 在子命令之后也可用（如：tpl-query --keyword x --json）。
