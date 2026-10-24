@@ -39,30 +39,60 @@ def cmd_remedy_gen(args):
     out_dir = proj_dir / OUT_DIR_NAME
 
     sim_path = out_dir / ("模拟评标_%s.json" % args.project)
-    if not sim_path.is_file():
-        raise core.LibraryError("M8 通道A 产物不存在：%s（先执行 eval-run）" % sim_path)
-    a = core.read_json(str(sim_path), None)
-    if not a:
-        raise core.LibraryError("M8 通道A 产物无法读取：%s" % sim_path)
 
-    subjective = None
-    if args.sub:
-        sp = Path(args.sub)
-        if not sp.is_file():
-            raise core.LibraryError("主观评审 json 不存在：%s" % sp)
-        subjective = core.read_json(str(sp), None)
-        if not subjective:
-            raise core.LibraryError("主观评审 json 无法读取：%s" % sp)
+    # T17：M7 机器检查联动（--check 机器检查 json，如 标书检查/机器检查_<项目>_技术标.json）
+    check_doc = None
+    if args.check:
+        cp = Path(args.check)
+        if not cp.is_file():
+            raise core.LibraryError("机器检查 json 不存在：%s" % cp)
+        check_doc = core.read_json(str(cp), None)
+        if not check_doc:
+            raise core.LibraryError("机器检查 json 无法读取：%s" % cp)
+
+    if not sim_path.is_file() and check_doc is not None:
+        # check-only：M8 未产出也可独立生成「检查整改任务单」（T17：检查→补救闭环）
+        check_tasks = remedy.gen_check_tasks(check_doc)
+        doc = {
+            "project": args.project,
+            "生成依据": "M7 机器检查（%s）检查整改任务单（M8 模拟评标未产出，仅检查整改任务）" % (check_doc.get("kind") or "?"),
+            "tasks": check_tasks,
+            "summary": {"任务总数": len(check_tasks), "可追分合计": 0,
+                        "客观分当前": None, "客观分满分": None, "主观分": None},
+            "分工": "检查整改任务：按动作步骤修复后重跑 check-rule --kind tech 复核（check-report 人工确认闸门）",
+        }
+        print("提示：M8 通道A 产物不存在（%s），按 --check 独立生成检查整改任务单" % sim_path)
     else:
-        sp = out_dir / ("主观评审_%s.json" % args.project)
-        if sp.is_file():
+        if not sim_path.is_file():
+            raise core.LibraryError("M8 通道A 产物不存在：%s（先执行 eval-run，或仅用 --check 生成检查整改任务单）" % sim_path)
+        a = core.read_json(str(sim_path), None)
+        if not a:
+            raise core.LibraryError("M8 通道A 产物无法读取：%s" % sim_path)
+
+        subjective = None
+        if args.sub:
+            sp = Path(args.sub)
+            if not sp.is_file():
+                raise core.LibraryError("主观评审 json 不存在：%s" % sp)
             subjective = core.read_json(str(sp), None)
             if not subjective:
-                print("提示：通道B 主观评审 json 为空，仅按通道A 生成任务单")
+                raise core.LibraryError("主观评审 json 无法读取：%s" % sp)
         else:
-            print("提示：通道B 主观评审未产出（%s 不存在），仅按通道A 生成任务单" % sp)
+            sp = out_dir / ("主观评审_%s.json" % args.project)
+            if sp.is_file():
+                subjective = core.read_json(str(sp), None)
+                if not subjective:
+                    print("提示：通道B 主观评审 json 为空，仅按通道A 生成任务单")
+            else:
+                print("提示：通道B 主观评审未产出（%s 不存在），仅按通道A 生成任务单" % sp)
 
-    doc = remedy.gen_tasks(a, subjective)
+        doc = remedy.gen_tasks(a, subjective)
+        if check_doc is not None:
+            check_tasks = remedy.gen_check_tasks(check_doc)
+            if check_tasks:
+                doc["tasks"].extend(check_tasks)
+                doc["summary"]["任务总数"] = len(doc["tasks"])
+                doc["生成依据"] = "%s；M7 机器检查（%s）检查整改任务并入" % (doc["生成依据"], check_doc.get("kind") or "?")
     base = task_base(args.project)
     json_path = out_dir / ("%s.json" % base)
     md_path = out_dir / ("%s.md" % base)
@@ -88,7 +118,8 @@ def cmd_remedy_gen(args):
 
 
 def register_parser(sub):
-    sp = sub.add_parser("remedy-gen", help="M10 失分补救指引：把 M8 模拟评标失分诊断转成可执行补救任务单（素材补齐/内容补强/格式合规/报价策略）→ 模拟评标/失分补救任务单_<项目>.json/.md/.html")
+    sp = sub.add_parser("remedy-gen", help="M10 失分补救指引：把 M8 模拟评标失分诊断 +（可选）M7 机器检查问题转成可执行补救任务单（素材补齐/内容补强/格式合规/报价策略）→ 模拟评标/失分补救任务单_<项目>.json/.md/.html")
     sp.add_argument("--project", required=True, help="项目名（项目级/<项目>，M8 模拟评标产物所在）")
     sp.add_argument("--sub", default="", help="通道B 主观评审 json（缺省自动探测 模拟评标/主观评审_<项目>.json）")
+    sp.add_argument("--check", default="", help="M7 机器检查 json（如 标书检查/机器检查_<项目>_技术标.json；T17：检查问题并入任务单为格式合规整改任务）")
     sp.set_defaults(func=cmd_remedy_gen)

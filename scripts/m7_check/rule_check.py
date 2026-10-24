@@ -69,6 +69,16 @@ TECH_CHECKS = [
     {"id": "tech_pages", "name": "页数对照（M4 约束）", "level": "致命", "category": "篇幅",
      "desc": "M6 设置 pageConstraint.max（M4 reject 抽取）vs docx 实际页数（Word COM 精确；无 COM 用 M6 同口径估算并标注）",
      "fn": "check_tech_pages"},
+    # T17 扩充：图表位置 / 空白页 / 引用一致性（与 M10 补救任务单联动）
+    {"id": "tech_figure_placement", "name": "图表位置合规", "level": "致命", "category": "图表",
+     "desc": "文字中不得插入图表（附图附表依次附文末）：inline 图片（w:drawing/pict）段落若位于正文中段（前后 2 段内有正文且未入文末附录区）即报",
+     "fn": "check_tech_figure_placement"},
+    {"id": "tech_blank_pages", "name": "空白页检查", "level": "致命", "category": "篇幅",
+     "desc": "不得设空白页：分页符所在段为空 或 连续 ≥3 空段即报（暗标细则常见废标项）",
+     "fn": "check_tech_blank_pages"},
+    {"id": "tech_ref_consistency", "name": "引用一致性（素材清单）", "level": "致命", "category": "一致性",
+     "desc": "明标：素材清单业绩名/人员名须在正文出现（M6 素材注入保证，缺失=疑被改写/遗漏）；暗标去名口径跳过（anbiao_leak 反向覆盖）",
+     "fn": "check_tech_ref_consistency"},
 ]
 
 _TECH_OUTPUT_DIR = "技术标/产出"           # M6 终稿落位（相对 项目级/<项目>/）
@@ -244,6 +254,99 @@ def _extract_page_limit(points):
             if mm:
                 return int(mm.group(1))
     return None
+
+
+# --------------------------------------------------------------------------
+# T17 技术标检查扩充：图表位置 / 空白页 / 引用一致性
+# --------------------------------------------------------------------------
+def check_tech_figure_placement(out_dir, proj_dir, material, points):
+    """图表位置合规：inline 图片（w:drawing/w:pict）段落若位于正文中段（前后 2 段内有正文、未入文末附录区）即报。"""
+    issues = []
+    for f in _tech_docx_paths(out_dir):
+        from docx import Document
+        try:
+            doc = Document(str(f))
+        except Exception as e:
+            issues.append("%s：文档解析失败 %s" % (f.name, e))
+            continue
+        paras = doc.paragraphs
+        n = len(paras)
+        body_idx = {i for i, p in enumerate(paras) if (p.text or "").strip()}
+        img_idx = [i for i, p in enumerate(paras)
+                   if "w:drawing" in p._p.xml or "w:pict" in p._p.xml]
+        if not img_idx:
+            continue
+        appendix_cut = max(1, int(n * 0.85))     # 文末 15% 视为附录区
+        for i in img_idx:
+            near_body = any(j in body_idx for j in range(max(0, i - 2), min(n, i + 3)) if j != i)
+            if near_body and i < appendix_cut:
+                issues.append("%s：正文中段插入图表（段落 %d 前后有正文；附图附表应依次附文末）" % (f.name, i + 1))
+    return (len(issues) == 0), issues
+
+
+def check_tech_blank_pages(out_dir, proj_dir, material, points):
+    """空白页检查：
+    - 分页符（w:br type=page）所在段为空且两侧 1 段内均空（双空夹分页）→ 空白页（合法 TOC/章末分页符空段两侧有正文，不误报）；
+    - 连续 ≥3 空段（排除含分页符段避免重复计数）→ 空白区域。
+    """
+    issues = []
+    for f in _tech_docx_paths(out_dir):
+        from docx import Document
+        try:
+            doc = Document(str(f))
+        except Exception as e:
+            issues.append("%s：文档解析失败 %s" % (f.name, e))
+            continue
+        paras = doc.paragraphs
+        n = len(paras)
+        is_empty = lambda p: not (p.text or "").strip()
+        for i, p in enumerate(paras):
+            xml = p._p.xml
+            if 'w:br' in xml and 'w:type="page"' in xml and is_empty(p):
+                prev_empty = (i == 0) or is_empty(paras[i - 1])
+                nxt_empty = (i == n - 1) or is_empty(paras[i + 1])
+                if prev_empty and nxt_empty:
+                    issues.append("%s：第 %d 段分页符所在段两侧均为空段（双空夹分页，疑空白页，不得设空白页）" % (f.name, i + 1))
+        run = 0
+        for i, p in enumerate(paras):
+            if is_empty(p) and 'w:br' not in p._p.xml:
+                run += 1
+                if run >= 3:
+                    issues.append("%s：第 %d 段起连续 %d 个空段（疑空白页，不得设空白页）" % (f.name, i - 1, run))
+                    run = 0
+            else:
+                run = 0
+    return (len(issues) == 0), issues
+
+
+def check_tech_ref_consistency(out_dir, proj_dir, material, points):
+    """引用一致性：明标时素材清单业绩名/人员名须在正文出现（M6 注入保证）；暗标去名口径跳过。"""
+    settings = _tech_settings(proj_dir)
+    if settings and settings.get("bidMode") == "暗标":
+        return True, ["跳过：暗标口径去企业名/人名/业绩名（引用一致性由 anbiao_leak 反向覆盖）"]
+    names = []
+    for perf in (material.get("performance") or []):
+        if perf.get("name"):
+            names.append(str(perf["name"]).strip())
+    for person in (material.get("personnel") or []):
+        if person.get("name"):
+            names.append(str(person["name"]).strip())
+    names = [n for n in names if n and len(n) >= 2]
+    if not names:
+        return True, ["跳过：素材清单无可核对名称（业绩/人员名为空）"]
+    issues = []
+    for f in _tech_docx_paths(out_dir):
+        from docx import Document
+        try:
+            doc = Document(str(f))
+        except Exception as e:
+            issues.append("%s：文档解析失败 %s" % (f.name, e))
+            continue
+        blob = "\n".join(_doc_full_texts(doc))
+        missing = [n for n in names if n not in blob]
+        if missing:
+            issues.append("%s：清单名称未在正文出现（疑被改写/遗漏）：%s" % (f.name, "、".join(missing)))
+    return (len(issues) == 0), issues
 
 
 # --------------------------------------------------------------------------
