@@ -7,7 +7,7 @@ from pathlib import Path
 from .. import naming as nm
 
 from .basic import (CLASSIFY_DIRS, TRASH_JSON, TRASH_RETENTION_DAYS, lib_root,
-                    norm_rel, now_iso, rel_to_path)
+                    norm_rel, now_iso, rel_to_path, _is_intermediate)
 from .batch import Inbox
 from .inbox import ownership_check
 from .ledger import ledger_index, load_ledger
@@ -31,6 +31,8 @@ def inspect(ent):
             continue
         for p in sorted(d.rglob("*")):
             if not p.is_file() or p.name.startswith("."):
+                continue
+            if _is_intermediate(p.name):  # C2：中间文件不计为素材
                 continue
             rel = norm_rel(p.relative_to(lib_root(ent)).as_posix())
             row = index.get(rel)
@@ -134,7 +136,7 @@ def enterprise_overview(ent):
     disk = {}
     for cat in CLASSIFY_DIRS:
         d = lib_root(ent) / cat
-        disk[cat] = sum(1 for p in d.rglob("*") if p.is_file()) if d.is_dir() else 0
+        disk[cat] = sum(1 for p in d.rglob("*") if p.is_file() and not _is_intermediate(p.name)) if d.is_dir() else 0
 
     inbox = Inbox(ent)
     b = inbox.load()
@@ -210,6 +212,8 @@ def consistency_check(ent):
         for p in sorted(d.rglob("*")):
             if not p.is_file() or p.name.startswith("."):
                 continue
+            if _is_intermediate(p.name):  # C2：.bak/.tmp/.lock/.corrupt-* 不计为素材
+                continue
             rel = norm_rel(p.relative_to(lib).as_posix())
             disk_files.append(rel)
             if rel not in index:
@@ -229,6 +233,8 @@ def consistency_check(ent):
     if tdir.is_dir():
         for p in tdir.iterdir():
             if p.name.startswith(".") or p.name == TRASH_JSON:
+                continue
+            if _is_intermediate(p.name):  # C2：清单 JSON 的 .bak/.tmp 不算孤儿
                 continue
             trash_disk.append(p.name)
     for f in known:
