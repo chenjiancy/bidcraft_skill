@@ -38,6 +38,12 @@
 
 **交接协议（硬规则）**：任何通道生出的图，**必须**经 `img-save` 落盘并回填 `saved`，
 才算"配图完成"；只把图发给用户看、未落盘的，视为未完成（agent 不得声称完成）。
+**img-save 是"校验 + 清洗 + 归档"三合一收口（v1.2 实测强化）**：
+- 平台产物（豆包/即梦/CodeBuddy ImageGen 等）常内嵌 **AIGC 元数据段**（JPEG APP11
+  `AIGC{...}`，python-docx 直接嵌入会报 `UnrecognizedImageError`）→ img-save 用 PIL
+  **重编码清洗**后落盘，产出 Word/python-docx 可直接识别的标准文件；
+- 归档**扩展名按真实格式**判定（扩展名 `.png` 实为 JPEG → 落 `img_005.jpg`，不落错配
+  `.png`）——**平台产物必须先经 img-save 清洗才能进正式文档**，这是交接协议的底线。
 
 ---
 
@@ -80,7 +86,7 @@
 | 命令 | 作用 | 写操作？ |
 | --- | --- | --- |
 | `img-plan --project <名>` | 从投标要点生成/合并配图清单（幂等：已有项不重复） | 否（生成清单产物） |
-| `img-save --project <名> --id <img_00x> --file <图片路径> [--source <来源>]` | 图片收口落盘：校验（png/jpg/jpeg、≤10MB）→ 复制到 `配图/<id>.<ext>` → 回填 `saved` | **是**（执行桥须 `confirm:true`） |
+| `img-save --project <名> --id <img_00x> --file <图片路径> [--source <来源>]` | 图片收口落盘：校验（png/jpg/jpeg、≤10MB）→ **PIL 清洗重编码（剥离 AIGC 元数据段，v1.2）** → 按真实格式归档 `配图/<id>.<png|jpg>` → 回填 `saved` | **是**（执行桥须 `confirm:true`） |
 | `img-status --project <名> [--json]` | 查看清单状态（待生成/已落盘 计数 + 明细） | 否 |
 | `fill-tpl --project <名> [--agent <代理>]` | M5 嵌图：模板含 `【图片占位：AI配图-<section>】` 时按清单 saved 项嵌入商务标 | **是**（CLI 人工确认闸门） |
 
