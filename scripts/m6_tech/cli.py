@@ -415,6 +415,9 @@ def register_parser(sub):
     sp.add_argument("--confirm", action="store_true", help="配合 --verdict：确认裁决并写入 confirmLog（gate=diff）")
     sp.set_defaults(func=cmd_tech_diff)
 
+    from . import draft
+    draft.add_sub(sub)
+
     sp = sub.add_parser("tpl-design",
                         help="M6·模板设计器（P0）：模板描述文件（template.json，schema m6.template/v1）校验/落盘/样张；"
                              "描述层=文档结构编排+样式引用+占位符绑定，docx 只是渲染产物")
