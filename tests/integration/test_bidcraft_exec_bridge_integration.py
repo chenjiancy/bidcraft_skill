@@ -5,6 +5,7 @@
 deny 命令拒绝；路径逃逸拒绝。"""
 import json
 import os
+import subprocess
 import sys
 import tempfile
 import threading
@@ -19,6 +20,8 @@ from http.server import ThreadingHTTPServer  # noqa: E402
 import bidcraft_server                        # noqa: E402
 
 REPO = Path(__file__).resolve().parents[2]
+PY = sys.executable
+CLI = str(REPO / "scripts" / "bidcraft.py")
 
 
 def _req(url, method="POST", data=None, timeout=120):
@@ -128,6 +131,86 @@ class ExecBridgeIntegrationTest(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertFalse(body["ok"])
         self.assertIn("confirm", body["error"])
+
+
+class ExecBridgeTenderRuleTempRootTest(unittest.TestCase):
+    """tender-rule 挪入 write 白名单后的真实执行验证：
+    临时软件根 + 独立 server，fixture 由 CLI（tender-init/tender-extract）准备，
+    再经 HTTP /api/exec 调 tender-rule（confirm:true）——验证真实落盘 文档解析_<项目>.json。
+    不污染仓库根。"""
+
+    ENTERPRISE = "集成测试企业"
+    PROJECT = "临时招标项目"
+
+    @classmethod
+    def setUpClass(cls):
+        cls.tmp = tempfile.TemporaryDirectory(prefix="bidcraft_exec_tenderrule_")
+        cls.root = Path(cls.tmp.name)
+        cls._cli(["init-enterprise", "--name", cls.ENTERPRISE])
+        cls._cli(["tender-init", "--project", cls.PROJECT])
+        # 放原文并 tender-extract（通道A 规则引擎的输入）
+        orig = cls.root / "招标文件.txt"
+        orig.write_text(
+            "第一章 招标公告\n"
+            "项目编号：TMP-TR-2026-001\n"
+            "最高投标限价：12.00万元\n"
+            "投标截止时间：2026年12月31日 09:00\n",
+            encoding="utf-8")
+        cls._cli(["tender-extract", "--project", cls.PROJECT, "--file", str(orig)])
+        # 起独立 server（root=临时根）
+        cls.server = ThreadingHTTPServer(("127.0.0.1", 0), bidcraft_server._Handler)
+        cls.server.root = str(cls.root)
+        cls.server.enterprise = cls.ENTERPRISE
+        cls.thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
+        cls.thread.start()
+        cls.base = "http://127.0.0.1:%d" % cls.server.server_address[1]
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.server.shutdown()
+        cls.server.server_close()
+        cls.tmp.cleanup()
+
+    @classmethod
+    def _cli(cls, argv):
+        # 全局参数（--root/--enterprise）在子命令前；argv 为 [子命令, ...] 或 [--name, ...] 等
+        r = subprocess.run([PY, "-X", "utf8", CLI, "--root", str(cls.root),
+                            "--enterprise", cls.ENTERPRISE] + argv,
+                           capture_output=True, text=True, timeout=180,
+                           cwd=str(REPO))
+        if r.returncode != 0:
+            raise RuntimeError("CLI 失败 %r: %s" % (argv, r.stderr[-800:]))
+
+    def _exec(self, command, args=None, confirm=False):
+        body = json.dumps({"command": command, "args": args or {}, "confirm": confirm}).encode("utf-8")
+        req = urllib.request.Request(self.base + "/api/exec", data=body, method="POST")
+        req.add_header("Content-Type", "application/json")
+        try:
+            with urllib.request.urlopen(req, timeout=180) as r:
+                return r.status, json.loads(r.read().decode("utf-8"))
+        except HTTPError as e:
+            return e.code, json.loads(e.read().decode("utf-8"))
+
+    def test_tender_rule_in_whitelist_and_runs(self):
+        # 白名单结构：tender-rule 属 write，且不在 deny
+        self.assertIn("tender-rule", bidcraft_server.EXEC_COMMANDS)
+        self.assertEqual(bidcraft_server.EXEC_COMMANDS["tender-rule"]["mode"], "write")
+        self.assertNotIn("tender-rule", bidcraft_server.EXEC_DENY_COMMANDS)
+        # 无 confirm → 拒绝（门禁）
+        status, body = self._exec("tender-rule", {"project": self.PROJECT})
+        self.assertEqual(status, 200)
+        self.assertFalse(body["ok"])
+        self.assertIn("confirm", body["error"])
+        # confirm:true → 真实执行并落盘
+        status, body = self._exec("tender-rule", {"project": self.PROJECT}, confirm=True)
+        self.assertEqual(status, 200)
+        self.assertTrue(body["ok"], body.get("error"))
+        self.assertEqual(body["exit"], 0)
+        # 产物真实落盘：<根>/<企业>/项目级/<项目>/招标解析/文档解析_<项目>.json
+        tdir = self.root / self.ENTERPRISE / "项目级" / self.PROJECT / "招标解析"
+        rule_p = tdir / ("文档解析_%s.json" % self.PROJECT)
+        self.assertTrue(rule_p.exists(), "tender-rule 产物应真实落盘")
+        self.assertIn("TMP-TR-2026-001", rule_p.read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

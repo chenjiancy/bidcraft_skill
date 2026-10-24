@@ -101,7 +101,8 @@ class ExecBridgeUnitTest(unittest.TestCase):
             argv, err = bidcraft_server._validate_exec_args(entry, {"project": "项目甲"},
                                                             str(root), "企业X")
             self.assertIsNone(err)
-            self.assertEqual(argv, ["m9-verify", "--project", str(proj.resolve())])
+            # CLI 契约：--project 传「项目名」（目录存在性已校验），不是绝对路径
+            self.assertEqual(argv, ["m9-verify", "--project", "项目甲"])
 
     def test_assembly_rejects_bad_project(self):
         entry = bidcraft_server.EXEC_COMMANDS["tech-status"]

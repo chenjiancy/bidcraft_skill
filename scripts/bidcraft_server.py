@@ -91,6 +91,7 @@ EXEC_COMMANDS = {
     "m9-verify":            {"mode": "write", "json": False, "timeout": 300, "cmd": ["m9-verify", "--project", "@project"]},
     "m9-evidence":          {"mode": "write", "json": False, "timeout": 300, "cmd": ["m9-evidence", "--project", "@project"]},
     "tender-report":        {"mode": "write", "json": False, "timeout": 300, "cmd": ["tender-report", "--project", "@project"]},
+    "tender-rule":          {"mode": "write", "json": False, "timeout": 300, "cmd": ["tender-rule", "--project", "@project"]},
 }
 
 # 高风险命令清单（说明性 + capabilities 展示）：应用/覆盖/删除/状态推进类——
@@ -98,7 +99,7 @@ EXEC_COMMANDS = {
 EXEC_DENY_COMMANDS = frozenset((
     "tpl-design--apply", "tpl-part--scan", "tech-layout--apply", "tech-export", "tech-outline",
     "tech-report", "tech-parse", "tech-rewrite", "tech-ctx", "tender-parse", "tender-diff",
-    "tender-annex", "tender-gap", "tender-rule", "tender-extract", "tender-fmt", "tender-check",
+    "tender-annex", "tender-gap", "tender-extract", "tender-fmt", "tender-check",
     "tender-show", "fill-tpl", "remedy-gen", "remedy-done", "remedy-archive", "assets-archive",
     "asset-upload", "asset-propose", "asset-apply", "asset-trash", "asset-rm-project",
     "asset-cleanup-trash", "asset-reconcile", "docx-read", "docx-audit",
@@ -114,6 +115,7 @@ EXEC_DESCRIPTIONS = {
     "tech-layout--list": "排版预设清单（十五组×10套）", "tech-layout--preview": "排版样张 docx 预览",
     "tech-status": "技术标写作状态表", "m9-verify": "项目自检体检（红绿灯）",
     "m9-evidence": "投标留痕包（取证链）", "tender-report": "投标要点 HTML 报告",
+    "tender-rule": "通道A 文档解析（规则引擎落盘，write 需确认）",
 }
 
 
@@ -167,12 +169,14 @@ def _validate_exec_args(entry, args, root, enterprise):
         key = tok[1:]
         val = (args or {}).get(key)
         if key == "project":
+            # 安全校验：目录真实存在且在企业根/项目级 边界内（用解析结果验证）；
+            # CLI 契约：--project 传「项目名」而非绝对路径（validate_project_name 校验的是名字）
             resolved = _project_dir(root, enterprise, val) if val else None
             if resolved is None:
                 errors.append("project 参数非法或不存在（须为 <企业根>/项目级/ 下的真实项目目录）")
                 argv.append("__INVALID__")
             else:
-                argv.append(resolved)
+                argv.append(val)
         else:
             if not _simple_value(val):
                 errors.append("%s 参数非法（拒绝路径穿越/盘符/绝对路径/控制字符）" % key)
@@ -189,7 +193,7 @@ def _validate_exec_args(entry, args, root, enterprise):
                 errors.append("project 参数非法或不存在")
                 argv += [flag, "__INVALID__"]
             else:
-                argv += [flag, resolved]
+                argv += [flag, val]
         else:
             if not _simple_value(val):
                 errors.append("%s 参数非法" % tok[1:])
