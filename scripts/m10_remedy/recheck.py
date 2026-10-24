@@ -170,7 +170,8 @@ def to_md(out):
         lines.append("| %s | %s | %s %s | %s |" % (
             r.get("id"), r.get("标题", "").replace("|", "／")[:40], color, r.get("验证"), r.get("证据", "")))
     if out.get("new_tasks"):
-        lines.append("", "## 新增问题任务（已并入任务单）")
+        lines.append("")
+        lines.append("## 新增问题任务（已并入任务单）")
         for t in out["new_tasks"]:
             lines.append("- **%s** %s：%s" % (t["id"], t["动作"], t["标题"]))
             for st in t.get("动作步骤", [])[:3]:
