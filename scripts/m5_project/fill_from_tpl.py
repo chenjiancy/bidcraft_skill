@@ -655,13 +655,36 @@ def fill_detail_tables(doc, idx, material, proj, missing):
             _fit_table_group(doc, elems[0], elems[1:], n, fn)
 
 
+def _ai_img_paths(proj, section):
+    """AI 配图通道：读 配图/配图清单_<项目>.json，按 section 匹配 saved 项 → 落盘路径列表。
+
+    与素材通道（aggregate_category）并列：模板中『【图片占位：AI配图-<section>】』
+    消费 m_img 管道产物（配图/目录），未 saved / 未匹配 → 不生成（删框+披露）。
+    """
+    proj = Path(proj)
+    cands = sorted((proj / "配图").glob("配图清单_*.json"))
+    if not cands:
+        return []
+    data = core.read_json(str(cands[0]), None) or {}
+    items = data.get("items") or []
+    return [R(str(it.get("file")), proj) for it in items
+            if (it.get("status") == "saved" and it.get("section") == section
+                and it.get("file"))]
+
+
 def fill_images_by_category(doc, idx, material, proj, missing):
-    """全局图框类别聚合填充：同类别按占位出现顺序依序消费；素材数=0 → 未列不生成（删框+披露）。"""
+    """全局图框类别聚合填充：同类别按占位出现顺序依序消费；素材数=0 → 未列不生成（删框+披露）。
+
+    AI配图-<section> 类别走配图清单通道（_ai_img_paths），其余类别走素材清单（aggregate_category）。
+    """
     by_cat = {}
     for cat, para in idx.get("img_ph", []):
         by_cat.setdefault(cat, []).append(para)
     for cat, paras in by_cat.items():
-        paths = [R(p, proj) for p in aggregate_category(material, cat)]
+        if cat.startswith("AI配图-"):
+            paths = _ai_img_paths(proj, cat[len("AI配图-"):].strip())
+        else:
+            paths = [R(p, proj) for p in aggregate_category(material, cat)]
         for i, para in enumerate(paras):
             if i < len(paths):
                 r = _insert_img_at_para(doc, para, paths[i], _spec_key(cat))
@@ -679,6 +702,8 @@ def fill_images_by_category(doc, idx, material, proj, missing):
 
 def _spec_key(cat):
     # 尺寸规格键：与 image_spec 对齐
+    if cat.startswith("AI配图-"):
+        return "AI配图"
     return {
         "企业法人营业执照": "营业执照扫描件",
         "开户许可证": "开户许可证扫描件",

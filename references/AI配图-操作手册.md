@@ -28,8 +28,13 @@
 ② 要图   清单即需求       {哪一章、多大、什么内容、什么风格}
 ③ 生图   双通道          豆包 agent 原生生图 / CodeBuddy ImageGen / 即梦 API（备选）
 ④ 交图   img-save        图片 → <项目>/配图/<id>.<png|jpg>，清单回填 saved（交接协议核心）
-⑤ 嵌图   fill-tpl(M5)    按清单 file 字段把图嵌入 docx 指定位（嵌入引擎，后续版本）
+⑤ 嵌图   fill-tpl(M5)    模板「【图片占位：AI配图-<section>】」按清单 saved 项嵌入 docx（v1.1 已实现）
 ```
+
+**嵌图通道（v1.1 新增）**：fill-tpl 识别 `【图片占位：AI配图-<section>】` 类别（section =
+配图清单项的章节名，如「项目概况与监理工作内容」），从 `配图/配图清单_<项目>.json` 取
+**status=saved** 且 section 匹配的项嵌入（宽 16cm 全宽、高按原图等比）；pending/未匹配
+→ 删框并在缺图清单披露。与证书/执照素材通道（aggregate_category）完全并列，互不影响。
 
 **交接协议（硬规则）**：任何通道生出的图，**必须**经 `img-save` 落盘并回填 `saved`，
 才算"配图完成"；只把图发给用户看、未落盘的，视为未完成（agent 不得声称完成）。
@@ -77,6 +82,7 @@
 | `img-plan --project <名>` | 从投标要点生成/合并配图清单（幂等：已有项不重复） | 否（生成清单产物） |
 | `img-save --project <名> --id <img_00x> --file <图片路径> [--source <来源>]` | 图片收口落盘：校验（png/jpg/jpeg、≤10MB）→ 复制到 `配图/<id>.<ext>` → 回填 `saved` | **是**（执行桥须 `confirm:true`） |
 | `img-status --project <名> [--json]` | 查看清单状态（待生成/已落盘 计数 + 明细） | 否 |
+| `fill-tpl --project <名> [--agent <代理>]` | M5 嵌图：模板含 `【图片占位：AI配图-<section>】` 时按清单 saved 项嵌入商务标 | **是**（CLI 人工确认闸门） |
 
 前置：项目已完成 M4 双通道解析（`招标解析/投标要点_<项目>.json` 存在）。
 

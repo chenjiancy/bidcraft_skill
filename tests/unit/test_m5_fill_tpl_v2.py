@@ -302,6 +302,68 @@ class TestImagesByCategory(unittest.TestCase):
         self.assertTrue(any("素材清单未列" in note for _, note in missing))
 
 
+class TestAiImgCategory(unittest.TestCase):
+    """AI 配图通道（m_img 产物 → fill-tpl 嵌入）：
+    『【图片占位：AI配图-<section>】』消费 配图/配图清单_*.json 中 status=saved 项；
+    pending/未匹配 → 删框+披露；无清单 → 全删+披露。
+    """
+
+    def _mk_plan(self, items):
+        import json
+        d = Path(self.tmp) / "配图"
+        d.mkdir(parents=True, exist_ok=True)
+        (d / "配图清单_冒烟.json").write_text(
+            json.dumps({"project": "冒烟", "items": items}, ensure_ascii=False), encoding="utf-8")
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp(prefix="bid_aiimg_")
+
+    def tearDown(self):
+        import shutil
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def test_saved_embedded_pending_removed(self):
+        self._mk_plan([
+            {"id": "img_001", "section": "项目概况与监理工作内容", "status": "saved",
+             "file": "配图/a.png", "ratio": "16:9"},
+            {"id": "img_002", "section": "评分办法", "status": "pending", "file": ""},
+        ])
+        _mkimg(os.path.join(self.tmp, "配图", "a.png"))
+        doc = Document()
+        doc.add_paragraph("【图片占位：AI配图-项目概况与监理工作内容】")
+        doc.add_paragraph("【图片占位：AI配图-评分办法】")
+        path = os.path.join(self.tmp, "m.docx")
+        doc.save(path)
+        doc = Document(path)
+        idx = F.scan_placeholder_index(doc)
+        missing = []
+        F.fill_images_by_category(doc, idx, {}, Path(self.tmp), missing)
+        n = len(doc.element.body.findall(".//" + qn("w:drawing")))
+        self.assertEqual(n, 1)  # saved 嵌入；pending 删框
+        self.assertTrue(any("评分办法" in c and ("未列" in note or "不足" in note) for c, note in missing))
+        texts = [p.text for p in doc.paragraphs]
+        self.assertEqual(sum(1 for t in texts if "【图片占位：" in t), 0)
+
+    def test_no_plan_removes_all(self):
+        doc = Document()
+        doc.add_paragraph("【图片占位：AI配图-项目概况】")
+        path = os.path.join(self.tmp, "m.docx")
+        doc.save(path)
+        doc = Document(path)
+        idx = F.scan_placeholder_index(doc)
+        missing = []
+        F.fill_images_by_category(doc, idx, {}, Path(self.tmp), missing)
+        self.assertEqual(len(doc.element.body.findall(".//" + qn("w:drawing"))), 0)
+        self.assertTrue(any("AI配图-项目概况" in c for c, _ in missing))
+
+    def test_spec_key_prefix(self):
+        self.assertEqual(F._spec_key("AI配图-项目概况与监理工作内容"), "AI配图")
+        self.assertEqual(F._spec_key("AI配图-评分办法"), "AI配图")
+        # 既有映射不受影响
+        self.assertEqual(F._spec_key("企业法人营业执照"), "营业执照扫描件")
+        self.assertEqual(F._spec_key("总监注册监理工程师证书"), "注册监理工程师证书")
+
+
 class TestGenericText(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.mkdtemp(prefix="bid_gen_")
