@@ -234,13 +234,19 @@ def backup_rewrite(tech_dir, path):
     return dst
 
 
-def write_chapter_body(tech_dir, chapter, text, backup=True):
-    """正文落盘 + 回读；已存在则先入回收站（重写可还原）。"""
+def write_chapter_body(tech_dir, chapter, text, backup=True, reason="write"):
+    """正文落盘 + 回读；已存在且内容不同则先入回收站（可还原）+ 版本历史快照（可撤销）。"""
     if not isinstance(text, str) or not text.strip():
         raise core.LibraryError("正文为空，拒绝落盘：%s" % (chapter.get("id") if isinstance(chapter, dict) else chapter))
     p = chapter_body_path(tech_dir, chapter)
-    if backup and p.is_file() and _read_text(p) != text:
-        backup_rewrite(tech_dir, p)
+    ch_id = chapter.get("id") if isinstance(chapter, dict) else None
+    if backup and p.is_file():
+        old = _read_text(p)
+        if old != text:
+            backup_rewrite(tech_dir, p)
+            if ch_id:
+                from . import history
+                history.snapshot(tech_dir, ch_id, old, reason=reason)
     return _write_and_verify(p, text, "章节正文")
 
 

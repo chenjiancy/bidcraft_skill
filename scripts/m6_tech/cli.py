@@ -418,6 +418,15 @@ def register_parser(sub):
     from . import draft
     draft.add_sub(sub)
 
+    from . import history as history_mod
+    sp = sub.add_parser("tech-history",
+                        help="M6·章节版本历史（链企引入 C1）：写前自动快照 .history/{章}/（同文去重/2min 同 reason 合并/空跳过/上限 20 版）；list 列版本（默认）/ diff seqA,seqB 两版对比 / restore <seq> 撤销到指定版本（写回也进历史=双向可撤销）")
+    sp.add_argument("--project", required=True, help="项目名（项目级/<项目>）")
+    sp.add_argument("--chapter", default="", help="章节 id（ch-01；缺省=全部章节概览）")
+    sp.add_argument("--diff", default="", help="两版本对比：'seqA,seqB'（须配 --chapter）")
+    sp.add_argument("--restore", default="", help="撤销到指定版本号（须配 --chapter；写回正文，旧稿入回收站+新快照）")
+    sp.set_defaults(func=history_mod.cmd_tech_history)
+
     sp = sub.add_parser("tpl-design",
                         help="M6·模板设计器（P0）：模板描述文件（template.json，schema m6.template/v1）校验/落盘/样张；"
                              "描述层=文档结构编排+样式引用+占位符绑定，docx 只是渲染产物")
