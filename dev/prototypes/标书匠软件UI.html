@@ -1152,8 +1152,13 @@ body.dark .dark-toggle .sw::after{left:17px}
         <div style="font-size:12.5px;color:var(--dim);margin-top:4px;line-height:1.7">
           从投标要点生成配图清单（img-plan）→ CodeBuddy 生图到临时区（img-gen-agent，-y 已实测）→ 校验归档回填（img-save）→ 供 fill-tpl 嵌入。暗标红线：图内禁公司名/LOGO/人名/水印/AI 标识。
         </div>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px">
+          <span style="font-size:12px;color:var(--dim)">项目名：</span>
+          <input id="imgProjectInput" value="市政务服务中心项目" style="font-size:12.5px;padding:3px 8px;border:1px solid #d6dbe3;border-radius:4px;min-width:180px;width:min(280px,100%)" placeholder="项目级/ 下的真实项目名">
+          <span style="font-size:11.5px;color:#b45309">桥启动时须 --root 指向对应软件根（可跨企业）</span>
+        </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
-          <button class="ctx-item" onclick="execBridge('img-plan',{project:'市政务服务中心项目'},false);imgRefresh()">① 生成配图清单（img-plan）</button>
+          <button class="ctx-item" onclick="(function(){var p=imgProject();if(p){execBridge('img-plan',{project:p},false).then(imgRefresh)}})()">① 生成配图清单（img-plan）</button>
           <button class="ctx-item" onclick="imgStatus()">② 查看清单状态（img-status）</button>
           <button class="ctx-item" onclick="imgGenAgent()">③ CodeBuddy 生图（img-gen-agent）</button>
           <button class="ctx-item" onclick="imgSaveTemp()">④ 临时区归档（img-save）</button>
@@ -1599,7 +1604,12 @@ window.STYLE_DATA={groups:[{key:"presets",label:"版面版式",items:[{"id":"sin
   window.toggleBridge=toggleBridge; window.checkBridge=checkBridge;
 
   /* ---- AI 配图（m_img）视图函数：真实接线执行桥（img-plan/img-status/img-gen-agent/img-save--temp）---- */
-  var IMG_PROJECT='市政务服务中心项目';
+  function imgProject(){
+    var el=document.getElementById('imgProjectInput');
+    var v=(el&&el.value||'').trim();
+    if(!v){ toast('请先填写项目名（项目级/ 下的真实项目目录名）'); return null; }
+    return v;
+  }
   function imgStateText(j){
     if(!j||!j.ok) return '查询失败：'+(j&&j.error||'桥未连接');
     var c=(j.payload&&j.payload.counts)||{};
@@ -1609,25 +1619,29 @@ window.STYLE_DATA={groups:[{key:"presets",label:"版面版式",items:[{"id":"sin
     return '清单共 '+(items||[]).length+' 项：待生成 '+pending+' / 已落盘 '+saved+' ｜ '+(items||[]).map(function(i){return i.id+'['+i.status+']'}).join(' ');
   }
   function imgRefresh(){
-    execBridge('img-status',{project:IMG_PROJECT},false,{silent:true}).then(function(j){
+    var p=imgProject(); if(!p) return;
+    execBridge('img-status',{project:p},false,{silent:true}).then(function(j){
       var b=document.getElementById('imgStateBox');
       if(b) b.textContent='配图清单状态：'+imgStateText(j);
     });
   }
   function imgStatus(){
-    execBridge('img-status',{project:IMG_PROJECT},false).then(imgRefresh);
+    var p=imgProject(); if(!p) return;
+    execBridge('img-status',{project:p},false).then(imgRefresh);
   }
   function imgGenAgent(){
+    var p=imgProject(); if(!p) return;
     var id=prompt('CodeBuddy 生图（img-gen-agent）：输入配图清单项 id（如 img_001，img-status 可查）','img_001');
     if(!id) return;
-    execBridge('img-gen-agent',{project:IMG_PROJECT,id:id.trim()},false).then(imgRefresh);
+    execBridge('img-gen-agent',{project:p,id:id.trim()},false).then(imgRefresh);
   }
   function imgSaveTemp(){
+    var p=imgProject(); if(!p) return;
     var id=prompt('临时区归档（img-save）：输入配图清单项 id','img_001');
     if(!id) return;
     var fn=prompt('临时区文件名（配图/临时/ 下的纯文件名，如 img_001.png；CodeBuddy 生图产物默认 <id>.png）',(id.trim()||'img_001')+'.png');
     if(!fn) return;
-    execBridge('img-save--temp',{project:IMG_PROJECT,id:id.trim(),file:fn.trim(),source:'CodeBuddy'},false).then(imgRefresh);
+    execBridge('img-save--temp',{project:p,id:id.trim(),file:fn.trim(),source:'CodeBuddy'},false).then(imgRefresh);
   }
   window.imgStatus=imgStatus; window.imgGenAgent=imgGenAgent; window.imgSaveTemp=imgSaveTemp; window.imgRefresh=imgRefresh;
 
