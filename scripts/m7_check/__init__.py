@@ -77,7 +77,8 @@ def cmd_check_rule(args):
                                      out_dir=args.out or None,
                                      tpl_dir=args.tpl or None,
                                      tdir=args.tdir or None,
-                                     tag=args.tag or "")
+                                     tag=args.tag or "",
+                                     kind=args.kind or "auto")
     if args.json:
         print(json.dumps(res, ensure_ascii=False, indent=2))
         return
@@ -210,12 +211,14 @@ def cmd_m7_check(args):
 
 def register_parser(sub):
     # ---- 双通道（v2.0）----
-    sp = sub.add_parser("check-rule", help="M7·v2.0 通道A：机器检查规则引擎（checker 6 项硬检查 + 报价/证书/期限/素材确定性核对，标准=M4 解析产物）→ 标书检查/机器检查_<项目>[_<tag>].json/.md；--out 可为目录（项目生成商务标）或单个 docx（上传标书）")
+    sp = sub.add_parser("check-rule", help="M7·v2.0 通道A：机器检查规则引擎（checker 6 项硬检查 + 报价/证书/期限/素材确定性核对，标准=M4 解析产物）→ 标书检查/机器检查_<项目>[_<tag>].json/.md；--out 可为目录（项目生成商务标）或单个 docx（上传标书）；T15 起支持技术标终稿检查（--kind tech / auto 按路径含「技术标」推断）")
     sp.add_argument("--project", required=True, help="项目名（项目级/<项目>，M4 解析标准所在）")
-    sp.add_argument("--out", default="", help="被检查标书：目录（默认 项目级/<项目>/商务标）或单个 docx 文件（上传标书）")
+    sp.add_argument("--out", default="", help="被检查标书：目录（默认 项目级/<项目>/商务标）或单个 docx 文件（上传标书/技术标终稿 技术标/产出/技术标_<项目>.docx）")
     sp.add_argument("--tpl", default="", help="项目模板目录（默认 项目级/<项目>/项目模板；单文件上传场景自动跳过模板对照检查）")
     sp.add_argument("--tdir", default="", help="招标解析目录（默认 项目级/<项目>/招标解析，M4 产物所在地）")
-    sp.add_argument("--tag", default="", help="检查对象标签（如 上传版；默认空=项目生成商务标；多份标书用 tag 区分产物不覆盖）")
+    sp.add_argument("--tag", default="", help="检查对象标签（如 上传版/技术标；默认空=项目生成商务标；多份标书用 tag 区分产物不覆盖；--kind tech 时缺省自动取「技术标」）")
+    sp.add_argument("--kind", default="auto", choices=("auto", "biz", "tech"),
+                    help="检查对象类型：auto=按 out 路径推断（含「技术标」→ tech）；biz=商务标；tech=技术标终稿检查（结构/暗标敏感词/页数对照 + 素材存在性）")
     sp.set_defaults(func=cmd_check_rule)
 
     sp = sub.add_parser("check-parse", help="M7·v2.0 通道B：agent 语义审查产物落盘（按 references/M7-标书检查-提示词.md 产出，文本+JSON 双份，结构校验）")

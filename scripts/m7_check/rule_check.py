@@ -52,6 +52,199 @@ _EXCLUDE_CTX = ("营业收入", "从业人员", "资产总额", "缴税", "万�
                 "联系人", "电话", "手机", "邮编", "传真", "日期", "年度", "年", "编号")
 _EXCLUDE_WAN_AMT = 500.0      # "X万元"金额 > 500万 视为规模/业绩数字（报价单位是元）
 
+# --------------------------------------------------------------------------
+# T15 技术标专属检查（M7 接入技术标检查）
+# --------------------------------------------------------------------------
+# 对象：项目级/<项目>/技术标/产出/技术标_<项目>.docx（单个 docx）。
+# 技术标 docx 结构锚点（对齐 m6_tech/export.py）：
+#   目录 = XML 含 "TOC" + "fldChar"（TOC 域）；章节标题 = XML 含 "outlineLvl"（大纲级别）；
+#   页数估算口径 = 正文 1000 字/页 + 表格 500 字/页（与 M6 tech-export 页数回写一致）。
+TECH_CHECKS = [
+    {"id": "tech_structure", "name": "技术标结构完整性", "level": "致命", "category": "结构",
+     "desc": "docx 含目录 TOC 域、章节大纲标题（outlineLvl）、正文与结尾非空（封面/目录/正文/结尾四段式）",
+     "fn": "check_tech_structure"},
+    {"id": "anbiao_leak", "name": "暗标敏感词复核", "level": "致命", "category": "暗标",
+     "desc": "M6 设置 bidMode=暗标 时，扫描 docx 全文（段落/表格/页眉页脚）企业名/人员名/业绩名/法定代表人，命中即报（终稿层复核）",
+     "fn": "check_anbiao_leak"},
+    {"id": "tech_pages", "name": "页数对照（M4 约束）", "level": "致命", "category": "篇幅",
+     "desc": "M6 设置 pageConstraint.max（M4 reject 抽取）vs docx 实际页数（Word COM 精确；无 COM 用 M6 同口径估算并标注）",
+     "fn": "check_tech_pages"},
+]
+
+_TECH_OUTPUT_DIR = "技术标/产出"           # M6 终稿落位（相对 项目级/<项目>/）
+_TECH_SETTINGS = "技术标/设置.json"         # M6 设置（bidMode / pageConstraint.max / personnel）
+
+
+def _tech_docx_paths(out_dir):
+    """技术标检查目标：单 docx（终稿文件）或目录内 *.docx。"""
+    p = Path(out_dir)
+    if p.is_file() and p.suffix.lower() == ".docx":
+        return [p]
+    if p.is_dir():
+        return sorted(p.glob("*.docx"))
+    return []
+
+
+def _tech_settings(proj_dir):
+    """读 M6 技术标/设置.json；缺失/损坏返回 None（不阻断，缺关键数据记入 issue）。"""
+    p = Path(proj_dir) / _TECH_SETTINGS
+    if not p.is_file():
+        return None
+    try:
+        return core.read_json(str(p), None)
+    except Exception:
+        return None
+
+
+def _doc_full_texts(doc):
+    """docx 全文：段落 + 表格 + 页眉页脚（暗标敏感词扫描用）。"""
+    texts = [p.text for p in doc.paragraphs]
+    for t in doc.tables:
+        for row in t.rows:
+            for c in row.cells:
+                texts.append(c.text)
+    try:
+        for sec in doc.sections:
+            for hp in sec.header.paragraphs:
+                texts.append(hp.text)
+            for fp in sec.footer.paragraphs:
+                texts.append(fp.text)
+    except Exception:
+        pass
+    return texts
+
+
+def _estimate_pages(doc):
+    """页数估算（M6 同口径）：正文 CJK+词 /1000 + 表格 /500。"""
+    body_cjk = body_words = table_cjk = table_words = 0
+    for p in doc.paragraphs:
+        t = p.text or ""
+        body_cjk += len(re.findall(r"[\u4e00-\u9fff]", t))
+        body_words += len(re.findall(r"[A-Za-z0-9]+", t))
+    for tb in doc.tables:
+        for row in tb.rows:
+            for c in row.cells:
+                t = c.text or ""
+                table_cjk += len(re.findall(r"[\u4e00-\u9fff]", t))
+                table_words += len(re.findall(r"[A-Za-z0-9]+", t))
+    return (body_cjk + body_words) / 1000.0 + (table_cjk + table_words) / 500.0
+
+
+def check_tech_structure(out_dir, proj_dir, material, points):
+    """技术标四段式结构：TOC 域 / 章节大纲标题 / 正文非空 / 结尾非空。"""
+    issues = []
+    targets = _tech_docx_paths(out_dir)
+    if not targets:
+        return False, ["未找到技术标 docx（%s）" % out_dir]
+    for f in targets:
+        from docx import Document
+        try:
+            doc = Document(str(f))
+        except Exception as e:
+            issues.append("%s：文档解析失败 %s" % (f.name, e))
+            continue
+        xml = doc.element.xml
+        paras = [p.text or "" for p in doc.paragraphs]
+        non_empty = [t for t in paras if t.strip()]
+        if not ("TOC" in xml and "fldChar" in xml):
+            issues.append("%s：缺目录 TOC 域（须 F9 更新后重新导出）" % f.name)
+        if "outlineLvl" not in xml:
+            issues.append("%s：缺章节大纲标题（outlineLvl 未落盘，标题体系未生效）" % f.name)
+        if len(non_empty) < 5:
+            issues.append("%s：正文过薄（有效段落 %d < 5，疑缺正文章节）" % (f.name, len(non_empty)))
+        if non_empty and not non_empty[-1].strip():
+            issues.append("%s：结尾为空（末段无内容）" % f.name)
+        if not non_empty:
+            issues.append("%s：正文为空" % f.name)
+    return (len(issues) == 0), issues
+
+
+def check_anbiao_leak(out_dir, proj_dir, material, points):
+    """暗标敏感词复核（终稿层）：M6 设置 bidMode=暗标 时扫描企业名/人员名/业绩名/法定代表人。"""
+    settings = _tech_settings(proj_dir)
+    if settings is None or settings.get("bidMode") != "暗标":
+        return True, ["跳过：M6 设置非暗标（或设置缺失，bidMode=%s）" %
+                      (settings.get("bidMode") if settings else "无设置.json")]
+    names = set()
+    personnel = (settings.get("personnel") or [])
+    for p in personnel:
+        if p.get("name"):
+            names.add(p["name"].strip())
+    ent = (material.get("企业基础信息") or {})
+    if ent.get("法定代表人姓名"):
+        names.add(str(ent["法定代表人姓名"]).strip())
+    ent_name = str(ent.get("企业名称") or material.get("enterprise_name") or "")
+    if ent_name.strip():
+        names.add(ent_name.strip())
+    for perf in (material.get("performance") or []):
+        if perf.get("name"):
+            names.add(str(perf["name"]).strip())
+    names = {n for n in names if n and len(n) >= 2}
+    if not names:
+        return True, ["跳过：素材清单未提供企业/人员/业绩名可复核（暗标基准为空）"]
+    issues = []
+    for f in _tech_docx_paths(out_dir):
+        from docx import Document
+        try:
+            doc = Document(str(f))
+        except Exception as e:
+            issues.append("%s：文档解析失败 %s" % (f.name, e))
+            continue
+        blob = "\n".join(_doc_full_texts(doc))
+        for n in sorted(names, key=len, reverse=True):
+            if n in blob:
+                issues.append("%s：命中暗标敏感词「%s」" % (f.name, n))
+    return (len(issues) == 0), issues
+
+
+def check_tech_pages(out_dir, proj_dir, material, points):
+    """页数对照：M6 设置 pageConstraint.max（或 M4 reject 抽取）vs 实际页数（COM 精确/估算）。"""
+    settings = _tech_settings(proj_dir)
+    limit = None
+    if settings and settings.get("pageConstraint"):
+        limit = settings["pageConstraint"].get("max")
+    if not limit:
+        limit = _extract_page_limit(points)
+    if not limit:
+        return True, ["跳过：未取得页数上限（M6 设置与 M4 reject 均无「总页数不超过」条款）"]
+    issues = []
+    for f in _tech_docx_paths(out_dir):
+        from docx import Document
+        try:
+            doc = Document(str(f))
+        except Exception as e:
+            issues.append("%s：文档解析失败 %s" % (f.name, e))
+            continue
+        real = None
+        try:
+            if com_util is not None and com_util.WordApp is not None:
+                with com_util.WordApp() as w:
+                    real = w.pages_of(str(f))
+        except Exception:
+            real = None
+        if real is not None:
+            if real > limit:
+                issues.append("%s：实际 %d 页 > 上限 %d 页" % (f.name, real, limit))
+        else:
+            est = int(_estimate_pages(doc)) + 1
+            note = "估算（无 Word COM，正文1000字/页+表格500字/页）"
+            if est > limit:
+                issues.append("%s：估算 %d 页 > 上限 %d 页（%s）" % (f.name, est, limit, note))
+    return (len(issues) == 0), issues
+
+
+def _extract_page_limit(points):
+    """从 M4 reject 规则抽取「技术标总页数不超过 N 页」（口径对齐 M6 sources）。"""
+    for m in (points.get("modules") or []):
+        if m.get("id") != "reject":
+            continue
+        for it in (m.get("items") or []):
+            rule = str(it.get("rule") or "")
+            mm = re.search(r"总页数不超过\s*(\d+)\s*页", rule)
+            if mm:
+                return int(mm.group(1))
+    return None
+
 
 # --------------------------------------------------------------------------
 # M4 产物读取
@@ -418,13 +611,16 @@ def _ensure_inside(label, p, proj_dir):
 # --------------------------------------------------------------------------
 # 统一执行入口
 # --------------------------------------------------------------------------
-def run_rule_checks(ent, proj_dir, out_dir=None, tpl_dir=None, tdir=None, tag=""):
+def run_rule_checks(ent, proj_dir, out_dir=None, tpl_dir=None, tdir=None, tag="", kind="auto"):
     """
     通道A 全量检查：checker.py 6 项硬检查 + CHECK_RULES 4 项确定性核对。
     out_dir 可为：目录（项目生成商务标 / 上传标书原始目录，含 .doc 自动转换）/
     单个 doc/docx 文件（上传标书）。硬检查中 format/pages/frozen 需项目模板对照，
     单文件场景或模板目录无 docx（上传标书无模板基准）时自动跳过并注明。
     --tdir/--tpl 显式指向须位于项目内（数据隔离硬校验）。
+    kind：auto=按 out 路径自动推断（含「技术标」→ tech）；biz=商务标（原行为）；
+          tech=技术标终稿检查（T15：tech_structure/anbiao_leak/tech_pages + 复用
+          placeholder/sensitive/word_open + 素材存在性；tag 缺省默认「技术标」）。
     返回 {ok, 目录, 检查: [...]}；落盘 标书检查/机器检查_<项目>[_<tag>].json/.md。
     """
     proj_dir = Path(proj_dir)
@@ -442,6 +638,13 @@ def run_rule_checks(ent, proj_dir, out_dir=None, tpl_dir=None, tdir=None, tag=""
     if tpl != Path(proj_dir) / "项目模板":
         _ensure_inside("--tpl", tpl, proj_dir)
 
+    # 检查对象类型判定（T15）：auto 按 out 路径推断；tech 强制技术标检查集
+    if kind == "auto":
+        kind = "tech" if "技术标" in str(out) else "biz"
+    is_tech = (kind == "tech")
+    if is_tech and not tag:
+        tag = "技术标"
+
     # .doc 自动转换（上传标书场景）：归一为全 docx，检查后清理临时目录
     conv_tmp = None
     try:
@@ -455,11 +658,12 @@ def run_rule_checks(ent, proj_dir, out_dir=None, tpl_dir=None, tdir=None, tag=""
         material = _load_tender_json(tdir, project, t_rules.list_base, "素材清单")
         points = _load_tender_json(tdir, project, t_rules.points_base, "投标要点")
 
-        # 2) 硬检查（checker.py 6 项；单文件上传场景或无项目模板基准→跳过注明）
+        # 2) 硬检查（checker.py 通用项；单文件/无模板基准→跳过注明）
+        #    T15 技术标：单终稿 docx，无项目模板对照 → format/pages/frozen 跳过
         has_tpl = tpl.is_dir() and any(tpl.glob("*.docx"))
         skip_reason = None
         if single_file:
-            skip_reason = "单文件上传场景无项目模板对照"
+            skip_reason = "单文件场景无项目模板对照"
         elif not has_tpl:
             skip_reason = "无项目模板基准（上传标书目录场景，跳过模板对照类检查）"
         results = []
@@ -479,25 +683,47 @@ def run_rule_checks(ent, proj_dir, out_dir=None, tpl_dir=None, tdir=None, tag=""
             results.append({"id": item["id"], "name": item["name"], "level": item["level"],
                             "category": "格式", "ok": ok, "issues": issues})
 
-        # 3) 确定性核对（CHECK_RULES）
-        for item in CHECK_RULES:
-            fn = globals().get(item["fn"])
-            if not fn:
+        # 3) 确定性核对 / 技术标专属检查（T15）
+        if is_tech:
+            for item in TECH_CHECKS:
+                fn = globals().get(item["fn"])
+                if not fn:
+                    results.append({"id": item["id"], "name": item["name"],
+                                    "category": item["category"], "level": item["level"],
+                                    "ok": False, "issues": ["检查实现缺失: %s" % item["fn"]]})
+                    continue
+                ok, issues = fn(out_work, proj_dir, material, points)
                 results.append({"id": item["id"], "name": item["name"],
                                 "category": item["category"], "level": item["level"],
-                                "ok": False, "issues": ["检查实现缺失: %s" % item["fn"]]})
-                continue
+                                "ok": ok, "issues": issues})
+            # 技术标保留 素材存在性（业绩/证书须落地）；报价/证书有效期/期限为商务标专属
+            item = next(x for x in CHECK_RULES if x["id"] == "material")
+            fn = globals().get(item["fn"])
             ok, issues = fn(out_work, tpl, material, points)
             results.append({"id": item["id"], "name": item["name"],
                             "category": item["category"], "level": item["level"],
                             "ok": ok, "issues": issues})
+        else:
+            for item in CHECK_RULES:
+                fn = globals().get(item["fn"])
+                if not fn:
+                    results.append({"id": item["id"], "name": item["name"],
+                                    "category": item["category"], "level": item["level"],
+                                    "ok": False, "issues": ["检查实现缺失: %s" % item["fn"]]})
+                    continue
+                ok, issues = fn(out_work, tpl, material, points)
+                results.append({"id": item["id"], "name": item["name"],
+                                "category": item["category"], "level": item["level"],
+                                "ok": ok, "issues": issues})
         for w in conv_warns:
             results.append({"id": "doc_conv", "name": ".doc 自动转换", "level": "警告",
                             "category": "格式", "ok": True, "issues": [w]})
 
         ok_all = all(r["ok"] for r in results)
         doc = {"project": project, "channel": "A", "tag": tag or "项目生成商务标",
-               "note": "通道A 机器检查（checker 硬检查 + 确定性核对，标准=M4 解析产物）",
+               "kind": "tech" if is_tech else "biz",
+               "note": "通道A 机器检查（checker 硬检查 + 确定性核对，标准=M4 解析产物%s）" %
+                       ("；技术标终稿检查 T15" if is_tech else ""),
                "结论": "全部通过" if ok_all else "存在未通过项",
                "检查": results, "generated": core.now_iso()}
 
