@@ -303,9 +303,9 @@ class TestImagesByCategory(unittest.TestCase):
 
 
 class TestAiImgCategory(unittest.TestCase):
-    """AI 配图通道（m_img 产物 → fill-tpl 嵌入）：
-    『【图片占位：AI配图-<section>】』消费 配图/配图清单_*.json 中 status=saved 项；
-    pending/未匹配 → 删框+披露；无清单 → 全删+披露。
+    """商务标红线（v2.5）：fill-tpl（商务标引擎）**禁用 AI 配图**——
+    『【图片占位：AI配图-<section>】』一律删框+披露（素材清单无则不生成），
+    即使配图清单有 saved 项也不消费；m_img 管道仅服务非商务标场景。
     """
 
     def _mk_plan(self, items):
@@ -322,7 +322,8 @@ class TestAiImgCategory(unittest.TestCase):
         import shutil
         shutil.rmtree(self.tmp, ignore_errors=True)
 
-    def test_saved_embedded_pending_removed(self):
+    def test_saved_not_embedded_removed(self):
+        # 商务标红线：清单即使有 saved 项也不嵌入——AI配图 占位全部删框+披露
         self._mk_plan([
             {"id": "img_001", "section": "项目概况与监理工作内容", "status": "saved",
              "file": "配图/a.png", "ratio": "16:9"},
@@ -339,8 +340,9 @@ class TestAiImgCategory(unittest.TestCase):
         missing = []
         F.fill_images_by_category(doc, idx, {}, Path(self.tmp), missing)
         n = len(doc.element.body.findall(".//" + qn("w:drawing")))
-        self.assertEqual(n, 1)  # saved 嵌入；pending 删框
-        self.assertTrue(any("评分办法" in c and ("未列" in note or "不足" in note) for c, note in missing))
+        self.assertEqual(n, 0)  # saved 也不嵌入：商务标禁 AI 配图
+        self.assertEqual(len(missing), 2)  # 两个占位均披露
+        self.assertTrue(all("商务标禁 AI 配图" in note for _, note in missing))
         texts = [p.text for p in doc.paragraphs]
         self.assertEqual(sum(1 for t in texts if "【图片占位：" in t), 0)
 

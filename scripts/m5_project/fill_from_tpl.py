@@ -656,6 +656,11 @@ def fill_detail_tables(doc, idx, material, proj, missing):
 
 
 def _ai_img_paths(proj, section):
+    """AI 配图通道（m_img 产物路径解析）。
+
+    **商务标红线（v2.5）**：fill-tpl 为商务标引擎，已禁用 AI 配图，本函数当前不被
+    fill_images_by_category 消费；保留供未来非商务标引擎（技术标等）复用。
+    """
     """AI 配图通道：读 配图/配图清单_<项目>.json，按 section 匹配 saved 项 → 落盘路径列表。
 
     与素材通道（aggregate_category）并列：模板中『【图片占位：AI配图-<section>】』
@@ -675,16 +680,20 @@ def _ai_img_paths(proj, section):
 def fill_images_by_category(doc, idx, material, proj, missing):
     """全局图框类别聚合填充：同类别按占位出现顺序依序消费；素材数=0 → 未列不生成（删框+披露）。
 
-    AI配图-<section> 类别走配图清单通道（_ai_img_paths），其余类别走素材清单（aggregate_category）。
+    商务标红线（v2.5）：**商务标一律禁用 AI 配图**——模板中『【图片占位：AI配图-<section>】』
+    不做 AI 生成、不消费配图清单；商务标配图必须全部来自素材清单，素材清单未提供 → 删框+披露。
+    （m_img 配图管道仅服务于技术标等非商务标场景，fill-tpl 不消费。）
     """
     by_cat = {}
     for cat, para in idx.get("img_ph", []):
         by_cat.setdefault(cat, []).append(para)
     for cat, paras in by_cat.items():
         if cat.startswith("AI配图-"):
-            paths = _ai_img_paths(proj, cat[len("AI配图-"):].strip())
-        else:
-            paths = [R(p, proj) for p in aggregate_category(material, cat)]
+            for i, para in enumerate(paras):
+                missing.append((cat, "第%d张 商务标禁 AI 配图（素材清单无则不生成）" % (i + 1)))
+                _drop_ph_para(para)
+            continue
+        paths = [R(p, proj) for p in aggregate_category(material, cat)]
         for i, para in enumerate(paras):
             if i < len(paths):
                 r = _insert_img_at_para(doc, para, paths[i], _spec_key(cat))
