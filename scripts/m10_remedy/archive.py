@@ -267,3 +267,145 @@ def register_parser(sub):
     sp.add_argument("--apply", action="store_true", help="应用归档申请（须配 --confirm）")
     sp.add_argument("--confirm", action="store_true", help="人工确认闸门：确认后执行写入")
     sp.set_defaults(func=cmd_remedy_archive)
+
+    # T22：补救素材 → 企业素材库（M1）入库申请（跨项目复用）
+    sp2 = sub.add_parser("assets-archive", help="T22 补救素材→企业素材库入库申请：已归档（归档状态=已归档）的素材补齐/证据核验任务 → 企业素材库入库申请单（企业级/素材库/收件箱/补救入库申请_<项目>_<时间戳>.json/.md/.html，M1 台账去重）；正式入库走 M1 现有 open-inbox/upload/propose/apply 人工确认链")
+    sp2.add_argument("--project", required=True, help="项目名（项目级/<项目>，读取已归档任务）")
+    sp2.add_argument("--task", default="", help="指定任务 ID（缺省=全部已归档素材任务）")
+    sp2.set_defaults(func=cmd_assets_archive)
+
+
+_M1_CATEGORY = {"业绩": "业绩", "人员": "人员", "荣誉": "荣誉", "体系认证": "资质"}
+
+
+def _archived_entries(tdoc, task_id=""):
+    """已归档（归档状态=已归档）且 涉及素材 非空 的任务 → 入库申请源条目。"""
+    out = []
+    for t in tdoc.get("tasks") or []:
+        if t.get("归档状态") != "已归档":
+            continue
+        if task_id and t.get("id") != task_id:
+            continue
+        mat = t.get("涉及素材") or {}
+        if not mat:
+            continue
+        out.append({
+            "任务ID": t.get("id"), "动作": t.get("动作", ""),
+            "类别": mat.get("category", ""), "素材名": mat.get("subtype") or mat.get("category") or "待归档素材",
+            "来源": t.get("来源", ""),
+        })
+    return out
+
+
+def cmd_assets_archive(args):
+    """T22：已归档补救素材 → 企业素材库入库申请单（M1 台账去重 + 引导）。"""
+    import datetime as _dt
+    root = Path(args.root)
+    ent_dir = core.Library(root).resolve(args.enterprise)
+    lib = core.lib_root(ent_dir)
+    proj_dir = _proj_dir(root, args.enterprise, args.project)
+    out_dir = proj_dir / OUT_DIR_NAME
+    _, tdoc = _task_doc(out_dir, args.project)
+
+    entries = _archived_entries(tdoc, args.task)
+    if not entries:
+        raise core.LibraryError("任务单中无已归档（归档状态=已归档）的素材任务%s"
+                                % ("（指定任务 %s 未归档）" % args.task if args.task else "（先执行 remedy-archive --apply --confirm）"))
+
+    dedup = []
+    for e in entries:
+        cat = _M1_CATEGORY.get(e["类别"], "未分类")
+        sub = e["素材名"]
+        hits = core.query(ent_dir, category=cat, subtype="", keyword=sub)
+        d = dict(e)
+        d["企业类别"] = cat
+        d["状态"] = "已在库（可复用，跳过入库）" if hits else "待入库"
+        d["台账命中"] = [h.get("rel_path") for h in hits[:3]]
+        dedup.append(d)
+    ready = [d for d in dedup if d["状态"] == "待入库"]
+    reuse = [d for d in dedup if d["状态"] != "待入库"]
+    ts = _dt.datetime.now().strftime("%Y%m%d_%H%M%S")
+    base = "补救入库申请_%s_%s" % (args.project, ts)
+    doc = {
+        "project": args.project, "enterprise": args.enterprise,
+        "生成依据": "T22 M10 补救→M1 企业素材库：已归档补救素材生成入库申请（台账去重 + 引导现有 M1 归档命令）",
+        "生成时间": _dt.datetime.now().strftime("%Y-%m-%d %H:%M"),
+        "summary": {"申请条数": len(dedup), "待入库": len(ready), "已在库（可复用）": len(reuse)},
+        "entries": dedup,
+    }
+    inbox_dir = lib / "收件箱"
+    json_path = inbox_dir / ("%s.json" % base)
+    md_path = inbox_dir / ("%s.md" % base)
+    html_path = inbox_dir / ("%s.html" % base)
+    core.write_json(str(json_path), doc)
+    md_path.write_text(_to_md_assets(doc), encoding="utf-8")
+    _render_assets_html(args.enterprise, doc, html_path)
+    back = core.read_json(str(json_path), None)
+    if not back or back.get("project") != args.project:
+        raise core.LibraryError("入库申请单 JSON 写后回读失败：%s" % json_path)
+    if not md_path.exists() or not html_path.exists():
+        raise core.LibraryError("入库申请单落盘不完整（json/md/html）")
+
+    print("企业素材库入库申请单已生成：%s" % json_path)
+    print("HTML：%s" % html_path)
+    for d in dedup:
+        print("- %s｜%s｜%s｜企业类别=%s｜%s" % (
+            d["任务ID"], d["动作"], d["素材名"], d["企业类别"],
+            d["状态"] + ("（命中：%s）" % "、".join(d["台账命中"]) if d["台账命中"] else "")))
+    print("入库引导（人工确认闸门，走 M1 现有命令）：")
+    print("  1) 把真实扫描件放入素材库收件箱：open-inbox / upload --file …（或拷入后 sync-inbox）")
+    print("  2) 生成归档提案：propose --out 归档提案_%s.json（人工核对归类/关键字）" % args.project)
+    print("  3) 执行归档：apply --proposal 归档提案_%s.json（素材正式入企业素材库台账，跨项目可复用）" % args.project)
+
+
+def _to_md_assets(doc):
+    lines = ["# 企业素材库入库申请单 · %s（%s）" % (doc.get("project", ""), doc.get("enterprise", "")), "",
+             "> %s" % doc.get("生成依据", ""), "",
+             "申请 %d 条 ｜ 待入库 %d ｜ 已在库（可复用）%d" % (
+                 doc.get("summary", {}).get("申请条数"), doc.get("summary", {}).get("待入库"),
+                 doc.get("summary", {}).get("已在库（可复用）")), "",
+             "## 入库申请条目", "| 任务ID | 动作 | 类别 | 素材名 | 企业类别 | 状态 |", "|---|---|---|---|---|---|"]
+    for d in doc.get("entries", []):
+        hit = ("（命中：%s）" % "、".join(d.get("台账命中") or [])) if d.get("台账命中") else ""
+        lines.append("| %s | %s | %s | %s | %s | %s |" % (
+            d.get("任务ID"), d.get("动作"), d.get("类别"), d.get("素材名"),
+            d.get("企业类别"), d.get("状态") + hit))
+    lines.append("")
+    lines.append("> 人工确认闸门：本申请单只做去重与引导，不写入企业素材库；正式入库必须走 M1 现有命令：")
+    lines.append("> open-inbox / upload（或 sync-inbox）→ propose --out 归档提案_<项目>.json（人工核对）→ apply --proposal 归档提案_<项目>.json。")
+    return "\n".join(lines)
+
+
+def _render_assets_html(enterprise, doc, html_path):
+    rows = []
+    for d in doc.get("entries", []):
+        hit = ("（命中：%s）" % "、".join(d.get("台账命中") or [])) if d.get("台账命中") else ""
+        rows.append("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>" % (
+            d.get("任务ID"), _esc(d.get("动作")), d.get("类别"), _esc(d.get("素材名")),
+            d.get("企业类别"), _esc(d.get("状态") + hit)))
+    s = doc.get("summary", {})
+    table = ("<table><tr style='background:#f1f3f4'><th>任务ID</th><th>动作</th><th>类别</th>"
+             "<th>素材名</th><th>企业类别</th><th>状态</th></tr>%s</table>" % "".join(rows))
+    kpi = ("申请 %d 条 ｜ 待入库 %d ｜ 已在库（可复用）%d" % (s.get("申请条数"), s.get("待入库"), s.get("已在库（可复用）")))
+    html = """<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>企业素材库入库申请单 · %s</title>
+<style>
+ body{font-family:SimSun,serif;color:#222;margin:24px auto;max-width:920px;padding:0 16px}
+ h1{font-size:20px;text-align:center;margin:8px 0}
+ .meta{text-align:center;color:#666;font-size:13px;margin-bottom:14px}
+ .kpi{margin:12px 0;padding:10px 14px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:4px;font-size:14px}
+ table{width:100%%;border-collapse:collapse;font-size:13px;margin-bottom:14px}
+ th,td{border:1px solid #d0d7de;padding:6px 8px;text-align:left;vertical-align:top}
+ .foot{margin-top:16px;font-size:12px;color:#666;border-top:1px solid #e1e4e8;padding-top:8px}
+</style></head><body>
+<h1>企业素材库入库申请单 · %s</h1>
+<div class="meta">企业：%s ｜ %s</div>
+<div class="kpi">%s</div>
+%s
+<div class="foot">人工确认闸门：本申请单只做去重与引导，不写入企业素材库；正式入库必须走 M1 现有命令：open-inbox / upload（或 sync-inbox）→ propose（人工核对）→ apply --proposal。素材入库后跨项目可复用。</div>
+</body></html>""" % (
+        _esc(doc.get("project", "")), _esc(doc.get("project", "")), _esc(enterprise),
+        _esc(doc.get("生成时间", "")), kpi, table)
+    html_path.write_text(html, encoding="utf-8")
