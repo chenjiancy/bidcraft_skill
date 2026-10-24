@@ -12,7 +12,8 @@ from pathlib import Path
 from .. import naming as nm
 
 from .basic import (LibraryError, TRASH_JSON, TRASH_RETENTION_DAYS, lib_root,
-                    norm_rel, now_iso, read_json, rel_to_path, write_json)
+                    norm_rel, now_iso, read_json, rel_to_path, write_json,
+                    _is_intermediate)
 
 __all__ = ["trash_dir", "trash_manifest", "save_trash_manifest", "move_to_trash",
            "cleanup_trash", "lib_rel"]
@@ -124,6 +125,8 @@ def cleanup_trash(ent, days=TRASH_RETENTION_DAYS):
     known = {r.get("file") for r in kept}
     for f in tdir.iterdir():
         if f.name in (TRASH_JSON,) or f.name in known:
+            continue
+        if _is_intermediate(f.name):  # C2：清单 JSON 的 .bak/.tmp 等中间文件不算孤儿
             continue
         try:
             mtime = datetime.fromtimestamp(f.stat().st_mtime)

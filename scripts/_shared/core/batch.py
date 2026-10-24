@@ -9,7 +9,7 @@ from pathlib import Path
 from .. import naming as nm
 
 from .basic import (BATCH_JSON, LibraryError, lib_root, norm_rel, now_iso,
-                    read_json, sha256_of, write_json)
+                    read_json, sha256_of, write_json, _is_intermediate)
 
 __all__ = ["Inbox"]
 
@@ -98,6 +98,8 @@ class Inbox:
         found = []
         for p in sorted(self.dir.iterdir()):
             if not p.is_file() or p.name in reserved or p.name.startswith("."):
+                continue
+            if _is_intermediate(p.name):  # C2：.bak/.tmp/.lock/.corrupt-* 中间文件不当作素材
                 continue
             if p.name not in known:
                 found.append(p)
