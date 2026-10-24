@@ -226,6 +226,126 @@ def gen_check_tasks(check_doc):
             "验证方式": ("重跑 check-rule --project <项目> --out 技术标/产出/技术标_<项目>.docx --kind tech"
                           "；check-report 人工确认闸门") if is_tech
                         else "重跑 check-rule --project <项目>；check-report 人工确认闸门",
+            "检查快照": {"id": c.get("id") or "", "name": name, "issues": iss},   # T18：remedy-recheck 复核基准
+        })
+    return tasks
+
+
+def mark_done(doc, task_id, note=""):
+    """任务单勾选完成（T18）：按 id 定位任务 → 标 完成状态/完成时间/完成备注；id 不存在报错不静默。"""
+    for t in doc.get("tasks") or []:
+        if t.get("id") == task_id:
+            import datetime as _dt
+            t["完成状态"] = "已完成"
+            t["完成时间"] = _dt.datetime.now().strftime("%Y-%m-%d %H:%M")
+            t["完成备注"] = (note or "").strip() or "人工确认完成"
+            return {"task": t, "found": True}
+    return {"found": False}
+
+
+def recheck_tasks(doc, check_new=None, eval_new=None):
+    """补救后重检（T18）：对任务单中『已完成』任务自动复核——
+    - M7 整改任务（来源 M7-*）：按 检查快照.id/name 匹配新机器检查 → 该项 ok=True 且原问题全部消失 = 通过；
+      ok=False → 未通过（仍存在/新增 issues 分别列出）。
+    - 失分补救任务（通道A-客观/通道B-主观/通道A-规则项）：重跑 eval-run 后按 kind 对比 gap——
+      新 gap < 原预期加分 → 已补回；否则未见改善；规则项按暗标检查项复核。
+    - 新问题：新机器检查中 ok=False 且不在原任务单 → 生成新整改任务并入。
+    返回 {结果列表, 新问题任务, 汇总, 结论}；纯逻辑无 I/O（写回由 CLI 完成）。
+    """
+    results, new_tasks = [], []
+    now = __import__("datetime").datetime.now().strftime("%Y-%m-%d %H:%M")
+    done = [t for t in (doc.get("tasks") or []) if t.get("完成状态") == "已完成"]
+
+    checks_new = {c.get("id"): c for c in ((check_new or {}).get("检查") or [])}
+    checks_new_by_name = {c.get("name"): c for c in ((check_new or {}).get("检查") or [])}
+
+    for t in done:
+        src = t.get("来源", "")
+        if src.startswith("M7-"):
+            snap = t.get("检查快照") or {}
+            cid = snap.get("id") or ""
+            cname = snap.get("name") or t.get("评分项") or ""
+            c = checks_new.get(cid) or checks_new_by_name.get(cname)
+            if c is None:
+                results.append({"id": t["id"], "标题": t.get("标题", ""), "验证": "无法复核",
+                                "证据": "新机器检查中未找到检查项「%s」" % (cname or cid)})
+                continue
+            old_iss = snap.get("issues") or []
+            new_iss = c.get("issues") or []
+            if c.get("ok"):
+                results.append({"id": t["id"], "标题": t.get("标题", ""), "验证": "通过",
+                                "证据": "检查项「%s」已通过，原 %d 处问题全部消除" % (c.get("name"), len(old_iss))})
+            else:
+                still = [x for x in old_iss if x in new_iss]
+                added = [x for x in new_iss if x not in old_iss]
+                parts = []
+                if still:
+                    parts.append("仍存在 %d 处：%s" % (len(still), still[0]))
+                if added:
+                    parts.append("新增 %d 处：%s" % (len(added), added[0]))
+                results.append({"id": t["id"], "标题": t.get("标题", ""), "验证": "未通过",
+                                "证据": "检查项「%s」未通过；%s" % (c.get("name"), "；".join(parts) or "问题未消除")})
+        else:
+            # 失分补救任务：按 kind 对比 新 eval 产物 gap（确定性对比，语义不判）
+            kind = t.get("评分项", "")
+            old_gap = t.get("预期加分")
+            if eval_new is not None:
+                gaps = [it.get("gap") for it in ((eval_new.get("summary") or {}).get("issues") or [])
+                        if it.get("item") == kind and it.get("gap") is not None]
+                new_gap = min(gaps) if gaps else None
+                if old_gap is not None and new_gap is not None:
+                    back = old_gap - new_gap
+                    if back > 0.05:
+                        results.append({"id": t["id"], "标题": t.get("标题", ""), "验证": "通过",
+                                        "证据": "该评分项失分已由 %.1f 降至 %.1f（补回 %.1f 分）" % (old_gap, new_gap, back)})
+                    else:
+                        results.append({"id": t["id"], "标题": t.get("标题", ""), "验证": "未通过",
+                                        "证据": "该评分项失分仍为 %.1f（未见改善）" % (new_gap if new_gap is not None else old_gap)})
+                else:
+                    results.append({"id": t["id"], "标题": t.get("标题", ""), "验证": "需人工复核",
+                                    "证据": "重跑 eval-run 后该评分项 gap 无法确定性对比，请人工核对 eval-report"})
+            else:
+                results.append({"id": t["id"], "标题": t.get("标题", ""), "验证": "需人工复核",
+                                "证据": "重检未重跑 eval-run（产物缺失），请人工核对 eval-report"})
+
+    # 新问题自动并入（检查项 ok=False 且不在原任务单）
+    known = {t.get("评分项") for t in (doc.get("tasks") or [])} | {t.get("标题", "") for t in (doc.get("tasks") or [])}
+    fresh_fails = [c for c in ((check_new or {}).get("检查") or [])
+                   if not c.get("ok") and (c.get("issues") or [])
+                   and c.get("name") not in known]
+    if fresh_fails:
+        new_tasks = _gen_from_checks(fresh_fails, check_new)
+
+    passed = sum(1 for r in results if r["验证"] == "通过")
+    summary = {"已勾选任务": len(done), "验证通过": passed,
+               "未通过": sum(1 for r in results if r["验证"] == "未通过"),
+               "需人工复核": sum(1 for r in results if r["验证"] in ("需人工复核", "无法复核")),
+               "新增问题": len(new_tasks)}
+    return {"results": results, "new_tasks": new_tasks, "summary": summary,
+            "重检时间": now, "结论": ("补救后重检：%d/%d 已勾选任务验证通过，新增 %d 条问题任务；未通过项见明细，须人工整改后再次勾选重检"
+                                     % (passed, len(done), len(new_tasks)))}
+
+
+def _gen_from_checks(fresh, check_doc):
+    """新问题检查项 → 整改任务（与 gen_check_tasks 同构，仅限传入的 fresh 子集）。"""
+    tasks, rid = [], 0
+    is_tech = (check_doc or {}).get("kind") == "tech"
+    for c in fresh:
+        iss = c.get("issues") or []
+        if not iss:
+            continue
+        name = c.get("name") or c.get("id") or "?"
+        tasks.append({
+            "id": "C%02d" % len(tasks), "类型": "格式合规",
+            "动作": "技术标检查整改" if is_tech else "标书检查整改",
+            "标题": "%s（%d 处问题）" % (name, len(iss)),
+            "来源": "M7-%s" % (check_doc.get("tag") or "机器检查"),
+            "评分项": name, "当前状态": iss[0],
+            "目标状态": "整改后重跑 check-rule 复核通过（check-report 人工确认闸门）",
+            "动作步骤": ["修复：%s" % x for x in iss[:6]], "涉及素材": None,
+            "优先级": "高", "预期加分": None,
+            "验证方式": "重跑 check-rule --kind tech；check-report 人工确认闸门",
+            "检查快照": {"id": c.get("id") or "", "name": name, "issues": iss},
         })
     return tasks
 

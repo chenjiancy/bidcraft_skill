@@ -123,3 +123,7 @@ def register_parser(sub):
     sp.add_argument("--sub", default="", help="通道B 主观评审 json（缺省自动探测 模拟评标/主观评审_<项目>.json）")
     sp.add_argument("--check", default="", help="M7 机器检查 json（如 标书检查/机器检查_<项目>_技术标.json；T17：检查问题并入任务单为格式合规整改任务）")
     sp.set_defaults(func=cmd_remedy_gen)
+
+    # T18：补救→重检闭环（remedy-done / remedy-recheck）
+    from . import recheck as _recheck
+    _recheck.register_parser(sub)
