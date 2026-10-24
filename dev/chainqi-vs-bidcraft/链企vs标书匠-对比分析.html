@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>链企 Buddy × bidcraft_skill 对比分析报告</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%230F2A43'/%3E%3Cpath d='M6 8h12v2H6zm0 6h8v2H6z' fill='%23E8833A'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --ink:#0F2A43; --blue:#1B5E9E; --blue-lt:#E8F1F9; --accent:#E8833A;
+    --green:#3E7C4F; --green-lt:#EAF3EC; --red:#B3402E; --red-lt:#F9EBE8;
+    --amber:#B07D2B; --amber-lt:#FBF3E3; --gray:#5A6B7B; --line:#D8E0E8;
+    --paper:#F7F5F0; --card:#FFFFFF; --ink-soft:#33475B;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    font-family:"Microsoft YaHei","PingFang SC","Noto Sans CJK SC",system-ui,sans-serif;
+    background:var(--paper); color:var(--ink); line-height:1.75; font-size:15px;
+  }
+  .wrap{max-width:1080px; margin:0 auto; padding:0 20px 80px;}
+  html,body{overflow-x:hidden;}
+  code{font-family:Consolas,"Courier New",monospace; font-size:12.5px; background:#EFF3F7; padding:1px 5px; border-radius:4px; word-break:break-all; overflow-wrap:break-word;}
+  p,li,h4,.card{overflow-wrap:break-word; min-width:0;}
+  /* hero */
+  .hero{background:linear-gradient(135deg,var(--ink) 0%,#17406B 60%,#1B5E9E 100%); color:#fff; padding:52px 0 44px; margin-bottom:36px;}
+  .hero .wrap{padding-bottom:0;}
+  .kicker{display:inline-block; font-size:13px; letter-spacing:2px; color:#BFD4EA; border:1px solid rgba(191,212,234,.4); padding:3px 12px; border-radius:99px; margin-bottom:14px;}
+  .hero h1{font-size:32px; font-weight:700; margin-bottom:10px;}
+  .hero .sub{color:#BFD4EA; font-size:15px; max-width:760px;}
+  .kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-top:26px;}
+  .kpi{background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.16); border-radius:10px; padding:14px 16px;}
+  .kpi b{display:block; font-size:26px; font-weight:700; color:#fff;}
+  .kpi span{font-size:12.5px; color:#BFD4EA;}
+  /* sections */
+  section{margin-top:44px;}
+  h2{font-size:22px; font-weight:700; color:var(--ink); border-left:6px solid var(--accent); padding-left:12px; margin-bottom:16px;}
+  h3{font-size:16.5px; font-weight:700; margin:22px 0 10px; color:var(--blue);}
+  p{margin-bottom:10px; color:var(--ink-soft);}
+  .note{background:var(--blue-lt); border-left:4px solid var(--blue); padding:12px 16px; border-radius:6px; font-size:13.5px; margin:14px 0;}
+  .note b{color:var(--blue);}
+  /* tables */
+  table{width:100%; border-collapse:collapse; margin:14px 0; background:var(--card); font-size:13.5px;}
+  th{background:var(--ink); color:#fff; text-align:left; padding:9px 12px; font-weight:600; white-space:nowrap;}
+  td{border-bottom:1px solid var(--line); padding:9px 12px; vertical-align:top;}
+  tr:nth-child(even) td{background:#FBFCFE;}
+  .tag{display:inline-block; font-size:12px; padding:1px 9px; border-radius:99px; white-space:nowrap;}
+  .t-ok{background:var(--green-lt); color:var(--green);}
+  .t-part{background:var(--amber-lt); color:var(--amber);}
+  .t-none{background:var(--red-lt); color:var(--red);}
+  .t-warn{background:var(--red-lt); color:var(--red);}
+  /* cards */
+  .cards{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:8px;}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:18px 20px;}
+  .card h4{font-size:15.5px; color:var(--ink); margin-bottom:6px;}
+  .card .src{font-size:12px; color:var(--gray); margin-bottom:10px;}
+  .card .lbl{font-size:12.5px; font-weight:700; color:var(--blue); margin-top:8px;}
+  .card p{font-size:13.5px;}
+  .card ul{margin:4px 0 0 18px; font-size:13.5px; color:var(--ink-soft);}
+  .card li{margin-bottom:3px;}
+  .pri{display:inline-block; font-size:12px; padding:1px 9px; border-radius:99px; background:var(--ink); color:#fff; margin-left:8px;}
+  .pri.p0{background:#B3402E;} .pri.p1{background:#B07D2B;} .pri.p2{background:#3E7C4F;}
+  /* barrier cards */
+  .barrier{border-left:4px solid var(--red);}
+  .barrier h4{color:var(--red);}
+  .alt{border-left:4px solid var(--amber);}
+  .alt h4{color:var(--amber);}
+  /* legend & flow */
+  .legend{display:flex; flex-wrap:wrap; gap:14px; font-size:12.5px; color:var(--gray); margin:6px 0 4px;}
+  .dot{display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:5px; vertical-align:-1px;}
+  .flow{display:flex; flex-wrap:wrap; gap:6px 0; align-items:center; font-size:12.5px; margin:10px 0;}
+  .flow .step{background:var(--card); border:1px solid var(--line); border-radius:6px; padding:4px 10px; white-space:nowrap;}
+  .flow .arr{color:var(--accent); font-weight:700; padding:0 4px;}
+  .flow .gate{background:var(--amber-lt); border-color:var(--amber); color:var(--amber); font-weight:700;}
+  /* verdict */
+  .verdict{background:var(--ink); color:#fff; border-radius:10px; padding:22px 24px; margin-top:34px;}
+  .verdict h3{color:#fff; margin-top:0;}
+  .verdict p{color:#CFDCE9;}
+  .verdict ul{margin:8px 0 0 20px; color:#CFDCE9; font-size:14px;}
+  .verdict li{margin-bottom:5px;}
+  footer{margin-top:44px; padding-top:16px; border-top:1px solid var(--line); font-size:12.5px; color:var(--gray);}
+  @media (max-width:760px){
+    .kpis{grid-template-columns:repeat(2,1fr);}
+    .cards{grid-template-columns:1fr;}
+    .hero h1{font-size:25px;}
+    th,td{padding:7px 8px;}
+    table{font-size:12.5px; display:block; overflow-x:auto; white-space:nowrap;}
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="wrap">
+    <span class="kicker">产品对比分析 · 2026-10-24</span>
+    <h1>链企 Buddy × bidcraft_skill 对比分析报告</h1>
+    <p class="sub">依据《链企Buddy分析》目录 76 份逆向报告精读 6 份核心文档（I31/H1/H13/I10/B2/H7/C4），对照 bidcraft_skill 现行八大模块与技术标流水线（T1~T22 全部落地、unit 724 全绿），回答三个问题：两者差距在哪、链企哪些做法值得引入、哪些好做法我们无法实现。</p>
+    <div class="kpis">
+      <div class="kpi"><b>19</b><span>链企编号模块（M1~M19）</span></div>
+      <div class="kpi"><b>13</b><span>bidcraft 已交付模块/命令组</span></div>
+      <div class="kpi"><b>10</b><span>值得引入的做法</span></div>
+      <div class="kpi"><b>8</b><span>好但无法实现 + 反例</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<section>
+  <h2>读法与证据边界</h2>
+  <p>本报告基于《链企Buddy分析》目录（78 个交付文件）。全文精读：<b>00-INDEX</b>（全清单地图）、<b>I31</b>（复刻架构总览 M1~M19）、<b>H1</b>（提示词体系 6 组）、<b>H13</b>（质量校验现状）、<b>I10</b>（知识库消费链双链三族）、<b>B2</b>（章节历史快照系统）、<b>H7</b>（SSE 流式协议）、<b>C4</b>（任务助手/图库/知识库管理面）；其余 69 份以索引逐条登记的主题摘要为据（每条主题来自 00-INDEX §2.5 的功能标题与爆雷计数），结论已标注依据文档编号，需要复核细则时可回读原文。</p>
+  <div class="note"><b>对象身份</b>：链企 Buddy = 商业 Electron 桌面应用（v1.14.132~139，云 BFF + 计费体系，客户端 36,486 行主进程）；bidcraft_skill = 个人 skill+agent 平台项目（CLI 为主、UI 仅演示原型、本地确定性流水线 + 人工确认闸门、GitHub CI/CD）。二者目标域相同（标书制作全链），架构形态根本不同——这正是"哪些能抄、哪些抄不了"的根源。</div>
+</section>
+
+<section>
+  <h2>一、形态与架构对比</h2>
+  <table>
+    <colgroup><col style="width:22%"><col style="width:39%"><col style="width:39%"></colgroup>
+    <thead><tr><th>维度</th><th>链企 Buddy</th><th>bidcraft_skill</th></tr></thead>
+    <tbody>
+      <tr><td><b>形态</b></td><td>Electron 桌面应用（安装包、自动更新、登录账号）</td><td>skill 包 + agent 平台（豆包/WorkBuddy）执行；CLI 脚本 + HTML 报告产物；UI 仅为演示原型</td></tr>
+      <tr><td><b>运行位置</b></td><td>本地客户端 + 云端 BFF（10 组 60+ 端点）+ 服务端 agent 黑盒编排</td><td>全本地确定性脚本（Python CLI），agent 仅按 SKILL 编排调用；无服务端、无账号体系</td></tr>
+      <tr><td><b>AI 编排</b></td><td>服务端 15 路并发写作、SSE 流式 + 断线续传、按模型档位扣积分</td><td>逐章 CLI 调 agent 平台 LLM；人工确认闸门（outline→check→report→remedy 多道）</td></tr>
+      <tr><td><b>数据落点</b></td><td>项目根单工作区 + 云端知识库/图库/模板库；正文 HTML、sidecar JSON</td><td>企业级/项目级/共享级三层目录（素材库/模板库/知识库/技术标风格），产物 JSON/MD/HTML/DOCX</td></tr>
+      <tr><td><b>质量保障</b></td><td>服务端黑盒自检（仅「质量校验未通过」UI 标记）+ 暗标检查独立流程；客户端写入复读</td><td>双通道检查（机器规则 6+4 项 + agent 语义审查）+ 13 项技术标硬检查 + 三层测试（unit/integration/e2e）写后回读</td></tr>
+      <tr><td><b>可观测</b></td><td>electron-log 5MB 轮转 + SLS 上报 + 诊断包（有脱敏漏洞）</td><td>m9-evidence 投标留痕包 + m9-verify 企业体检 + 产物互链（可审计、可追溯）</td></tr>
+      <tr><td><b>安全记录</b></td><td>逆向审计 221 条爆雷（13 P0/17 P1/19 P2 汇总），203 条 IPC 通道审计</td><td>无账号/无 IPC/无云端面，攻击面收敛到本地文件与 CLI；CI 带 CodeQL</td></tr>
+      <tr><td><b>商业模式</b></td><td>积分计费、先冻结后发起、导出超额按条扣</td><td>个人自用零计费；等价物是人工确认闸门 + 版本记录</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2>二、功能域逐项对比</h2>
+  <p>把链企 19 个编号模块映射到 bidcraft 现状，差距一目了然（评级：<span class="tag t-ok">已覆盖</span>=已交付等价能力；<span class="tag t-part">部分/可引入</span>=有雏形或链企有可借鉴设计；<span class="tag t-none">未覆盖</span>=本项目没有且值得讨论）。</p>
+  <table>
+    <colgroup><col style="width:17%"><col style="width:31%"><col style="width:38%"><col style="width:14%"></colgroup>
+    <thead><tr><th>链企模块</th><th>链企做什么</th><th>bidcraft 对应现状</th><th>评级</th></tr></thead>
+    <tbody>
+      <tr><td>M1 招标解读</td><td>招标文件→项目概述/评分点/解读件（tender 槽位三路分发）</td><td>M4 tender-rule（规则抽取+分值校验）+ tender-parse（9 模块 agent 解析）+ 确认闸门</td><td><span class="tag t-ok">已覆盖</span></td></tr>
+      <tr><td>M2 目录管线</td><td>评分点→目录树三段式、writeMode 三档、G1 校验</td><td>M6 tech-outline（覆盖矩阵 + F1 草案校验 + 闸门①）</td><td><span class="tag t-ok">已覆盖</span></td></tr>
+      <tr><td>M3 上下文组装</td><td>七部件上下文包（含降级与缺失标记）</td><td>M6 tech-ctx 逐章上下文包 + 素材清单驱动</td><td><span class="tag t-part">可引入</span></td></tr>
+      <tr><td>M4 写作执行器</td><td>章级流式写作 + 落盘 + 回执（正文/.meta/*）</td><td>M6 tech-draft（规则拼装草稿 + 自述块）+ tech-rewrite（精修回路）</td><td><span class="tag t-part">可引入</span></td></tr>
+      <tr><td>M5 重写/续写</td><td>回收站三段式、generationRunId 过滤、失败还原</td><td>tech-rewrite 旧稿 .rewrite-trash 备份 + 回写回读</td><td><span class="tag t-ok">已覆盖</span></td></tr>
+      <tr><td>M6/M7 后链+配图</td><td>章节技能组调用、图表生成与 bidimg:// 本地化、去重</td><td>tech-layout 排版预设 + docx 图排；无 AI 配图管线</td><td><span class="tag t-part">可引入</span></td></tr>
+      <tr><td>M8 流式通信</td><td>SSE 双闸/keepalive/三姿态续传/runId 精确取消</td><td>无（CLI 一次性调用；server 桥仅只读能力清单）</td><td><span class="tag t-none">未覆盖</span></td></tr>
+      <tr><td>M9 状态持久化</td><td>原子写、退避重试、跨进程锁、sidecar 校验</td><td>写后回读 fail fast + 幂等键（各命令内）</td><td><span class="tag t-part">可引入</span></td></tr>
+      <tr><td>M10 提示词注册表</td><td>三层提示词库、技能身份单源、占位符白名单</td><td>提示词版本化（references/*-提示词.md v1.x）+ Golden 样例</td><td><span class="tag t-part">可引入</span></td></tr>
+      <tr><td>M11 质量闸</td><td>规则引擎 25 条 + GB8 + AI 语义四维（设计文档，客户端黑盒）</td><td>M7 双通道检查（checker 6+4 项 + agent 审查）+ 技术标 13 项检查</td><td><span class="tag t-ok">已覆盖</span></td></tr>
+      <tr><td>M12 导出/交付</td><td>docx 异步任务链、Word COM 保真、gzip+chaptersRef</td><td>M6 tech-export（md 合并→docx 排版引擎）+ M5 fill-tpl 商务标导出</td><td><span class="tag t-part">可引入</span></td></tr>
+      <tr><td>M13 观测/诊断</td><td>四段式日志链、诊断包、run_settled 终态</td><td>m9-evidence 留痕包 + m9-verify 体检（产物索引而非日志链）</td><td><span class="tag t-part">可引入</span></td></tr>
+      <tr><td>M14 PPT 生成</td><td>页级生成→deck→pptx（PPTist 导出）</td><td>无（docx 先行，PPT 未建）</td><td><span class="tag t-none">未覆盖</span></td></tr>
+      <tr><td>M15 商务标</td><td>解读→目录→8 并发写作→WPS 快照→排版→GB 导出</td><td>M5 布局样板母版 + fill-tpl 四步引擎（v2.4）+ M7 检查</td><td><span class="tag t-ok">已覆盖</span></td></tr>
+      <tr><td>M16 查重</td><td>tender_doc_sim 服务端查重、报告归一、冲正</td><td>无（tech-diff 仅双通道差异比对，非内容查重）</td><td><span class="tag t-none">未覆盖</span></td></tr>
+      <tr><td>M17 封面/页眉页脚</td><td>双 skill 路由、模板池三层、背景池 18 张+17 色板</td><td>M2 布局样板母版含封面/扉页样板 + tech-export 封面目录</td><td><span class="tag t-ok">已覆盖</span></td></tr>
+      <tr><td>M18 工程附图</td><td>四技能（平面图/设备图/进度计划/组织结构）批量</td><td>M6 tech-layout 图排；无独立附图生成技能</td><td><span class="tag t-part">可引入</span></td></tr>
+      <tr><td>M19 知识库云同步</td><td>云为唯一真相源、本地只读镜像、引用对账</td><td>M1 素材库（企业级）+ M3 知识库（共享级，待实现）</td><td><span class="tag t-part">可引入</span></td></tr>
+      <tr><td>C1 招标发现/任务助手</td><td>商机订阅、定时推送、关键词扩展</td><td>无（人工搜标 + tender-annex 归档）</td><td><span class="tag t-none">未覆盖</span></td></tr>
+      <tr><td>C2 信用库/资信库</td><td>企业信用、材料 8 类自动分类、缺口检测</td><td>M1 素材库分类 + tender-gap 缺口收口 + M10 assets-archive 去重</td><td><span class="tag t-ok">已覆盖</span></td></tr>
+      <tr><td>C3/C5 专家团队/行业专家包</td><td>expertGroupId 召唤、行业专家资料 kit</td><td>M6 tech-layout 专家包（layoutCombo 绑定生成）</td><td><span class="tag t-part">可引入</span></td></tr>
+      <tr><td>D3 技能中心/素材/模板</td><td>技能市场、素材模板中台（29 条爆雷）</td><td>M2 模板库台账 + 共享资源目录 + 部件库（tpl-part）</td><td><span class="tag t-part">可引入</span></td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2>三、值得引入的做法（原理 + 本项目收益）</h2>
+  <p>以下 10 项按「工程价值 / 落地成本」排序，全部有链企源码锚点或详细设计文档支撑，均为 bidcraft 可以吸收为 skill/文档/代码三层能力、不依赖 UI 的做法。</p>
+
+  <div class="cards">
+
+    <div class="card">
+      <h4>1. 写路径统一闸口的章节历史快照<span class="pri p0">P0</span></h4>
+      <div class="src">依据：B2（章节历史快照）</div>
+      <p class="lbl">链企的做法</p>
+      <p>所有写盘统一走一个入口（writeFileOnDisk），写前自动快照旧内容：上限 20 版/章、同文去重、同因 2 分钟合并窗口防 AI 流式刷屏；图片按 sha256 内容寻址归档进版本、50MB/章预算从最老版本降级、GC 只删孤儿；回滚 = 读旧版 + 以 restore 原因写回，天然双向可撤销。</p>
+      <p class="lbl">原理</p>
+      <p>「写前先留底」挂在唯一落盘闸上，任何 AI/人工写入都无法绕过历史；防抖与去重让高频写入不刷爆版本列表；内容寻址让图片不重复占盘。</p>
+      <p class="lbl">本项目收益</p>
+      <ul>
+        <li>现在 tech-rewrite 只有 .rewrite-trash 单份备份——升级为 20 版快照后，任何一次精修/导出覆盖都可回滚，投标前改错了能找回三天前的版本；</li>
+        <li>版本索引 json 可并入 m9-evidence 留痕包，评标质疑时拿出「哪一版是谁改的、为什么」完整证据链；</li>
+        <li>纯 Python + 文件系统实现，无 UI 依赖，直接落地为 CLI（如 <code>hist-snapshot / hist-list / hist-restore</code>）。</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h4>2. 校验结果落地 + 显式状态机（RULE_CHECKING/AI_CHECKING）<span class="pri p0">P0</span></h4>
+      <div class="src">依据：H13 §5-6、I16（质量闸设计）</div>
+      <p class="lbl">链企的做法（反面起点）</p>
+      <p>链企质量校验在服务端黑盒：只有「质量校验未通过，正在修正…」的 UI 标记，规则不可见、无校验报告产物、失败处理不透明（H13-2/3/4/6 四条爆雷）。复刻设计 I16 把它显式化为：规则引擎 25 条 + GB8 条 + AI 语义四维双通道，校验不通过不得进入下一环节，结果落地 <code>*.check.json</code>，失败自动重写 ≤N 次再交人工。</p>
+      <p class="lbl">原理</p>
+      <p>确定性规则毫秒级快速失败，AI 语义兜底"内容是否真贴合评分点"；状态机显式扩展（INIT→…→RULE_CHECKING→AI_CHECKING→FINISH/REWRITE/ERROR），门禁保证坏章节进不了下一环节；报告落盘让校验可审计。</p>
+      <p class="lbl">本项目收益</p>
+      <ul>
+        <li>我们的 M7 已是最强项（双通道 + 技术标 13 项），缺口是「校验结果状态机化」：现在 check 是静态报告，引入 RULE/AI 两态与自动重写计数后，tech-rewrite 精修回路可直接消费"哪条规则没过、自动修了几次、还差什么"；</li>
+        <li>check.json 结构化后，M10 remedy-gen 的任务单生成可更精确（现在靠人读报告）。</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h4>3. 提示词工程纪律：事实/推断分离 + 材料标注 + 温度分档<span class="pri p0">P0</span></h4>
+      <div class="src">依据：H1（提示词体系 P0~P6）</div>
+      <p class="lbl">链企的做法</p>
+      <p>共用系统前缀强制：只输出要求内容、事实与推断分离、JSON 必须可 parse、引用材料用【材料:名称】标记、禁止虚构证书编号/金额/日期；抽取类提示词（解读/分类/缺口检测）温度 0~0.2 强制 JSON，生成类 0.5~0.7 输出 Markdown；上下文预算截断 14 万字符；缺失信息输出 {{待填:说明}} 交人工，禁止编造（对应 D4 幻觉补全爆雷的教训）。</p>
+      <p class="lbl">原理</p>
+      <p>LLM 幻觉主要来自"没写的当成有"；把"材料里没有"显式建模成一种合法输出值，AI 宁可交付"待补"也不编数据——这是标书这种零容错文书的底线纪律。</p>
+      <p class="lbl">本项目收益</p>
+      <ul>
+        <li>M4/M6/M7/M8 提示词已有版本化与固化，直接吸收四条硬纪律（JSON 围栏禁令、【材料:名称】标记、{{待填}} 占位、温度分档表）到 v1.1 各提示词文件，一行都不改架构，纯文案强化；</li>
+        <li>和商务标「确定性原则」（用户最高优先级）完全同向。</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h4>4. 知识库消费链：章级引用指针 + 写作时回源 + 三级回落 + 引用回执<span class="pri p1">P1</span></h4>
+      <div class="src">依据：I10（知识库消费链）</div>
+      <p class="lbl">链企的做法</p>
+      <p>技术标「以标写标」：目录 sidecar 只存引用指针（fileId，content 恒空瘦身）→ 写作时 4 并发回源拉取、1 万字截断 → 三级回落（章级 referenceLevel ?? 章 feature ?? sidecar 存档）→ 服务端回执写 <code>正文/.meta/{章}.reference.json</code> 记录每章实际引用；low 档不上行省 token；上溯继承（父章配参考子章自动继承）。</p>
+      <p class="lbl">原理</p>
+      <p>指针存储 + 回源 = sidecar 不膨胀、正文不落版权内容；回执 sidecar = 每次写作实际用了哪些资料可审计；三级回落 = 缺一级不崩。I10 同时给出必反做：拉取失败/截断必须冒泡提示，不能静默（链企静默家族五条爆雷）。</p>
+      <p class="lbl">本项目收益</p>
+      <ul>
+        <li>M3 知识库（共享级）正是剩余清单第 1 项——这份文档就是 M3 消费侧的完整施工图：引用配置→回源→回落→回执→对账，可直接写成 <code>references/M3-知识库-消费侧设计.md</code>；</li>
+        <li>结合现有 M4 素材清单驱动与 M10 入库沉淀，形成「素材→引用→回执→入库」闭环。</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h4>5. SSE 双闸 + keepalive + 终态契约（长任务不误判）<span class="pri p1">P1</span></h4>
+      <div class="src">依据：H7（SSE 流式协议）</div>
+      <p class="lbl">链企的做法</p>
+      <p>idle 闸（任何字节到达即重置，含 keepalive 注释帧）与 hard 闸（创建起倒计时不重置）分离；服务端 15s 一帧 keepalive，模型长思考不误判；终态是契约——流结束但没收到 done/error 就算异常，触发续传而非假装完成。</p>
+      <p class="lbl">原理</p>
+      <p>「连接死了」和「任务太慢」是两种故障，一个闸说不清；keepalive 让 idle 可以安心设短，终态契约让静默失败变成显式异常。</p>
+      <p class="lbl">本项目收益</p>
+      <ul>
+        <li>现在 tech-draft/tech-rewrite 是 CLI 一次性调用 agent 平台，长时间任务无进度心跳——把「双闸 + 心跳 + 终态校验」下沉为通用调用封装（如 <code>agent_call.py</code> 统一超时/重试/终态判定），所有模块复用；</li>
+        <li>未来接入流式输出时（server 桥扩展）协议层直接对齐，不重写。</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h4>6. 统一错误码表 + 错误帧单入口归一<span class="pri p1">P1</span></h4>
+      <div class="src">依据：I14/I31（150 个唯一错误码）、H7 §5（错误归一化）</div>
+      <p class="lbl">链企的做法</p>
+      <p>全系统 150 个唯一错误码，新增必须先登记再使用；所有流式错误帧剥掉内部字段后经唯一入口解释下发给 UI，客户端各消费方不各自为战。</p>
+      <p class="lbl">原理</p>
+      <p>错误格式只有一个解释点，排障信息可索引、可统计（哪个码高频出现就是哪个模块要修）；错误码表本身是跨模块契约。</p>
+      <p class="lbl">本项目收益</p>
+      <ul>
+        <li>现在各 CLI 报错风格不一（有的裸 traceback、有的中文一句），统一为 <code>错误码表.md</code> + 每个命令 fail fast 带码输出（如 <code>OUTLINE_EMPTY</code>），m9-evidence 留痕包自动汇总本单出现过的高频错误码；</li>
+        <li>成本低、见效快，是纯文档+收尾工程。</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h4>7. 原子写 + 退避重试 + 跨进程锁（M9 持久化纪律）<span class="pri p1">P1</span></h4>
+      <div class="src">依据：I31 §5（原子写）、H1 P4（20/40/80/160/320ms 退避）</div>
+      <p class="lbl">链企的做法</p>
+      <p>写盘统一 tmp+rename 原子替换；EPERM/EACCES/EBUSY 按指数退避重试 5 次；跨进程 lockfile 防双开；坏 sidecar 可修复。</p>
+      <p class="lbl">原理</p>
+      <p>半截写入 = 下一次读取的静默坏数据；退避重试把 Windows 上常见的文件占用（Word/杀软）变成自愈而不是报错。</p>
+      <p class="lbl">本项目收益</p>
+      <ul>
+        <li>Windows 真实环境（Word COM 常驻、杀软扫描）正是这类问题的重灾区——抽一个 <code>atomic_write()</code> 工具函数 + <code>with_file_lock()</code>，替换各命令裸 open() 写盘，写后回读本来就已做，叠加原子写后彻底消除半截文件；</li>
+        <li>生产目录 E:\标书匠生产 与项目双开协作时，锁防止两份同时写同一项目。</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h4>8. 商务标「本地快照即真相」写作期不拉远端<span class="pri p1">P1</span></h4>
+      <div class="src">依据：I10 §3（reference-bids.json 本地快照）</div>
+      <p class="lbl">链企的做法</p>
+      <p>商务标历史参考写成 <code>正文/.biz-doc/context/reference-bids.json</code> 本地快照，写作时直接读快照注入上下文，云端增删不影响进行中的写作（I10 同时点名：快照解析失败必须显式报错，不能静默退化为空数组）。</p>
+      <p class="lbl">原理</p>
+      <p>「写作期不拉远端」把外部依赖从热路径上移除——快照即真相，断网也能继续写；这是把不确定的外部系统隔离在开始之前。</p>
+      <p class="lbl">本项目收益</p>
+      <ul>
+        <li>等价理念已是我们的设计基线（素材清单驱动 fill-tpl、冻结项目模板），但可以补一个显式动作：生成商务标前把 M1 素材台账命中项快照为项目级 <code>素材快照.json</code>（含版本时间戳），后续任何检查/补救都以快照为准，避免"写一半素材库变了"；</li>
+        <li>快照文件并入 m9-evidence 留痕包。</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h4>9. 模板/素材入库的幻觉防线与幂等标记<span class="pri p2">P2</span></h4>
+      <div class="src">依据：I10 §4（模板入库）、I31 §5（幂等）</div>
+      <p class="lbl">链企的做法</p>
+      <p>failed/error 状态的产物禁止保存入库；保存动作以服务端返回的 id 为准才标记成功；每类任务一个幂等键公式，终态置空防重复扣费/重复入库。反例是链企自己把「已保存」标记放 localStorage（换机即丢，I10-7 爆雷）。</p>
+      <p class="lbl">原理</p>
+      <p>入库动作必须有服务端/权威侧确认，本地乐观标记不可信；幂等键保证同一产物重复操作只有一次生效。</p>
+      <p class="lbl">本项目收益</p>
+      <ul>
+        <li>M1 apply --proposal / M2 模板登记 / M10 assets-archive 已有确认闸门，补充两条硬规则：入库申请单条目在应用前必须复核产物状态（如 docx 可打开、图片非空），入库后写幂等标记到台账（防同素材二次入库）；</li>
+        <li>把「已入库」状态从产物名/目录推断改为台账字段权威。</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h4>10. 观测里程碑：每个 run 8 条里程碑 + 终态必达<span class="pri p2">P2</span></h4>
+      <div class="src">依据：I31 §5、I23（观测设计）、H13 §4.4</div>
+      <p class="lbl">链企的做法</p>
+      <p>每次 run 必留 8 条里程碑事件，终态必发 run_settled；章节状态机严格流转（INIT→QUEUEING→GENERATING→FINISH/TIME_OUT/ERROR/CONTENT_EMPTY），非法流转被拦截。</p>
+      <p class="lbl">原理</p>
+      <p>「没到终态」本身就是故障信号；里程碑让一次 run 的每一步可回放，排障不需要人肉回忆。</p>
+      <p class="lbl">本项目收益</p>
+      <ul>
+        <li>m9-evidence 已做产物索引（静态），升级为「运行台账」：tech-draft/rewrite/check 每次执行追加一条 <code>run.ndjson</code>（起止/状态/耗时/产物 hash），投标留痕包直接读它渲染时间线；</li>
+        <li>终态契约保证每个命令要么成功要么带码失败，不存在"不知道有没有跑完"。</li>
+      </ul>
+    </div>
+
+  </div>
+</section>
+
+<section>
+  <h2>四、链企好但本项目无法实现的做法（原因 + 替代方案）</h2>
+  <p>以下 6 项是链企确实做得不错、但受限于 bidcraft「skill+agent 平台、CLI 为主、无服务端、个人自用」的形态而无法照搬；每项给出原因和可行替代。第 7 小节列出链企「好在哪里但绝不能引入」的反面教材（安全爆雷与计费时序）。</p>
+
+  <div class="cards">
+
+    <div class="card barrier">
+      <h4>1. Electron 桌面端原生 UI（所见即所得编辑器、流式打字机、瀑布流图库）</h4>
+      <div class="src">依据：C4（图库/知识库 UI）、A4（批量写作 UX）</div>
+      <p class="lbl">为什么不能</p>
+      <p>前端 UI 已确认不对接 agent 平台、仅作演示原型；agent 平台（豆包/WorkBuddy）不提供可挂载的 GUI 沙箱，桌面安装包超出 skill 分发形态；流式打字机需要 SSE + 常驻渲染进程。</p>
+      <p class="lbl">替代方案</p>
+      <ul>
+        <li>HTML 报告/设计器原型已验证可行（版面设计器工作台、检查报告、模拟评标报告），把"可视化"落在产物层而非交互层；</li>
+        <li>shot.py 渲染截图 + artifact-preview 让 agent 和用户都能"看到"结果；</li>
+        <li>未来若需要真 UI，再独立建 Web 前端消费 server 桥，与 skill 本体解耦。</li>
+      </ul>
+    </div>
+
+    <div class="card barrier">
+      <h4>2. 服务端 15 路并发写作 + SSE 断线续传 + 云 BFF 编排</h4>
+      <div class="src">依据：A4、H7、I31（M8 地基）</div>
+      <p class="lbl">为什么不能</p>
+      <p>并发与续传依赖服务端事件日志回放（Redis 游标）与云端 agent 常驻；我们没有服务端、没有账号体系、无部署目标；agent 平台按对话调用，无 runId/streamId 语义。</p>
+      <p class="lbl">替代方案</p>
+      <ul>
+        <li>保留确定性流水线：tech-draft 规则拼装 + 人工/agent 精修 + 闸门，串行但不丢；</li>
+        <li>吸收 H7 的「双闸/终态契约/错误归一」到本地 agent_call 封装（见三-5），把断线语义本地化：单次调用设 idle/hard 双超时、异常必须带终态；</li>
+        <li>「并发桶」理念降级为脚本内受控并行（如批量渲染部件用 ThreadPool 3~4），不引入状态机复杂度。</li>
+      </ul>
+    </div>
+
+    <div class="card barrier">
+      <h4>3. 云端知识库/图库/模板库 + 跨端云同步 + 引用对账</h4>
+      <div class="src">依据：C4、I29（知识库云同步设计）、I10</div>
+      <p class="lbl">为什么不能</p>
+      <p>云同步需要账号体系、OSS、解析服务与 BFF；本地 skill 无云端身份，也不可能让用户的标书资产（涉密）上云（链企自己的 C4-1 爆雷就是"说本机存、实为云端"的合规争议——我们反而避开了这个雷）。</p>
+      <p class="lbl">替代方案</p>
+      <ul>
+        <li>M1 素材库 / M2 模板库 / M3 知识库本就是本地三层目录，M19 的「引用对账 selected/ok/miss/failed」可在本地实现（引用配置 vs 实际命中清单的差集明示）；</li>
+        <li>「云」用「目录 + 命名 + 版本记录」模拟：素材库台账 + 校验和 + 生产同步 commit，跨机靠网盘/天翼同步盘（用户已有）；</li>
+        <li>投标敏感信息留本地是架构优点而非缺陷，报告里明示。</li>
+      </ul>
+    </div>
+
+    <div class="card barrier">
+      <h4>4. 标书内容查重（tender_doc_sim 服务端相似度引擎）</h4>
+      <div class="src">依据：I4/I26（查重链路）</div>
+      <p class="lbl">为什么不能</p>
+      <p>查重需要全文索引库 + 向量/规则引擎 + 原文跳转报告，链企实现是服务端 8+1 端点 + 写穿缓存三 sidecar；本地全量库会随标书增长失控，且无"全网历史标书"数据源。</p>
+      <p class="lbl">替代方案</p>
+      <ul>
+        <li>本地范围查重可做但降级：企业级素材库 + 本企业历史标书 + 当前项目章节间的相似片段检测（如 python-difflib/余弦，章节 vs 素材命中度），产物并入 M7 检查（新增 tech_duplicate 检查项）；</li>
+        <li>对外查重需求交给人工（专业查重平台），skill 提供"待查清单"导出。</li>
+      </ul>
+    </div>
+
+    <div class="card barrier">
+      <h4>5. 招标发现/商机订阅/定时推送（任务助手四助手）</h4>
+      <div class="src">依据：C4 §4（TaskAssistantPage）</div>
+      <p class="lbl">为什么不能</p>
+      <p>需要外部标讯数据源 API、订阅配额、定时服务与邮件推送通道；个人无标讯账号与常驻定时器（cron 定时工具只做提醒，不做数据抓取）。</p>
+      <p class="lbl">替代方案</p>
+      <ul>
+        <li>人工搜标 → tender-init 建项目 → tender-annex 归档补遗/澄清，把"发现"留给用户、把"归档解析"自动化（已实现）；</li>
+        <li>可加一个「商机登记表」轻量台账（投标日历 + 截止时间提醒，用定时任务提醒），不做自动抓取。</li>
+      </ul>
+    </div>
+
+    <div class="card barrier">
+      <h4>6. 积分计费/先冻结后发起/超额扣费（商业模式层）</h4>
+      <div class="src">依据：I12、I25 §4.7、C4 §4.7（导出扣费）</div>
+      <p class="lbl">为什么不能</p>
+      <p>个人自用无计费对象；但链企的「先冻结后发起、失败必冲正、价目随 run 快照」是优质工程实践，其反面（C4-13 先扣后知、I4/I5 扣费时序爆雷）正是它踩的坑。</p>
+      <p class="lbl">替代方案</p>
+      <ul>
+        <li>用「人工确认闸门 + 版本记录 + 幂等键」替代计费闸：每个不可逆动作（应用归档/入库/导出覆盖）必须 --confirm，写后回读；</li>
+        <li>运行台账（三-10）记录每次动作，充当"账单"。</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <h3>7. 反面教材：链企做得好但不能引入（甚至要警惕）</h3>
+  <table>
+    <colgroup><col style="width:26%"><col style="width:40%"><col style="width:34%"></colgroup>
+    <thead><tr><th>链企做法</th><th>为什么是好/坏两面的</th><th>bidcraft 立场</th></tr></thead>
+    <tbody>
+      <tr><td><b>服务端黑盒 prompt 与黑盒质量校验</b></td><td>提示词全在服务端 scenes.ts、质量规则不可见——可快速迭代但对用户零透明（H13-2/3）</td><td>提示词版本化 + Golden 样例 + 检查规则全部落盘可审，这是链企的教训而非优点，保持现状</td></tr>
+      <tr><td><b>49 条安全爆雷的代价</b></td><td>221 条爆雷（13 P0）来自其 Electron+云端+IPC 的复杂面（E3 审计、D6 读侧无白名单）</td><td>无 IPC/无云端/无账号，攻击面收敛——这是形态优势，不引入复杂面</td></tr>
+      <tr><td><b>先扣费后发起、导出先扣后知</b></td><td>时序缺陷导致用户被静默扣费（C4-13、I4/I5）</td><td>人工确认 + 零计费，无此问题；运行台账做等效账单</td></tr>
+      <tr><td><b>静默失败家族</b></td><td>回源失败返 null、截断不提示、快照退化空数组（I10-1/2/3/5）</td><td>我们的写后回读 + fail fast + 缺料披露正是链企缺失的，继续坚守"宁可打断不可无声"</td></tr>
+      <tr><td><b>localStorage 乐观标记</b></td><td>「已保存」标记存本地，换机即丢、可重复入库（I10-7）</td><td>台账字段为权威、幂等键去重（M1/M10 已有），补强即可</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="verdict">
+  <h3>五、结论与建议路线</h3>
+  <p><b>一句话结论</b>：链企 Buddy 是一套工程完整但安全与透明欠账的商业产品；bidcraft_skill 形态不同但主链功能覆盖率已达 14/22 项（含全部核心做标环节），且在做标最关键的两点——确定性与可审计性——上反超链企（人工闸门 + 三层测试 + 留痕包 vs 黑盒 + 静默失败）。值得抄的不是它的功能壳，而是它被真实事故锤炼出的 4 类工程纪律：<b>写前留底（历史快照）、终态契约（错误/流式/状态机）、指针+回执（知识库引用）、幂等与权威侧确认（入库）</b>。</p>
+  <ul>
+    <li><b>P0（两周内）</b>：① 章节历史快照（hist 三命令 + 20 版上限 + 内容寻址图片）；② 提示词四纪律回灌 M4/M6/M7/M8 提示词；③ 校验状态机扩展（check.json 加 RULE/AI 态 + 自动重写计数）。</li>
+    <li><b>P1（一个月）</b>：④ M3 知识库按 I10 消费侧蓝图落地（引用配置→回源→三级回落→回执 sidecar→对账，本地版）；⑤ 统一错误码表 + agent_call 双闸封装；⑥ 原子写 + 文件锁工具化。</li>
+    <li><b>P2（按需）</b>：⑦ 运行台账 run.ndjson 并入 m9-evidence；⑧ 素材快照化（写前冻结）；⑨ 本地范围查重检查项 tech_duplicate；⑩ 商机登记表 + 截止提醒。</li>
+    <li><b>明确不做</b>：UI 编辑器、服务端并发/续传、云端同步、计费、自动更新、微前端——形态不允许，替代方案已在第四节给出。</li>
+  </ul>
+</section>
+
+<footer>
+  依据：《链企Buddy分析\docs\00-INDEX.md / I31 / H1 / H13 / I10 / B2 / H7 / C4》（其余 69 份按索引主题引用）；bidcraft 侧依据 SKILL.md 模块总表与 module-contracts（T1~T22 状态）。本报告为对比分析与引入建议，落地项仍需按开发纪律先复述确认再实施。
+</footer>
+
+</div>
+</body>
+</html>

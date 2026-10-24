@@ -510,6 +510,12 @@ body.dark .dark-toggle .sw::after{left:17px}
       <button class="ctx-item" onclick="applyStyle()">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>应用此组合
       </button>
+      <button class="ctx-item" onclick="execBridge('tech-layout--preview',{},false)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>出排版样张（真实 docx）
+      </button>
+      <button class="ctx-item" onclick="execBridge('tpl-design--specimen',{name:'示例-标准技术标.json'},false)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>出模板样张（真实 docx）
+      </button>
     </div>
   </div>
 
@@ -520,7 +526,7 @@ body.dark .dark-toggle .sw::after{left:17px}
     <button class="ctx-item active" onclick="toast('当前：双通道比对阶段')">1 · 归档提取（tender-extract）</button>
     <button class="ctx-item" onclick="toast('当前：双通道比对阶段')">2 · 双通道解析（tender-rule / parse）</button>
     <button class="ctx-item" onclick="toast('当前：双通道比对阶段')">3 · 差异比对（tender-diff）</button>
-    <button class="ctx-item" onclick="toast('投标要点 HTML 核对（闸门①）在后续迭代实现（规划中）')">4 · 投标要点核对（tender-report 闸门①）</button>
+    <button class="ctx-item" onclick="execBridge('tender-report',{project:'市政务服务中心项目'},false)">4 · 投标要点核对（tender-report 闸门①）</button>
     <button class="ctx-item" onclick="toast('补遗归档在后续迭代实现（规划中）：tender-annex 补遗/澄清/修改 → 跨文件比对')">5 · 补遗归档（tender-annex）</button>
     <div class="ctx-sec">
       <div class="ctx-h">快捷操作</div>
@@ -1098,13 +1104,15 @@ body.dark .dark-toggle .sw::after{left:17px}
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-ghost" onclick="toast('tender-fmt 在后续迭代实现（规划中）：响应文件格式_<项目>.txt 一字不改提取')">提取格式章节</button>
-        <button class="btn btn-primary" onclick="toast('投标要点 HTML 核对（闸门①）在后续迭代实现（规划中）：tender-report 渲染')">核对投标要点（闸门①）</button>
+        <button class="btn btn-ghost" onclick="execBridge('tender-agent-parse',{project:'市政务服务中心项目'},false)">通道B 语义解析（agent 桥）</button>
+        <button class="btn btn-primary" onclick="execBridge('tender-report',{project:'市政务服务中心项目'},false)">核对投标要点（闸门①）</button>
       </div>
     </div>
 
     <div class="mline"><span class="sn">init</span><span class="st">tender-init：初始化项目级招标解析目录（幂等）</span><span class="sg">已执行</span></div>
     <div class="mline"><span class="sn">extract</span><span class="st">tender-extract：归档原件（源文件/）+ 提取原文（PDF 表格/多栏感知）</span><span class="sg">已执行 · 招标文件.pdf 4.2MB</span></div>
     <div class="mline"><span class="sn">parse</span><span class="st">tender-parse：提交 agent 解析产物落盘（投标要点.md/json + 素材清单.md/json）</span><span class="sg">已落盘</span></div>
+    <div class="mline"><span class="sn">agent</span><span class="st">tender-agent-parse：通道B 语义解析自动化（本机 CodeBuddy CLI headless → 投标要点 md+json 校验落盘，耗时长）</span><span class="sg" style="color:var(--warn)">需 CLI 已登录（dev/登录CodeBuddy-CLI.bat）</span></div>
     <div class="mline"><span class="sn">rule</span><span class="st">tender-rule：通道A 文档解析规则引擎 → 文档解析_<项目>.json（确定性字段）</span><span class="sg">已生成</span></div>
     <div class="mline"><span class="sn">diff</span><span class="st">tender-diff：双通道差异比对 → 双通道差异_<项目>.json/.md</span><span class="sg" style="color:var(--warn)">2 项待裁决</span></div>
     <div class="mline"><span class="sn">report</span><span class="st">tender-report：投标要点 HTML 渲染（闸门① 人工核对形态）</span><span class="sg" style="color:var(--warn)">待核对</span></div>
@@ -1367,26 +1375,31 @@ body.dark .dark-toggle .sw::after{left:17px}
         </div>
       </div>
 
-      <!-- P7 本地联调命令台（B：真实 CLI 调用链） -->
+      <!-- P7 本地联调命令台（执行桥 v3：POST /api/exec 白名单执行） -->
       <div class="dev-panel">
-        <div class="dev-h">P7 · 本地联调命令台<span class="sub">ui_cli_bridge.py → scripts/bidcraft.py</span></div>
+        <div class="dev-h">P7 · 执行桥命令台<span class="sub">bidcraft_server.py → scripts/bidcraft.py（白名单 · read 免确认 / write 需确认）</span></div>
         <div class="dev-b">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
             <span class="ctx-tag" id="bridgeState" style="background:#9aa3b8">桥未检测</span>
-            <span style="font-size:12px;color:var(--txt2)">先运行：python dev/prototypes/ui_cli_bridge.py --port 8765</span>
+            <span style="font-size:12px;color:var(--txt2)" id="bridgeVersion">先运行：python scripts/bidcraft_server.py --port 8765</span>
           </div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
-            <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px" onclick="bridgeSetCmd(['tech-status'])">tech-status</button>
-            <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px" onclick="bridgeSetCmd(['tech-layout','--list'])">tech-layout --list</button>
-            <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px" onclick="bridgeSetCmd(['tech-check','--project','市政务服务中心项目'])">tech-check</button>
-            <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px" onclick="bridgeSetCmd(['tech-export','--project','市政务服务中心项目'])">tech-export</button>
+            <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px" onclick="bridgeSetCmd({command:'tpl-design--list',args:{}})">模板清单(读)</button>
+            <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px" onclick="bridgeSetCmd({command:'tech-layout--list',args:{}})">排版预设(读)</button>
+            <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px" onclick="bridgeSetCmd({command:'tpl-part--list',args:{}})">部件库(读)</button>
+            <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px" onclick="bridgeSetCmd({command:'tech-status',args:{project:'市政务服务中心项目'}})">写作状态(读)</button>
+            <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px" onclick="bridgeSetCmd({command:'tpl-design--specimen',args:{name:'示例-标准技术标.json'},confirm:true})">模板样张(写·确认)</button>
+            <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px" onclick="bridgeSetCmd({command:'tech-layout--preview',args:{},confirm:true})">排版样张(写·确认)</button>
+            <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px" onclick="bridgeSetCmd({command:'m9-verify',args:{project:'市政务服务中心项目'},confirm:true})">项目体检(写·确认)</button>
+            <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px" onclick="bridgeSetCmd({command:'tender-report',args:{project:'市政务服务中心项目'},confirm:true})">投标要点报告(写·确认)</button>
           </div>
           <div style="display:flex;gap:8px;margin-bottom:8px">
-            <input id="bridgeCmd" value='["tech-status"]' spellcheck="false"
+            <input id="bridgeCmd" value='{"command":"tpl-design--list","args":{}}' spellcheck="false"
                    style="flex:1;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;font-family:Consolas,monospace;font-size:12px">
             <button class="btn btn-primary" onclick="bridgeExec()">执行</button>
           </div>
-          <div style="background:#0f172a;border-radius:10px;padding:10px 12px;color:#c9d4e8;font-family:Consolas,monospace;font-size:12px;white-space:pre-wrap;max-height:260px;overflow:auto" id="bridgeOut">等待执行…（显示 stdout / err / 产物路径）</div>
+          <div style="font-size:11.5px;color:var(--dim);margin-bottom:6px">请求对象：{"command":"白名单key","args":{name/project/fill},"confirm":true}；write 命令 confirm 缺省时弹人工确认框。完整白名单见 /api/capabilities execCommands；高风险命令（tech-export/fill-tpl/remedy-archive/tpl-design--apply 等）执行桥不暴露，走 CLI。</div>
+          <div style="background:#0f172a;border-radius:10px;padding:10px 12px;color:#c9d4e8;font-family:Consolas,monospace;font-size:12px;white-space:pre-wrap;max-height:260px;overflow:auto" id="bridgeOut">等待执行…（显示 payload / stdout / stderr / 产物路径）</div>
         </div>
       </div>
     </div>
@@ -1414,7 +1427,7 @@ body.dark .dark-toggle .sw::after{left:17px}
             </div>
           </div>
           <div style="display:flex;gap:8px;margin-top:12px">
-            <button class="btn btn-ghost" onclick="toast('投标要点 HTML 核对（闸门①）在后续迭代实现（规划中）：以招标原文为最终依据，裁决双通道差异')">核对投标要点（闸门①）</button>
+            <button class="btn btn-ghost" onclick="execBridge('tender-report',{project:'市政务服务中心项目'},false)">核对投标要点（闸门① · 真实生成 HTML）</button>
             <button class="btn btn-ghost" onclick="toast('重新解析在后续迭代实现（规划中）：tender-parse 重新生成文档解析.json')">重新解析</button>
           </div>
         </div>
@@ -1537,9 +1550,9 @@ window.STYLE_DATA={groups:[{key:"presets",label:"版面版式",items:[{"id":"sin
   }
   window.toast=toast;
 
-  // ---- 本地联调桥（B：真实 CLI 调用链）----
+  // ---- 本地执行桥（v3：POST /api/exec 白名单执行，真实 CLI 调用链）----
   var BRIDGE_URL='http://127.0.0.1:8765';
-  var bridgeOn=false;
+  var bridgeOn=false, bridgeInfo=null;
   function setBridgeState(txt,on){
     var el=document.getElementById('bridgeState');
     if(!el) return;
@@ -1547,32 +1560,78 @@ window.STYLE_DATA={groups:[{key:"presets",label:"版面版式",items:[{"id":"sin
     el.style.background=on?'#16a34a':'#9aa3b8';
   }
   function checkBridge(){
-    fetch(BRIDGE_URL+'/health').then(function(r){return r.json()}).then(function(j){
-      bridgeOn=!!(j&&j.ok); setBridgeState(bridgeOn?'桥已连接（'+j.root+'）':'桥未连接',bridgeOn);
+    fetch(BRIDGE_URL+'/api/health').then(function(r){return r.json()}).then(function(j){
+      bridgeOn=!!(j&&j.ok&&j.execBridge); bridgeInfo=j||null;
+      if(bridgeOn){
+        setBridgeState('执行桥 v'+j.version+' 已连接 · 白名单 '+((j.execCommands||[]).length)+' 命令',true);
+        var s=document.getElementById('bridgeVersion');
+        if(s) s.textContent='执行桥 v'+j.version+' · readonly='+(j.readonly===true?'只读':'读写')+' · deny '+(j.denyCommands||[]).length+' 项';
+      }else{
+        setBridgeState('桥未连接（服务未启动或非 v3）',false);
+      }
     }).catch(function(){bridgeOn=false; setBridgeState('桥未连接（未启动）',false)});
   }
   function toggleBridge(){
     if(bridgeOn){ setBridgeState('已断开（关闭浏览器联调）',false); bridgeOn=false; toast('本地联调已关闭；按钮恢复占位提示'); }
-    else{ checkBridge(); toast(bridgeOn?'本地联调已开启：命令台将真实执行 CLI':'桥未启动，请先运行 ui_cli_bridge.py'); }
+    else{ checkBridge(); toast(bridgeOn?'本地联调已开启：执行桥将真实执行 CLI（写操作需人工确认）':'桥未启动，请先运行 python scripts/bidcraft_server.py --port 8765'); }
   }
   window.toggleBridge=toggleBridge; window.checkBridge=checkBridge;
-  function bridgeSetCmd(arr){ var el=document.getElementById('bridgeCmd'); if(el) el.value=JSON.stringify(arr); }
+
+  /* ---- 执行桥统一引擎：任何视图按钮都可复用 ----
+     execBridge(command, args, confirm, opts)
+       command: 白名单 key（tpl-design--list / m9-verify / tender-report …）
+       args:    {name/project/fill/...}
+       confirm: true=已确认（write 必需）；false=弹确认框（write）
+       opts:    {silent:true 只 toast 不写结果面板, render:"panel"|"wizard"}
+     返回 Promise<响应 json>；结果同时写入命令台结果区。 */
+  var execPanelLog=[];
+  function _renderExecResult(j,title){
+    var out=document.getElementById('bridgeOut');
+    if(!out) return;
+    var t='$ '+title+' → exit='+j.exit+'（'+(j.ok?'成功':'失败')+'）\n';
+    if(j.payload){ t+='---- payload ----\n'+JSON.stringify(j.payload,null,2)+'\n'; }
+    if(j.output&&j.output.stdout) t+='---- stdout ----\n'+j.output.stdout+'\n';
+    if(j.output&&j.output.stderr) t+='---- stderr ----\n'+j.output.stderr+'\n';
+    if(j.error) t+='---- error ----\n'+j.error+'\n';
+    t+='---- 产物路径 ----\n'+(j.outputPath||'（见 stdout/payload 中披露的路径）')+'\n';
+    out.textContent=t;
+    out.scrollTop=out.scrollHeight;
+  }
+  function execBridge(command,args,confirm,opts){
+    opts=opts||{};
+    var out=document.getElementById('bridgeOut');
+    function go(cf){
+      if(!bridgeOn){ toast('执行桥未连接：请先运行 python scripts/bidcraft_server.py --port 8765'); return Promise.resolve(null); }
+      if(out) out.textContent='执行中：POST /api/exec '+command+(cf?'（已确认）':'（待确认）')+' …';
+      return fetch(BRIDGE_URL+'/api/exec',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({command:command,args:args||{},confirm:cf})})
+        .then(function(r){return r.json()}).then(function(j){
+          _renderExecResult(j,command+' '+(args?JSON.stringify(args):''));
+          if(j.ok){ toast('执行成功：'+command); }
+          else{ toast('执行失败：'+(j.error||'未知')); }
+          return j;
+        }).catch(function(e){ if(out) out.textContent='请求失败（桥未启动？）：'+e; toast('请求失败：'+e); return null; });
+    }
+    if(confirm){ return go(true); }
+    if(!window.confirm('【人工确认闸门】命令 '+command+' 属写操作，将真实调用 CLI 落盘产物。\n\n参数：'+JSON.stringify(args||{})+'\n\n确认执行？')){ toast('已取消：写操作需人工确认'); return Promise.resolve(null); }
+    return go(true);
+  }
+  window.execBridge=execBridge;
+
+  /* ---- 命令台：新契约 {command, args, confirm} ---- */
+  function bridgeSetCmd(desc){
+    var el=document.getElementById('bridgeCmd');
+    if(el) el.value=JSON.stringify(desc||{command:'tpl-design--list',args:{}});
+  }
   window.bridgeSetCmd=bridgeSetCmd;
-  function bridgeExec(){
+  function _execFromPanel(){
     var el=document.getElementById('bridgeCmd'); var out=document.getElementById('bridgeOut');
     if(!el||!out) return;
-    var arr; try{ arr=JSON.parse(el.value); }catch(e){ out.textContent='参数 JSON 解析失败：'+e; return; }
-    if(!Array.isArray(arr)){ out.textContent='需为命令参数数组，如 ["tech-status"]'; return; }
-    out.textContent='执行中：python scripts/bidcraft.py '+arr.join(' ')+' …';
-    fetch(BRIDGE_URL+'/exec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cmd:arr})})
-      .then(function(r){return r.json()}).then(function(j){
-        if(!j.ok){ out.textContent='桥错误：'+(j.error||'未知'); return; }
-        var t='exit='+j.code+'\n---- stdout ----\n'+j.out;
-        if(j.err){ t+='\n---- stderr ----\n'+j.err; }
-        if(j.artifacts&&j.artifacts.length){ t+='\n---- 产物 ----\n'+j.artifacts.join('\n'); }
-        out.textContent=t;
-      }).catch(function(e){ out.textContent='请求失败（桥未启动？）：'+e; });
+    var obj; try{ obj=JSON.parse(el.value); }catch(e){ out.textContent='参数 JSON 解析失败：'+e; return; }
+    if(!obj||!obj.command){ out.textContent='需为执行桥请求对象：{"command":"<白名单key>","args":{...},"confirm":true}'; return; }
+    execBridge(obj.command,obj.args||{},!!obj.confirm);
   }
+  function bridgeExec(){ _execFromPanel(); }
   window.bridgeExec=bridgeExec;
   if(document.readyState!=='loading'){ checkBridge(); } else { window.addEventListener('DOMContentLoaded',checkBridge); }
 
@@ -2065,7 +2124,7 @@ window.STYLE_DATA={groups:[{key:"presets",label:"版面版式",items:[{"id":"sin
   window.wzGo=wzGo;
   function wzNext(){
     if(curW<5){ wzGo(curW+1); }
-    else{ toast('已实现（T10 tech-export）：tech-export --project <项目> [--override preset=…;palette=…] → 技术标/产出/技术标_<项目>.docx；明标封面+目录域+页眉页脚，暗标 --bid-mode 强制全黑条款注入；页数估算回写 export.json'); }
+    else{ toast('成稿导出 tech-export 属高风险命令，执行桥不暴露——请走 CLI + 人工确认闸门：python scripts/bidcraft.py tech-export --project <项目> --confirm（产物：技术标/产出/技术标_<项目>.docx）'); }
   }
   window.wzNext=wzNext;
   function manualJudge(){

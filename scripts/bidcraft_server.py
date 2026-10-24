@@ -1,33 +1,46 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-bidcraft · 本地只读 HTTP 桥（B 方案：UI/平台工具 ↔ CLI 的只读代理）
+bidcraft · 本地 HTTP 桥 v3.0（只读接口 + 执行桥）
 
-职责：只提供**只读**接口（组合清单 / 预设 / F11 校验 / 专家包清单），供
-  - 版面设计器-工作台V1.html 等前端 fetch 实时取数；
-  - 豆包「已注册工具」/ WorkBuddy「自定义技能」等平台侧以 HTTP 方式调用（须自行完成平台鉴权包装）。
+职责：两层接口
+  1. **只读接口**（GET）：组合清单 / 预设 / F11 校验 / 专家包 / 模板清单等，供
+     版面设计器-工作台V1.html 等前端 fetch 实时取数；
+  2. **执行桥**（POST /api/exec）：在**白名单**内真实调用 bidcraft CLI 命令，
+     让 UI 具备真实功能（点按钮真跑命令、真出产物），同时守住安全边界：
+     只读命令无需确认；写命令必须带 `confirm: true`（由 UI 上的人工确认产生）；
+     白名单外命令一律拒绝并引导走 CLI 人工闸门。
 
 边界（安全设计）：
   - 默认只绑定 127.0.0.1（--host 0.0.0.0 仅内网使用，需自行加鉴权）；
-  - **不执行任何写操作**：写/生成一律 405，提示走 CLI + 人工确认闸门——
-    `python scripts/bidcraft.py tech-layout --apply-combo <json> --confirm` 等；
+  - **白名单唯一入口**：EXEC_COMMANDS 之外任何命令 403；
+  - **参数校验**：命令参数走 subprocess 列表传参（无 shell 拼接）；项目名/模板名等
+    值经防注入校验（拒绝 `..`、盘符、绝对路径、控制字符、超长）；
+  - **写操作确认闸门**：mode=write 命令必须 `confirm:true`，否则 403；
+  - **高风险命令永不暴露**：应用类/覆盖类/删除类（fill-tpl、tech-export、
+    remedy-archive --apply、tpl-design --apply 等）只走 CLI + 人工确认闸门；
   - 数据源与本项目生成链路同源：共享级 `layout-presets.json`（缺失回退内置清单，响应标注 fallback）。
 
 用法：
   python scripts/bidcraft_server.py [--host 127.0.0.1] [--port 8765] [--root <软件根>] [--enterprise <企业>]
 
-接口（全部 GET，返回 JSON）：
-  /api/health               存活检查
+接口（只读全部 GET，返回 JSON）：
+  /api/health               存活检查（含 execBridge 状态）
   /api/layout/groups        十五组（key+中文标签）
   /api/layout/presets       预设全文精简：source/fallback/default/recommendedCombos/groups
   /api/layout/validate?<key>=<id>&...   十五组 id F11 校验（缺省回填默认；bidMode=明标|暗标）
   /api/layout/packs         专家包清单（id/name/description/layoutCombo/bidType）
-  /api/capabilities         项目能力清单（动态）：layoutGroups / commands / moduleEntries / endpoints / presetsVersion
+  /api/capabilities         项目能力清单（动态）：layoutGroups / commands / moduleEntries / endpoints / presetsVersion / execCommands
   /api/template/list        模板清单 + 校验状态（tpl-design --list --json 机读）
   /api/template/show?name=X   模板详情（structure/styleRef/placeholders/rules + 暗标派生 15 组 + 校验）
-  /api/template/validate?name=X   模板校验问题清单（err/warn；写操作仍 405 走 CLI）
+  /api/template/validate?name=X   模板校验问题清单（err/warn；写操作仍走执行桥/CLI）
   /api/template/parts       部件库清单（tpl-part --list --json）
   /api/template/specimen?name=X[&fill=k=v;…]   出样张到临时目录（只读派生，不写项目/模板库）
+
+接口（执行桥 POST /api/exec）：
+  body: {"command": "<白名单命令 key>", "args": {"name": "...", "project": "...", "fill": "..."}, "confirm": false}
+  响应: {"ok": true, "command": ..., "mode": "read|write", "exit": 0, "payload": {...}|null, "output": {"stdout": ..., "stderr": ...}}
+  白名单与说明见 EXEC_COMMANDS；高风险命令清单见 EXEC_DENY_COMMANDS（供 UI 展示）。
 """
 
 import argparse
@@ -53,8 +66,144 @@ except Exception:
     pass
 
 SERVER_NAME = "bidcraft-server"
-SERVER_VERSION = "2.0"
+SERVER_VERSION = "3.1"
+EXEC_BRIDGE_VERSION = "3.1"
 PACK_BASE_REL = Path("共享资源") / "技术标风格" / "专家包"
+
+# ---- 执行桥：白名单（唯一入口）------------------------------------------
+# mode: read=无需确认；write=必须 confirm:true（人工确认闸门）
+# json: True=追加 --json 并解析 payload；False=原样返回 stdout 文本
+# cmd: "@name"/"@project"/"@fill" 等占位由请求 args 填充；项目名额外做目录边界校验
+EXEC_COMMANDS = {
+    # —— 只读（UI 实时取数/查询，无副作用）——
+    "tpl-design--list":     {"mode": "read",  "json": True,  "timeout": 120, "cmd": ["tpl-design", "--list"]},
+    "tpl-design--show":     {"mode": "read",  "json": True,  "timeout": 120, "cmd": ["tpl-design", "--show", "@name"]},
+    "tpl-design--validate": {"mode": "read",  "json": True,  "timeout": 120, "cmd": ["tpl-design", "--validate", "@name"]},
+    "tpl-part--list":       {"mode": "read",  "json": True,  "timeout": 120, "cmd": ["tpl-part", "--list"]},
+    "tpl-part--show":       {"mode": "read",  "json": True,  "timeout": 120, "cmd": ["tpl-part", "--show", "@name"]},
+    "tech-layout--list":    {"mode": "read",  "json": False, "timeout": 120, "cmd": ["tech-layout", "--list"]},
+    "tech-status":          {"mode": "read",  "json": False, "timeout": 120, "cmd": ["tech-status", "--project", "@project"]},
+    # —— 写（可逆产物，必须 confirm:true；样张/体检/留痕/报告）——
+    "tpl-design--specimen": {"mode": "write", "json": True,  "timeout": 300, "cmd": ["tpl-design", "--specimen", "@name"],
+                             "optional": [("--fill", "@fill")]},
+    "tech-layout--preview": {"mode": "write", "json": False, "timeout": 300, "cmd": ["tech-layout", "--preview"],
+                             "optional": [("--project", "@project"), ("--enterprise", "@enterprise")]},
+    "m9-verify":            {"mode": "write", "json": False, "timeout": 300, "cmd": ["m9-verify", "--project", "@project"]},
+    "m9-evidence":          {"mode": "write", "json": False, "timeout": 300, "cmd": ["m9-evidence", "--project", "@project"]},
+    "tender-report":        {"mode": "write", "json": False, "timeout": 300, "cmd": ["tender-report", "--project", "@project"]},
+    "tender-rule":          {"mode": "write", "json": False, "timeout": 300, "cmd": ["tender-rule", "--project", "@project"]},
+    "tender-agent-parse":   {"mode": "write", "json": False, "timeout": 900, "cmd": ["tender-agent-parse", "--project", "@project"]},
+}
+
+# 高风险命令清单（说明性 + capabilities 展示）：应用/覆盖/删除/状态推进类——
+# 永不通过执行桥暴露，只走 CLI + 人工确认闸门（如 --confirm / --apply / upload / trash / rm）
+EXEC_DENY_COMMANDS = frozenset((
+    "tpl-design--apply", "tpl-part--scan", "tech-layout--apply", "tech-export", "tech-outline",
+    "tech-report", "tech-parse", "tech-rewrite", "tech-ctx", "tender-parse", "tender-diff",
+    "tender-annex", "tender-gap", "tender-extract", "tender-fmt", "tender-check",
+    "tender-show", "fill-tpl", "remedy-gen", "remedy-done", "remedy-archive", "assets-archive",
+    "asset-upload", "asset-propose", "asset-apply", "asset-trash", "asset-rm-project",
+    "asset-cleanup-trash", "asset-reconcile", "docx-read", "docx-audit",
+))
+EXEC_OUTPUT_LIMIT = 20000   # stdout/stderr 截断，防大输出拖垮 UI
+EXEC_MAX_BODY = 65536       # POST body 上限
+
+# 命令 key → 描述（capabilities 展示用）
+EXEC_DESCRIPTIONS = {
+    "tpl-design--list": "模板清单（模板设计器）", "tpl-design--show": "模板详情（含暗标派生）",
+    "tpl-design--validate": "模板校验问题清单", "tpl-design--specimen": "出模板样张 docx",
+    "tpl-part--list": "部件库清单", "tpl-part--show": "部件内容",
+    "tech-layout--list": "排版预设清单（十五组×10套）", "tech-layout--preview": "排版样张 docx 预览",
+    "tech-status": "技术标写作状态表", "m9-verify": "项目自检体检（红绿灯）",
+    "m9-evidence": "投标留痕包（取证链）", "tender-report": "投标要点 HTML 报告",
+    "tender-rule": "通道A 文档解析（规则引擎落盘，write 需确认）",
+    "tender-agent-parse": "通道B 语义解析（agent 桥·CodeBuddy CLI，耗时长，write 需确认）",
+}
+
+
+def _simple_value(value, maxlen=200):
+    """执行桥参数值基础校验：拒绝路径穿越/盘符/绝对路径/控制字符/超长。"""
+    if not isinstance(value, str) or not value:
+        return False
+    if len(value) > maxlen:
+        return False
+    if ".." in value:
+        return False
+    if value.startswith(("/", "\\")):
+        return False
+    if len(value) >= 2 and value[1] == ":":
+        return False
+    if any(ord(ch) < 32 for ch in value):
+        return False
+    return True
+
+
+def _resolve_enterprise_root(root, enterprise):
+    """企业根 = <软件根>/<企业>（与 CLI 同一实现：core.Library.resolve；
+    单企业时 enterprise 可为 None，自动解析唯一企业）。"""
+    from _shared.core.lib import Library
+    return Library(Path(root)).resolve(enterprise)
+
+
+def _project_dir(root, enterprise, value):
+    """项目名校验：必须是 <企业根>/项目级/<项目名> 下真实存在的目录；返回绝对路径或 None。"""
+    if not _simple_value(value):
+        return None
+    try:
+        base = Path(_resolve_enterprise_root(root, enterprise)).resolve()
+        proj = (base / "项目级" / value).resolve()
+    except Exception:  # noqa: BLE001 —— 企业缺失/多企业未指定等统一视为校验失败
+        return None
+    if proj != base and str(proj).startswith(str(base)):
+        return str(proj) if proj.is_dir() else None
+    return None
+
+
+def _validate_exec_args(entry, args, root, enterprise):
+    """校验并装配执行命令参数。cmd 模板中 @key 原位替换为校验值；
+    optional 追加到尾部（可省略）。返回 (argv, error|None)。
+    @project 必须过目录边界；@name/@fill 过简单值校验。"""
+    argv, errors = [], []
+    for tok in entry["cmd"]:
+        if not tok.startswith("@"):
+            argv.append(tok)
+            continue
+        key = tok[1:]
+        val = (args or {}).get(key)
+        if key == "project":
+            # 安全校验：目录真实存在且在企业根/项目级 边界内（用解析结果验证）；
+            # CLI 契约：--project 传「项目名」而非绝对路径（validate_project_name 校验的是名字）
+            resolved = _project_dir(root, enterprise, val) if val else None
+            if resolved is None:
+                errors.append("project 参数非法或不存在（须为 <企业根>/项目级/ 下的真实项目目录）")
+                argv.append("__INVALID__")
+            else:
+                argv.append(val)
+        else:
+            if not _simple_value(val):
+                errors.append("%s 参数非法（拒绝路径穿越/盘符/绝对路径/控制字符）" % key)
+                argv.append("__INVALID__")
+            else:
+                argv.append(val)
+    for flag, tok in entry.get("optional", ()):
+        val = (args or {}).get(tok[1:])
+        if not val:
+            continue
+        if tok[1:] == "project":
+            resolved = _project_dir(root, enterprise, val)
+            if resolved is None:
+                errors.append("project 参数非法或不存在")
+                argv += [flag, "__INVALID__"]
+            else:
+                argv += [flag, val]
+        else:
+            if not _simple_value(val):
+                errors.append("%s 参数非法" % tok[1:])
+                argv += [flag, "__INVALID__"]
+            else:
+                argv += [flag, val]
+    return argv, ("；".join(errors) if errors else None)
+
 # 命令前缀 → 模块归属（能力清单的 moduleEntries 推导依据；随项目扩展在此增行即可，UI 入口自动长出来）
 MODULE_PREFIX = (
     ("env", "M0 环境体检"), ("asset", "M1 素材库"), ("tpl", "M2 模板库"),
@@ -66,7 +215,7 @@ ENDPOINTS = (
     "/api/health", "/api/layout/groups", "/api/layout/presets",
     "/api/layout/validate", "/api/layout/packs", "/api/capabilities",
     "/api/template/list", "/api/template/show", "/api/template/validate",
-    "/api/template/parts", "/api/template/specimen",
+    "/api/template/parts", "/api/template/specimen", "/api/exec",
 )
 WRITE_HINT = ("bidcraft server 为只读代理，不执行写操作；写/生成请走 CLI 并保留人工确认闸门："
               "python scripts/bidcraft.py tech-layout --apply-combo <组合补丁.json> --confirm（生成专家包）/"
@@ -117,7 +266,9 @@ class _Handler(BaseHTTPRequestHandler):
             if path == "/api/health":
                 self._send(200, {"ok": True, "server": SERVER_NAME,
                                  "version": SERVER_VERSION,
-                                 "readonly": True})
+                                 "readonly": False, "execBridge": True,
+                                 "execCommands": sorted(EXEC_COMMANDS),
+                                 "denyCommands": sorted(EXEC_DENY_COMMANDS)})
             elif path == "/api/layout/groups":
                 self._send(200, {"ok": True,
                                  "groups": [{"key": k, "label": v} for k, v in m6layout.GROUPS]})
@@ -149,9 +300,33 @@ class _Handler(BaseHTTPRequestHandler):
             self._send(500, {"ok": False, "error": "%s: %s" % (type(e).__name__, e)})
 
     def do_POST(self):
-        self._send(405, {"ok": False, "error": "该接口只读，不支持写操作", "hint": WRITE_HINT})
+        split = urlsplit(self.path)
+        if split.path != "/api/exec":
+            self._send(405, {"ok": False, "error": "该接口只读，不支持写操作", "hint": WRITE_HINT})
+            return
+        try:
+            length = int(self.headers.get("Content-Length") or 0)
+            if length <= 0 or length > EXEC_MAX_BODY:
+                self._send(400, {"ok": False, "error": "请求体缺失或超过 %d 字节上限" % EXEC_MAX_BODY})
+                return
+            body = self.rfile.read(length)
+            try:
+                payload = json.loads(body.decode("utf-8"))
+            except (UnicodeDecodeError, ValueError):
+                self._send(400, {"ok": False, "error": "请求体不是合法 JSON"})
+                return
+            self._send(200, self._exec(payload))
+        except Exception as e:  # noqa: BLE001 —— 兜底，保证响应始终是 JSON
+            self._send(500, {"ok": False, "error": "%s: %s" % (type(e).__name__, e)})
 
-    do_PUT = do_DELETE = do_PATCH = do_POST
+    def do_PUT(self):
+        self._send(405, {"ok": False, "error": "仅支持 GET（只读接口）与 POST /api/exec（执行桥）"})
+
+    def do_DELETE(self):
+        self._send(405, {"ok": False, "error": "仅支持 GET（只读接口）与 POST /api/exec（执行桥）"})
+
+    def do_PATCH(self):
+        self._send(405, {"ok": False, "error": "仅支持 GET（只读接口）与 POST /api/exec（执行桥）"})
 
     # ---- 业务 ----------------------------------------------------------
     def _presets(self):
@@ -289,6 +464,57 @@ class _Handler(BaseHTTPRequestHandler):
             payload["cliExit"] = r.returncode
         return payload
 
+    # ---- 执行桥（POST /api/exec）----------------------------------------
+    def _exec(self, payload):
+        """白名单命令执行：read 直接跑；write 必须 confirm:true；白名单外 403。"""
+        command = (payload or {}).get("command")
+        if not command or not isinstance(command, str):
+            return {"ok": False, "error": "缺少 command（白名单 key，见 /api/capabilities execCommands）"}
+        entry = EXEC_COMMANDS.get(command)
+        if entry is None:
+            if command in EXEC_DENY_COMMANDS:
+                return {"ok": False, "error": "命令 %s 属高风险操作，执行桥不暴露——请走 CLI 并保留人工确认闸门（--confirm/--apply）" % command,
+                        "hint": WRITE_HINT}
+            return {"ok": False, "error": "命令 %s 不在执行桥白名单（可用：%s）" %
+                    (command, "、".join(sorted(EXEC_COMMANDS)))}
+        args = payload.get("args") or {}
+        if not isinstance(args, dict):
+            return {"ok": False, "error": "args 必须是对象（{name/project/fill...}）"}
+        if entry["mode"] == "write" and payload.get("confirm") is not True:
+            return {"ok": False, "error": "命令 %s 属写操作（会落盘产物），必须显式确认：confirm:true（由 UI 人工确认产生）" % command}
+        argv, err = _validate_exec_args(entry, args, self.server.root, self.server.enterprise)
+        if err:
+            return {"ok": False, "error": "参数校验失败：%s" % err, "command": command}
+        import subprocess
+        cli = str(Path(__file__).resolve().parent / "bidcraft.py")
+        cmd = [sys.executable, "-X", "utf8", cli,
+               "--root", str(self.server.root or ""),
+               "--enterprise", str(self.server.enterprise or "")] + argv
+        if entry.get("json"):
+            cmd.append("--json")
+        try:
+            r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8",
+                               timeout=entry["timeout"],
+                               cwd=str(Path(__file__).resolve().parent))
+        except subprocess.TimeoutExpired:
+            return {"ok": False, "command": command, "error": "CLI 超时（%ss）" % entry["timeout"]}
+        stdout = (r.stdout or "")[:EXEC_OUTPUT_LIMIT]
+        stderr = (r.stderr or "")[:EXEC_OUTPUT_LIMIT]
+        resp = {"ok": (r.returncode == 0), "command": command,
+                "mode": entry["mode"], "exit": r.returncode,
+                "output": {"stdout": stdout, "stderr": stderr}}
+        if entry.get("json"):
+            try:
+                resp["payload"] = json.loads(stdout.strip())
+            except ValueError:
+                resp["payload"] = None
+                if r.returncode != 0:
+                    resp["error"] = "CLI 失败：%s" % (stderr[:500] or stdout[:500])
+        elif r.returncode != 0:
+            resp["error"] = "CLI 失败：%s" % (stderr[:500] or stdout[:500])
+        print("[exec] %s exit=%s" % (command, r.returncode), flush=True)
+        return resp
+
     def _capabilities(self):
         """项目能力清单（动态）：UI「功能入口」与实时状态的唯一来源。
         commands 由 bidcraft CLI 的 argparse 子命令表推导——新增命令自动出现在清单里；
@@ -320,11 +546,16 @@ class _Handler(BaseHTTPRequestHandler):
         payload = {
             "ok": True,
             "server": SERVER_NAME, "serverVersion": SERVER_VERSION,
+            "execBridgeVersion": EXEC_BRIDGE_VERSION,
             "presetsVersion": (doc or {}).get("version", ""),
             "layoutGroups": [{"key": k, "label": v} for k, v in m6layout.GROUPS],
             "commands": commands,
             "moduleEntries": module_entries,
             "endpoints": list(ENDPOINTS),
+            "execCommands": [{"key": k, "mode": v["mode"], "description": EXEC_DESCRIPTIONS.get(k, ""),
+                              "confirmRequired": v["mode"] == "write"}
+                             for k, v in sorted(EXEC_COMMANDS.items())],
+            "denyCommands": sorted(EXEC_DENY_COMMANDS),
             "commandsError": commands_error if "commands_error" in dir() else None,
         }
         return payload
@@ -342,11 +573,15 @@ def main(argv=None):
     server.root = args.root
     server.enterprise = args.enterprise
     url = "http://%s:%d" % ("127.0.0.1" if args.host in ("0.0.0.0", "::") else args.host, server.server_address[1])
-    print("bidcraft-server 只读桥已启动：%s" % url)
-    print("只读接口：/api/health /api/layout/groups /api/layout/presets /api/layout/validate /api/layout/packs "
-          "/api/capabilities /api/template/list /api/template/show /api/template/validate /api/template/parts "
-          "/api/template/specimen")
-    print("写操作一律走 CLI（本服务 405 拒绝）。Ctrl+C 停止。")
+    print("bidcraft-server v%s（只读接口 + 执行桥）已启动：%s" % (SERVER_VERSION, url))
+    print("只读接口：/api/health /api/layout/groups /api/layout/presets /api/layout/validate "
+          "/api/layout/packs /api/capabilities /api/template/list /api/template/show "
+          "/api/template/validate /api/template/parts /api/template/specimen")
+    print("执行桥：POST /api/exec（白名单 %d 个命令；write 命令须 confirm:true；白名单外 403）"
+          % len(EXEC_COMMANDS))
+    print("高风险命令（应用/覆盖/删除/状态推进）一律走 CLI + 人工确认闸门，执行桥不暴露。Ctrl+C 停止。")
+    if args.host not in ("0.0.0.0", "::"):
+        print("监听 %s —— 仅本机可访问；如需内网访问请显式 --host 0.0.0.0 并自行加鉴权。" % args.host)
     try:
         server.serve_forever()
     except KeyboardInterrupt:

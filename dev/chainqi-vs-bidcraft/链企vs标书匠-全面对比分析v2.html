@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>链企Buddy × 标书匠bidcraft 全面对比分析 v2</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='2' width='28' height='28' rx='3' fill='%23A93B32'/%3E%3Ctext x='16' y='22' font-size='17' text-anchor='middle' fill='%23FDFBF4' font-family='serif'%3E标%3C/text%3E%3C/svg%3E">
+<style>
+  :root{
+    --bg:#F2EEE2; --paper:#FDFBF4; --ink:#23262B; --ink2:#5B6068; --ink3:#8A8F98;
+    --blue:#1F4569; --blue2:#33587E; --red:#A93B32; --red2:#C25B52;
+    --gold:#A57F31; --green:#3E6B4F; --line:#D9D1BC; --line2:#EAE3D2;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:"Microsoft YaHei","PingFang SC","Hiragino Sans GB","Noto Sans CJK SC",sans-serif;
+    line-height:1.85; font-size:15.5px;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:0 18px;}
+
+  /* ===== 顶部导航 ===== */
+  nav.top{
+    position:sticky; top:0; z-index:50;
+    background:rgba(242,238,226,.97); border-bottom:1px solid var(--line);
+  }
+  nav.top .wrap{display:flex; align-items:center; gap:4px; overflow-x:auto; padding-top:0; padding-bottom:0;}
+  nav.top a{
+    flex:0 0 auto; display:block; padding:11px 12px; font-size:13.5px; color:var(--ink2);
+    text-decoration:none; border-bottom:2px solid transparent; white-space:nowrap;
+  }
+  nav.top a:hover{color:var(--blue);}
+  nav.top a.cur{color:var(--blue); border-bottom-color:var(--red); font-weight:600;}
+  nav.top .brand{font-family:serif; font-weight:700; color:var(--ink); margin-right:10px; letter-spacing:1px;}
+
+  /* ===== Hero ===== */
+  header.hero{padding:46px 0 30px; border-bottom:3px double var(--line);}
+  .hero .kicker{
+    display:inline-block; font-size:12.5px; letter-spacing:3px; color:var(--red);
+    border:1px solid var(--red); padding:2px 10px; margin-bottom:16px;
+  }
+  h1.title{
+    font-family:"Noto Serif SC","Source Han Serif SC","Songti SC","SimSun",serif;
+    font-size:34px; font-weight:800; line-height:1.35; letter-spacing:1px;
+  }
+  .hero .sub{margin-top:10px; color:var(--ink2); max-width:820px; font-size:14.5px;}
+  .stats{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:26px;}
+  .stat{
+    background:var(--paper); border:1px solid var(--line); padding:14px 12px; text-align:center;
+  }
+  .stat b{display:block; font-family:serif; font-size:30px; line-height:1.2;}
+  .stat span{font-size:12.5px; color:var(--ink2); display:block; margin-top:2px;}
+  .stat.s1 b{color:var(--blue);} .stat.s2 b{color:var(--gold);} .stat.s3 b{color:var(--red);}
+
+  /* ===== Section ===== */
+  section{margin:44px 0;}
+  .sec-head{display:flex; align-items:baseline; gap:12px; border-bottom:2px solid var(--ink); padding-bottom:8px; margin-bottom:22px;}
+  .sec-no{
+    font-family:serif; font-weight:800; color:var(--red); font-size:22px; flex:0 0 auto;
+  }
+  .sec-head h2{font-family:"Noto Serif SC","Source Han Serif SC","Songti SC","SimSun",serif; font-size:24px; font-weight:800;}
+  .sec-head .lead{color:var(--ink2); font-size:13px; margin-left:auto; text-align:right;}
+  .note{font-size:12.5px; color:var(--ink3); margin-top:10px;}
+
+  /* ===== 对比表 ===== */
+  .cmp-table{width:100%; border-collapse:collapse; table-layout:fixed; background:var(--paper);}
+  .cmp-table th,.cmp-table td{border:1px solid var(--line); padding:9px 10px; font-size:13.5px; vertical-align:top; overflow-wrap:break-word;}
+  .cmp-table thead th{background:var(--blue); color:#F4F0E6; font-weight:600; text-align:left;}
+  .cmp-table th.dim{background:#EDE7D5; color:var(--ink); width:20%; font-weight:600;}
+  .cmp-table td.lq{background:#F7F3E6;}
+  .cmp-table td.bd{background:#EFF2F5;}
+  .dim{white-space:nowrap;}
+  .tbl-scroll{overflow-x:auto;}
+
+  /* ===== 架构图 ===== */
+  .arch{display:grid; grid-template-columns:minmax(0,1fr); gap:14px; margin-top:18px;}
+  .arch-box{border:1px solid var(--line); background:var(--paper); padding:16px; min-width:0; overflow-wrap:break-word;}
+  .arch-box h4{font-size:15px; margin-bottom:10px; display:flex; align-items:center; gap:8px;}
+  .arch-box h4 .tag{font-size:11px; padding:1px 8px; color:#F4F0E6; border-radius:2px;}
+  .arch-box.lq h4 .tag{background:var(--red);}
+  .arch-box.bd h4 .tag{background:var(--blue);}
+  .layer{display:flex; align-items:flex-start; flex-wrap:wrap; gap:4px 8px; padding:7px 10px; margin:4px 0; border:1px solid var(--line2); background:#FAF7EE; font-size:13px; min-width:0;}
+  .layer b{flex:0 0 auto; min-width:56px; font-size:12px; color:var(--ink2);}
+  .layer .fl{flex:1 1 auto; min-width:0; overflow-wrap:break-word;}
+  .layer .mark{flex:0 0 auto; font-size:11px; color:var(--ink3);}
+  .arrow-row{text-align:center; color:var(--ink3); font-size:12px; margin:2px 0;}
+
+  /* ===== 反面对照 ===== */
+  .mirror{display:grid; grid-template-columns:1fr; gap:10px; margin-top:16px;}
+  .mirror .row{
+    display:grid; grid-template-columns:1fr 1fr; gap:8px; align-items:stretch;
+  }
+  .mirror .cell{padding:10px 12px; font-size:13px; border:1px solid var(--line);}
+  .mirror .cell.lq{background:#F9EDE9; border-color:#E2C4BE;}
+  .mirror .cell.bd{background:#EAF0F4; border-color:#C7D4DE;}
+  .mirror .cell b{display:block; font-size:12px; margin-bottom:3px; letter-spacing:1px;}
+  .mirror .cell.lq b{color:var(--red);} .mirror .cell.bd b{color:var(--blue);}
+
+  /* ===== 候选卡片 ===== */
+  .item{
+    border:1px solid var(--line); background:var(--paper); margin-bottom:20px;
+    box-shadow:0 1px 0 rgba(0,0,0,.02);
+  }
+  .item .head{
+    display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px;
+    padding:13px 16px 11px; border-bottom:1px solid var(--line2);
+  }
+  .item .num{
+    font-family:serif; font-weight:800; font-size:17px; color:var(--red);
+    border:1.5px solid var(--red); padding:1px 9px; flex:0 0 auto;
+  }
+  .item .tt{font-family:serif; font-weight:800; font-size:17.5px; flex:1 1 auto; min-width:200px;}
+  .item .ev{
+    font-size:11px; color:var(--ink3); background:#EFE9D9; padding:2px 8px;
+    flex:1 1 auto; min-width:0; max-width:100%; overflow-wrap:break-word;
+  }
+  .item .body{padding:12px 16px 14px;}
+  .item .row4{margin-bottom:10px;}
+  .item .row4:last-child{margin-bottom:0;}
+  .item .lab{
+    font-size:12px; font-weight:700; color:var(--blue); margin-bottom:2px; letter-spacing:.5px;
+  }
+  .item .txt{font-size:14px; color:var(--ink);}
+  .item .txt code, .item .plain code{
+    font-family:Consolas,"Courier New",monospace; font-size:12.5px; background:#F1ECE0; padding:0 4px; color:#333;
+  }
+  code{overflow-wrap:anywhere;}
+  .item .plain{
+    font-family:"FangSong","仿宋","STFangsong","SimSun",serif; font-size:14.5px;
+    color:#33383E; border-top:1px dashed var(--line); margin-top:10px; padding-top:10px;
+  }
+  .item .plain .p-lab{color:var(--red); font-weight:700; font-family:sans-serif; font-size:12px;}
+  .land{display:flex; flex-wrap:wrap; gap:5px; margin-top:10px;}
+  .land .chip{font-size:11.5px; color:var(--blue2); border:1px solid #B9C8D8; background:#EEF3F7; padding:1px 8px; border-radius:2px;}
+
+  /* ===== 表格通用 ===== */
+  table.tbl{width:100%; border-collapse:collapse; background:var(--paper); table-layout:fixed;}
+  table.tbl th,table.tbl td{border:1px solid var(--line); padding:7px 9px; font-size:13px; vertical-align:top; overflow-wrap:break-word;}
+  table.tbl thead th{background:#EDE7D5; font-weight:700;}
+  .dot{display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:5px; vertical-align:1px;}
+  .dot.ok{background:var(--red);} .dot.part{background:var(--gold);} .dot.no{background:#B9BDC6;}
+
+  /* ===== 披露 ===== */
+  .disclose{background:#FBF3EC; border:1px solid #E0C7B8; padding:16px 18px; margin-top:18px;}
+  .disclose h4{color:var(--red); font-size:15.5px; margin-bottom:8px;}
+  .disclose ul{padding-left:20px; font-size:13.5px; color:var(--ink);}
+  .disclose li{margin-bottom:5px;}
+
+  footer{border-top:3px double var(--line); margin-top:50px; padding:20px 0 40px; color:var(--ink3); font-size:12.5px;}
+
+  .totop{
+    position:fixed; right:16px; bottom:16px; z-index:60;
+    background:var(--ink); color:#F4F0E6; border:none; padding:10px 13px; font-size:12px; cursor:pointer;
+    display:none; font-family:inherit;
+  }
+  .totop.show{display:block;}
+
+  @media (min-width:768px){
+    .arch{grid-template-columns:repeat(2,minmax(0,1fr));}
+    .mirror .row{grid-template-columns:1fr 1fr;}
+    .stats{gap:14px;}
+  }
+  @media (max-width:640px){
+    h1.title{font-size:26px;}
+    .sec-head h2{font-size:20px;}
+    .item .head{gap:6px;}
+    .tbl-scroll{overflow-x:auto; -webkit-overflow-scrolling:touch;}
+    table.tbl{min-width:620px;}
+    table.cmp-table{min-width:700px;}
+  }
+</style>
+</head>
+<body>
+
+<nav class="top" id="topnav">
+  <div class="wrap">
+    <span class="brand">链企 × 标书匠</span>
+    <a href="#summary">结论先行</a>
+    <a href="#compare">项目对比</a>
+    <a href="#introduce">值得引入（12）</a>
+    <a href="#nogo">无法实现（10）</a>
+    <a href="#method">证据与方法</a>
+    <a href="#disclose">未实现披露</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="kicker">逆向精读 · 全面对比 · 逐条四段式</span>
+    <h1 class="title">链企Buddy × 标书匠bidcraft 全面对比分析 v2</h1>
+    <p class="sub">
+      本轮对 <b>E:\链企Buddy分析\docs</b> 下全部 76 份 md 逆向文档逐份精读到末尾（F1 同名 PDF 已抽页核验为打印版），
+      与 <b>E:\bidcraft_skill</b>（标书匠，本地单机 CLI 单一事实源 + 执行桥 v3.0）做详细对比，产出两份四段式清单——
+      每一条都标注证据文档名与 bidcraft 落点，已查证与推测分开，读不到的如实标「待补充」。
+    </p>
+    <div class="stats">
+      <div class="stat s1"><b>12</b><span>链企值得引入的做法<br>（四段式+大白话+示例）</span></div>
+      <div class="stat s2"><b>10</b><span>链企好但本项目无法实现<br>（含替代方案）</span></div>
+      <div class="stat s3"><b>5+5</b><span>维持「不做」项 5 条<br>+ 上版候选核验收窄 2 条</span></div>
+    </div>
+  </div>
+</header>
+
+<section id="summary">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-no">壹</span><h2>结论先行</h2><span class="lead">三句话读懂这份报告</span></div>
+    <div class="item" style="margin-bottom:12px;">
+      <div class="body" style="padding:14px 16px;">
+        <p class="txt" style="margin-bottom:10px;">
+          ① <b>链企最强、最值得抄的不是某个功能，而是一整套「失败即报错」的工程纪律</b>——它的 221 条爆雷几乎全部源于静默降级
+          （解析失败当空内容、截断不标记、写盘失败只 log、查不到当没有），而它被事故锤炼出来的正面做法
+          （写前快照、原子写+文件锁退避、统一错误码信封、检查契约结构化、引用回执、幂等对账）全部可无云端依赖地落进 bidcraft 的本地 CLI。
+        </p>
+        <p class="txt" style="margin-bottom:10px;">
+          ② <b>bidcraft 的架构选择（本地单机 + CLI 单一事实源 + 人工确认闸门）恰好站在链企反面教材的对立面</b>——
+          链企的云脑中继、无人值守免确认、165 处 innerHTML、自动更新静默替换，在本项目里要么不存在、要么被白名单闸门结构性挡住；
+          需要抄的是它「写保护、状态机、结构化检查」这些与云端无关的部分。
+        </p>
+        <p class="txt">
+          ③ <b>上版 10 条候选经本轮逐份精读：9 条获证据确认（其中「本地查重」「商机登记」收窄为本地可落地的形态），0 条翻案；5 条「不做」全部维持</b>。
+          最有价值的单条升级：把「检查报告自由文本」升级为「结构化 CheckItem + 规则引擎/AI 双通道质量闸」，直接咬合 m7_check / m8_eval / m10_remedy 现有闭环。
+        </p>
+      </div>
+    </div>
+    <p class="note">注：「值得引入 12 条」与「无法实现 10 条」均为本轮从 76 份文档逐份精读后重新确认/证伪的结论，不再是上一版凭索引的推测；证据追溯见第伍章。</p>
+  </div>
+</section>
+
+<section id="compare">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-no">贰</span><h2>双项目画像对比</h2><span class="lead">链企 Buddy（逆向文档） vs 标书匠 bidcraft（代码实测）</span></div>
+
+    <h3 style="font-family:serif; font-size:17px; margin:6px 0 12px;">2.1 架构形态</h3>
+    <div class="arch">
+      <div class="arch-box lq">
+        <h4><span class="tag">链企Buddy</span>Electron 客户端 + 云服务端</h4>
+        <div class="layer"><b>云服务端</b><span class="fl">BFF ×10 / wss 网关 / 提示词黑盒（客户端只传 expertGroupId / contentPromptDataId）/ 云端排版导出 / 计费 / 标讯库</span><span class="mark">逆向可见</span></div>
+        <div class="arrow-row">↓ 远程下发 + SSE 流 + 事件回调</div>
+        <div class="layer"><b>Electron主进程</b><span class="fl">203 条 IPC 通道 / 文件读写收敛 / 自动更新双引擎 / wrapIpcHandler 日志</span><span class="mark">零 sender 校验</span></div>
+        <div class="arrow-row">↓ 派发渲染层 + skill 沙箱</div>
+        <div class="layer"><b>渲染层</b><span class="fl">Vue UI / 编辑器 / 165 处 innerHTML（13 处吃外部内容）/ 确认弹窗</span><span class="mark">XSS 重灾区</span></div>
+      </div>
+      <div class="arch-box bd">
+        <h4><span class="tag">标书匠bidcraft</span>本地 Python CLI + 执行桥 v3.0</h4>
+        <div class="layer"><b>本地 CLI</b><span class="fl">scripts\bidcraft.py 单一事实源，挂载 m0~m10 + docx_tools，79 个 add_parser；技术标流水线 T11~T22</span><span class="mark">scripts\bidcraft.py</span></div>
+        <div class="arrow-row">↓ GET 只读 / POST /api/exec 白名单（12 条）</div>
+        <div class="layer"><b>执行桥</b><span class="fl">scripts\bidcraft_server.py v3.0，127.0.0.1:8765 无鉴权；read 免确认 / write 须 confirm:true / 高风险 deny 表</span><span class="mark">bidcraft_server.py</span></div>
+        <div class="arrow-row">↓ 浏览器页（真正功能的 UI，第 1 项工作）</div>
+        <div class="layer"><b>UI 层</b><span class="fl">dev\prototypes\ 原型 V1~V3 + 模板/版面设计器工作台；原则「UI 先读项目实现再画界面」</span><span class="mark">dev\notes\ui-real-flow-mapping.md</span></div>
+      </div>
+    </div>
+    <p class="note">架构结论：链企是「云脑 + 本地手」，bidcraft 是「本地一双手 + 一把只有本机才够得着的钥匙」。链企的云能力（标讯/语义解析/排版/计费/提示词黑盒）是 bidcraft 明确不做的边界；链企的本地工程纪律（写保护/状态机/观测）正是 bidcraft 该抄的部分。</p>
+
+    <h3 style="font-family:serif; font-size:17px; margin:22px 0 12px;">2.2 关键维度对照</h3>
+    <div class="tbl-scroll">
+    <table class="cmp-table">
+      <colgroup><col style="width:20%"><col style="width:40%"><col style="width:40%"></colgroup>
+      <thead><tr><th>维度</th><th>链企 Buddy（证据：文档名）</th><th>标书匠 bidcraft（证据：命令/文件）</th></tr></thead>
+      <tbody>
+        <tr><th class="dim">产品形态</th><td class="lq">Electron 桌面应用（v1.14.132 逆向基线），云服务端为唯一真相源（I31、H2）</td><td class="bd">本地 Python Skill 项目，CLI 单一事实源 scripts\bidcraft.py，执行桥 v3.0 提供 HTTP 通道（bidcraft-facts §1/§2）</td></tr>
+        <tr><th class="dim">LLM 接入</th><td class="lq">服务端托管：客户端只传 ID，提示词正文永不落地（H2）；qualityVersion 实为模型选择（H13）</td><td class="bd">提示词本地模板 + tech-draft 直接调用，模板驱动渲染 tech-export（--template/--fill，m6_tech\export.py:1703）</td></tr>
+        <tr><th class="dim">数据存储</th><td class="lq">文件即数据库：40+ JSON sidecar，技术标 05-目录最终.json、商务标 .chapters.json 两张权威表（I11）</td><td class="bd">共享资源 layout-presets.json（15组×10套）、template.json（m6.template/v1）、m5_project 台账、m1 入库 JSON（bidcraft-facts §3）</td></tr>
+        <tr><th class="dim">写盘安全</th><td class="lq">原子写 + 五档锁退避 [20,40,80,160,320]ms×5 + 跨进程 lockfile + 坏 JSON 不覆盖（I15、I14、I31）；反面：双开后写覆盖 I11-10</td><td class="bd">人工确认闸门 + 写后回读 fail fast（SKILL.md:74 readback.py）；原子写/锁退避尚未系统化 = 待引入（候选 2）</td></tr>
+        <tr><th class="dim">质量校验</th><td class="lq">客户端只有状态壳（UNCHECKED/CHECKING/PASS/FAIL），规则本体服务端黑盒；复刻侧自建规则+AI 双通道三道闸（H13、I16）</td><td class="bd">M7 check（check-rule/parse/diff/report）、M8 模拟评标、M10 补救→重检→M5 归档→M1 入库闭环；报告默认 HTML（bidcraft-facts §6）</td></tr>
+        <tr><th class="dim">观测</th><td class="lq">四段式：本地日志→本地队列→SLS 远端→诊断包；run_settled 终态 + slow_ipc 3s 阈值（I9、I23）；反面：IPC 裸转发丢 code</td><td class="bd">m9_verify 体检/留痕/互链（.json/.md/.html 三件套）；结构化台账待引入（候选 5）</td></tr>
+        <tr><th class="dim">安全边界</th><td class="lq">云脑 wss 下发 tool.exec（设计级 RCE）、零 sender 校验、165 处 innerHTML、token 进命令行（D5、E1、E2、E3、V）</td><td class="bd">127.0.0.1 绑定 + POST 白名单 + confirm 闸门 + deny 表，无远程下发通道（bidcraft_server.py L98-105、L462-478）</td></tr>
+        <tr><th class="dim">部署分发</th><td class="lq">自动更新双引擎（OSS 拉包/sidecar/schtasks/版本对账），升级事故史（D1、F1 §12.3、V §6）</td><td class="bd">生产 E:\标书匠生产 独立 git sparse-checkout，GitHub main → deploy runner + 6h 计划任务兜底（bidcraft-facts §5）</td></tr>
+        <tr><th class="dim">计费</th><td class="lq">积分冻结→实扣→冲正，402 资金闸，价目版本随 run 快照（I14、I25~I28、I29）</td><td class="bd">无登录无计费；等价物 = 人工确认闸门 + 资源前置确认（write confirm:true）</td></tr>
+        <tr><th class="dim">并发</th><td class="lq">15 路并发一键编写 + 双维并发桶 + 章节级取消（A4、I11）</td><td class="bd">T11~T22 串行流水线；断点续跑状态机待引入（候选 5/7）</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <h3 style="font-family:serif; font-size:17px; margin:22px 0 12px;">2.3 反面教材 → 本项目纪律对照（链企 221 条爆雷的共性 vs bidcraft 现有防线）</h3>
+    <div class="mirror">
+      <div class="row">
+        <div class="cell lq"><b>链企爆雷共性</b>解析失败伪装空内容（D4-02「本报告最应先修」）→ AI 幻觉补全</div>
+        <div class="cell bd"><b>bidcraft 防线</b>失败即报错、绝不假装成功（SKILL.md:22/27；readback.py）；候选 4 引入「失败语义显式区分」</div>
+      </div>
+      <div class="row">
+        <div class="cell lq"><b>静默兜底换专家团</b>expertGroupId 缺失无声回落官方团，半本标书文风漂移（C5-2、H2-2）</div>
+        <div class="cell bd"><b>CLI 单一事实源</b>本地模板/提示词文件化、可 diff、可回滚；候选 9 引入模板 ID 防退化互锁</div>
+      </div>
+      <div class="row">
+        <div class="cell lq"><b>截断无标记</b>招标文件 14 万字硬截断不带 truncated，AI 以为读全（D4-03、H3-4）</div>
+        <div class="cell bd"><b>m4_tender 解析返回契约</b>候选 4：返回 {text, truncated, totalChars, parseError}，截断即告警</div>
+      </div>
+      <div class="row">
+        <div class="cell lq"><b>无人值守免确认</b>6 条 unattended run 直接 shell.exec，第三方招标文件可触发（F1 P0-3、D5）</div>
+        <div class="cell bd"><b>人工确认闸门不静默</b>write confirm:true / 高风险 deny，只走 CLI 人工闸门（bidcraft_server.py L98-105）</div>
+      </div>
+      <div class="row">
+        <div class="cell lq"><b>死开关/假状态</b>设置页 7 个孤儿开关、硬编码状态（D2）；一键订阅静默截断（C4-7）</div>
+        <div class="cell bd"><b>审查报告默认 HTML + 数据可追溯</b>；UI 原则「先读实现再画界面」防自造逻辑（ui-real-flow-mapping.md）</div>
+      </div>
+      <div class="row">
+        <div class="cell lq"><b>收敛根可被改写</b>set-settings({rootDir}) 一次调用迁移全部文件边界（E3-01、V4）</div>
+        <div class="cell bd"><b>桥收敛根固定</b>127.0.0.1 绑定 + 白名单固定；候选 9 引入「收敛根不接受 API 入参改写」</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="introduce">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-no">叁</span><h2>值得引入的做法（12 条）</h2><span class="lead">每条四段式：做法 / 原理 / 本项目收益 / 大白话+示例</span></div>
+
+    <!-- ===== 条目 1 ===== -->
+    <div class="item">
+      <div class="head"><span class="num">01</span><span class="tt">写前自动快照 + 回收站三段式重写安全网（章节历史版本控制）</span><span class="ev">证据：B2 · H6 · I14-M5 · I22b · H1-P4</span></div>
+      <div class="body">
+        <div class="row4"><div class="lab">① 做法是什么</div><div class="txt">
+          所有写章节/中间稿的路径挂<b>前置钩子</b>：写盘前先把旧内容快照到 <code>.history/{章}/</code>，同文去重 + 2 分钟同 reason 合并窗口 + 空文件不快照 + 每章上限 20 版；全文重写前先把旧正文整体搬入 <code>.rewrite-trash/{runId}/</code>（prepare 搬移记 manifest → commit 写新 → cleanup 清 trash，任一步失败按 manifest 逆序回滚）；撤销 = 读最新快照写回，撤销本身也进历史（双向可撤销）；纯运行态字段（status/字数/runId）写盘时 skipHistory，历史里只留内容版本。
+        </div></div>
+        <div class="row4"><div class="lab">② 原理</div><div class="txt">
+          AI 生成是概率性操作，整批重写一旦中途失败不留旧稿就是净损失；「覆盖即备份」的事务化让磁盘上任何时刻要么有旧稿要么有新状态、不会两空。快照四道防抖（空/同文/时间窗/force 特例）把版本压缩到「真正有内容变化」的节点，避免 AI 流式分段写把历史刷爆。
+        </div></div>
+        <div class="row4"><div class="lab">③ 本项目收益</div><div class="txt">
+          落到 <b>m6_tech</b> 的 <code>tech-rewrite</code> / <code>tech-draft</code>（cli.py:406、draft.py:675）：重写前先快照到 <code>.history/</code>、整批重写先搬 <code>.rewrite-trash/</code>，失败自动还原；<b>m10_remedy</b> 补救重检前留底；版本索引 JSON 与现有 m9 台账风格一致，直接替代当前「覆盖即丢失、错了找不回」的状态。
+        </div></div>
+        <div class="plain"><span class="p-lab">④ 大白话 + 示例</span><br>
+          就像改标书前先把整个「正文」文件夹复制一份压箱底——万一新版写砸了，把箱子里的倒回来就行。<br>
+          <b>改造前</b>：<code>bidcraft tech-rewrite --all</code> 跑到第 8 章模型超时，第 1~7 章已被覆盖成未验证的新版，旧稿全丢。<br>
+          <b>改造后</b>：同命令先自动把旧正文搬进 <code>.rewrite-trash/20261024-001/</code>，任一章失败即按清单还原；用户说「退回上一版」= 读最新快照写回，这次退回本身也留底，能再退回来。
+        </div>
+        <div class="land"><span class="chip">落点：m6_tech · tech-rewrite</span><span class="chip">m10_remedy</span><span class="chip">m9_verify 留痕</span></div>
+      </div>
+    </div>
+
+    <!-- ===== 条目 2 ===== -->
+    <div class="item">
+      <div class="head"><span class="num">02</span><span class="tt">原子写 + 文件锁五档退避 + 坏 JSON 不覆盖（写盘安全四件套）</span><span class="ev">证据：B1 · B2 · D4 · D1 · H6 · I11 · I14 · I15 · I18 · I24 · I26 · I28 · I31</span></div>
+      <div class="body">
+        <div class="row4"><div class="lab">① 做法是什么</div><div class="txt">
+          所有 JSON/台账落盘统一走：写临时文件 → fsync → rename 原子替换；写前把上一版存 <code>.bak</code>；遇 EPERM/EACCES/EBUSY 按 <code>[20,40,80,160,320]ms</code> 退避重试 5 次后抛 <code>FILE_LOCKED</code>；进程内 key 锁 + 跨进程 lockfile（PID+时间+心跳，stale 30s 可抢占）双保险；读取时先校验 schema 版本与形状，坏 JSON 抛 <code>SIDECAR_CORRUPT</code>、原文件不动、备份 <code>.corrupt-{ts}</code>，<b>绝不拿空内容盖上去</b>。
+        </div></div>
+        <div class="row4"><div class="lab">② 原理</div><div class="txt">
+          直接写目标文件一旦中途断电/被杀就是半截 JSON，下次解析失败；tmp+rename 同目录原子替换，要么旧版要么新版没有中间态。Windows 本地现实：Word/杀软实时扫描会锁文件，立即重试必败，短退避后才放得过；双开两个进程写同一文件时纯内存锁挡不住，必须跨进程 lockfile。
+        </div></div>
+        <div class="row4"><div class="lab">③ 本项目收益</div><div class="txt">
+          落到 <b>m5_project</b> 项目台账、<b>m1_assets</b> 入库 JSON、confirmLog、layout-presets.json / template.json（共享资源）、执行桥 write confirm 闸门后的落盘：全部收进一个 <code>atomic_write_json()</code> 工具函数；docx 中间稿写盘遇占用自动退避而非直接报错退出。
+        </div></div>
+        <div class="plain"><span class="p-lab">④ 大白话 + 示例</span><br>
+          就像往标书袋里换材料——以前当着评委面把旧材料抽出来、新手还没塞进去，评委看到空袋；现在是先把新材料在旁边整理好（.tmp），整理完整后一秒换袋（rename），评委永远只看到「完整旧袋」或「完整新袋」。<br>
+          <b>改造前</b>：<code>json.dump(open('template.json','w'))</code> 写到一半程序崩了，template.json 变半截，下次打不开。<br>
+          <b>改造后</b>：先写 <code>.tmp</code> → 原文件改名 <code>.bak</code> → tmp rename 成正式文件；被占用时等 20ms 重试到 320ms（用户多半已保存关闭）；发现文件已坏则标 <code>SIDECAR_CORRUPT</code> 并从 .bak 恢复，绝不静默覆盖。
+        </div>
+        <div class="land"><span class="chip">落点：m5_project</span><span class="chip">m1_assets</span><span class="chip">共享资源 JSON</span><span class="chip">docx 中间稿</span></div>
+      </div>
+    </div>
+
+    <!-- ===== 条目 3 ===== -->
+    <div class="item">
+      <div class="head"><span class="num">03</span><span class="tt">统一错误信封 + 稳定错误码 + 禁止静默 catch（错误出口一统）</span><span class="ev">证据：I9 · I23 · I19 · I14 · I12 · H1 · I5</span></div>
+      <div class="body">
+        <div class="row4"><div class="lab">① 做法是什么</div><div class="txt">
+          所有跨边界调用统一返回 <code>{ok:true,data}</code> / <code>{ok:false,error:{code,message,retryable,requestId}}</code>；code 用稳定枚举（如 <code>EXPORT_EMPTY_BODY</code>），新增码<b>先登记码表再使用</b>；任何 catch 不得返回空对象/空数组继续执行；可降级的部件失败写 <code>degraded[]</code> 并进报告可见，必需部件缺失才硬阻断。
+        </div></div>
+        <div class="row4"><div class="lab">② 原理</div><div class="txt">
+          链企的教训是三层错误壳（服务端五套 → 主进程 throw → IPC 序列化 → 渲染层正则剥前缀）每层都在丢字段，最终用户看到的文案与真实原因隔三道翻译；「机器可分流的 code」和「人可读的 message」从一开始分开编码，跨边界不解析就不丢字段。
+        </div></div>
+        <div class="row4"><div class="lab">③ 本项目收益</div><div class="txt">
+          落到 <b>scripts\bidcraft_server.py</b> 的 POST /api/exec 返回体（现在是裸 stdout 文本，改造后前端能按 <code>retryable</code> 自动决策）；<b>m7_check / m9_verify / m10_remedy</b> 校验结果全部带稳定 code；与现有 write confirm 闸门配合，把「闸门拒绝/read 成功/write 待确认/高风险 deny」四种结局都变成可机读状态。
+        </div></div>
+        <div class="plain"><span class="p-lab">④ 大白话 + 示例</span><br>
+          就像快递单号——出问题一扫就知道卡在哪个环节，而不是只看到一句「包裹找不到了」。<br>
+          <b>改造前</b>：exec 返回一句「章节未进入编写流程，请重试」，前端只能原样显示，无法判断要不要自动重试。<br>
+          <b>改造后</b>：返回 <code>{ok:false,error:{code:"CHAPTER_NOT_STARTED",retryable:true}}</code>，前端看到 retryable 就等 30 秒重试；所有 code 都能在 HTML 审查报告里定位到是哪个模块抛的。
+        </div>
+        <div class="land"><span class="chip">落点：bidcraft_server.py /api/exec</span><span class="chip">m7/m9/m10 错误出口</span></div>
+      </div>
+    </div>
+
+    <!-- ===== 条目 4 ===== -->
+    <div class="item">
+      <div class="head"><span class="num">04</span><span class="tt">提示词四纪律 + {{待填}} 人工占位 + 解析失败语义显式</span><span class="ev">证据：H1 · F1-P2 · D4 · I6 · I17</span></div>
+      <div class="body">
+        <div class="row4"><div class="lab">① 做法是什么</div><div class="txt">
+          所有生成类提示词共用系统前缀四纪律：①只输出被要求的内容；②事实与推断分离，原文没写的一律不编造、缺失标「缺失」；③JSON 必须可机读直解不带代码围栏；④引用材料用【材料:名称】标记，禁虚构证书编号/金额/日期。材料没有的数据写 <code>{{待填:说明}}</code> 交人工补齐；解析失败显式输出 <code>{"error":"内容不可解析"}</code> 而非空内容。
+        </div></div>
+        <div class="row4"><div class="lab">② 原理</div><div class="txt">
+          LLM 的失败模式有两种——真空和假空（解析失败被当成没内容）；不区分这两种，模型就会拿幻觉补全，这比报错危险得多。数据纪律把「缺」变成显式占位而不是编造，把人的补位从「全文找漏」压缩成「扫占位符」。
+        </div></div>
+        <div class="row4"><div class="lab">③ 本项目收益</div><div class="txt">
+          落到 <b>tech-draft / tech-rewrite</b> 提示词模板（把现有「不得编造」升级为四纪律完整版）；<b>m4_tender</b> 解析返回 <code>{text, truncated, totalChars, parseError}</code>；M7 检查成稿前扫 <code>{{待填</code> 残留作为废标风险项。
+        </div></div>
+        <div class="plain"><span class="p-lab">④ 大白话 + 示例</span><br>
+          就像资料员写标书，宁可在缺业绩的地方贴一张黄色便利贴「待补：近三年类似合同」，也不能瞎编一个——评委一查合同编号就废标。<br>
+          <b>改造前</b>：提示词只写「不要编造」；模型读到一段解析乱码的招标文件，默认它就是没说，自行虚构「工期 540 日历天」；30 万字招标文件截断到 14 万，AI 以为读全，后半截评分点全漏。<br>
+          <b>改造后</b>：解析层先返回 <code>{error:"内容不可解析", truncated:true, totalChars:203000}</code>，M7 直接红色告警「招标文件截断，缺失约 6 万字」；正文缺数据处留 <code>{{待填:工期天数}}</code>，检查报告列出 3 处待填交人工。
+        </div>
+        <div class="land"><span class="chip">落点：m6_tech 提示词模板</span><span class="chip">m4_tender 解析契约</span><span class="chip">M7 待填扫描</span></div>
+      </div>
+    </div>
+
+    <!-- ===== 条目 5 ===== -->
+    <div class="item">
+      <div class="head"><span class="num">05</span><span class="tt">运行台账（run_settled 终态 + 慢调用阈值 + 结构化 JSONL）</span><span class="ev">证据：I9 · I23 · I11 · I31 · E1 · D5</span></div>
+      <div class="body">
+        <div class="row4"><div class="lab">① 做法是什么</div><div class="txt">
+          每次 run/命令执行终态写一条结构化台账记录 <code>{ts, runId, kind, status, durationMs, projectId, bidId, chapterId, errorCode, requestId, retries, degraded[]}</code>；执行桥对每次调用计时，超 3 秒记 slow 标记（slow_ipc 阈值）；日志统一 LogEntry schema（event 走枚举表禁自由文本），JSONL 落盘、7 天保留、5MB 轮转，丢弃/裁剪发 <code>logs_dropped</code> 计数不静默。
+        </div></div>
+        <div class="row4"><div class="lab">② 原理</div><div class="txt">
+          技术标主链唯一稳定可用的细粒度观测就是 run 终态一行字——事后排障不用翻几千行日志；3 秒慢调用阈值把「卡死」从感觉变成可计数事件。本地单机没有云端也能享受：本地全量日志本来就是观测链第一段。
+        </div></div>
+        <div class="row4"><div class="lab">③ 本项目收益</div><div class="txt">
+          升级 <b>m9_verify</b> 体检/留痕：跑完 2 小时技术标流水线后一条命令输出「哪步卡了 40 分钟、哪步失败带什么 code、总耗时分布」；HTML 审查报告直接引用台账段；生产环境 E:\标书匠生产 同步状态也能在台账对账。
+        </div></div>
+        <div class="plain"><span class="p-lab">④ 大白话 + 示例</span><br>
+          就像饭店后厨的工单——每道菜几点进灶、几点出灶、退菜原因，一眼看完。<br>
+          <b>改造前</b>：标书跑飞了只能翻 console 几千行日志慢慢找。<br>
+          <b>改造后</b>：台账一行行：<code>14:02 tech-diff 成功 12s</code>、<code>14:35 tech-draft 失败 code=EMPTY_BODY</code>、<code>15:10 export 412s（slow）</code>——哪本标书、哪一章、重试几次、错在哪个码，白纸黑字。
+        </div>
+        <div class="land"><span class="chip">落点：m9_verify</span><span class="chip">执行桥计时</span><span class="chip">HTML 报告台账段</span></div>
+      </div>
+    </div>
+
+    <!-- ===== 条目 6 ===== -->
+    <div class="item">
+      <div class="head"><span class="num">06</span><span class="tt">检查契约结构化（CheckItem 17 字段）+ 规则引擎/AI 双通道质量闸</span><span class="ev">证据：H9 · H13 · I16 · I14-M11</span></div>
+      <div class="body">
+        <div class="row4"><div class="lab">① 做法是什么</div><div class="txt">
+          检查结果不是一句「有问题」，而是结构化数组：每条含 <code>code / name / status(PASS/FAIL/WARN/UNCHECKED) / severity / evidence(命中原文) / locateType+locateValue / suggestion / autoFixable+fixType+replacement / confidence / fixed</code>；三道质量闸 G1目录→G2写作→G3交付顺序不可跳过，规则引擎（本地毫秒级确定性：字数达标率≥0.9/结构完整/敏感词/锚点/重复内容）+ AI 语义四维度打分（相关性/连贯性/专业度/响应度，任维&lt;0.6 即 FAIL）；ERROR 硬阻断不允许跳过，WARN 人工确认可跳过，AI FAIL 自动重写≤2 次后转补救；结果落 <code>check.json</code> 可审计。
+        </div></div>
+        <div class="row4"><div class="lab">② 原理</div><div class="txt">
+          检查类功能的价值在于「可定位、可修复、可按置信度过滤」——自由文本无法被下游自动消费，结构化字段让补救精确知道改哪里、怎么改；置信度让人工确认只花在不确定的地方。单规则引擎判不出「结构完整但跑题」，单 AI 判不准字数/敏感词，故必须双通道互补。
+        </div></div>
+        <div class="row4"><div class="lab">③ 本项目收益</div><div class="txt">
+          直接咬合现有闭环：<b>m7_check</b> 升级为规则引擎（规则 ID 化 + rules.json 可配阈值）、<b>m8_eval</b> 升级为 AI 四维度语义评审、<b>m10_remedy</b> 按 locateValue/replacement 自动修、confidence&lt;阈值转人工；check.json 落盘即默认 <b>HTML 审查报告</b>的数据源；G2 不过 → tech-rewrite ≤2 次 → M10 补救 → 重检 → M5 归档，链路不变。
+        </div></div>
+        <div class="plain"><span class="p-lab">④ 大白话 + 示例</span><br>
+          就像老师批作文——写「第 3 段有问题」学生不知道该改哪句；好老师写：「第 3 段第 2 句『我公司成立于 2010 年』违反暗标规则泄露公司名（严重度：高，置信度 0.98），建议改为『本公司』，可自动修复」。<br>
+          <b>改造前</b>：M7 输出一段 HTML 文字「发现疑似公司名，请人工核查」，M10 补救还要重新扫描全文找位置。<br>
+          <b>改造后</b>：M7 输出 <code>{code:"sealed_company_name", evidence:"XX建设集团有限公司", locateValue:"正文/3-施工组织.html 第3段第2句", autoFixable:true, confidence:0.95}</code>，M10 直接按定位替换，confidence&lt;0.7 的标 needConfirm 留给人，修完自动触发复查。
+        </div>
+        <div class="land"><span class="chip">落点：m7_check</span><span class="chip">m8_eval</span><span class="chip">m10_remedy</span><span class="chip">HTML 审查报告</span></div>
+      </div>
+    </div>
+
+    <!-- ===== 条目 7 ===== -->
+    <div class="item">
+      <div class="head"><span class="num">07</span><span class="tt">上下文最小化：目录投影白名单（CHAIN_KEYS）+ 指针存储回源 + 引用回执</span><span class="ev">证据：H3 · I10 · I22b · I29 · H8</span></div>
+      <div class="body">
+        <div class="row4"><div class="lab">① 做法是什么</div><div class="txt">
+          写作单章时不把整本目录塞给 AI，只投影「从根到当前章的祖先链路径（每级保留 CHAIN_KEYS 白名单字段）+ 当前章子节点标题」，兄弟章节/其他分支完全不可见；素材（过往标书/企业资料/招标原文）在 sidecar 里只存指针（fileId/相对路径 + level），写作该章时才按指针回源读文件注入上下文（并发、超时、单份 1 万字截断）；写完落回执 <code>.meta/{章}.reference.json</code> 记录实际引用了哪几份、每份成功/失败/截断；父章配的参考子章自动继承；level 三级回落。
+        </div></div>
+        <div class="row4"><div class="lab">② 原理</div><div class="txt">
+          LLM 的上下文是有限注意力资源，看到整本目录就可能「顺手写别章」或被其他分支带偏——只给一条路径，注意力被锚定在当前章职责内，防串扰成本最低。指针模式比每章全量塞资料省 token、防 sidecar 膨胀；回执让「用户以为参考了 3 份、实际只喂进 1 份」的引用注水无所遁形。bidcraft 素材就在本地磁盘，回源 = 本地读文件，比链企云端回源更可靠。
+        </div></div>
+        <div class="row4"><div class="lab">③ 本项目收益</div><div class="txt">
+          落到 <b>m6_tech</b> 每章独立上下文包组装（tech-draft/tech-rewrite）：目录只喂祖先链+当前章子节点；<b>m1_assets</b> 素材按章挂载指针；<code>.meta/{章}.reference.json</code> 回执并入 <b>m9_verify</b> 留痕与 M8 模拟评标参考；patch 白名单双闸对应 m2_template 写入纪律。
+        </div></div>
+        <div class="plain"><span class="p-lab">④ 大白话 + 示例</span><br>
+          就像让学生写「第三章·施工进度计划」，却把整本 20 章目录和每章要求都给他看——写着写着就写第四章去了。正确做法是只给他看「第一章（项目概况）→ 第三章（本章要求 + 三个小节标题）」，他只知道自己在第三章。<br>
+          <b>改造前</b>：tech-draft 生成 3.2 节时 prompt 塞了完整目录树（20章×3级约 80 个节点），AI 偶尔把 4.1 节的「质量保证措施」混进 3.2 节；参考资料整本塞进提示词，token 爆炸。<br>
+          <b>改造后</b>：prompt 只放 <code>1 &gt; 3 &gt; 3.2</code> 路径节点；目录里只挂「本章可参考 A、B 两份」指针，写这章才打开读对应段，写完生成引用回执——像开卷考试：考前只记书号，翻到哪页用哪页，考完还能写「这道题我翻了第 3 本第 12 页」。
+        </div>
+        <div class="land"><span class="chip">落点：m6_tech 上下文组装</span><span class="chip">m1_assets</span><span class="chip">m9_verify 回执</span></div>
+      </div>
+    </div>
+
+    <!-- ===== 条目 8 ===== -->
+    <div class="item">
+      <div class="head"><span class="num">08</span><span class="tt">双作用域落盘（材料归项目、解读归标书）+ overlay 重定向 + 评分点 confirmed 门禁</span><span class="ev">证据：I22a · I2</span></div>
+      <div class="body">
+        <div class="row4"><div class="lab">① 做法是什么</div><div class="txt">
+          招标文件解析产物分两层：项目公共层（解析/概述/评分点，全项目多本标书共享、以最新为准）+ 标书副本层（<code>解读/评分点.md|json</code>，优先读取、只来自本标书）；提示词恒写老地址，运行时 overlay 重定向到副本，副本空才回退公共路径；覆盖公共解读前先把旧值快照进存量标书，快照失败即阻断覆盖；评分点每条带 <code>{id,item,maxScore,requirement,anchor,confirmed:false}</code>，confirmed 未全 true 时目录生成/写作不得启动。
+        </div></div>
+        <div class="row4"><div class="lab">② 原理</div><div class="txt">
+          一个项目常有多本标书，招标文件是共享材料但「解读结论」随标书走——材料只解析一次省 token，解读各本互不覆盖；overlay 让上层代码不用感知路径差异；快照-阻断保证覆盖旧结论时不出「无声被改」；评分点人工逐条确认 = 关键输入进消费链前的闸门。
+        </div></div>
+        <div class="row4"><div class="lab">③ 本项目收益</div><div class="txt">
+          落到 <b>m5_project（项目）与 m4_tender（标书）</b>目录布局：若当前解析产物平铺在标书目录，改为「项目级材料库 + 标书级解读副本」两层；<b>M8 模拟评标</b>直接消费结构化评分点（评分项/分值/响应要求/原文锚点）而非自由文本；confirmed 门禁与本项目「人工确认闸门不静默」纪律完全同构。
+        </div></div>
+        <div class="plain"><span class="p-lab">④ 大白话 + 示例</span><br>
+          招标文件是「全公司共用的母本」，解读批注是「每本标书自己的笔记」。<br>
+          <b>改造前</b>：同一个项目做第二本标书，重新解读招标，把第一本标书的评分点结论覆盖了，第一本回过头发现评分点对不上。<br>
+          <b>改造后</b>：招标原文解析存项目公共库只做一次；每本标书自己 <code>解读/</code> 目录存自己的评分点，第二本的解读只写自己目录，第一本原封不动；评分点没逐条人工确认（confirmed）之前，目录生成直接拒绝启动。
+        </div>
+        <div class="land"><span class="chip">落点：m5_project / m4_tender 目录布局</span><span class="chip">M8 结构化评分点</span></div>
+      </div>
+    </div>
+
+    <!-- ===== 条目 9 ===== -->
+    <div class="item">
+      <div class="head"><span class="num">09</span><span class="tt">执行桥加固五条（解析后落点断言 / 读写同白名单 / fail-closed / env 白名单 / 入参收敛）</span><span class="ev">证据：D5 · D6 · E1 · E3 · G1 · V</span></div>
+      <div class="body">
+        <div class="row4"><div class="lab">① 做法是什么</div><div class="txt">
+          对本地无鉴权执行通道做五条收敛：①所有文件访问统一过「解析后落点」断言（<code>path.resolve(根, rel)</code> 后 <code>path.relative</code> 必须仍在根内），并显式拒绝盘符相对（C:foo）/NTFS 备用数据流/设备名/`..` 段；②读侧写侧共用<b>同一套</b>白名单策略函数（不允许「写有断言、读没有」）；③闸门缺省语义 fail-closed——不传/超时/无回调一律拒绝并留痕，不静默放行；④子进程 env 显式构造键集（PATH/PYTHONPATH/HOME/TEMP），不继承全量、命令行不塞凭据；⑤exportDir 类入参与默认值做<b>路径相等比较</b>，不能「传了就信」；收敛根不接受 API 入参改写。
+        </div></div>
+        <div class="row4"><div class="lab">② 原理</div><div class="txt">
+          V 报告实机验证：这类「本地通道无鉴权」架构，一处恶意调用即可「建目录+执行命令+逃逸出根」且不需用户点任何确认；E3-17 证明收敛点分散在调用方时漏一个就是 P0（三元短路跳过整个收敛）；D6 证明读写不对称是跨会话泄露根因——防线必须下沉到函数/通道入口，不靠调用方自觉。
+        </div></div>
+        <div class="row4"><div class="lab">③ 本项目收益</div><div class="txt">
+          落到 <b>scripts\bidcraft_server.py</b>（执行桥 v3.0）：在现有 GET 只读 + POST 白名单 + read 免确认/write confirm/高风险 deny 基础上，逐通道核对是否留了 V1（id 路径逃逸）/V4（rootDir 可改写）/V5（exportDir 直通）同款口子；白名单动作在 handler 入口统一 resolve+assertInside；确认超时 = deny + m_feedback/M9 留痕；调各子流水线 spawn 时显式 env 键集。
+        </div></div>
+        <div class="plain"><span class="p-lab">④ 大白话 + 示例</span><br>
+          就像仓库门口设岗——不能只靠「每张领料单写了允许出库」，大门口保安对每辆出门的车统一开箱核对；领料单制度再好，漏开一张就是漏洞。<br>
+          <b>改造前</b>：桥的 <code>export-dir</code> 参数「传了就用、没传才算默认目录」——任何调用方传个 <code>E:\标书匠生产</code> 外的绝对路径都直通（等价 V5）。<br>
+          <b>改造后</b>：<code>export-dir</code> 与默认值做全路径相等比较，不一致即拒绝并记 warn；写动作统一过 <code>assertInside(allowedRoots, target)</code>；确认弹窗 5 分钟没人点 → 记 <code>confirm_timeout</code> 失败、不写盘、留痕——像开标时招标人没来，按规矩「开标暂停/顺延」，绝不能「反正没人反对就替他唱标」。
+        </div>
+        <div class="land"><span class="chip">落点：bidcraft_server.py 逐通道加固</span><span class="chip">env 白名单</span><span class="chip">fail-closed 超时</span></div>
+      </div>
+    </div>
+
+    <!-- ===== 条目 10 ===== -->
+    <div class="item">
+      <div class="head"><span class="num">10</span><span class="tt">重试前受理对账 + 幂等键 + UNCONFIRMED 显式中间态</span><span class="ev">证据：I22b · I24 · I28 · I29 · I19</span></div>
+      <div class="body">
+        <div class="row4"><div class="lab">① 做法是什么</div><div class="txt">
+          任何可重试操作（LLM 写章/导出/桥执行）发起前先算 <code>idempotencyKey=sha256(作用域+章节+操作+内容修订)</code> 并落盘；失败重试前先查受理状态：accepted → 不重发改走补读；unknown → 抛 <code>RETRY_RECEIPT_UNKNOWN</code> 交人工决策重发/放弃；rejected → 才允许重发；「发出去但不知道对方收没收到」的中间态进入 UNCONFIRMED 显式态，不假装成功也不判失败，用同键重发查询。
+        </div></div>
+        <div class="row4"><div class="lab">② 原理</div><div class="txt">
+          「发出去了但响应断了」时系统不知道对方到底做没做——盲目重发 = 同一章写两遍（浪费 token、可能产生两份不同正文）；不重发 = 丢任务。幂等键让消费方只认一次，UNCONFIRMED 让这种中间态从「猜测」变成「显式状态」，把不确定交人工闸门而不是静默赌运气。
+        </div></div>
+        <div class="row4"><div class="lab">③ 本项目收益</div><div class="txt">
+          落到 <b>tech-draft/tech-rewrite</b> 断网重试（本地虽无计费，同样面临一章写两遍的问题：用本地 run 台账记录每章每次操作的受理状态，重试前先查）；<b>执行桥 POST /api/exec</b> 超时/进程崩溃场景（task 记录幂等键，重启后查执行结果而非盲目重跑）；<b>m5_project</b> 任务登记同构。
+        </div></div>
+        <div class="plain"><span class="p-lab">④ 大白话 + 示例</span><br>
+          就像寄挂号信——交给邮筒但不知道对方收到没，先写个存根，过两天拿存根去邮局查，而不是再寄一封。<br>
+          <b>改造前</b>：写第 5 章写到一半断网，重试直接重发——模型写了两版，一版旧的存了、一版新的也存了，对不上；tech-export 中途断网用户不知道跑完没，再点一次跑了第二遍。<br>
+          <b>改造后</b>：重试前先查本地台账「这章刚才受理过吗」——受理过且文件在盘 → 直接用磁盘产物不重发；查不清 → 弹窗问你「上一次结果不确定，重发还是用现有文件？」；导出断网先查存根，查到完成直接用产物，查不到才重发。
+        </div>
+        <div class="land"><span class="chip">落点：tech-draft/rewrite 重试</span><span class="chip">执行桥超时</span><span class="chip">m5 任务登记</span></div>
+      </div>
+    </div>
+
+    <!-- ===== 条目 11 ===== -->
+    <div class="item">
+      <div class="head"><span class="num">11</span><span class="tt">导出交付质检：版式断言套件 + 空壳/占位符/断链校验 + 防覆盖命名 + 差分回收</span><span class="ev">证据：I18 · B4 · I8 · I1</span></div>
+      <div class="body">
+        <div class="row4"><div class="lab">① 做法是什么</div><div class="txt">
+          导出产物交付前过一套写死的断言（V1~V10）：zip 包完整 / TOC 域已实例化 / 全文无 <code>{{</code> 占位符残留 / 样式字体字号与配置一致 / 图片 r:embed 包内全有对应 media（无断链）/ 字数对账（偏差&gt;15% warn）/ 非空文件，不过即 <code>EXPORT_FIDELITY_FAILED</code> 不许交付；流式写盘完成即查 size===0 则删文件抛错；未指定路径时自动「标书.docx / 标书 (1).docx」防覆盖；跑前 walk 全树记 mtime:size 快照、跑后 diff 出本轮真正新产出的文件（差分回收）；sha256 相同则复用同名不重写。
+        </div></div>
+        <div class="row4"><div class="lab">② 原理</div><div class="txt">
+          导出是「母版+占位符+渲染」的最后一公里，人眼抽检覆盖率低、版本回归靠运气；把「合格 docx」的可机检属性固化成断言等于装了出厂质检——任何模板改动/渲染 bug 都在断言层暴露，而不是流到评标专家手里。没有差分就会把全工作区当产物（原件回流污染产出目录）；没有防覆盖命名，重跑刷出一堆 (2)(3)。
+        </div></div>
+        <div class="row4"><div class="lab">③ 本项目收益</div><div class="txt">
+          落到 <b>tech-export</b>（m6_tech\export.py:1703 模板驱动渲染）与 <b>docx_tools</b>：导出后自动跑断言（残留 <code>{{</code> / media 断链 / 字数对账 / 非空），结果并入 m9_verify 的 <b>HTML 审查报告</b>；<b>M5 归档</b>写入前做差分识别 + 同名覆盖前先备份到 <code>.bidcraft/versions/</code>，sha256 相同记「复用」跳过。
+        </div></div>
+        <div class="plain"><span class="p-lab">④ 大白话 + 示例</span><br>
+          就像标书打印前的「成品检验单」——也是打印店最尴尬的事：把「空文件」当「已打印」递给你，拿到手才发现一页没有。<br>
+          <b>改造前</b>：tech-export 导完 docx 只看 exit code=0 就算成功，占位符 <code>{{项目名称}}</code> 漏填、某张图断链，只能靠人翻 Word 发现；重跑导出直接把上一版同名文件静默吃掉。<br>
+          <b>改造后</b>：导出后自动生成 verify.json——「正文残留 3 处 <code>{{</code>」「图片 r:embed 引用 media/image-12.png 包内不存在」，HTML 报告直接标红阻断；空文件当场删掉回退 M10 补救；同一「最终标书.docx」永远是那个名字，旧版自动进 <code>.bidcraft/versions/</code>，内容没变（sha256 相同）连新文件都不造。
+        </div>
+        <div class="land"><span class="chip">落点：tech-export 自检</span><span class="chip">docx_tools</span><span class="chip">M5 归档差分</span></div>
+      </div>
+    </div>
+
+    <!-- ===== 条目 12 ===== -->
+    <div class="item">
+      <div class="head"><span class="num">12</span><span class="tt">run 启动冻结配置快照 + 模板/版式「发出即钉住」</span><span class="ev">证据：H14 · I17-P6 · I31 · I1 · I3</span></div>
+      <div class="body">
+        <div class="row4"><div class="lab">① 做法是什么</div><div class="txt">
+          一次 run（如批量 tech-draft 多章）启动时把 template.json / layout-presets.json 当前值连同版本号冻结成 <code>.meta/runs/{runId}/snapshot.json</code>，run 中途用户改配置对本 run 不生效，结束后提示「配置已变更，建议重跑」；章节渲染前把选用的版式 presetId 写进 <code>.meta/{章}.render.json</code>，失败重试/补救重渲时读回已钉住的 id——「失败重试也不换版式」。
+        </div></div>
+        <div class="row4"><div class="lab">② 原理</div><div class="txt">
+          链企 bidConfigJson 每章现读导致「目录是新格式、写作用旧参数」的静默不一致（H2-4 爆雷）；冻结快照让 run 内行为幂等、可复算、排障时能还原当时用的哪套参数。模板选择用结构化 id 引用而非文案/标题匹配（H14 元规约⑦），同章两版内容版式跳变会让整本视觉撞车。
+        </div></div>
+        <div class="row4"><div class="lab">③ 本项目收益</div><div class="txt">
+          落到 <b>m5_project / m6_tech</b> 的 run 台账与 <b>layout-presets.json（15 组×10 套）+ template.json（m6.template/v1）</b>：T11~T22 启动时冻结配置版本；<b>M10 补救</b>重渲某章时强制读回 <code>render.json</code> 里钉住的 presetId，而不是重新从 150 套里抽签；M9 体检可核对「本次跑用的哪版 template / 哪组预设」。
+        </div></div>
+        <div class="plain"><span class="p-lab">④ 大白话 + 示例</span><br>
+          施工队进场先拍现场照片封档——干到一半业主改图纸，这栋楼先按封档图干完；排版师傅定好的版样要贴在工位上，不能每来个徒弟重新挑一遍。<br>
+          <b>改造前</b>：批量写第 8 章时用户改了模板，第 9 章开始用新模板，前后两套版式混进一本标书；M10 补救重渲某章时 layout-presets 重新按规则算，这次「左图右文」上次「全宽图」，两页并排版式打架。<br>
+          <b>改造后</b>：run 启动拍快照，中途改配置只对下一 run 生效、本次结束提示差异；首渲 <code>render.json</code> 记 <code>presetId="L07-B"</code>，补救重渲强制读回同一 id，整本标书版式前后一致。
+        </div>
+        <div class="land"><span class="chip">落点：T11~T22 run 台账</span><span class="chip">layout-presets / template.json</span><span class="chip">M10 补救重渲</span></div>
+      </div>
+    </div>
+
+    <p class="note">归纳：12 条引入项的共同特征 = 全部不依赖云服务端、全部属于「写保护 / 状态机 / 结构化检查 / 观测留痕」四类本地工程纪律，与 bidcraft 现有「失败即报错 + 人工确认闸门 + 审查报告默认 HTML」的开发纪律同向加固。</p>
+  </div>
+</section>
+
+<section id="nogo">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-no">肆</span><h2>链企好但本项目无法实现的做法（10 条）</h2><span class="lead">每条四段式：做法 / 为什么不能实现 / 替代方案 / 大白话+示例</span></div>
+
+    <!-- ===== 无-1 ===== -->
+    <div class="item">
+      <div class="head"><span class="num">N1</span><span class="tt">云端 Agent 中继（云脑 + 本地手，wss 远程下发工具执行）</span><span class="ev">证据：D5 · F1 · H11</span></div>
+      <div class="body">
+        <div class="row4"><div class="lab">① 做法是什么</div><div class="txt">云端 WebSocket 网关按 token 认证，向客户端下发 <code>tool.exec / shell.exec / file.read|write</code> 等原始工具；主进程 10 个原始工具无沙箱、无确认、路径不收敛、子进程继承全量 env（含 token）；后链路 6 条 run 标 <code>unattended:true</code> 免用户确认直接执行——设计意图就是「远程终端」。</div></div>
+        <div class="row4"><div class="lab">② 为什么不能实现</div><div class="txt"><b>本地单机 Windows + 无云服务 + 无登录/计费</b>：没有云端 Agent 可连，也没有 token 体系；且链企自己将其定性为「设计级 RCE」——网关一次越权或 token 泄露 = 全量客户端被控（D5 §1），这不是值得追的目标。</div></div>
+        <div class="row4"><div class="lab">③ 替代方案</div><div class="txt">bidcraft 执行桥 v3.0（127.0.0.1 本地 HTTP 桥 + POST /api/exec 白名单 + confirm 闸门 + deny 表）就是等价且更优形态——动作发起方永远是本机用户点按钮，不存在「远端下发」这一层，token 外泄/网关失陷整类风险直接消失。</div></div>
+        <div class="plain"><span class="p-lab">④ 大白话 + 示例</span><br>链企像「家里装了云端遥控器，云那边随时能指挥你电脑干活」；bidcraft 像「遥控器只在客厅茶几上，按下才动」。投标比方：链企模式 = 总部随时远程打开你的标书柜改文件；bidcraft = 柜子钥匙就在你自己手里，每开一格都要当面确认，总部连不上这台柜子。</div>
+      </div>
+    </div>
+
+    <!-- ===== 无-2 ===== -->
+    <div class="item">
+      <div class="head"><span class="num">N2</span><span class="tt">SSE 流式三姿态续传（fresh / resume / cold-continue + 事件日志回放）</span><span class="ev">证据：H7 · I15 · I19 · I12</span></div>
+      <div class="body">
+        <div class="row4"><div class="lab">① 做法是什么</div><div class="txt">长任务（批量写作）断网后不靠重跑，按 <code>streamId + seq</code> 游标从服务端事件日志回放续读（resume）；流的 owner 进程死了按 runId 认领新流接着跑（cold-continue）；配套 idle/hard 双闸看门狗（idle 每帧重置衡量「流还活着吗」、hard 从不重置衡量「任务还值得等吗」）、终态契约（没收到 done/error 即异常触发续传而非假装完成）。</div></div>
+        <div class="row4"><div class="lab">② 为什么不能实现</div><div class="txt"><b>无云服务端 + 无 Redis/事件日志</b>：续传依赖服务端按 streamId 持久化事件并支持回放；bidcraft 的 LLM 调用是一次性 HTTP 请求而非长连接 SSE；执行桥是 127.0.0.1 本地短请求，不持有事件日志。</div></div>
+        <div class="row4"><div class="lab">③ 替代方案</div><div class="txt">本地文件状态机 + generationRunId 归属戳实现断点续跑：中断后重跑命令，从 sidecar/状态文件读哪些章是 INIT/QUEUEING 继续、FINISH 跳过（对应引入项 5 的状态机化）；可借鉴纯客户端部分——<b>双闸超时（idle/hard 区分）+ 分类退避重试 + abort reason 结构化</b>，落到 m6_tech 的 LLM 调用。</div></div>
+        <div class="plain"><span class="p-lab">④ 大白话 + 示例</span><br>链企像打电话——断了线，重拨后对方能接着刚才的话头说；bidcraft 像发微信——消息发出去就结束了，断了就是断了，但你可以看聊天记录（本地状态文件）知道哪些已读哪些没发，重发没发的。示例：tech-draft 跑到第 8 章崩了，重启后读 sidecar 发现 1~7 章 FINISH、第 8 章 INIT，从第 8 章继续——不需要服务端回放，因为每章结果已经落盘。</div>
+      </div>
+    </div>
+
+    <!-- ===== 无-3 ===== -->
+    <div class="item">
+      <div class="head"><span class="num">N3</span><span class="tt">云端语义查重算法本体（tender_doc_sim 五步任务协议 + 双通道进度）</span><span class="ev">证据：I4 · I26 · I14-M16 · E2</span></div>
+      <div class="body">
+        <div class="row4"><div class="lab">① 做法是什么</div><div class="txt">查重直连云端专属服务 <code>tender_doc_sim</code>：预检→创建任务落盘→上传→冻结计费→启动→WS 进度推送（+3s 轮询兜底）→报告；核心是语义级比对（embedding 向量）、图片感知哈希、RSID 提取，全部在服务端黑盒，客户端只做编排与报告归一。</div></div>
+        <div class="row4"><div class="lab">② 为什么不能实现</div><div class="txt"><b>无云查重服务 + 本地单机</b>：语义级算法需要大模型推理服务或专用算法服务，本地无法等价提供；WS 实时进度通道对本地 CLI 也无意义（本地直接算）。上版候选⑨「本地查重」据此<b>收窄</b>：算法本体证伪，仅参数面/报告契约可复刻。</div></div>
+        <div class="row4"><div class="lab">③ 替代方案</div><div class="txt">落引入项级：<b>导入内容 hash 去重</b>（fileId=sha256 前 12 位 + 「N 份重复已忽略」显式提示，I26）+ <b>本地字符级相似度</b>（difflib / n-gram Jaccard，python 标准库起步），输出 pairwise 重复率矩阵 + 片段双栏对照 + 风险分档（&gt;30% 高 / &gt;10% 中，阈值进 rules.json），报告 HTML 化——并明示「本地字符级查重，非语义级」。</div></div>
+        <div class="plain"><span class="p-lab">④ 大白话 + 示例</span><br>链企把稿子送到云端查重机房出报告；我们没有机房，能做的是拿尺子在家量两段文字重合了多少字——大段雷同、整句复制能量出来（已经够用），语义改写级的「换个说法但意思照抄」量不出，如实标注即可。示例：<code>bidcraft check dedupe</code> 输出「第三章↔第五章 重复率 35%（高风险），相似区间 1230-1450 vs 890-1100」，片段双栏高亮——像老师批作文查重系统，把哪两段哪几句标红摆出来，而不是只说「你抄袭了」。</div>
+      </div>
+    </div>
+
+    <!-- ===== 无-4 ===== -->
+    <div class="item">
+      <div class="head"><span class="num">N4</span><span class="tt">服务端并发编排（15 路并发一键编写 + 双维并发桶 + 章节级取消）</span><span class="ev">证据：A4 · I11 · I14 · A2</span></div>
+      <div class="body">
+        <div class="row4"><div class="lab">① 做法是什么</div><div class="txt">选一个项目数十到上百章，点一次按钮 15 路 worker 并发生成，按 {perProject, global} 双维桶限流，awaiting_question 不占桶、桶满 FIFO 排队；配套章节级取消（停一章其余照写）、互斥 claim（同章不重复跑）、AbortController 管理在飞流。</div></div>
+        <div class="row4"><div class="lab">② 为什么不能实现</div><div class="txt"><b>本地单机 CLI 串行流水线 + 无 Electron 渲染层/服务端调度器</b>：并发批量写章需要 15 路 LLM 流并发管理、跨进程状态广播，这是 Electron 主进程+渲染层架构才有的东西；本地也无 LLM 配额池，15 路并发无意义且会把本机额度/磁盘打满。</div></div>
+        <div class="row4"><div class="lab">③ 替代方案</div><div class="txt">保持 T11~T22 串行，但借鉴 A4 的「章节状态机落盘 sidecar」支持<b>断点续跑</b>——跑到哪章崩了，下次从最近未完成章继续（引入项 5）；需要异步时由执行桥 POST /api/exec 白名单 + confirm 闸门控制。</div></div>
+        <div class="plain"><span class="p-lab">④ 大白话 + 示例</span><br>链企是「开 15 个工人同时写 15 章」，bidcraft 是「一个老师傅按顺序写 30 章」——一个人写手酸要吃饭，不能像 15 人那样并行；但可以借鉴「每章写完在墙上画个勾」（sidecar 状态落盘），吃饭回来接着画勾，不用从头重写。</div>
+      </div>
+    </div>
+
+    <!-- ===== 无-5 ===== -->
+    <div class="item">
+      <div class="head"><span class="num">N5</span><span class="tt">专家团提示词服务端按团分发（客户端只传 ID、正文永不落地）</span><span class="ev">证据：H2 · C5 · C3</span></div>
+      <div class="body">
+        <div class="row4"><div class="lab">① 做法是什么</div><div class="txt">专家团的章节提示词正文存服务端 <code>contentPromptDataId</code>，客户端每次写作只把 <code>expertGroupId</code> 上送，服务端按团解析拼装；更新提示词 = 服务端改一处全端生效；企业版可编辑自己团提示词并多版本发布/回滚。</div></div>
+        <div class="row4"><div class="lab">② 为什么不能实现</div><div class="txt"><b>CLI 单一事实源 + 无服务端</b>：「客户端只传 ID、知识在云端」的前提是长期运行的服务端按 ID 解析；bidcraft 所有提示词必须本地可读、可 diff、可版本控制，否则违反「单一事实源」纪律；且链企自身反面（缺失时静默回落官方团 C5-2/H2-2）恰是 bidcraft「失败即报错」要避免的。</div></div>
+        <div class="row4"><div class="lab">③ 替代方案</div><div class="txt">本地 taxonomy/styles.json + 提示词文件多版本：<code>m6/prompts/施工组织设计/v3.md</code> 为 current，<code>tech-diff</code> 直接 diff v2 vs v3，revert 把某版本软链为 current；「开发版即刻生效」等价为本地改完 prompt 文件立即对下一次 T12 生效，无需任何发布动作。</div></div>
+        <div class="plain"><span class="p-lab">④ 大白话 + 示例</span><br>链企像连锁餐厅——菜单（提示词）总公司掌握，分店只传桌号 ID；bidcraft 是自家小馆，菜谱就贴在厨房墙上（本地文件），改菜谱直接改墙。示例：链企改「质量管理」章写作风格 = 服务端改一条记录；bidcraft = 改 <code>prompts/tech-chapter-quality.md</code>，改完跑全量回归 895 绿即生效。</div>
+      </div>
+    </div>
+
+    <!-- ===== 无-6 ===== -->
+    <div class="item">
+      <div class="head"><span class="num">N6</span><span class="tt">云端商机检索 / 订阅推送（标讯库 + 定时任务主动推送）</span><span class="ev">证据：C1 · C4 · C2</span></div>
+      <div class="body">
+        <div class="row4"><div class="lab">① 做法是什么</div><div class="txt">对接云端标讯库（招标公告/中标结果/采购意向等 11 类 tab）、企业画像/工商司法情报，订阅体系按「关键词+排除词+地区三级+金额区间+时间区间+行业+业主类型+匹配模式」过滤，定时任务按 cron 主动推送「上次推送后新增」的标讯。</div></div>
+        <div class="row4"><div class="lab">② 为什么不能实现</div><div class="txt"><b>无云服务、无外部数据源、无定时任务调度器</b>：检索/订阅/推送全部依赖其 BFF + 标讯数据库，这是商业产品的基础设施层，不是本地 CLI 能补的。</div></div>
+        <div class="row4"><div class="lab">③ 替代方案</div><div class="txt">把订阅方案<b>字段结构</b>抽成本地「商机登记台账」schema——用户手动粘贴标讯标题/链接/地区/金额后入库，m4_tender 按本地台账字段过滤高亮，不做主动发现；每次入库自动记 <code>firstSeenAt</code>，M9 报告列出「自上次 M5 归档后新增 N 条」。</div></div>
+        <div class="plain"><span class="p-lab">④ 大白话 + 示例</span><br>链企像「订阅了 RSS 的新闻 App」自动给你推招标信息；bidcraft 像「自己做了个 Excel 台账」——你看到什么标讯手动记进去，但台账的列（关键词/排除词/地区/金额区间/时间窗）是照着链企那套设计的，以后想迁回任何系统都能用。示例：<code>opps.jsonl</code> 一行 = <code>{keyword:"深基坑", exclude:"咨询", region:"马鞍山", amountMin:500w, firstSeenAt:"2026-10-24"}</code>。</div>
+      </div>
+    </div>
+
+    <!-- ===== 无-7 ===== -->
+    <div class="item">
+      <div class="head"><span class="num">N7</span><span class="tt">计费体系（积分冻结 → 实扣 → 冲正 + 402 资金闸）</span><span class="ev">证据：I14 · I25~I28 · I29 · I12</span></div>
+      <div class="body">
+        <div class="row4"><div class="lab">① 做法是什么</div><div class="txt">发起 AI 请求前先按预估 token 冻结额度（billing.state: none|frozen|settled|refunded），执行成功实扣、失败/取消冲正；cycleId/idempotencyKey 防重复扣费；402 时撤在飞任务并冲正；价目表带版本随 run 快照。</div></div>
+        <div class="row4"><div class="lab">② 为什么不能实现</div><div class="txt"><b>无云服务、无登录、无计费、个人开发者本地工具</b>：不存在「余额/积分账户」这个对象；CLI 命令不向用户收费，也没有可对账的账务系统。</div></div>
+        <div class="row4"><div class="lab">③ 替代方案</div><div class="txt">「先确认后动作」哲学平移为已有的<b>人工确认闸门</b>（write confirm:true / 高风险 deny）；「冻结-回滚」纪律迁移到文件安全（引入项 2 的 .bak+rename、引入项 1 的 trash 三段式）；另做<b>用量记账</b>：run 台账记录每次调用 tokens.in/out 与成本估算，HTML 报告里记一笔「本章消耗 3200 token，约 0.4 元」。</div></div>
+        <div class="plain"><span class="p-lab">④ 大白话 + 示例</span><br>链企像打出租车先扫码预付费再走、退菜退定金；我们是私家车不涉及车费，但「跑一趟 2 小时的长途要不要现在出发」这个确认动作保留——不扣钱，但出发前问一句，防止误操作跑飞；每次跑完记一笔花了多少油钱（token 用量），月底自己能对账。</div>
+      </div>
+    </div>
+
+    <!-- ===== 无-8 ===== -->
+    <div class="item">
+      <div class="head"><span class="num">N8</span><span class="tt">自动更新双引擎（OSS 拉包 + sidecar/schtasks 脱离父进程 + 版本对账）</span><span class="ev">证据：D1 · F1-§12.3 · V-§6 · E1</span></div>
+      <div class="body">
+        <div class="row4"><div class="lab">① 做法是什么</div><div class="txt">Electron 应用后台轮询探版本（15s 首检/5min 间隔），OSS 直下 zip + sha512 校验 + .part→rename 原子落盘，sidecar/schtasks 三级拉起脱离父进程、目录整体 rename 交换安装，装后对账版本号并把坏版本拉黑。</div></div>
+        <div class="row4"><div class="lab">② 为什么不能实现</div><div class="txt"><b>非 Electron 应用 + 无安装形态/OSS/分发体系</b>：bidcraft 是本地 Skill 项目，分发靠本地等效同步（E:\标书匠生产 独立 git sparse-checkout），没有「更新一个正在运行的程序」的需求；且链企自身事故史证明这是纯风险面——隔离副本被官方升级器静默替换（F1 §12.3）、实机验证触发自动升级替换生产安装（V §6）。</div></div>
+        <div class="row4"><div class="lab">③ 替代方案</div><div class="txt">git pull / 本地目录同步即「更新」（生产 = GitHub main → deploy runner + 6h 计划任务兜底，bidcraft-facts §5）；借鉴两条局部手法：写文件 .tmp→rename（引入项 2）、启动时 M9 体检核对 layout-presets.json/template.json 版本一致性，对不上显式打印告警而非静默继续。</div></div>
+        <div class="plain"><span class="p-lab">④ 大白话 + 示例</span><br>链企像「写字楼里的公司，每天凌晨自动派人把整层办公室的家具换新，换新失败就把这批家具拉黑」；bidcraft 是「自己书房，要换家具自己去搬」——上版结论「自动更新不做」在本轮获得最强佐证：它在链企文档里是事故源而非能力。</div>
+      </div>
+    </div>
+
+    <!-- ===== 无-9 ===== -->
+    <div class="item">
+      <div class="head"><span class="num">N9</span><span class="tt">AI 生图/配图体系（章节配图 + 封面 AI 出图 + 工程附图生成）</span><span class="ev">证据：H5 · I27 · I28 · I24 · I21</span></div>
+      <div class="body">
+        <div class="row4"><div class="lab">① 做法是什么</div><div class="txt">正文写完后对某章点「配图」，读正文→加载画风技能→逐张调图片生成 API（GPT_IMAGE_2）出图→文件名即图注→先落候选区、用户挑中才进正文；封面/页眉页脚由服务端 AI 生图黑盒产出（workflow.dag model 节点）；横道图/平面图由服务端黑盒生成。</div></div>
+        <div class="row4"><div class="lab">② 为什么不能实现</div><div class="txt"><b>无图片生成 API 集成 + 无画风技能注册体系 + 无云端 AI 出图服务</b>：技术标以文字+表格+流程图为主，配图通常由 CAD 导出或素材库提供而非 AI 生成；个人开发者无图片生成 API 预算；平台无关打包也不允许依赖远端黑盒。</div></div>
+        <div class="row4"><div class="lab">③ 替代方案</div><div class="txt">layout-presets.json 的 15 组×10 套版面预设中图片位置留占位符（如 <code>[FIGURE: 图3-1 施工平面布置图]</code>），用户手工插入 CAD 截图/素材图，tech-export 渲染时占位符替换为真实图片位置；「候选区隔离、批次可回溯」思路保留给未来接入本地/开源生图能力时参考。</div></div>
+        <div class="plain"><span class="p-lab">④ 大白话 + 示例</span><br>链企像请插画师——文章写完自动配插图；bidcraft 像写公文——图是自己从 CAD 截图贴进去的，不是 AI 画的。示例：第 3 章写完链企自动出 5 张施工平面图；bidcraft 是版式里留好图位，你在 Word 里插 CAD 截图，导出时版式稳定可复现——不追求「每张封面独一无二」，追求「每次导出版式一致」。</div>
+      </div>
+    </div>
+
+    <!-- ===== 无-10 ===== -->
+    <div class="item">
+      <div class="head"><span class="num">N10</span><span class="tt">云端知识库同步 + 跨端乐观锁 409 冲突解决</span><span class="ev">证据：I29 · I32 · I14-M19</span></div>
+      <div class="body">
+        <div class="row4"><div class="lab">① 做法是什么</div><div class="txt">云为唯一真相源、本地只读镜像（24h TTL）+ 待办队列 + 写穿纪律（云端 2xx 后才更新镜像）；文件带 version 乐观锁，写操作回传读到的 version，409 冲突时给「刷新查看 / 强制覆盖（二次确认）」两动作，默认不覆盖；跨端实时推送。</div></div>
+        <div class="row4"><div class="lab">② 为什么不能实现</div><div class="txt"><b>本地单机 Windows、无云服务</b>：没有第二端就没有跨端冲突，BFF 真相源不存在；上版「云端同步不做」结论经 I29 全篇核对确认不翻案。</div></div>
+        <div class="row4"><div class="lab">③ 替代方案</div><div class="txt">本地 project.json / sidecar 即唯一真相源；version 思想降级为 sidecar 单调修订号，防「本仓 + 手工改文件」的双写漂移；剥离云端后<b>待办队列+幂等键+退避重放</b>（[1m,5m,30m,2h,12h] 耗尽转人工）与<b>引用对账四态</b>（selected/ok/miss/failed 分开统计、删除素材前扫引用二次确认）可纯本地化移植——详见引入项 10 及下方速览表。</div></div>
+        <div class="plain"><span class="p-lab">④ 大白话 + 示例</span><br>云方案像两本同时在两个办公室修改的标书合同——版本号对不上就弹「谁覆盖谁」；本项目只有一台电脑一份文件，这道弹窗永远不会出现，只需要记住「我这份就是最新版」。但链企同步设计里「打印机卡纸记在待补打清单、1 分钟后自动重试、凭幂等键不重复打已打好的页」这套本地化机制照样能搬。</div>
+      </div>
+    </div>
+
+    <h3 style="font-family:serif; font-size:17px; margin:26px 0 12px;">其余无法实现项速览（约束同源，一句话替代）</h3>
+    <div class="tbl-scroll">
+    <table class="tbl">
+      <colgroup><col style="width:30%"><col style="width:32%"><col style="width:38%"></colgroup>
+      <thead><tr><th>做法（证据文档）</th><th>被什么约束挡住</th><th>本项目等价替代</th></tr></thead>
+      <tbody>
+        <tr><td>远端观测上报（SLS / 诊断包预签名 PUT OSS）（I9、I23）</td><td>无云服务、无 OSS 桶、无远端接收端</td><td>只取四段式观测前三段：本地 JSONL + 本地持久队列 + 结构化 entry；远端段替换为「本地诊断包导出」——脱敏后打 zip 放项目目录，由用户自己决定发给谁</td></tr>
+        <tr><td>PPTist 微应用在线编辑/切页导出（I1、I24）</td><td>本地单机无云服务、交付物是 docx 技术标</td><td>不做 PPT；将来要汇报材料从已导出 docx 转 PDF/静态图，或用 python-pptx 按模板确定性填充（不走 AI 切页、不做画布编辑器）</td></tr>
+        <tr><td>OS 级脚本沙箱（seccomp / bwrap / firejail）（D5、E1）</td><td>Windows 无 seccomp、bwrap 是 Linux 专属、个人 CLI 无容器基建；链企自己也未实现</td><td>应用层白名单替代玻璃牢房：命令白名单 + 路径根内断言 + write 确认闸门 + 高风险 deny + env 白名单化（引入项 9）</td></tr>
+        <tr><td>Electron 渲染层安全纵深（DOMPurify 全量 / will-navigate / senderFrame 校验）（E1、E2）</td><td>非 Electron 应用、无渲染进程/preload/191 通道体系</td><td>127.0.0.1 绑定不对外 = 结构性 sender 校验；HTML 报告嵌入用不透明 sandbox iframe；守住边界：桥只监听 localhost，「无鉴权」仅靠 localhost 成立，绝不对 0.0.0.0 开放</td></tr>
+        <tr><td>服务端 BFF / WS 双通道进度推送 + NDJSON 流式消费（I26、I24、I25）</td><td>无云服务端，所有生成在本地跑</td><td>本地进度用 m_feedback 运行台账落盘 + 执行桥 GET 只读端点查询当前阶段；进度粒度 = 命令行输出 + 本地日志文件</td></tr>
+        <tr><td>云端排版导出（WPS/Aspose 服务端渲染 + 异步任务轮询 95%/5%）（D4、I8）</td><td>无云服务、无 WPS/Aspose 服务端</td><td>本地 docx_tools 模板驱动渲染 tech-export 已是等价物（15 组×10 套 + template.json 全在本地）；大标书导出若耗时长，借鉴「进度单调不减」本地分段报告</td></tr>
+        <tr><td>无人值守 Agent run（unattended 免确认后链路）（F1、D5）</td><td>与「人工确认闸门不静默」纪律直接对立</td><td>任何写动作走 confirm:true 闸门，这是刻意的安全取舍不是缺功能</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+</section>
+
+<section id="method">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-no">伍</span><h2>证据与方法</h2><span class="lead">76 份文档逐份精读 · 结论可追溯 · 已查证与推测分开</span></div>
+
+    <h3 style="font-family:serif; font-size:17px; margin:6px 0 12px;">5.1 精读范围与方法（v2 与 v1 的根本区别）</h3>
+    <div class="item">
+      <div class="body" style="padding:14px 16px;">
+        <p class="txt" style="margin-bottom:8px;">
+          v1 报告只精读了 8 份核心文档、其余按索引主题引用；v2 按 agent-hint 要求「全面阅读所有文档」，对 <b>E:\链企Buddy分析\docs 全部 76 份 md 逐份完整读到文件末尾</b>（每份 Read 返回 [End of file.] 为准），F1-final-security-report.pdf 抽第 1~3 页核验为 F1.md 同名打印版，内容等同。全部文档按文件名切成 12 个互斥并覆盖全集的分片，由 12 个精读 agent 并行执行，每份产出统一结构的证据文件（逐篇要点 / 四段式候选 / 上版 15 条核对表 / 存疑待补充），落盘 <code>dev\chainqi-vs-bidcraft\_work\shard-01~12</code>。
+        </p>
+        <p class="txt" style="margin-bottom:8px;">
+          本文所有「链企侧」事实均标注<b>证据文档名</b>（如 B2、H6、I14），所有「bidcraft 侧」事实均标注<b>命令/文件来源</b>（如 scripts\bidcraft.py、bidcraft_server.py、layout-presets.json 实测）；经 12 个分片独立交叉印证的结论标「强证据」，单分片见到的标「单点证据」，分片内未找到证据的如实标「分片内未见」。bidcraft 侧基线经独立核验 agent 全量实测（895 测试：unit 746 + integration 101 + e2e 48，pytest 本机不可用改用静态统计，与项目基线吻合）。
+        </p>
+      </div>
+    </div>
+
+    <h3 style="font-family:serif; font-size:17px; margin:22px 0 12px;">5.2 上版 10 条候选的本轮核验结果（0 翻案，2 收窄，5 不做维持）</h3>
+    <div class="tbl-scroll">
+    <table class="tbl">
+      <colgroup><col style="width:22%"><col style="width:10%"><col style="width:14%"><col style="width:38%"><col style="width:16%"></colgroup>
+      <thead><tr><th>上版候选</th><th>核验</th><th>本轮证据</th><th>结论</th><th>与上版差异</th></tr></thead>
+      <tbody>
+        <tr><td>① 章节历史快照</td><td><span class="dot ok"></span>确认</td><td>B2 · H6 · I14-M5 · I22b · H1-P4（多分片独立）</td><td>升级为引入项 01（快照 + trash 三段式 + 双向撤销），另含 I22b 重试前受理对账</td><td>强化</td></tr>
+        <tr><td>② 提示词四纪律</td><td><span class="dot ok"></span>确认</td><td>H1 原文四条 · F1-P2 · I6 · I17 · D4</td><td>升级为引入项 04，新增 {{待填}} 占位 + 解析失败语义显式（D4-02 爆雷的直接对策）</td><td>强化</td></tr>
+        <tr><td>③ 校验状态机化</td><td><span class="dot ok"></span>确认（收窄）</td><td>H9 · H13 · I16 · I14</td><td>只能复刻状态流转外壳（UNCHECKED/CHECKING/FAIL≠UNCHECKED），规则本体链企在服务端黑盒必须自建——升级为引入项 06 规则引擎 + AI 双通道</td><td>细化：状态机能抄、规则要自建</td></tr>
+        <tr><td>④ M3 知识库消费侧</td><td><span class="dot ok"></span>确认</td><td>I10（指针存储+写作时回源+reference.json 回执+三级回落）· I22b · I29 · H3</td><td>升级为引入项 07，与目录投影白名单（H3）合并</td><td>强化</td></tr>
+        <tr><td>⑤ 统一错误码 + agent_call 双闸</td><td><span class="dot ok"></span>确认</td><td>I9（IPC 裸转发丢 code）· I23 · I19 · I14（150 码先登记）· I5</td><td>升级为引入项 03 统一错误信封 + 引入项 09 执行桥加固（fail-closed 缺省语义来自 D5 反面）</td><td>强化</td></tr>
+        <tr><td>⑥ 原子写 + 文件锁</td><td><span class="dot ok"></span>确认</td><td>B1 · B2 · D4 · H6 · I11 · I14 · I15 · I18 · I24 · I26 · I28 · I31（5+ 处同一五档退避参数族 [20,40,80,160,320]ms）</td><td>升级为引入项 02 写盘安全四件套 + 写后复读校验</td><td>强证据</td></tr>
+        <tr><td>⑦ 运行台账</td><td><span class="dot ok"></span>确认</td><td>I9（run_settled）· I23 · I11 · I31 · E1 · D5</td><td>升级为引入项 05（终态一行 + slow 阈值 3s + JSONL 轮转）</td><td>强化</td></tr>
+        <tr><td>⑧ 素材快照</td><td><span class="dot ok"></span>确认</td><td>I29 §5.4/§3.5（引用对账四态 + SNAPSHOT_INVALID 显式失败 + 删除前扫引用）</td><td>素材快照显式失败机制并入引入项 07；删除素材前引用扫描二次确认</td><td>强化（新增本地化机制）</td></tr>
+        <tr><td>⑨ 本地查重</td><td><span class="dot part"></span>收窄</td><td>I26（fileId=sha256 前12位+显式提示）· I4（参数面/报告 schema 可复刻）· I14-M16（服务端黑盒 tender_doc_sim）· S9 证伪整条照搬</td><td>算法本体证伪（云端黑盒），可落地 = 内容 hash 去重 + 本地字符级相似度初筛，明示非语义级——对应无-3</td><td>收窄</td></tr>
+        <tr><td>⑩ 商机登记</td><td><span class="dot part"></span>收窄</td><td>C1（订阅方案字段全谱）· C4 · I14-M19（云端检索在服务端）</td><td>只落「本地商机台账 schema」（订阅字段全谱做列），云端主动发现/推送不可做——对应无-6</td><td>收窄</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p class="note">移动端提示：本表 5 列较密，窄屏下表格可在框内左右滑动查看全部列；列宽已显式声明（table-layout:fixed + colgroup），不压扁折行。</p>
+
+    <h3 style="font-family:serif; font-size:17px; margin:22px 0 12px;">5.3 5 条「不做」项的维持（本轮全部获得证据支撑）</h3>
+    <div class="tbl-scroll">
+    <table class="tbl">
+      <colgroup><col style="width:18%"><col style="width:52%"><col style="width:30%"></colgroup>
+      <thead><tr><th>不做项</th><th>本轮佐证</th><th>维持理由</th></tr></thead>
+      <tbody>
+        <tr><td>UI 编辑器（在线画布编辑标书）</td><td>链企 PPTist/编辑器体系强依赖云端 + 渲染层（I1、I24）；bidcraft UI 原则「先读项目实现再画界面」（ui-real-flow-mapping.md）</td><td>本项目交付物由 CLI 确定性生成，编辑器 = 双写冲突源；UI 只做「真正的功能接线」，不做内容编辑双通道</td></tr>
+        <tr><td>服务端并发</td><td>A4 15 路并发是 Electron+云服务架构能力；I11 并发桶</td><td>本地单机串行 + sidecar 状态机断点续跑已够（见无-4 替代）</td></tr>
+        <tr><td>云端同步</td><td>I29 全篇（云真相源/本地镜像/乐观锁 409）逐条确认</td><td>单机无第二端，本地文件即真相源（见无-10 替代）</td></tr>
+        <tr><td>计费</td><td>I14/I25~I28/I29 冻结-实扣-冲正体系</td><td>无登录无计费对象；「先确认后动作」已由人工确认闸门承担（见无-7 替代）</td></tr>
+        <tr><td>自动更新</td><td>D1 双引擎设计 · F1 §12.3 静默替换事故 · V §6 实机触发升级替换生产安装</td><td>非 Electron 无安装形态；链企事故史证明是纯风险面（见无-8）</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <h3 style="font-family:serif; font-size:17px; margin:22px 0 12px;">5.4 证据文件清单（12 分片 + 事实核验，全部落盘 _work/）</h3>
+    <div class="tbl-scroll">
+    <table class="tbl">
+      <colgroup><col style="width:26%"><col style="width:44%"><col style="width:30%"></colgroup>
+      <thead><tr><th>证据文件</th><th>精读的链企文档（均读到文件末尾）</th><th>亮点候选</th></tr></thead>
+      <tbody>
+        <tr><td>shard-01-AB域.md</td><td>A1~A4 · B1~B3</td><td>快照写路径钩子、原子写+锁、错误分类恢复矩阵、解析 sha256 缓存</td></tr>
+        <tr><td>shard-02-B4C5.md</td><td>B4~B5 · C1~C5</td><td>商机订阅全谱、静默换团反面、导出差分回收</td></tr>
+        <tr><td>shard-03-C6D4.md</td><td>C6 · D1~D4</td><td>自动更新事故史、写前内容模型护栏、截断无标记反面</td></tr>
+        <tr><td>shard-04-D5E2.md</td><td>D5~D6 · E1~E2</td><td>路径断言、fail-closed 缺省、env 白名单、HTML 出口三件套</td></tr>
+        <tr><td>shard-05-E3H2.md</td><td>E3 · F1 · G1 · H1 · H2 + PDF 抽页核验</td><td>收敛统一断言、提示词四纪律原文、.rewrite-trash</td></tr>
+        <tr><td>shard-06-H3H11.md</td><td>H3~H11</td><td>目录投影 CHAIN_KEYS、CheckItem 17 字段、回收站三段式、落盘闭环三重校验</td></tr>
+        <tr><td>shard-07-H12I3.md</td><td>H12~H14 · I1~I3</td><td>写后复读+部分失败第三态、错误分级、模板「发出即钉住」、run 配置冻结</td></tr>
+        <tr><td>shard-08-I4I10.md</td><td>I4~I10</td><td>统一错误码信封、运行台账、M3 知识库消费侧、查重参数面</td></tr>
+        <tr><td>shard-09-I11I16.md</td><td>I11~I16</td><td>双通道质量闸 25 规则、写盘安全四件套、错误码 150 面、断点续跑</td></tr>
+        <tr><td>shard-10-I17I23.md</td><td>I17~I23</td><td>版式断言 V1~V10、受理对账幂等键、双作用域落盘、统一 IPC 信封+脱敏</td></tr>
+        <tr><td>shard-11-I24I28.md</td><td>I24~I28</td><td>内容 hash 去重显式提示、版本快照 STALE 阻断、UNCONFIRMED 显式态</td></tr>
+        <tr><td>shard-12-I29V.md</td><td>I29~I33 · V</td><td>待办队列退避重放、引用对账四态、exec 桥安全五条核对清单、云端同步确认不做</td></tr>
+        <tr><td>bidcraft-facts.md</td><td>—（bidcraft 侧全量实测）</td><td>11 模块 + 79 子命令、执行桥 12 白名单/deny 表、15×10 预设实测、895 测试、生产同步链</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <h3 style="font-family:serif; font-size:17px; margin:22px 0 12px;">5.5 证据纪律与待补充说明</h3>
+    <div class="item">
+      <div class="body" style="padding:14px 16px;">
+        <p class="txt" style="margin-bottom:8px;">
+          <b>已查证 vs 推测的区分</b>：本报告中带文档名/文件路径/行号的均为已查证；标注「建议」「可借鉴」「将来参考」的为推测性建议；未读到原文的链企内部细节（如服务端规则黑盒内部、计费数据库表）如实标「服务端黑盒不可见」而非编造。
+        </p>
+        <p class="txt" style="margin-bottom:8px;">
+          <b>待补充项</b>：①链企服务端（BFF/wss/提示词黑盒/标讯库）只可逆向推断接口契约，其实现细节无源码证据；②bidcraft 侧 pytest 在本机不可用（环境问题非项目配置），895 为静态统计结果与项目基线一致；③「商机登记台账」落点目前 bidcraft 尚无对应模块，需新建（第 1 项 UI 工作可一并规划）。
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="disclose">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-no">陆</span><h2>未实现项如实披露</h2><span class="lead">本报告结论之外的边界</span></div>
+    <div class="disclose">
+      <h4>这份报告没做什么 / 做不到什么（如实说明）</h4>
+      <ul>
+        <li><b>未生成 UI 本体</b>：用户第 1 项需求（给已加执行桥 v3.0 的项目做「具有真正功能的 UI」）由 MainAgent 掌控（接线与推送 PR/生产同步状态），本报告只交付对比分析，UI 落地不在本轮。</li>
+        <li><b>无法实现清单共 10 条 + 速览 7 项</b>（见第肆章）：云端 Agent 中继、SSE 续传、语义查重算法、服务端并发、专家团云端分发、商机推送、计费、自动更新、AI 配图、云端同步——全部因「本地单机 / 无云服务 / CLI 单一事实源 / 人工确认闸门」结构性边界不可实现，替代方案已逐条给出。</li>
+        <li><b>待补充</b>：链企服务端黑盒细节、bidcraft 侧尚未建模块的落点（如商机台账）按 5.5 标注，不编造。</li>
+        <li><b>第 1 项 UI 的下一步提示</b>：按惯例——「UI 接线与推送 PR/生产同步状态」由 MainAgent 掌控，本组织者已交付报告，可以进入下一项。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>链企Buddy × 标书匠bidcraft 全面对比分析 v2 · 生成于 2026-10-24 · 语料：E:\链企Buddy分析\docs（76 份 md 逐份精读 + F1 PDF 抽页核验）· 对照：E:\bidcraft_skill（scripts\bidcraft.py 挂载 11 模块，执行桥 v3.0，895 测试全绿）</p>
+    <p>证据文件：dev\chainqi-vs-bidcraft\_work\shard-01~12 + bidcraft-facts.md · 上一版报告（链企vs标书匠-对比分析.html）未被覆盖 · 本文单文件自包含，可离线打开</p>
+  </div>
+</footer>
+
+<button class="totop" id="totop" onclick="window.scrollTo({top:0,behavior:'smooth'})">回到顶部</button>
+
+<script>
+(function(){
+  var navLinks = document.querySelectorAll('nav.top a');
+  var totop = document.getElementById('totop');
+  var sections = ['summary','compare','introduce','nogo','method','disclose'];
+
+  function onScroll(){
+    var y = window.scrollY;
+    var cur = 'summary';
+    for (var i=0;i<sections.length;i++){
+      var el = document.getElementById(sections[i]);
+      if (el && el.offsetTop - 140 <= y) cur = sections[i];
+    }
+    for (var j=0;j<navLinks.length;j++){
+      var href = navLinks[j].getAttribute('href').replace('#','');
+      navLinks[j].classList.toggle('cur', href === cur);
+    }
+    totop.classList.toggle('show', y > 600);
+  }
+  window.addEventListener('scroll', onScroll, {passive:true});
+  onScroll();
+})();
+</script>
+</body>
+</html>
