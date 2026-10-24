@@ -179,13 +179,14 @@ scripts/
 - "这套模板不要目录页，给我改一下 structure 再出样张"
 - "模板里 `{{ bid_date }}` 我填了，导出时为什么还是原文？"（→ 检查 --fill 未提供键保留原文的披露）
 
-**B 方案（本地只读 HTTP 桥，供前端/平台工具取数）**：
+**B 方案（本地 HTTP 桥 v3.0：只读接口 + 执行桥，供前端/平台工具取数与真实执行）**：
 `python scripts/bidcraft_server.py [--host 127.0.0.1] [--port 8765] [--root <软件根>] [--enterprise <企业>]`
-只读接口：`/api/health`、`/api/layout/groups`、`/api/layout/presets`（与生成链路同源，含 version/darkInject）、`/api/layout/validate`（F11 校验）、`/api/layout/packs`（专家包清单）、`/api/capabilities`（项目能力清单：layoutGroups / commands（bidcraft CLI 子命令表动态提取）/ moduleEntries（按前缀归并）/ endpoints / presetsVersion）。写操作一律 405 拒绝并提示走 CLI；默认仅绑定 127.0.0.1。平台侧（豆包已注册工具 / WorkBuddy 自定义技能）可包装这些接口，但鉴权须按平台要求自行完成。
+- **只读接口**（GET）：`/api/health`、`/api/layout/groups`、`/api/layout/presets`（与生成链路同源，含 version/darkInject）、`/api/layout/validate`（F11 校验）、`/api/layout/packs`（专家包清单）、`/api/capabilities`（项目能力清单：layoutGroups / commands（bidcraft CLI 子命令表动态提取）/ moduleEntries（按前缀归并）/ endpoints / presetsVersion / **execCommands** / **denyCommands**）；模板只读端点见下节 `/api/template/*`。
+- **执行桥**（POST `/api/exec`）：在**白名单**内真实调用 bidcraft CLI——`{"command": "<key>", "args": {"name"/"project"/"fill"/...}, "confirm": false}`。**read 命令无需确认**（清单/校验/状态查询）；**write 命令必须 `confirm: true`**（由 UI 人工确认产生，对应 CLI 的人工确认闸门；可逆产物：样张/预览/体检/留痕/报告）；**白名单外命令一律 403** 并引导走 CLI；**高风险命令（`tech-export`/`fill-tpl`/`remedy-archive`/`tpl-design --apply`/`tpl-part --scan`/`tech-layout --apply-combo`/`assets-archive` 等应用/覆盖/删除/状态推进类）永不通过执行桥暴露**，只走 CLI + 人工确认闸门。参数经防注入校验（拒绝 `..`、盘符、绝对路径、控制字符、超长；项目名须为 `<企业根>/项目级/` 下真实目录）、subprocess 列表传参无 shell 拼接、超时与输出截断。默认仅绑定 127.0.0.1。平台侧（豆包已注册工具 / WorkBuddy 自定义技能）可包装这些接口，但鉴权须按平台要求自行完成。完整契约/白名单/示例/测试见 `references/执行桥-操作手册.md`。
 
 **UI 实时化（数据+功能入口动态，离线回退）**：`版面设计器-工作台V1.html` 启动先以内联快照渲染（初始可读），随后探测 `API_BASE`（默认 http://127.0.0.1:8765，可 `?api=<url>` 覆盖）——连接成功则用 `/api/layout/presets`+`/api/capabilities`+`/api/layout/packs` **实时数据重渲染**（15 组面板、推荐套餐、专家包清单、预设版本徽标、项目能力卡片：模块/命令速查/桥接口自动随项目扩展）；连接失败回退内联快照并在顶部徽标标注「离线快照·未连接 bidcraft-server」，页面照常可用。**新增命令/模块/预设后刷新页面即同步，无需改 HTML**。
 
-**模板设计器平台工具契约（P3，`/api/template/*` 只读能力桥）**：模板设计器的读能力经桥注册为平台工具（豆包/WorkBuddy 可包装），**CLI 是单一事实源**（`tpl-design`/`tpl-part` 的 `--json` 输出经 `subprocess` 原样转 HTTP JSON；桥不持业务逻辑、不写盘，非 GET 一律 405）。端点：
+**模板设计器平台工具契约（P3，`/api/template/*` 只读能力桥）**：模板设计器的读能力经桥注册为平台工具（豆包/WorkBuddy 可包装），**CLI 是单一事实源**（`tpl-design`/`tpl-part` 的 `--json` 输出经 `subprocess` 原样转 HTTP JSON；桥不持业务逻辑、不写盘，非 GET 一律 405，写操作走执行桥 `/api/exec` 白名单 + confirm 闸门）。端点：
 `/api/health`、`/api/capabilities`、`/api/template/list`（`tpl-design --list --json`）、`/api/template/show?name=<文件>`（`--show --json`）、`/api/template/validate?name=`、`/api/template/parts`（`tpl-part --list --json`）、`/api/template/specimen?name=&fill=`（`--specimen --json`，输出真实 docx 路径 `path`；直连时用 `_quiet` 吞人类可读 print 防污染 JSON）。三栏演示原型 `dev/prototypes/模板设计器-工作台V2.html`（全元素实时预览：封面/扉页/目录/正文×3/结尾 + 部件来源标注 + 暗标切换，离线内置 FALLBACK_* 兜底）只读展示，写操作一律 CLI + 人工确认闸门。契约细节/测试见 `references/M6-模板设计-数据模型.md` §11。
 
 ## 七、开发纪律：规则对齐闸门（强制，防跑偏）

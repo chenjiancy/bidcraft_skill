@@ -54,7 +54,10 @@ class ServerTest(unittest.TestCase):
         status, body = _get(self.base + "/api/health")
         self.assertEqual(status, 200)
         self.assertTrue(body["ok"])
-        self.assertEqual(body["readonly"], True)
+        self.assertFalse(body["readonly"])          # v3.0：不再纯只读
+        self.assertTrue(body["execBridge"])         # 执行桥已启用
+        self.assertIn("tpl-design--list", body["execCommands"])
+        self.assertIn("tech-export", body["denyCommands"])
 
     def test_unknown_route_404(self):
         status, body = _get(self.base + "/api/nope")
