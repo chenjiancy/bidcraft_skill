@@ -385,3 +385,114 @@ def to_md(doc):
         lines.append("")
     lines.append("> 人工确认闸门：任务单为投标前自检参考；素材补齐须经 M5 素材归档流程（propose/apply），最终以评标委员会评审为准。")
     return "\n".join(lines)
+
+
+# ==================== T21 补救→M5 归档自动联动 ====================
+_ARCHIVE_TYPES = ("素材补齐", "证据核验")
+
+
+def gen_archive_entries(doc, known_task_ids=()):
+    """归档申请条目生成（T21）：任务单中『已完成』且类型为 素材补齐/证据核验 且带涉及素材
+    的任务 → 归档申请条目（动作/类别/素材名/来源任务/建议落点）。
+    known_task_ids：已生成过申请的任务 id（去重，不重复生成）。纯逻辑无 I/O。"""
+    entries = []
+    for t in doc.get("tasks") or []:
+        if t.get("完成状态") != "已完成":
+            continue
+        if t.get("类型") not in _ARCHIVE_TYPES:
+            continue
+        mat = t.get("涉及素材") or {}
+        if not mat:
+            continue
+        if t.get("id") in known_task_ids:
+            continue
+        category = mat.get("category") or ""
+        subtype = mat.get("subtype") or ""
+        name = subtype or category or t.get("动作") or "待归档素材"
+        entries.append({
+            "任务ID": t["id"], "动作": t.get("动作", ""),
+            "类别": category, "素材名": name, "来源": t.get("来源", ""),
+            "评分项": t.get("评分项", ""),
+            "建议落点": _archive_target_key(category),
+            "状态": "待确认",
+        })
+    return entries
+
+
+def _archive_target_key(category):
+    return {"业绩": "performance", "人员": "personnel", "荣誉": "honors",
+            "体系认证": "iso_certificates"}.get(category, "items")
+
+
+def apply_archive(mat_doc, entries):
+    """归档申请应用（T21）：按素材清单结构落点写入（M5 归档入口），
+    返回 (mat_doc, applied, skipped)。纯逻辑无 I/O。
+    旧结构 items[].category（items 含 category）→ 全部落 items 增条；
+    fill-tpl 分键结构（performance/personnel/honors/iso_certificates）→ 按类别落点；
+    无法映射类别 → items 增条。条目带 来源=任务ID 与 待归档标记，不冒充真实素材。"""
+    import datetime as _dt
+    mat_doc = dict(mat_doc)
+    is_old = any(it.get("category") for it in (mat_doc.get("items") or []))
+    applied, skipped = [], []
+    now = _dt.datetime.now().strftime("%Y-%m-%d %H:%M")
+    for e in entries:
+        cat = e.get("类别", "")
+        sub = e.get("素材名", "")
+        if _duplicate_exists(mat_doc, e):
+            skipped.append(dict(e, 结果="已存在，跳过（同类别素材已登记）"))
+            continue
+        entry = {
+            "category": cat, "subtype": sub if sub != cat else "",
+            "purpose": "%s（M10 补救任务 %s）" % (e.get("动作", ""), e.get("任务ID", "")),
+            "path": "待归档（人工补充扫描件路径）",
+            "来源": "M10补救任务-%s" % e.get("任务ID", ""),
+            "归档时间": now,
+        }
+        if is_old:
+            mat_doc.setdefault("items", []).append(entry)
+            key = "items"
+        else:
+            target = e.get("建议落点") or _archive_target_key(cat)
+            if target == "performance":
+                key = "performance"
+                mat_doc.setdefault(key, []).append(
+                    {"name": sub or "待归档业绩", "paths": [],
+                     "来源": entry["来源"], "归档时间": now, "path": entry["path"]})
+            elif target == "personnel":
+                key = "personnel"
+                role = "项目总监" if "总监" in sub else "监理人员"
+                mat_doc.setdefault(key, []).append(
+                    {"name": "待归档", "role": role, "职称": [],
+                     "来源": entry["来源"], "归档时间": now})
+            elif target == "honors":
+                key = "honors"
+                mat_doc.setdefault(key, []).append(
+                    {"name": sub or "待归档荣誉", "path": entry["path"],
+                     "来源": entry["来源"], "归档时间": now})
+            elif target == "iso_certificates":
+                key = "iso_certificates"
+                mat_doc.setdefault(key, []).append(
+                    {"name": sub or "待归档体系证书", "path": entry["path"],
+                     "来源": entry["来源"], "归档时间": now})
+            else:
+                key = "items"
+                entry["target"] = "items"
+                mat_doc.setdefault("items", []).append(entry)
+        applied.append({"任务ID": e.get("任务ID"), "类别": cat, "素材名": sub,
+                        "落点": key, "时间": now})
+    return mat_doc, applied, skipped
+
+
+def _duplicate_exists(mat_doc, e):
+    """同类别+同素材名 已登记（items 或对应分键）→ 跳过。"""
+    cat = e.get("类别", "")
+    sub = e.get("素材名", "")
+    for it in (mat_doc.get("items") or []):
+        if it.get("category") == cat and (it.get("subtype") == sub or (sub and sub == (it.get("subtype") or ""))):
+            return True
+    for key, name_attr in (("performance", "name"), ("personnel", "name"),
+                           ("honors", "name"), ("iso_certificates", "name")):
+        for it in (mat_doc.get(key) or []):
+            if sub and it.get(name_attr) == sub:
+                return True
+    return False

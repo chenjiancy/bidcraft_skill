@@ -127,3 +127,7 @@ def register_parser(sub):
     # T18：补救→重检闭环（remedy-done / remedy-recheck）
     from . import recheck as _recheck
     _recheck.register_parser(sub)
+
+    # T21：补救→M5 归档联动（remedy-archive）
+    from . import archive as _archive
+    _archive.register_parser(sub)
