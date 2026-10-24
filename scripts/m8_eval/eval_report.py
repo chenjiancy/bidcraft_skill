@@ -80,7 +80,8 @@ def _fmt_amt(v):
     return "%.0f" % v
 
 
-def render_report(project, standard, objective, quote, qa, summary, out_path, subjective=None):
+def render_report(project, standard, objective, quote, qa, summary, out_path, subjective=None,
+                  tech_text=None):
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
     rows_obj = ""
     for r in objective:
@@ -131,33 +132,43 @@ def render_report(project, standard, objective, quote, qa, summary, out_path, su
     else:
         unrated += "<li><b>主观分未评</b>：监理大纲/技术方案主观分待通道B（eval-parse）评审或 M6 交付后精评。</li>"
 
-    # 主观分明细（通道B）
+    # 主观分明细（通道B；T16：技术标章节评审 → 来源章节列）
     sub_sec = ""
     if subjective:
         rows_sub = ""
         for it in subjective.get("主观评分") or []:
             est = it.get("预估分") or {}
+            src = ""
+            if it.get("techChapter"):
+                src = '<span style="color:#1a73e8;font-size:12px">%s</span>' % _esc(it.get("techChapter"))
             rows_sub += (
                 "<tr><td>%s</td><td style='text-align:right'>%.1f</td>"
                 "<td style='text-align:center'>[%s, %s]（建议 %s）</td>"
-                "<td>%s</td><td style='font-size:12px;color:#555'>%s</td>"
+                "<td>%s</td><td>%s</td>"
+                "<td style='font-size:12px;color:#555'>%s</td>"
                 "<td style='font-size:12px;color:#888'>%s</td><td>%s</td></tr>"
             ) % (_esc(it.get("子项", "")), it.get("满分", 0),
                  est.get("min", 0), est.get("max", 0), est.get("建议", 0),
-                 _esc(it.get("档次", "")), _esc(it.get("证据锚点", "")),
+                 _esc(it.get("档次", "")), src,
+                 _esc(it.get("证据锚点", "")),
                  _esc(it.get("失分原因", "")), _esc(it.get("风险", "")))
         t = subjective.get("主观合计") or {}
         sub_sec = (
             "<h2>三、主观分明细（通道B · 模拟评审）</h2>"
             "<p style='font-size:13px;color:#555'>对象：%s ｜ 主观合计预估 [%s, %s]，建议 %s / 满分 %s ｜ 结论：%s</p>"
             "<table><tr style='background:#f1f3f4'><th>子项</th><th>满分</th><th>预估分</th><th>档次</th>"
-            "<th>证据锚点</th><th>失分原因</th><th>风险</th></tr>%s</table>"
+            "<th>来源章节</th><th>证据锚点</th><th>失分原因</th><th>风险</th></tr>%s</table>"
         ) % (_esc(subjective.get("对象", "")), t.get("min", 0), t.get("max", 0),
              t.get("建议", 0), t.get("满分", 0), _esc(subjective.get("结论", "")), rows_sub)
     else:
+        if tech_text and tech_text.get("found"):
+            note = "主观分未评：M6 技术标文本已发现（%d 章 %d 字，techText 已入通道A 产物）——执行 eval-parse 由通道B 精评。" % (
+                len(tech_text["chapters"]), tech_text["totalChars"])
+        else:
+            note = "主观分未评：未发现技术标文本，通道B 输出「无方案文本待 M6 精评」；执行 eval-parse 评审。"
         sub_sec = (
             "<h2>三、主观分明细（通道B）</h2>"
-            "<p style='font-size:13px;color:#e69138'>主观分未评：监理大纲/技术方案主观分待通道B（eval-parse 按 references/M8-模拟评标-提示词.md）评审，或 M6 交付后精评。</p>"
+            "<p style='font-size:13px;color:#e69138'>%s</p>" % _esc(note)
         )
 
     # 报价分析

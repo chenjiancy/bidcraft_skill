@@ -43,6 +43,10 @@ def validate_subjective_json(obj):
                         issues.append("主观评分[%d] 预估分 min(%s) > max(%s)" % (i, m, x))
                 else:
                     issues.append("主观评分[%d] 预估分 须为 {min,max,建议}" % i)
+                # T16 可选字段：techChapter（M6 技术标章节 id，来源锚点）
+                tc = it.get("techChapter")
+                if tc is not None and (not isinstance(tc, str) or not tc.strip()):
+                    issues.append("主观评分[%d] techChapter 须为非空字符串（M6 章节 id）" % i)
         total = obj.get("主观合计")
         if not isinstance(total, dict):
             issues.append("主观合计 必须是对象")
