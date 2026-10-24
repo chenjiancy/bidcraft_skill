@@ -7,6 +7,7 @@ import json
 import sys
 import tempfile
 import unittest
+import unittest.mock
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
@@ -98,6 +99,41 @@ class ImgAuditTest(unittest.TestCase):
                     self.assertTrue(any("人工核验" in n for n in r["note"]))
         # OCR 可用时不要求 note（不假装检查的互补断言：至少说明能力）
         self.assertIn("ocr", out)
+
+    # ---- OCR 真扫路径（mock 引擎/文本，验证红线词命中逻辑） ----
+    @unittest.mock.patch.object(mimg, "_ocr_engine", return_value=(sys.executable, "paddleocr"))
+    def test_ocr_hits_redline_word(self, _me):
+        mimg._ocr_texts = unittest.mock.Mock(return_value=["履约保障措施", "XX有限公司", "组织保障"])
+        out, _ = self._run()
+        by_id = {r["id"]: r for r in out["items"]}
+        self.assertTrue(out["ocr"].startswith("available"))
+        self.assertEqual(by_id["img_001"]["status"], "fail")
+        self.assertTrue(any("图内文字含暗标红线词" in i for i in by_id["img_001"]["issues"]))
+        self.assertIn("公司", " ".join(by_id["img_001"]["issues"]))
+        # 正常文本 → pass 且 note 附 OCR 文本
+        mimg._ocr_texts = unittest.mock.Mock(return_value=["总监理工程师", "专业监理工程师"])
+        out, _ = self._run()
+        by_id = {r["id"]: r for r in out["items"]}
+        self.assertEqual(by_id["img_001"]["status"], "pass")
+        self.assertTrue(any("OCR 文本" in n for n in by_id["img_001"]["note"]))
+
+    @unittest.mock.patch.object(mimg, "_ocr_engine", return_value=(sys.executable, "paddleocr"))
+    def test_ocr_engine_failure_disclosed(self, _me):
+        # OCR 进程失败 → 披露「引擎异常，须人工核验」，不假装通过
+        mimg._ocr_texts = unittest.mock.Mock(return_value=None)
+        out, _ = self._run()
+        by_id = {r["id"]: r for r in out["items"]}
+        self.assertEqual(by_id["img_001"]["status"], "pass")
+        self.assertTrue(any("OCR 引擎异常" in n for n in by_id["img_001"]["note"]))
+
+    @unittest.mock.patch.object(mimg, "_ocr_engine", return_value=None)
+    def test_ocr_unavailable_discloses_manual(self, _me):
+        # 引擎缺失 → 每张 pass 图 note「人工核验」，不假装检查
+        out, _ = self._run()
+        self.assertTrue(out["ocr"].startswith("unavailable"))
+        for r in out["items"]:
+            if r["status"] == "pass":
+                self.assertTrue(any("人工核验" in n for n in r["note"]))
 
 
 if __name__ == "__main__":

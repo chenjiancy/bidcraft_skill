@@ -436,15 +436,62 @@ AUDIT_WORDS = ["公司", "有限", "集团", "股份", "LOGO", "logo", "水印",
                "WORKBUD", "WorkBuddy", "企业名称", "人名", "签名"]
 
 # OCR 探测（图内文字核验：有 OCR 引擎则真扫；无则披露需人工核验）
-def _has_ocr():
-    for mod in ("paddleocr", "easyocr", "pytesseract"):
+def _ocr_engine():
+    """返回 (python_exe, engine_name) 或 None。
+
+    探测链：① BIDCRAFT_OCR_PY 环境变量（OCR venv 的 python.exe 绝对路径）
+            ② 仓库根 .ocr_venv（E:\\bidcraft_skill\\.ocr_venv\\Scripts\\python.exe 同型布局）
+            ③ 当前解释器自身（主环境已装 paddleocr 时）。
+    引擎识别按 paddleocr > easyocr > pytesseract > tesseract 顺序。"""
+    candidates = []
+    env_py = os.environ.get("BIDCRAFT_OCR_PY")
+    if env_py:
+        candidates.append((env_py, "paddleocr"))
+    root = Path(__file__).resolve().parents[2]
+    venv_py = root / ".ocr_venv" / "Scripts" / "python.exe"
+    if venv_py.is_file():
+        candidates.append((str(venv_py), "paddleocr"))
+    candidates.append((sys.executable, "current"))
+    for py, tag in candidates:
+        if not py or not os.path.isfile(py):
+            continue
         try:
-            __import__(mod)
-            return True
+            if tag == "paddleocr":
+                return (py, "paddleocr")
+            for mod in ("paddleocr", "easyocr", "pytesseract"):
+                __import__(mod)
+                return (py, mod)
+            import shutil
+            if shutil.which("tesseract"):
+                return (py, "tesseract")
         except Exception:
             continue
-    import shutil
-    return shutil.which("tesseract") is not None
+    return None
+
+
+_OCR_TIMEOUT = 180
+
+
+def _ocr_texts(abs_path):
+    """调 OCR 引擎对单张图做真扫，返回 [text,...]；引擎缺失/失败返回 None（由调用方披露）。"""
+    engine = _ocr_engine()
+    if engine is None:
+        return None
+    py, name = engine
+    if name == "paddleocr":
+        worker = Path(__file__).resolve().parent / "_ocr_worker.py"
+        try:
+            r = subprocess.run([py, "-X", "utf8", str(worker), str(abs_path)],
+                               capture_output=True, text=True, encoding="utf-8",
+                               errors="replace", timeout=_OCR_TIMEOUT)
+            doc = json.loads((r.stdout or "").strip().splitlines()[-1])
+        except Exception:
+            return None
+        if doc.get("error"):
+            return None
+        return [str(t) for t in doc.get("texts", [])]
+    # easyocr/pytesseract/tesseract：走标准库探测路径（当前实现仅披露引擎可用，不做真扫）
+    return None
 
 
 def _has_aigc_marker(path):
@@ -460,19 +507,22 @@ def cmd_img_audit(args):
     """AI 配图暗标合规审计（只读）：对配图清单 saved 项逐图检查——
     a) 图片文件存在（缺失=不合规）；b) AIGC 元数据残留（img-save 清洗失败=不合规）；
     c) 清单 subject/style 含暗标红线词（公司/LOGO/水印/AI 标识等=不合规）；
-    d) 来源 source 标注（空=披露）；e) 图内文字：环境有 OCR 则真扫，无 OCR 明确披露
-    「图内文字需人工核验」不假装检查。输出 pass/fail 三态 + 明细（--json 机读）。"""
+    d) 来源 source 标注（空=披露）；e) 图内文字：OCR 引擎（默认 paddleocr venv）真扫，
+    检出红线词=不合规；引擎不可用则明确披露「图内文字需人工核验」不假装检查。
+    输出 pass/fail 三态 + 明细（--json 机读）。"""
     ent = get_ent(args)
     project = args.project
     plan = _load_plan(ent, project, must=True)
     saved = [it for it in plan.get("items", []) if it.get("status") == "saved"]
     proj_dir = Path(ent) / PROJECT_SUBDIR / project
-    ocr = _has_ocr()
+    engine = _ocr_engine()
+    ocr_ok = engine is not None
     results = []
     for it in saved:
         p = it.get("file") or ""
         abs_p = (proj_dir / p).resolve() if p else None
         issues = []
+        notes = []
         if abs_p is None or not abs_p.is_file():
             issues.append("图片文件缺失：%s" % (p or "(file 为空)"))
         else:
@@ -484,13 +534,24 @@ def cmd_img_audit(args):
             hits = [w for w in AUDIT_WORDS if w in subj]
             if hits:
                 issues.append("清单 subject/style 含暗标红线词：%s" % "/".join(hits))
+            # e) 图内文字真扫（OCR 引擎可用时）；失败/缺失 → 人工核验披露
+            if ocr_ok:
+                ocr_texts = _ocr_texts(abs_p)
+                if ocr_texts is None:
+                    notes.append("图内文字 OCR 引擎异常（本次未扫，须人工核验）")
+                else:
+                    joined = " ".join(ocr_texts)
+                    hits2 = [w for w in AUDIT_WORDS if w in joined]
+                    if hits2:
+                        issues.append("图内文字含暗标红线词（OCR 检出）：%s" % "/".join(hits2))
+                    if ocr_texts:
+                        notes.append("OCR 文本：%s" % "｜".join(ocr_texts[:12]))
+            else:
+                notes.append("图内文字需人工核验（本机无 OCR 引擎）")
         status = "fail" if issues else "pass"
-        note = []
-        if abs_p and abs_p.is_file() and not ocr:
-            note.append("图内文字需人工核验（本机无 OCR 引擎）")
         results.append({
             "id": it.get("id"), "section": it.get("section"), "status": status,
-            "file": p, "issues": issues, "note": note,
+            "file": p, "issues": issues, "note": notes,
             "source": it.get("source") or "",
         })
     counts = {"pass": 0, "fail": 0}
@@ -499,7 +560,7 @@ def cmd_img_audit(args):
     obj = {
         "project": project, "saved": len(saved),
         "pass": counts["pass"], "fail": counts["fail"],
-        "ocr": "available" if ocr else "unavailable（图内文字需人工核验）",
+        "ocr": ("available（%s 真扫）" % engine[1]) if ocr_ok else "unavailable（图内文字需人工核验）",
         "items": results,
     }
     if getattr(args, "json", False):
